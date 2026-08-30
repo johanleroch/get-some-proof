@@ -72,12 +72,15 @@ export async function addMemberWithRole(
   actorId: string,
   role: OrganizationRole,
   status: "active" | "inactive" = "active",
+  profile?: { displayName: string; email: string },
 ) {
   await t.run(async (ctx) => {
     const now = Date.now();
     await ctx.db.insert("memberships", {
       organizationId,
       userId: actorId,
+      displayName: profile?.displayName,
+      email: profile?.email,
       status,
       createdAt: now,
       updatedAt: now,

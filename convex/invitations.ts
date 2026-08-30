@@ -273,6 +273,8 @@ export const accept = mutation({
     const now = Date.now();
     if (membership) {
       await ctx.db.patch(membership._id, {
+        displayName: principal.name,
+        email: principal.email,
         status: "active",
         deactivatedAt: undefined,
         updatedAt: now,
@@ -281,6 +283,8 @@ export const accept = mutation({
       await ctx.db.insert("memberships", {
         organizationId: organization._id,
         userId: principal.actorId,
+        displayName: principal.name,
+        email: principal.email,
         status: "active",
         createdAt: now,
         updatedAt: now,

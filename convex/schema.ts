@@ -12,6 +12,8 @@ export default defineSchema({
   memberships: defineTable({
     organizationId: v.id("organizations"),
     userId: v.string(),
+    displayName: v.optional(v.string()),
+    email: v.optional(v.string()),
     status: v.union(v.literal("active"), v.literal("inactive")),
     createdAt: v.number(),
     updatedAt: v.number(),

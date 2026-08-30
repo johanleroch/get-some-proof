@@ -77,6 +77,8 @@ export const create = mutation({
     await ctx.db.insert("memberships", {
       organizationId,
       userId: principal.actorId,
+      displayName: principal.name,
+      email: principal.email,
       status: "active",
       createdAt: now,
       updatedAt: now,

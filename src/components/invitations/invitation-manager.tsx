@@ -58,8 +58,7 @@ export function InvitationManager({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-primary text-sm font-medium">Access</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Members</h1>
+        <h2 className="text-xl font-semibold">Invitations</h2>
         <p className="text-muted-foreground mt-2 text-sm">
           Invite people with a fixed initial role. Owner access is managed
           separately.

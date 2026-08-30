@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
 import { InvitationManager } from "@/components/invitations/invitation-manager";
+import { MemberDirectory } from "@/components/members/member-directory";
 
 export function OrganizationMembers({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
@@ -35,7 +36,10 @@ export function OrganizationMembers({ slug }: { slug: string }) {
       organizationName={organization.name}
       organizationSlug={organization.slug}
     >
-      <InvitationManager organizationId={organization.id} />
+      <div className="space-y-10">
+        <MemberDirectory organizationId={organization.id} />
+        <InvitationManager organizationId={organization.id} />
+      </div>
     </AppShell>
   );
 }
