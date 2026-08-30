@@ -26,6 +26,7 @@ export function SignInForm({
 
     const form = new FormData(event.currentTarget);
     const destination = callbackURL;
+    sessionStorage.setItem("post-two-factor-route", destination);
     const result = await authClient.signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
@@ -39,6 +40,10 @@ export function SignInForm({
       return;
     }
 
+    if (result.data && "twoFactorRedirect" in result.data) {
+      return;
+    }
+
     router.push(destination);
     router.refresh();
   }
@@ -46,6 +51,7 @@ export function SignInForm({
   async function signInWithGoogle() {
     setError(null);
     setPending(true);
+    sessionStorage.setItem("post-two-factor-route", callbackURL);
     const result = await authClient.signIn.social({
       provider: "google",
       callbackURL,

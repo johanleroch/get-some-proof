@@ -75,7 +75,12 @@ export function AppShell({
       <main className="md:pl-64">
         <header className="border-border bg-background/90 flex h-16 items-center border-b px-5 backdrop-blur md:px-8">
           <p className="text-sm font-medium md:hidden">Convex Admin</p>
-          <p className="text-muted-foreground ml-auto text-sm">Setup preview</p>
+          <Link
+            className="text-muted-foreground hover:text-foreground ml-auto text-sm font-medium"
+            href={"/account/security" as Route}
+          >
+            Account security
+          </Link>
         </header>
         <div className="mx-auto max-w-7xl p-5 md:p-8">{children}</div>
         <span className="sr-only" aria-live="polite">

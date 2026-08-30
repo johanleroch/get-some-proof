@@ -32,17 +32,18 @@ export function InvitationManager({
 
   async function invite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setPending(true);
     setError(null);
     setSuccess(null);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       await createInvitation({
         organizationId,
         email: String(form.get("email")),
         role: String(form.get("role")) as "admin" | "editor" | "viewer",
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setSuccess("Invitation sent.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Invitation failed.");

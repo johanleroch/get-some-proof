@@ -1,6 +1,7 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth/minimal";
+import { twoFactor } from "better-auth/plugins";
 import { v } from "convex/values";
 
 import authConfig from "./auth.config";
@@ -50,7 +51,10 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
             },
           }
         : undefined,
-    plugins: [convex({ authConfig })],
+    plugins: [
+      twoFactor({ issuer: "Convex Admin Starter" }),
+      convex({ authConfig }),
+    ],
   });
 }
 
