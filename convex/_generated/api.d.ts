@@ -9,9 +9,13 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as authorization from "../authorization.js";
+import type * as domain_organizationSlug from "../domain/organizationSlug.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
+import type * as organizations from "../organizations.js";
+import type * as security_principal from "../security/principal.js";
 import type * as system from "../system.js";
 
 import type {
@@ -22,9 +26,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  authorization: typeof authorization;
+  "domain/organizationSlug": typeof domain_organizationSlug;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
   http: typeof http;
+  organizations: typeof organizations;
+  "security/principal": typeof security_principal;
   system: typeof system;
 }>;
 
@@ -56,4 +64,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
+  authz: import("@djpanda/convex-authz/_generated/component.js").ComponentApi<"authz">;
 };

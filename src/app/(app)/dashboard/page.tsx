@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/app-shell";
+import { DashboardRouter } from "@/components/organizations/dashboard-router";
 
 export default function DashboardPage() {
-  return <AppShell />;
+  return <DashboardRouter />;
 }

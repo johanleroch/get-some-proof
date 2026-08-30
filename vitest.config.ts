@@ -4,6 +4,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": new URL("./src", import.meta.url).pathname,
+      "@convex": new URL("./convex", import.meta.url).pathname,
     },
   },
   test: {

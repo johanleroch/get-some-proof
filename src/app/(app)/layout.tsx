@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth-server";
 
-export default async function DashboardLayout({
+export default async function ApplicationLayout({
   children,
 }: {
   children: ReactNode;

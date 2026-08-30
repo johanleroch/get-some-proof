@@ -16,7 +16,11 @@ const navigation = [
   { label: "Audit log", icon: ShieldCheck },
 ];
 
-export function AppShell() {
+export function AppShell({
+  organizationName = "Starter workspace",
+}: {
+  organizationName?: string;
+}) {
   const health = useQuery(api.system.health);
 
   return (
@@ -28,7 +32,9 @@ export function AppShell() {
           </div>
           <div>
             <p className="text-sm font-semibold">Convex Admin</p>
-            <p className="text-muted-foreground text-xs">Starter workspace</p>
+            <p className="text-muted-foreground truncate text-xs">
+              {organizationName}
+            </p>
           </div>
         </div>
         <nav aria-label="Primary" className="mt-8 space-y-1">
