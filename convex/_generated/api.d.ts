@@ -25,6 +25,7 @@ import type * as organizations from "../organizations.js";
 import type * as projects from "../projects.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
 import type * as security_principal from "../security/principal.js";
+import type * as seed from "../seed.js";
 import type * as system from "../system.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   projects: typeof projects;
   "security/organizationAccess": typeof security_organizationAccess;
   "security/principal": typeof security_principal;
+  seed: typeof seed;
   system: typeof system;
 }>;
 
