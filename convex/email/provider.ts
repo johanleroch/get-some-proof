@@ -1,4 +1,5 @@
-export type TransactionalEmailTemplate = "verify-email" | "reset-password";
+export type TransactionalEmailTemplate =
+  "verify-email" | "reset-password" | "organization-invitation";
 
 export type TransactionalEmailMessage = {
   to: string;

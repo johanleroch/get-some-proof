@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -8,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
-import { safeInternalRoute } from "@/lib/safe-route";
 
-export function SignInForm() {
+export function SignInForm({
+  callbackURL = "/dashboard",
+}: {
+  callbackURL?: Route;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -21,14 +25,11 @@ export function SignInForm() {
     setPending(true);
 
     const form = new FormData(event.currentTarget);
-    const callbackURL = safeInternalRoute(
-      new URLSearchParams(window.location.search).get("callbackURL"),
-      "/dashboard",
-    );
+    const destination = callbackURL;
     const result = await authClient.signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
-      callbackURL,
+      callbackURL: destination,
     });
 
     setPending(false);
@@ -38,7 +39,7 @@ export function SignInForm() {
       return;
     }
 
-    router.push(callbackURL);
+    router.push(destination);
     router.refresh();
   }
 
@@ -47,7 +48,7 @@ export function SignInForm() {
     setPending(true);
     const result = await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL,
       errorCallbackURL: "/sign-in?error=oauth",
     });
 
@@ -115,7 +116,7 @@ export function SignInForm() {
         New to the starter?{" "}
         <Link
           className="text-primary font-medium hover:underline"
-          href="/sign-up"
+          href={`/sign-up?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Create an account
         </Link>

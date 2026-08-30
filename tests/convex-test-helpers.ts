@@ -23,8 +23,9 @@ export async function authenticatedUser(
   t: ReturnType<typeof convexTest>,
   {
     email = "alice@example.com",
+    emailVerified = true,
     name = "Alice Owner",
-  }: { email?: string; name?: string } = {},
+  }: { email?: string; emailVerified?: boolean; name?: string } = {},
 ) {
   const now = Date.now();
   const user = await t.mutation(components.betterAuth.adapter.create, {
@@ -33,7 +34,7 @@ export async function authenticatedUser(
       data: {
         name,
         email,
-        emailVerified: true,
+        emailVerified,
         createdAt: now,
         updatedAt: now,
       },
@@ -59,7 +60,7 @@ export async function authenticatedUser(
       sessionId: String(session._id),
       tokenIdentifier: `test|${String(user._id)}`,
       email,
-      emailVerified: true,
+      emailVerified,
       name,
     }),
   };

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import SignInPage from "@/app/(auth)/sign-in/page";
 
 describe("sign-in page", () => {
-  it("offers email, password, recovery, signup, and Google paths", () => {
-    render(<SignInPage />);
+  it("offers email, password, recovery, signup, and Google paths", async () => {
+    render(await SignInPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("heading", { name: "Welcome back" }),
@@ -17,7 +17,7 @@ describe("sign-in page", () => {
     ).toHaveAttribute("href", "/forgot-password");
     expect(
       screen.getByRole("link", { name: "Create an account" }),
-    ).toHaveAttribute("href", "/sign-up");
+    ).toHaveAttribute("href", "/sign-up?callbackURL=%2Fdashboard");
     expect(
       screen.getByRole("button", { name: "Continue with Google" }),
     ).toBeInTheDocument();

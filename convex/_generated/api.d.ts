@@ -10,10 +10,13 @@
 
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
+import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
+import type * as invitationRecords from "../invitationRecords.js";
+import type * as invitations from "../invitations.js";
 import type * as organizationAuthorization from "../organizationAuthorization.js";
 import type * as organizations from "../organizations.js";
 import type * as projects from "../projects.js";
@@ -30,10 +33,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authorization: typeof authorization;
+  "domain/invitation": typeof domain_invitation;
   "domain/organizationSlug": typeof domain_organizationSlug;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
   http: typeof http;
+  invitationRecords: typeof invitationRecords;
+  invitations: typeof invitations;
   organizationAuthorization: typeof organizationAuthorization;
   organizations: typeof organizations;
   projects: typeof projects;

@@ -1,6 +1,6 @@
 import type { Route } from "next";
 
-const safeOrganizationSections = new Set(["dashboard", "projects"]);
+const safeOrganizationSections = new Set(["dashboard", "members", "projects"]);
 
 export function organizationSwitchRoute(pathname: string, nextSlug: string) {
   const currentSection = pathname.split("/").filter(Boolean)[2];

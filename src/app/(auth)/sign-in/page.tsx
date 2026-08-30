@@ -5,8 +5,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { safeInternalRoute } from "@/lib/safe-route";
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackURL?: string }>;
+}) {
+  const { callbackURL } = await searchParams;
+  const destination = safeInternalRoute(callbackURL ?? null, "/dashboard");
+
   return (
     <>
       <CardHeader>
@@ -16,7 +24,7 @@ export default function SignInPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <SignInForm />
+        <SignInForm callbackURL={destination} />
       </CardContent>
     </>
   );

@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 
@@ -34,6 +35,11 @@ export function AppShell({
       label: "Projects",
       icon: FolderKanban,
       href: `/org/${organizationSlug}/projects` as Route,
+    },
+    {
+      label: "Members",
+      icon: Users,
+      href: `/org/${organizationSlug}/members` as Route,
     },
   ];
 

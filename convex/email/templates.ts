@@ -60,3 +60,24 @@ export function buildResetPasswordEmail(email: string, url: string) {
     url,
   });
 }
+
+export function buildOrganizationInvitationEmail({
+  email,
+  organizationName,
+  role,
+  url,
+}: {
+  email: string;
+  organizationName: string;
+  role: "admin" | "editor" | "viewer";
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Accept invitation",
+    description: `You were invited to join ${organizationName} as ${role}. This link expires in seven days.`,
+    email,
+    subject: `Join ${organizationName}`,
+    template: "organization-invitation",
+    url,
+  });
+}

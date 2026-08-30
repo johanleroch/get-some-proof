@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
-export function SignUpForm() {
+export function SignUpForm({
+  callbackURL = "/dashboard",
+}: {
+  callbackURL?: Route;
+}) {
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,7 +28,7 @@ export function SignUpForm() {
       name: String(form.get("name")),
       email: String(form.get("email")),
       password: String(form.get("password")),
-      callbackURL: "/dashboard",
+      callbackURL,
     });
 
     setPending(false);
@@ -46,7 +51,7 @@ export function SignUpForm() {
         </p>
         <Link
           className="text-primary text-sm font-medium hover:underline"
-          href="/sign-in"
+          href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Return to sign in
         </Link>
@@ -99,7 +104,7 @@ export function SignUpForm() {
         Already have an account?{" "}
         <Link
           className="text-primary font-medium hover:underline"
-          href="/sign-in"
+          href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Sign in
         </Link>
