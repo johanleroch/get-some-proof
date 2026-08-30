@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as auditEvents from "../auditEvents.js";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
 import type * as domain_invitation from "../domain/invitation.js";
@@ -32,6 +33,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auditEvents: typeof auditEvents;
   auth: typeof auth;
   authorization: typeof authorization;
   "domain/invitation": typeof domain_invitation;

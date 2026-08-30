@@ -7,6 +7,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization, type OrganizationRole } from "./authorization";
 import {
   organizationAccessDenied,
@@ -239,11 +240,25 @@ export const changeRole = mutation({
       undefined,
       access.principal.actorId,
     );
-    await ctx.db.patch(membership._id, { updatedAt: Date.now() });
+    const now = Date.now();
+    await ctx.db.patch(membership._id, { updatedAt: now });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "membership.role_changed",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "membership",
+      targetId: String(membership._id),
+      targetLabel:
+        membership.displayName ?? membership.email ?? "Unknown Member",
+      previousValue: currentRole ?? undefined,
+      newValue: args.role,
+      occurredAt: now,
+    });
 
     return summarizeMembership(ctx, {
       ...membership,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
   },
 });
@@ -288,6 +303,18 @@ export const remove = mutation({
       deactivatedAt: now,
       updatedAt: now,
     });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "membership.removed",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "membership",
+      targetId: String(membership._id),
+      targetLabel:
+        membership.displayName ?? membership.email ?? "Unknown Member",
+      previousValue: targetRole ?? undefined,
+      occurredAt: now,
+    });
     return null;
   },
 });
@@ -321,6 +348,20 @@ export const leave = mutation({
       status: "inactive",
       deactivatedAt: now,
       updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "membership.left",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "membership",
+      targetId: String(access.membership._id),
+      targetLabel:
+        access.membership.displayName ??
+        access.membership.email ??
+        "Unknown Member",
+      previousValue: currentRole ?? undefined,
+      occurredAt: now,
     });
     return null;
   },

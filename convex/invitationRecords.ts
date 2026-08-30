@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
   invitationLifetimeMs,
@@ -42,7 +43,7 @@ async function requireTrustedInvitationManager(
     return organizationAccessDenied();
   }
 
-  return organization;
+  return { membership, organization };
 }
 
 export const createRecord = internalMutation({
@@ -61,7 +62,7 @@ export const createRecord = internalMutation({
     role: invitationRoleValidator,
   }),
   handler: async (ctx, args) => {
-    const organization = await requireTrustedInvitationManager(
+    const { membership, organization } = await requireTrustedInvitationManager(
       ctx,
       args.organizationId,
       args.actorId,
@@ -97,6 +98,17 @@ export const createRecord = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: organization._id,
+      eventType: "invitation.created",
+      actorUserId: args.actorId,
+      actorDisplayName: membership.displayName ?? "Unknown Member",
+      targetType: "invitation",
+      targetId: String(invitationId),
+      targetLabel: email,
+      newValue: args.role,
+      occurredAt: now,
+    });
 
     return {
       invitationId,
@@ -122,7 +134,7 @@ export const rotateRecord = internalMutation({
     role: invitationRoleValidator,
   }),
   handler: async (ctx, args) => {
-    const organization = await requireTrustedInvitationManager(
+    const { membership, organization } = await requireTrustedInvitationManager(
       ctx,
       args.organizationId,
       args.actorId,
@@ -147,6 +159,18 @@ export const rotateRecord = internalMutation({
       providerMessageId: undefined,
       deliveryError: undefined,
       updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: organization._id,
+      eventType: args.role ? "invitation.role_changed" : "invitation.resent",
+      actorUserId: args.actorId,
+      actorDisplayName: membership.displayName ?? "Unknown Member",
+      targetType: "invitation",
+      targetId: String(invitation._id),
+      targetLabel: invitation.email,
+      previousValue: args.role ? invitation.role : undefined,
+      newValue: args.role ? role : undefined,
+      occurredAt: now,
     });
 
     return {

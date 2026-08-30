@@ -66,10 +66,13 @@ export function AppShell({
               {label}
             </Link>
           ))}
-          <span className="text-muted-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm opacity-60">
+          <Link
+            className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+            href={`/org/${organizationSlug}/audit` as Route}
+          >
             <ShieldCheck aria-hidden="true" className="size-4" />
             Audit log
-          </span>
+          </Link>
         </nav>
       </aside>
       <main className="md:pl-64">

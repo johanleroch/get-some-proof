@@ -7,6 +7,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { recordOrganizationAuditEvent } from "./auditEvents";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
 const projectSummary = v.object({
@@ -153,6 +154,16 @@ export const create = mutation({
     if (!project) {
       return projectUnavailable();
     }
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "project.created",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "project",
+      targetId: String(project._id),
+      targetLabel: project.name,
+      occurredAt: now,
+    });
 
     return summarizeProject(project);
   },
@@ -182,13 +193,26 @@ export const update = mutation({
       return projectUnavailable();
     }
 
+    const now = Date.now();
     const patch = {
       name: normalizeProjectName(args.name),
       description: normalizeProjectDescription(args.description),
       updatedByUserId: access.principal.actorId,
-      updatedAt: Date.now(),
+      updatedAt: now,
     };
     await ctx.db.patch(project._id, patch);
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "project.updated",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "project",
+      targetId: String(project._id),
+      targetLabel: patch.name,
+      previousValue: project.name,
+      newValue: patch.name,
+      occurredAt: now,
+    });
 
     return summarizeProject({ ...project, ...patch });
   },
@@ -224,6 +248,18 @@ export const archive = mutation({
       updatedAt: now,
     };
     await ctx.db.patch(project._id, patch);
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "project.archived",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "project",
+      targetId: String(project._id),
+      targetLabel: project.name,
+      previousValue: project.status,
+      newValue: "archived",
+      occurredAt: now,
+    });
 
     return summarizeProject({ ...project, ...patch });
   },
@@ -251,6 +287,17 @@ export const remove = mutation({
       return projectUnavailable();
     }
 
+    const now = Date.now();
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "project.deleted",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "project",
+      targetId: String(project._id),
+      targetLabel: project.name,
+      occurredAt: now,
+    });
     await ctx.db.delete(project._id);
     return { deleted: true };
   },

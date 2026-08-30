@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
   buildOrganizationSlug,
@@ -92,6 +93,15 @@ export const create = mutation({
       undefined,
       principal.actorId,
     );
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId,
+      eventType: "organization.created",
+      actorUserId: principal.actorId,
+      actorDisplayName: principal.name,
+      targetType: "organization",
+      targetId: String(organizationId),
+      targetLabel: name,
+    });
 
     return {
       id: organizationId,
@@ -175,9 +185,22 @@ export const rename = mutation({
       });
     }
 
+    const now = Date.now();
     await ctx.db.patch(access.organization._id, {
       name,
-      updatedAt: Date.now(),
+      updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "organization.renamed",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "organization",
+      targetId: String(access.organization._id),
+      targetLabel: name,
+      previousValue: access.organization.name,
+      newValue: name,
+      occurredAt: now,
     });
 
     return {

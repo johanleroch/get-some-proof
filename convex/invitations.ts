@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, mutation, query, type ActionCtx } from "./_generated/server";
+import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
   hashInvitationToken,
@@ -230,6 +231,17 @@ export const revoke = mutation({
       revokedAt: now,
       updatedAt: now,
     });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "invitation.revoked",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "invitation",
+      targetId: String(invitation._id),
+      targetLabel: invitation.email,
+      previousValue: invitation.role,
+      occurredAt: now,
+    });
     return null;
   },
 });
@@ -271,6 +283,7 @@ export const accept = mutation({
       )
       .unique();
     const now = Date.now();
+    let membershipId: Id<"memberships">;
     if (membership) {
       await ctx.db.patch(membership._id, {
         displayName: principal.name,
@@ -279,8 +292,9 @@ export const accept = mutation({
         deactivatedAt: undefined,
         updatedAt: now,
       });
+      membershipId = membership._id;
     } else {
-      await ctx.db.insert("memberships", {
+      membershipId = await ctx.db.insert("memberships", {
         organizationId: organization._id,
         userId: principal.actorId,
         displayName: principal.name,
@@ -303,6 +317,28 @@ export const accept = mutation({
       acceptedByUserId: principal.actorId,
       acceptedAt: now,
       updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: organization._id,
+      eventType: "invitation.accepted",
+      actorUserId: principal.actorId,
+      actorDisplayName: principal.name,
+      targetType: "invitation",
+      targetId: String(invitation._id),
+      targetLabel: invitation.email,
+      newValue: invitation.role,
+      occurredAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: organization._id,
+      eventType: "membership.activated",
+      actorUserId: principal.actorId,
+      actorDisplayName: principal.name,
+      targetType: "membership",
+      targetId: String(membershipId),
+      targetLabel: principal.name,
+      newValue: invitation.role,
+      occurredAt: now,
     });
     return { organizationSlug: organization.slug };
   },
