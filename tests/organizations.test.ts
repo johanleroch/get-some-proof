@@ -185,6 +185,15 @@ describe("Organization onboarding", () => {
     );
 
     await expect(
+      inactiveAdmin.client.query(api.organizations.listMine, {}),
+    ).resolves.toEqual([]);
+    await expect(
+      inactiveAdmin.client.query(api.organizations.getBySlug, {
+        slug: created.slug,
+      }),
+    ).resolves.toBeNull();
+
+    await expect(
       inactiveAdmin.client.mutation(api.organizations.rename, {
         organizationId: created.id,
         name: "Should Not Change",

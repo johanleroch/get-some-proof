@@ -12,6 +12,7 @@ import {
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 
 export function AppShell({
   children,
@@ -43,12 +44,10 @@ export function AppShell({
           <div className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-xl">
             <Activity aria-hidden="true" className="size-4" />
           </div>
-          <div>
-            <p className="text-sm font-semibold">Convex Admin</p>
-            <p className="text-muted-foreground truncate text-xs">
-              {organizationName}
-            </p>
-          </div>
+          <OrganizationSwitcher
+            currentName={organizationName}
+            currentSlug={organizationSlug}
+          />
         </div>
         <nav aria-label="Primary" className="mt-8 space-y-1">
           {navigation.map(({ href, icon: Icon, label }) => (
