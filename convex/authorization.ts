@@ -1,4 +1,9 @@
-import { Authz, definePermissions, defineRoles } from "@djpanda/convex-authz";
+import {
+  Authz,
+  definePermissions,
+  defineRoles,
+  type PermissionString,
+} from "@djpanda/convex-authz";
 
 import { components } from "./_generated/api";
 
@@ -56,6 +61,9 @@ export const roles = defineRoles(permissions, {
     audit: ["read"],
   },
 });
+
+export type OrganizationPermission = PermissionString<typeof permissions>;
+export type OrganizationRole = keyof typeof roles;
 
 export const authz = new Authz(components.authz, {
   permissions,

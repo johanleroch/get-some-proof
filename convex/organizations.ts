@@ -7,6 +7,10 @@ import {
   normalizeOrganizationName,
   randomSlugSuffix,
 } from "./domain/organizationSlug";
+import {
+  findActiveOrganizationAccess,
+  requireOrganizationPermission,
+} from "./security/organizationAccess";
 import { requireVerifiedPrincipal } from "./security/principal";
 
 const organizationSummary = v.object({
@@ -129,33 +133,18 @@ export const getBySlug = query({
   },
   returns: v.union(v.null(), organizationSummary),
   handler: async (ctx, args) => {
-    const principal = await requireVerifiedPrincipal(ctx);
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (index) => index.eq("slug", args.slug))
-      .unique();
+    const access = await findActiveOrganizationAccess(ctx, {
+      slug: args.slug,
+    });
 
-    if (!organization) {
-      return null;
-    }
-
-    const membership = await ctx.db
-      .query("memberships")
-      .withIndex("by_organization_user", (index) =>
-        index
-          .eq("organizationId", organization._id)
-          .eq("userId", principal.actorId),
-      )
-      .unique();
-
-    if (!membership || membership.status !== "active") {
+    if (!access) {
       return null;
     }
 
     return {
-      id: organization._id,
-      name: organization.name,
-      slug: organization.slug,
+      id: access.organization._id,
+      name: access.organization.name,
+      slug: access.organization.slug,
     };
   },
 });
@@ -167,35 +156,9 @@ export const rename = mutation({
   },
   returns: organizationSummary,
   handler: async (ctx, args) => {
-    const principal = await requireVerifiedPrincipal(ctx);
-    const organization = await ctx.db.get(args.organizationId);
-
-    if (!organization) {
-      throw new ConvexError({
-        code: "ORGANIZATION_UNAVAILABLE",
-        message: "Organization unavailable.",
-      });
-    }
-
-    const membership = await ctx.db
-      .query("memberships")
-      .withIndex("by_organization_user", (index) =>
-        index
-          .eq("organizationId", organization._id)
-          .eq("userId", principal.actorId),
-      )
-      .unique();
-
-    if (!membership || membership.status !== "active") {
-      throw new ConvexError({
-        code: "ORGANIZATION_UNAVAILABLE",
-        message: "Organization unavailable.",
-      });
-    }
-
-    await authzForOrganization(String(organization._id)).require(
+    const access = await requireOrganizationPermission(
       ctx,
-      principal.actorId,
+      { organizationId: args.organizationId },
       "organization:update",
     );
 
@@ -210,15 +173,15 @@ export const rename = mutation({
       });
     }
 
-    await ctx.db.patch(organization._id, {
+    await ctx.db.patch(access.organization._id, {
       name,
       updatedAt: Date.now(),
     });
 
     return {
-      id: organization._id,
+      id: access.organization._id,
       name,
-      slug: organization.slug,
+      slug: access.organization.slug,
     };
   },
 });
