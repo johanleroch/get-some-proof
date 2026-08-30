@@ -1,5 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
+import type { Route } from "next";
+import Link from "next/link";
 import {
   Activity,
   FolderKanban,
@@ -10,18 +13,28 @@ import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 
-const navigation = [
-  { label: "Overview", icon: LayoutDashboard },
-  { label: "Projects", icon: FolderKanban },
-  { label: "Audit log", icon: ShieldCheck },
-];
-
 export function AppShell({
-  organizationName = "Starter workspace",
+  children,
+  organizationName,
+  organizationSlug,
 }: {
-  organizationName?: string;
+  children: ReactNode;
+  organizationName: string;
+  organizationSlug: string;
 }) {
   const health = useQuery(api.system.health);
+  const navigation = [
+    {
+      label: "Overview",
+      icon: LayoutDashboard,
+      href: `/org/${organizationSlug}/dashboard` as Route,
+    },
+    {
+      label: "Projects",
+      icon: FolderKanban,
+      href: `/org/${organizationSlug}/projects` as Route,
+    },
+  ];
 
   return (
     <div className="bg-muted/35 min-h-screen">
@@ -38,19 +51,20 @@ export function AppShell({
           </div>
         </div>
         <nav aria-label="Primary" className="mt-8 space-y-1">
-          {navigation.map(({ icon: Icon, label }, index) => (
-            <span
-              className={
-                index === 0
-                  ? "bg-sidebar-accent flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium"
-                  : "text-muted-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm"
-              }
-              key={label}
+          {navigation.map(({ href, icon: Icon, label }) => (
+            <Link
+              className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+              href={href}
+              key={href}
             >
               <Icon aria-hidden="true" className="size-4" />
               {label}
-            </span>
+            </Link>
           ))}
+          <span className="text-muted-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm opacity-60">
+            <ShieldCheck aria-hidden="true" className="size-4" />
+            Audit log
+          </span>
         </nav>
       </aside>
       <main className="md:pl-64">
@@ -58,41 +72,12 @@ export function AppShell({
           <p className="text-sm font-medium md:hidden">Convex Admin</p>
           <p className="text-muted-foreground ml-auto text-sm">Setup preview</p>
         </header>
-        <div className="mx-auto max-w-7xl p-5 md:p-8">
-          <div className="mb-8">
-            <p className="text-primary text-sm font-medium">Overview</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-              Your admin foundation is ready
-            </h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl">
-              Authentication, Organizations, permissions, Projects, and audit
-              activity will land here as the implementation tickets progress.
-            </p>
-          </div>
-          <section
-            aria-label="Setup status"
-            className="grid gap-4 lg:grid-cols-3"
-          >
-            {[
-              ["Next.js", "App Router shell"],
-              [
-                "Convex",
-                health?.status === "ok" ? "Client connected" : "Connecting…",
-              ],
-              ["Security", "Pinned dependency baseline"],
-            ].map(([title, description]) => (
-              <div
-                className="border-border bg-card rounded-2xl border p-5 shadow-sm"
-                key={title}
-              >
-                <p className="text-sm font-medium">{title}</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {description}
-                </p>
-              </div>
-            ))}
-          </section>
-        </div>
+        <div className="mx-auto max-w-7xl p-5 md:p-8">{children}</div>
+        <span className="sr-only" aria-live="polite">
+          {health?.status === "ok"
+            ? "Convex connected"
+            : "Connecting to Convex"}
+        </span>
       </main>
     </div>
   );

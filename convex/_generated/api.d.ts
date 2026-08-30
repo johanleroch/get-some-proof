@@ -16,6 +16,7 @@ import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
 import type * as organizationAuthorization from "../organizationAuthorization.js";
 import type * as organizations from "../organizations.js";
+import type * as projects from "../projects.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
 import type * as security_principal from "../security/principal.js";
 import type * as system from "../system.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   organizationAuthorization: typeof organizationAuthorization;
   organizations: typeof organizations;
+  projects: typeof projects;
   "security/organizationAccess": typeof security_organizationAccess;
   "security/principal": typeof security_principal;
   system: typeof system;

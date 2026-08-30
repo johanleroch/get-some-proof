@@ -1,94 +1,15 @@
-import authzTest from "@djpanda/convex-authz/test";
-import betterAuthTest from "@convex-dev/better-auth/test";
-import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 
 import { api, components } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
-import { authzForOrganization } from "@convex/authorization";
-import schema from "@convex/schema";
-
-const modules = import.meta.glob("../convex/**/*.*s");
-
-async function authenticatedUser(
-  t: ReturnType<typeof convexTest>,
-  {
-    email = "alice@example.com",
-    name = "Alice Owner",
-  }: { email?: string; name?: string } = {},
-) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name,
-        email,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: String(user._id),
-        token: `test-session-token-${email}`,
-        expiresAt: now + 60_000,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-
-  return {
-    actorId: String(user._id),
-    client: t.withIdentity({
-      subject: String(user._id),
-      sessionId: String(session._id),
-      tokenIdentifier: `test|${String(user._id)}`,
-      email,
-      emailVerified: true,
-      name,
-    }),
-  };
-}
-
-async function addMemberWithRole(
-  t: ReturnType<typeof convexTest>,
-  organizationId: Id<"organizations">,
-  actorId: string,
-  role: "owner" | "admin" | "editor" | "viewer",
-  status: "active" | "inactive" = "active",
-) {
-  await t.run(async (ctx) => {
-    const now = Date.now();
-    await ctx.db.insert("memberships", {
-      organizationId,
-      userId: actorId,
-      status,
-      createdAt: now,
-      updatedAt: now,
-      deactivatedAt: status === "inactive" ? now : undefined,
-    });
-    await authzForOrganization(organizationId).assignRole(
-      ctx,
-      actorId,
-      role,
-      undefined,
-      undefined,
-      actorId,
-    );
-  });
-}
+import {
+  addMemberWithRole,
+  authenticatedUser,
+  createConvexTest,
+} from "./convex-test-helpers";
 
 describe("Organization onboarding", () => {
   it("creates an Organization, active Membership, and Owner assignment", async () => {
-    const t = convexTest(schema, modules);
-    betterAuthTest.register(t);
-    authzTest.register(t);
+    const t = createConvexTest();
     const alice = await authenticatedUser(t);
 
     const created = await alice.client.mutation(api.organizations.create, {
@@ -132,9 +53,7 @@ describe("Organization onboarding", () => {
   });
 
   it("does not treat another Organization slug as access evidence", async () => {
-    const t = convexTest(schema, modules);
-    betterAuthTest.register(t);
-    authzTest.register(t);
+    const t = createConvexTest();
     const alice = await authenticatedUser(t);
     const bob = await authenticatedUser(t, {
       email: "bob@example.com",
@@ -171,9 +90,7 @@ describe("Organization onboarding", () => {
   ] as const)(
     "enforces the %s role at the public Organization mutation",
     async (role, canRename) => {
-      const t = convexTest(schema, modules);
-      betterAuthTest.register(t);
-      authzTest.register(t);
+      const t = createConvexTest();
       const creator = await authenticatedUser(t);
       const created = await creator.client.mutation(api.organizations.create, {
         name: "Role Matrix Company",
@@ -250,9 +167,7 @@ describe("Organization onboarding", () => {
   );
 
   it("rejects an inactive Membership even when an authorization role remains", async () => {
-    const t = convexTest(schema, modules);
-    betterAuthTest.register(t);
-    authzTest.register(t);
+    const t = createConvexTest();
     const creator = await authenticatedUser(t);
     const created = await creator.client.mutation(api.organizations.create, {
       name: "Inactive Membership Company",

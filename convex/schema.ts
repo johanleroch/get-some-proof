@@ -20,4 +20,17 @@ export default defineSchema({
     .index("by_organization_user", ["organizationId", "userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_organization_status", ["organizationId", "status"]),
+  projects: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.string(),
+    status: v.union(v.literal("active"), v.literal("archived")),
+    createdByUserId: v.string(),
+    updatedByUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    archivedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_status", ["organizationId", "status"]),
 });
