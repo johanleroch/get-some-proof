@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { productName } from "@/lib/brand";
 import { organizationSwitchRoute } from "@/lib/organization-switch-route";
 
 export function OrganizationSwitcher({
@@ -39,7 +40,7 @@ export function OrganizationSwitcher({
 
   return (
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold">Convex Admin</p>
+      <p className="text-sm font-semibold">{productName}</p>
       {organizations && organizations.length > 1 ? (
         <label className="mt-1 block">
           <span className="sr-only">Switch Organization</span>

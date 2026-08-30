@@ -66,7 +66,7 @@ describe("OrganizationSwitcher", () => {
     );
 
     await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith("/org/acme-1234/dashboard");
+      expect(mocks.replace).toHaveBeenCalledWith("/org/acme-1234/settings");
     });
   });
 });

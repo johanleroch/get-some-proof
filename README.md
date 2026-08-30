@@ -80,3 +80,5 @@ Run all non-secret-dependent checks with `pnpm check`.
 ## Architecture
 
 The accepted product scope and security decisions are documented in `docs/product-scope.md`, `CONTEXT.md`, and `docs/adr/`. The primary-source authentication and authorization research is in `docs/research/authentication-authorization-multitenancy.md`.
+
+Brand, typography, theme, and chart-token replacement points are documented in [`docs/customization.md`](docs/customization.md).

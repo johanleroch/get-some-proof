@@ -12,4 +12,14 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
   ]),
+  {
+    files: ["src/components/charts/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);

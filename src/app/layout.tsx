@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { productDescription, productName } from "@/lib/brand";
 import { getPublicEnvironment } from "@/lib/env/public-env";
+import { themeInitializationScript } from "@/lib/theme";
 
 import "./globals.css";
 
@@ -19,18 +21,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Convex Admin Starter",
-    template: "%s · Convex Admin Starter",
+    default: productName,
+    template: `%s · ${productName}`,
   },
-  description:
-    "A production-oriented multi-tenant administration starter built with Next.js and Convex.",
+  description: productDescription,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const environment = getPublicEnvironment();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {environment.configured ? (
           <ConvexClientProvider url={environment.convexUrl}>

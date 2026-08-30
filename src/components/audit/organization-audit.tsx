@@ -36,6 +36,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
 
   return (
     <AppShell
+      organizationId={organization.id}
       organizationName={organization.name}
       organizationSlug={organization.slug}
     >
