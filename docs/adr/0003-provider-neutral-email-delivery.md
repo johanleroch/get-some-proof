@@ -1,0 +1,3 @@
+# Keep transactional email delivery provider-neutral
+
+Invitation lifecycle, tokens, membership creation, and role assignment belong to the application and never depend directly on an email vendor SDK. The starter ships an application-wide transactional-email port with a Resend adapter as its initial implementation; invitations and authentication messages such as email verification and password reset all pass through that port, while provider-specific types and credentials remain inside its adapter. Email templates are owned and rendered by the repository rather than hosted by the provider, so the adopter can replace Resend with Lumail or another provider without changing workflows, content, or callers.
