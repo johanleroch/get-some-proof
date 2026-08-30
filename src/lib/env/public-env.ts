@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const publicEnvironmentSchema = z.object({
   NEXT_PUBLIC_CONVEX_URL: z.url().startsWith("https://"),
+  NEXT_PUBLIC_CONVEX_SITE_URL: z.url().startsWith("https://"),
   NEXT_PUBLIC_SITE_URL: z.url(),
 });
 
@@ -11,6 +12,7 @@ export type PublicEnvironment =
   | {
       configured: true;
       convexUrl: string;
+      convexSiteUrl: string;
       siteUrl: string;
     }
   | {
@@ -27,6 +29,7 @@ export function readPublicEnvironment(
     return {
       configured: true,
       convexUrl: result.data.NEXT_PUBLIC_CONVEX_URL,
+      convexSiteUrl: result.data.NEXT_PUBLIC_CONVEX_SITE_URL,
       siteUrl: result.data.NEXT_PUBLIC_SITE_URL,
     };
   }
@@ -40,6 +43,7 @@ export function readPublicEnvironment(
 export function getPublicEnvironment(): PublicEnvironment {
   return readPublicEnvironment({
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
+    NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   });
 }

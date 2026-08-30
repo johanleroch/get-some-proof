@@ -1,18 +1,15 @@
-import { AppShell } from "@/components/app-shell";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { redirect } from "next/navigation";
+
 import { SetupRequired } from "@/components/setup-required";
+import { isAuthenticated } from "@/lib/auth-server";
 import { getPublicEnvironment } from "@/lib/env/public-env";
 
-export default function HomePage() {
+export default async function HomePage() {
   const environment = getPublicEnvironment();
 
   if (!environment.configured) {
     return <SetupRequired missing={environment.missing} />;
   }
 
-  return (
-    <ConvexClientProvider url={environment.convexUrl}>
-      <AppShell />
-    </ConvexClientProvider>
-  );
+  redirect((await isAuthenticated()) ? "/dashboard" : "/sign-in");
 }

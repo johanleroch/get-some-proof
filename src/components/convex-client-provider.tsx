@@ -1,7 +1,13 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import {
+  ConvexBetterAuthProvider,
+  type AuthClient as ConvexBetterAuthClient,
+} from "@convex-dev/better-auth/react";
+import { ConvexReactClient } from "convex/react";
+
+import { authClient } from "@/lib/auth-client";
 
 export function ConvexClientProvider({
   children,
@@ -12,5 +18,14 @@ export function ConvexClientProvider({
 }) {
   const [client] = useState(() => new ConvexReactClient(url));
 
-  return <ConvexProvider client={client}>{children}</ConvexProvider>;
+  return (
+    <ConvexBetterAuthProvider
+      // The 0.12.5 provider declaration narrows Better Auth 1.6 session data to
+      // `never`; both packages share the same runtime client contract.
+      authClient={authClient as unknown as ConvexBetterAuthClient}
+      client={client}
+    >
+      {children}
+    </ConvexBetterAuthProvider>
+  );
 }

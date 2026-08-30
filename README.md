@@ -25,6 +25,46 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000). Until the required public variables are configured, the application renders an actionable setup screen instead of failing during the build.
 
+Add the local site URL to `.env.local` if it is not already present:
+
+```dotenv
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+## Authentication setup
+
+Better Auth runs inside the Convex deployment. Configure its site URL and a unique secret:
+
+```bash
+pnpm convex env set SITE_URL http://localhost:3000
+pnpm convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 48)"
+```
+
+For local API checks that must not send mail, use the explicit test adapter. It returns synthetic provider receipts and deliberately does not expose verification or reset tokens:
+
+```bash
+pnpm convex env set EMAIL_PROVIDER test
+```
+
+For real verification and password-reset messages, configure the included Resend adapter instead:
+
+```bash
+pnpm convex env set EMAIL_PROVIDER resend
+pnpm convex env set RESEND_API_KEY re_your_key
+pnpm convex env set EMAIL_FROM "Convex Admin Starter <noreply@your-domain.com>"
+```
+
+Google sign-in is enabled when both credentials are present in the Convex environment:
+
+```bash
+pnpm convex env set GOOGLE_CLIENT_ID your-client-id
+pnpm convex env set GOOGLE_CLIENT_SECRET your-client-secret
+```
+
+Register `http://localhost:3000/api/auth/callback/google` as the local authorized redirect URI in Google Cloud. Use the equivalent application origin in deployed environments. Omitting the Google credentials removes the server provider without changing code.
+
+Never put `BETTER_AUTH_SECRET`, provider secrets, or Resend credentials in a `NEXT_PUBLIC_` variable.
+
 ## Quality commands
 
 ```bash

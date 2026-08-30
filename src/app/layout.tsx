@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { getPublicEnvironment } from "@/lib/env/public-env";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,10 +27,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const environment = getPublicEnvironment();
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        {environment.configured ? (
+          <ConvexClientProvider url={environment.convexUrl}>
+            {children}
+          </ConvexClientProvider>
+        ) : (
+          children
+        )}
       </body>
     </html>
   );
