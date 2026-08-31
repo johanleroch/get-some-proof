@@ -28,6 +28,11 @@ export function validateTrustedConfig(config) {
   if (!Array.isArray(config.screens) || config.screens.length === 0) {
     throw new Error("The visual evidence config must define screens");
   }
+  for (const screen of config.screens) {
+    if (!SAFE_TITLE.test(screen.title ?? "")) {
+      throw new Error(`Invalid screenshot title: ${screen.slug ?? "unknown"}`);
+    }
+  }
   return config;
 }
 

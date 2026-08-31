@@ -32,9 +32,21 @@ describe("visual evidence artifact contract", () => {
         bucket: "screenshots",
         endpoint: "https://account.r2.cloudflarestorage.com",
         publicBaseUrl: "https://screenshots.example.com",
-        screens: [{ slug: "sign-in" }],
+        screens: [{ slug: "sign-in", title: "Sign in" }],
       }).bucket,
     ).toBe("screenshots");
+  });
+
+  it("rejects unsafe screenshot titles before capture", () => {
+    expect(() =>
+      validateTrustedConfig({
+        project: "convex-admin-starter",
+        bucket: "screenshots",
+        endpoint: "https://account.r2.cloudflarestorage.com",
+        publicBaseUrl: "https://screenshots.example.com",
+        screens: [{ slug: "sign-in-dark", title: "Sign in — dark" }],
+      }),
+    ).toThrow(/Invalid screenshot title/);
   });
   it("accepts a scoped manifest and creates an immutable object key", () => {
     const validated = validateManifest(manifest, "owner/repository");

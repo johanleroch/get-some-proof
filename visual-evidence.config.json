@@ -34,14 +34,14 @@
     },
     {
       "slug": "sign-in-dark",
-      "title": "Sign in — dark",
+      "title": "Sign in - dark",
       "path": "/sign-in",
       "heading": "Welcome back",
       "theme": "dark"
     },
     {
       "slug": "sign-up-dark",
-      "title": "Sign up — dark",
+      "title": "Sign up - dark",
       "path": "/sign-up",
       "heading": "Create your account",
       "theme": "dark"
