@@ -22,6 +22,8 @@ Use a clean-clone installation when changing dependencies, the toolchain, the bu
 
 Completion criterion: every applicable local command exits successfully and the worktree contains only the intended changes.
 
+For user-visible work, also follow `.agents/skills/visual-evidence/SKILL.md`: update the canonical screen list when necessary, run `pnpm test:visual`, and inspect the generated desktop and mobile images. Screenshots containing secrets, personal data, or unrelated browser state must never be published.
+
 ## 3. Run the Matt review gate
 
 Use `/code-review` against the pull request's base. Resolve every Standards or Spec finding that affects correctness or an acceptance criterion. Re-run the affected local checks after review changes.
@@ -39,6 +41,8 @@ gh pr checks <pr-number> --watch
 Treat a failed, cancelled, skipped, pending, queued, or missing required check as active work. Inspect the failing job, reproduce its exact signal locally where possible, apply `/diagnosing-bugs`, push the correction, and observe the new run. Local success never substitutes for the remote gate.
 
 Completion criterion: every required check on the pull request's current head commit has conclusion `success`.
+
+For user-visible work, the `Visual evidence capture` check must succeed and the trusted publisher must update the pull request's `Visual evidence` comment with R2 URLs for the current head commit. A GitHub artifact alone is not published visual evidence.
 
 ## 5. Synchronize the tracker
 

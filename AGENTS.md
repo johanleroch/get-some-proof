@@ -18,6 +18,10 @@ This is a single-context repository using a root `CONTEXT.md` and ADRs under `do
 
 When finishing implementation, a bug fix, an issue, or a pull request, follow `docs/agents/delivery.md`. A change is complete only after its remote CI checks succeed and its issue and pull-request checklists match the verified evidence.
 
+### Visual evidence
+
+For every issue, implementation, bug fix, or pull request that changes or diagnoses user-visible behavior, use `.agents/skills/visual-evidence/SKILL.md` automatically. Capture the current commit and publish its screenshots to the issue or pull request before delivery, even when the user does not explicitly ask for screenshots.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

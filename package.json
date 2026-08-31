@@ -17,6 +17,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test e2e/visual-evidence.spec.ts",
+    "visual:manifest": "node scripts/visual-evidence/build-manifest.mjs",
+    "visual:publish": "node scripts/visual-evidence/publish.mjs",
+    "visual:publish:issue": "node scripts/visual-evidence/publish-issue.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -47,6 +51,7 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1121.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/jest-dom": "7.0.1",

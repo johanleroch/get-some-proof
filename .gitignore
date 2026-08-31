@@ -13,6 +13,7 @@
 /coverage
 /playwright-report
 /test-results
+/visual-evidence
 /.scratch
 *.tsbuildinfo
 

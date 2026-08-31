@@ -1,0 +1,49 @@
+name: Visual evidence publish
+
+on:
+  workflow_run:
+    workflows: [Visual evidence capture]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: visual-publish-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: visual-evidence-${{ github.event.workflow_run.id }}
+          path: visual-evidence
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Publish to R2 and synchronize the PR comment
+        run: pnpm visual:publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          VISUAL_EVIDENCE_DIR: visual-evidence
+          VISUAL_EVIDENCE_EXPECTED_RUN_ID: ${{ github.event.workflow_run.id }}
+          VISUAL_EVIDENCE_EXPECTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          VISUAL_EVIDENCE_EXPECTED_TARGET_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}

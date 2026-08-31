@@ -1,0 +1,20 @@
+{
+  "project": "convex-admin-starter",
+  "bucket": "screenshots",
+  "endpoint": "https://c5766b3d8c072b152df6d2f818707089.r2.cloudflarestorage.com",
+  "publicBaseUrl": "https://screenshots.johancode.fr",
+  "screens": [
+    {
+      "slug": "sign-in",
+      "title": "Sign in",
+      "path": "/sign-in",
+      "heading": "Welcome back"
+    },
+    {
+      "slug": "forgot-password",
+      "title": "Forgot password",
+      "path": "/forgot-password",
+      "heading": "Reset your password"
+    }
+  ]
+}
