@@ -14,6 +14,10 @@ The project uses the default Matt Pocock triage vocabulary. See `docs/agents/tri
 
 This is a single-context repository using a root `CONTEXT.md` and ADRs under `docs/adr/`. See `docs/agents/domain.md`.
 
+### Delivery gate
+
+When finishing implementation, a bug fix, an issue, or a pull request, follow `docs/agents/delivery.md`. A change is complete only after its remote CI checks succeed and its issue and pull-request checklists match the verified evidence.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

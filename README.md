@@ -4,7 +4,7 @@ An opinionated, production-oriented foundation for secure multi-tenant administr
 
 ## Requirements
 
-- Node.js 20.9 or newer
+- Node.js 24 or newer
 - pnpm 11.24.0 through Corepack
 - A Convex account
 
