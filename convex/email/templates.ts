@@ -33,6 +33,7 @@ function buildActionEmail({
     to: email,
     subject,
     template,
+    actionUrl: url,
     text: `${description}\n\n${url}\n\nIf you did not request this, you can ignore this email.`,
     html: `<div style="font-family:ui-sans-serif,system-ui;max-width:560px;margin:0 auto;color:#171717"><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(description)}</p><p style="margin:28px 0"><a href="${safeUrl}" style="background:#4f46e5;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">${escapeHtml(action)}</a></p><p style="color:#737373;font-size:14px">If you did not request this, you can ignore this email.</p></div>`,
   };

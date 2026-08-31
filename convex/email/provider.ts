@@ -9,6 +9,7 @@ export type TransactionalEmailMessage = {
   html: string;
   text: string;
   template: TransactionalEmailTemplate;
+  actionUrl: string;
 };
 
 export type TransactionalEmailReceipt = {
@@ -40,18 +41,16 @@ export async function sendTransactionalEmail(
   }
 
   if (provider === "console") {
-    if (!isLocalSiteUrl(env.SITE_URL)) {
-      throw new Error(
-        "EMAIL_PROVIDER=console is restricted to a local SITE_URL.",
-      );
+    if (!isLocalSiteUrl(env.SITE_URL) || !isLocalSiteUrl(message.actionUrl)) {
+      throw new Error("EMAIL_PROVIDER=console is restricted to local URLs.");
     }
 
     console.info("[transactional-email:console]", {
       to: message.to,
       subject: message.subject,
       template: message.template,
-      text: message.text,
     });
+    console.info(message.actionUrl);
 
     return {
       provider: "console",
