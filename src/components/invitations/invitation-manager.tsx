@@ -9,6 +9,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InvitationsLoadingSkeleton } from "@/components/ui/page-skeletons";
 
 export function InvitationManager({
   organizationId,
@@ -53,50 +54,58 @@ export function InvitationManager({
   }
 
   if (access === undefined) {
-    return <p className="text-muted-foreground text-sm">Loading Members…</p>;
+    return <InvitationsLoadingSkeleton />;
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold">Invitations</h2>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Invite people with a fixed initial role. Owner access is managed
-          separately.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {access.can.manageMembers ? (
         <form
-          className="bg-card grid gap-4 rounded-xl border p-5 shadow-xs md:grid-cols-[1fr_160px_auto] md:items-end"
+          className="dashboard-panel space-y-5 p-5 md:p-6"
           onSubmit={invite}
         >
-          <div className="space-y-2">
-            <Label htmlFor="invitation-email">Email address</Label>
-            <Input id="invitation-email" name="email" required type="email" />
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              Invitations
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Invite people with a fixed initial role. Owner access is managed
+              separately.
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="invitation-role">Initial role</Label>
-            <select
-              className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-              defaultValue="viewer"
-              id="invitation-role"
-              name="role"
-            >
-              <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
-              <option value="admin">Admin</option>
-            </select>
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
+            <div className="space-y-2">
+              <Label htmlFor="invitation-email">Email address</Label>
+              <Input id="invitation-email" name="email" required type="email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invitation-role">Initial role</Label>
+              <select
+                className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+                defaultValue="viewer"
+                id="invitation-role"
+                name="role"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
           </div>
-          <Button disabled={pending} type="submit">
-            <MailPlus aria-hidden="true" className="size-4" />
-            {pending ? "Sending…" : "Invite"}
-          </Button>
+          <div className="flex justify-end border-t pt-5">
+            <Button disabled={pending} type="submit">
+              <MailPlus aria-hidden="true" className="size-4" />
+              {pending ? "Sending…" : "Invite member"}
+            </Button>
+          </div>
         </form>
       ) : (
-        <p className="bg-muted/40 text-muted-foreground rounded-xl border p-4 text-sm">
-          Your role can view Members but cannot manage Invitations.
-        </p>
+        <div className="dashboard-panel p-5 md:p-6">
+          <h2 className="text-lg font-semibold tracking-tight">Invitations</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Your role can view Members but cannot manage Invitations.
+          </p>
+        </div>
       )}
 
       {error ? (
@@ -110,7 +119,12 @@ export function InvitationManager({
         </p>
       ) : null}
 
-      {invitations ? (
+      {access.can.manageMembers && invitations === undefined ? (
+        <div aria-label="Loading Pending Invitations" role="status">
+          <div className="dashboard-skeleton h-20 rounded-lg" />
+          <span className="sr-only">Loading Pending Invitations</span>
+        </div>
+      ) : invitations ? (
         <section>
           <h2 className="text-lg font-semibold">Pending Invitations</h2>
           {invitations.length === 0 ? (
@@ -118,7 +132,7 @@ export function InvitationManager({
               No pending Invitations.
             </p>
           ) : (
-            <div className="bg-card mt-3 divide-y rounded-xl border shadow-xs">
+            <div className="dashboard-panel mt-3 divide-y overflow-hidden">
               {invitations.map((invitation) => (
                 <div
                   className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center"

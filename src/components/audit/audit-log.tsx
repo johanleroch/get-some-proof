@@ -6,6 +6,7 @@ import { History } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { AuditListSkeleton } from "@/components/ui/page-skeletons";
 
 const eventLabels = {
   "organization.created": "created the Organization",
@@ -53,9 +54,7 @@ export function AuditLog({
 
       <div className="bg-card overflow-hidden rounded-xl border shadow-xs">
         {status === "LoadingFirstPage" ? (
-          <p className="text-muted-foreground p-6 text-sm" role="status">
-            Loading activity…
-          </p>
+          <AuditListSkeleton />
         ) : results.length === 0 ? (
           <div className="p-10 text-center">
             <History

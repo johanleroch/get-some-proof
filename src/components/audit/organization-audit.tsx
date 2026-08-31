@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { AuditPageSkeleton } from "@/components/ui/page-skeletons";
 import { AuditLog } from "./audit-log";
 
 export function OrganizationAudit({ slug }: { slug: string }) {
@@ -13,11 +14,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
   );
 
   if (organization === undefined || (organization && access === undefined)) {
-    return (
-      <div className="grid min-h-[50vh] place-items-center">
-        <p className="text-muted-foreground text-sm">Loading Audit Log…</p>
-      </div>
-    );
+    return <AuditPageSkeleton />;
   }
 
   if (organization === null) {

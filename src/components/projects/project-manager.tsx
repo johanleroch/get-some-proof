@@ -11,6 +11,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProjectsPageSkeleton } from "@/components/ui/page-skeletons";
 
 type Project = {
   id: Id<"projects">;
@@ -54,7 +55,7 @@ export function ProjectManager({
   const [success, setSuccess] = useState<string | null>(null);
 
   if (projects === undefined || access === undefined) {
-    return <p className="text-muted-foreground text-sm">Loading Projects…</p>;
+    return <ProjectsPageSkeleton />;
   }
 
   const canWrite = access.can.createProjects;

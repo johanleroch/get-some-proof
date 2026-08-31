@@ -5,16 +5,13 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { InvitationManager } from "@/components/invitations/invitation-manager";
 import { MemberDirectory } from "@/components/members/member-directory";
+import { MembersPageSkeleton } from "@/components/ui/page-skeletons";
 
 export function OrganizationMembers({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
 
   if (organization === undefined) {
-    return (
-      <div className="grid min-h-[50vh] place-items-center">
-        Loading Members…
-      </div>
-    );
+    return <MembersPageSkeleton />;
   }
 
   if (organization === null) {

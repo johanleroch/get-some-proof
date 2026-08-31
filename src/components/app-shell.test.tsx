@@ -65,6 +65,8 @@ describe("AppShell", () => {
     expect(
       screen.queryByRole("link", { name: "Organization settings" }),
     ).toBeNull();
+    expect(screen.getByText("Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Collaboration")).toBeInTheDocument();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
@@ -88,6 +90,7 @@ describe("AppShell", () => {
       screen.getByRole("link", { name: "Back to Overview" }),
     ).toHaveAttribute("href", "/org/acme-1234/dashboard");
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
+    expect(screen.getByText("Organization")).toBeInTheDocument();
   });
 
   it("switches to personal Account navigation without changing the shell", () => {
@@ -112,6 +115,7 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "/org/acme-1234/dashboard");
     expect(screen.queryByRole("link", { name: "Overview" })).toBeNull();
     expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
+    expect(screen.getByText("Account")).toBeInTheDocument();
   });
 
   it("hides privileged destinations for lower roles", () => {

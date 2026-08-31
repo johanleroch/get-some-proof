@@ -3,17 +3,14 @@
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { ProjectsPageSkeleton } from "@/components/ui/page-skeletons";
 import { ProjectManager } from "./project-manager";
 
 export function OrganizationProjects({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
 
   if (organization === undefined) {
-    return (
-      <div className="grid min-h-[50vh] place-items-center">
-        <p className="text-muted-foreground text-sm">Loading Projects…</p>
-      </div>
-    );
+    return <ProjectsPageSkeleton />;
   }
 
   if (organization === null) {

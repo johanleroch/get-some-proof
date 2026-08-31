@@ -30,6 +30,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -47,41 +48,59 @@ type NavigationItem = {
   visible: boolean;
 };
 
+type NavigationSection = {
+  label: string;
+  items: NavigationItem[];
+};
+
 function Navigation({
   className,
-  items,
+  sections,
   pathname,
 }: {
   className?: string;
-  items: NavigationItem[];
+  sections: NavigationSection[];
   pathname: string;
 }) {
-  const visibleItems = items.filter(({ visible }) => visible);
-
-  if (visibleItems.length === 0) return null;
-
   return (
-    <SidebarGroup className={className}>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {visibleItems.map(({ href, icon: IconComponent, label }) => {
-            const active =
-              pathname === href ||
-              (pathname.startsWith(`${href}/`) && href !== "/");
-            return (
-              <SidebarMenuItem key={href}>
-                <SidebarMenuButton asChild isActive={active} tooltip={label}>
-                  <Link aria-current={active ? "page" : undefined} href={href}>
-                    <IconComponent aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <div className={className}>
+      {sections.map((section) => {
+        const visibleItems = section.items.filter(({ visible }) => visible);
+        if (visibleItems.length === 0) return null;
+
+        return (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleItems.map(({ href, icon: IconComponent, label }) => {
+                  const active =
+                    pathname === href ||
+                    (pathname.startsWith(`${href}/`) && href !== "/");
+                  return (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={label}
+                      >
+                        <Link
+                          aria-current={active ? "page" : undefined}
+                          href={href}
+                        >
+                          <IconComponent aria-hidden="true" />
+                          <span>{label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        );
+      })}
+    </div>
   );
 }
 
@@ -166,11 +185,15 @@ export function AppShell({
     },
   ];
 
-  const navigation = accountContext
-    ? accountNavigation
+  const navigationSections: NavigationSection[] = accountContext
+    ? [{ label: "Account", items: accountNavigation }]
     : organizationContext
-      ? organizationNavigation
-      : productNavigation;
+      ? [{ label: "Organization", items: organizationNavigation }]
+      : [
+          { label: "Workspace", items: productNavigation.slice(0, 2) },
+          { label: "Collaboration", items: productNavigation.slice(2) },
+        ];
+  const navigation = navigationSections.flatMap(({ items }) => items);
   const title = pageTitle(pathname, navigation);
 
   return (
@@ -227,14 +250,14 @@ export function AppShell({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <Navigation items={navigation} pathname={pathname} />
+          <Navigation pathname={pathname} sections={navigationSections} />
         </SidebarContent>
         <SidebarFooter>
           <NavUser />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-      <SidebarInset>
+      <SidebarInset className="dashboard-surface border-border/70 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
         <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
           <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
             <SidebarTrigger className="-ml-1" />
@@ -252,7 +275,7 @@ export function AppShell({
         </header>
         <div className="flex flex-1 flex-col">
           <div className="@container/main mx-auto flex w-full max-w-[1600px] flex-1 flex-col">
-            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+            <div className="flex flex-1 flex-col gap-5 p-4 md:p-6 lg:p-8">
               {children}
             </div>
           </div>

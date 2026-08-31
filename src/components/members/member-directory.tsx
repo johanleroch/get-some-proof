@@ -8,6 +8,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { DirectoryLoadingSkeleton } from "@/components/ui/page-skeletons";
 
 type Member = {
   id: Id<"memberships">;
@@ -43,7 +44,7 @@ export function MemberDirectory({
   const [success, setSuccess] = useState<string | null>(null);
 
   if (!members || !access || currentUser === undefined) {
-    return <p className="text-muted-foreground text-sm">Loading directory…</p>;
+    return <DirectoryLoadingSkeleton />;
   }
 
   async function updateRole(member: Member, role: NonNullable<Member["role"]>) {
@@ -115,7 +116,7 @@ export function MemberDirectory({
         </p>
       ) : null}
 
-      <div className="bg-card mt-6 divide-y rounded-xl border shadow-xs">
+      <div className="dashboard-panel mt-6 divide-y overflow-hidden">
         {members.map((member) => {
           const isCurrentUser = currentUser?.id === member.userId;
           const canAdminister =

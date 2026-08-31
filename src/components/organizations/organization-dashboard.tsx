@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 
 function MetricCard({
   icon: Icon,
@@ -110,13 +111,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   );
 
   if (organization === undefined || (organization && overview === undefined)) {
-    return (
-      <div className="grid min-h-[50vh] place-items-center">
-        <p className="text-muted-foreground text-sm" role="status">
-          Loading Organization overview…
-        </p>
-      </div>
-    );
+    return <OverviewPageSkeleton />;
   }
 
   if (organization === null) {
