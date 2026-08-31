@@ -6,7 +6,6 @@ import { Archive, FolderKanban, Mail, Users } from "lucide-react";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { AppShell } from "@/components/app-shell";
 import { Bar } from "@/components/charts/bar";
 import BarChart from "@/components/charts/bar-chart";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
@@ -112,17 +111,17 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
 
   if (organization === undefined || (organization && overview === undefined)) {
     return (
-      <main className="grid min-h-svh place-items-center">
+      <div className="grid min-h-[50vh] place-items-center">
         <p className="text-muted-foreground text-sm" role="status">
           Loading Organization overview…
         </p>
-      </main>
+      </div>
     );
   }
 
   if (organization === null) {
     return (
-      <main className="grid min-h-svh place-items-center px-6">
+      <section className="grid min-h-[50vh] place-items-center px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm leading-6">
@@ -130,72 +129,66 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
             active.
           </p>
         </div>
-      </main>
+      </section>
     );
   }
 
   return (
-    <AppShell
-      organizationId={organization.id}
-      organizationName={organization.name}
-      organizationSlug={organization.slug}
-    >
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-            <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-              Live, Tenant-scoped activity from Projects and Memberships.
-            </p>
-          </div>
-          <Button asChild>
-            <Link href={`/org/${organization.slug}/projects` as Route}>
-              View Projects
-            </Link>
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
+            Live, Tenant-scoped activity from Projects and Memberships.
+          </p>
         </div>
-
-        <section
-          aria-label="Organization metrics"
-          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-        >
-          <MetricCard
-            icon={FolderKanban}
-            label="Total Projects"
-            value={overview?.totalProjects}
-          />
-          <MetricCard
-            icon={Archive}
-            label="Archived Projects"
-            value={overview?.archivedProjects}
-          />
-          <MetricCard
-            icon={Users}
-            label="Active Members"
-            value={overview?.activeMembers}
-          />
-          <MetricCard
-            icon={Mail}
-            label="Pending Invitations"
-            value={overview?.pendingInvitations}
-          />
-        </section>
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          <MetricChart
-            data={overview?.projectStatus ?? []}
-            dataKey="projects"
-            emptyMessage="Create the first Project to populate this chart with real Organization data."
-            title="Projects by status"
-          />
-          <MetricChart
-            data={overview?.memberRoles ?? []}
-            dataKey="members"
-            emptyMessage="Membership roles will appear after the first Member joins."
-            title="Members by role"
-          />
-        </div>
+        <Button asChild>
+          <Link href={`/org/${organization.slug}/projects` as Route}>
+            View Projects
+          </Link>
+        </Button>
       </div>
-    </AppShell>
+
+      <section
+        aria-label="Organization metrics"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <MetricCard
+          icon={FolderKanban}
+          label="Total Projects"
+          value={overview?.totalProjects}
+        />
+        <MetricCard
+          icon={Archive}
+          label="Archived Projects"
+          value={overview?.archivedProjects}
+        />
+        <MetricCard
+          icon={Users}
+          label="Active Members"
+          value={overview?.activeMembers}
+        />
+        <MetricCard
+          icon={Mail}
+          label="Pending Invitations"
+          value={overview?.pendingInvitations}
+        />
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <MetricChart
+          data={overview?.projectStatus ?? []}
+          dataKey="projects"
+          emptyMessage="Create the first Project to populate this chart with real Organization data."
+          title="Projects by status"
+        />
+        <MetricChart
+          data={overview?.memberRoles ?? []}
+          dataKey="members"
+          emptyMessage="Membership roles will appear after the first Member joins."
+          title="Members by role"
+        />
+      </div>
+    </div>
   );
 }

@@ -33,10 +33,16 @@ describe("OrganizationSwitcher", () => {
     mocks.useQuery.mockReset();
   });
 
-  function renderSwitcher(currentName = "Acme", currentSlug = "acme-1234") {
+  function renderSwitcher(
+    currentName = "Acme",
+    currentSlug = "acme-1234",
+    permissions = { canReadAudit: true, canUpdateOrganization: true },
+  ) {
     return render(
       <SidebarProvider>
         <OrganizationSwitcher
+          canReadAudit={permissions.canReadAudit}
+          canUpdateOrganization={permissions.canUpdateOrganization}
           currentName={currentName}
           currentSlug={currentSlug}
         />
@@ -59,6 +65,33 @@ describe("OrganizationSwitcher", () => {
     expect(
       screen.getByRole("menuitem", { name: /create organization/i }),
     ).toHaveAttribute("href", "/onboarding");
+    expect(
+      screen.getByRole("menuitem", { name: "Organization settings" }),
+    ).toHaveAttribute("href", "/org/acme-1234/settings");
+    expect(screen.getByRole("menuitem", { name: "Audit Log" })).toHaveAttribute(
+      "href",
+      "/org/acme-1234/audit",
+    );
+  });
+
+  it("hides Organization administration actions without permission", () => {
+    mocks.useQuery.mockReturnValue([
+      { id: "organization-1", name: "Acme", slug: "acme-1234" },
+    ]);
+
+    renderSwitcher("Acme", "acme-1234", {
+      canReadAudit: false,
+      canUpdateOrganization: false,
+    });
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Switch Organization" }),
+      { button: 0, ctrlKey: false },
+    );
+
+    expect(
+      screen.queryByRole("menuitem", { name: "Organization settings" }),
+    ).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Audit Log" })).toBeNull();
   });
 
   it("switches a multi-Organization User to the equivalent safe route", () => {

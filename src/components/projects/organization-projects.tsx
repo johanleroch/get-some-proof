@@ -3,7 +3,6 @@
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { AppShell } from "@/components/app-shell";
 import { ProjectManager } from "./project-manager";
 
 export function OrganizationProjects({ slug }: { slug: string }) {
@@ -11,15 +10,15 @@ export function OrganizationProjects({ slug }: { slug: string }) {
 
   if (organization === undefined) {
     return (
-      <main className="grid min-h-svh place-items-center">
+      <div className="grid min-h-[50vh] place-items-center">
         <p className="text-muted-foreground text-sm">Loading Projects…</p>
-      </main>
+      </div>
     );
   }
 
   if (organization === null) {
     return (
-      <main className="grid min-h-svh place-items-center px-6">
+      <section className="grid min-h-[50vh] place-items-center px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm leading-6">
@@ -27,17 +26,9 @@ export function OrganizationProjects({ slug }: { slug: string }) {
             active.
           </p>
         </div>
-      </main>
+      </section>
     );
   }
 
-  return (
-    <AppShell
-      organizationId={organization.id}
-      organizationName={organization.name}
-      organizationSlug={organization.slug}
-    >
-      <ProjectManager organizationId={organization.id} />
-    </AppShell>
-  );
+  return <ProjectManager organizationId={organization.id} />;
 }

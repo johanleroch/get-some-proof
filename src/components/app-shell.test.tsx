@@ -47,7 +47,7 @@ describe("AppShell", () => {
     mocks.updateOrganization = true;
   });
 
-  it("exposes permission-aware navigation with an active-page announcement", () => {
+  it("shows product navigation without duplicating Organization administration", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
@@ -61,16 +61,61 @@ describe("AppShell", () => {
     expect(
       screen.getAllByRole("link", { name: "Overview" })[0],
     ).toHaveAttribute("aria-current", "page");
-    expect(screen.getAllByRole("link", { name: "Audit Log" })).not.toHaveLength(
-      0,
-    );
+    expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
     expect(
-      screen.getAllByRole("link", { name: "Organization settings" }),
-    ).not.toHaveLength(0);
+      screen.queryByRole("link", { name: "Organization settings" }),
+    ).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
+  it("switches to Organization administration navigation on settings pages", () => {
+    mocks.pathname = "/org/acme-1234/settings";
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationSlug="acme-1234"
+      >
+        Settings content
+      </AppShell>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Organization settings" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Audit Log" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Back to Overview" }),
+    ).toHaveAttribute("href", "/org/acme-1234/dashboard");
+    expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
+  });
+
+  it("switches to personal Account navigation without changing the shell", () => {
+    mocks.pathname = "/account/profile";
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationSlug="acme-1234"
+      >
+        Profile content
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Security" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Back to Overview" }),
+    ).toHaveAttribute("href", "/org/acme-1234/dashboard");
+    expect(screen.queryByRole("link", { name: "Overview" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
+  });
+
   it("hides privileged destinations for lower roles", () => {
+    mocks.pathname = "/org/acme-1234/settings";
     mocks.readAudit = false;
     mocks.updateOrganization = false;
     render(

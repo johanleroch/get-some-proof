@@ -10,6 +10,7 @@ import {
   IconPlus,
   IconSelector,
   IconSettings,
+  IconShieldCheck,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 
@@ -43,9 +44,13 @@ function organizationInitials(name: string) {
 }
 
 export function OrganizationSwitcher({
+  canReadAudit,
+  canUpdateOrganization,
   currentName,
   currentSlug,
 }: {
+  canReadAudit: boolean;
+  canUpdateOrganization: boolean;
   currentName: string;
   currentSlug: string;
 }) {
@@ -132,12 +137,22 @@ export function OrganizationSwitcher({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href={`/org/${currentSlug}/settings` as Route}>
-                  <IconSettings />
-                  Organization settings
-                </Link>
-              </DropdownMenuItem>
+              {canUpdateOrganization ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/org/${currentSlug}/settings` as Route}>
+                    <IconSettings />
+                    Organization settings
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {canReadAudit ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/org/${currentSlug}/audit` as Route}>
+                    <IconShieldCheck />
+                    Audit Log
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem asChild>
                 <Link href={"/onboarding" as Route}>
                   <span className="grid size-6 place-items-center rounded-md border">

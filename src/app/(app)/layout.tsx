@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
+import { AuthenticatedApplicationShell } from "@/components/authenticated-application-shell";
 import { isAuthenticated } from "@/lib/auth-server";
 
 export default async function ApplicationLayout({
@@ -12,5 +13,7 @@ export default async function ApplicationLayout({
     redirect("/sign-in?callbackURL=/dashboard");
   }
 
-  return children;
+  return (
+    <AuthenticatedApplicationShell>{children}</AuthenticatedApplicationShell>
+  );
 }

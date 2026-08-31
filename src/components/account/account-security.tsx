@@ -4,7 +4,6 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 
-import { AccountSettingsShell } from "@/components/account/account-settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,197 +160,190 @@ export function AccountSecurity() {
   const visibleCodes = setup?.backupCodes ?? backupCodes;
 
   return (
-    <AccountSettingsShell>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Security</h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            These controls protect your User account across every Organization.
-          </p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">Security</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          These controls protect your User account across every Organization.
+        </p>
+      </div>
+
+      {error ? (
+        <p
+          aria-live="assertive"
+          className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
+          {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p
+          aria-live="polite"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+        >
+          {success}
+        </p>
+      ) : null}
+
+      <section className="bg-card rounded-xl border p-6 shadow-xs">
+        <div className="flex items-start gap-4">
+          <div className="bg-muted text-foreground grid size-10 place-items-center rounded-lg">
+            <ShieldCheck aria-hidden="true" className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Authenticator app</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Status: {twoFactorEnabled ? "enabled" : "not enabled"}
+            </p>
+          </div>
         </div>
 
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        {!twoFactorEnabled ? (
+          <form
+            className="mt-6 flex max-w-md items-end gap-3"
+            onSubmit={enableTwoFactor}
           >
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p
-            aria-live="polite"
-            className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
-          >
-            {success}
-          </p>
-        ) : null}
-
-        <section className="bg-card rounded-xl border p-6 shadow-xs">
-          <div className="flex items-start gap-4">
-            <div className="bg-muted text-foreground grid size-10 place-items-center rounded-lg">
-              <ShieldCheck aria-hidden="true" className="size-5" />
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="enable-2fa-password">Current password</Label>
+              <Input
+                id="enable-2fa-password"
+                name="password"
+                required
+                type="password"
+              />
             </div>
-            <div>
-              <h2 className="text-lg font-semibold">Authenticator app</h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Status: {twoFactorEnabled ? "enabled" : "not enabled"}
-              </p>
-            </div>
-          </div>
-
-          {!twoFactorEnabled ? (
-            <form
-              className="mt-6 flex max-w-md items-end gap-3"
-              onSubmit={enableTwoFactor}
-            >
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="enable-2fa-password">Current password</Label>
-                <Input
-                  id="enable-2fa-password"
-                  name="password"
-                  required
-                  type="password"
-                />
-              </div>
-              <Button disabled={pending} type="submit">
-                Enable 2FA
+            <Button disabled={pending} type="submit">
+              Enable 2FA
+            </Button>
+          </form>
+        ) : (
+          <div className="mt-6 grid gap-5 md:grid-cols-2">
+            <form className="space-y-3" onSubmit={regenerateCodes}>
+              <Label htmlFor="codes-password">Regenerate recovery codes</Label>
+              <Input
+                id="codes-password"
+                name="password"
+                required
+                type="password"
+              />
+              <Button disabled={pending} type="submit" variant="outline">
+                <KeyRound aria-hidden="true" className="size-4" />
+                Generate new codes
               </Button>
             </form>
-          ) : (
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
-              <form className="space-y-3" onSubmit={regenerateCodes}>
-                <Label htmlFor="codes-password">
-                  Regenerate recovery codes
-                </Label>
-                <Input
-                  id="codes-password"
-                  name="password"
-                  required
-                  type="password"
-                />
-                <Button disabled={pending} type="submit" variant="outline">
-                  <KeyRound aria-hidden="true" className="size-4" />
-                  Generate new codes
-                </Button>
-              </form>
-              <form className="space-y-3" onSubmit={disableTwoFactor}>
-                <Label htmlFor="disable-2fa-password">
-                  Disable with password
-                </Label>
-                <Input
-                  id="disable-2fa-password"
-                  name="password"
-                  required
-                  type="password"
-                />
-                <Button disabled={pending} type="submit" variant="outline">
-                  Disable 2FA
-                </Button>
-              </form>
-            </div>
-          )}
-
-          {setup ? (
-            <div className="bg-muted/30 mt-6 rounded-xl border p-4">
-              <p className="text-sm font-medium">Authenticator setup URI</p>
-              <code className="text-muted-foreground mt-2 block text-xs break-all">
-                {setup.totpURI}
-              </code>
-            </div>
-          ) : null}
-
-          {visibleCodes ? (
-            <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
-              <h3 className="font-semibold">Save these recovery codes now</h3>
-              <p className="mt-1 text-sm">
-                Each code works once. They will not remain visible after you
-                dismiss them.
-              </p>
-              <ul className="mt-4 grid gap-2 font-mono text-sm sm:grid-cols-2">
-                {visibleCodes.map((code) => (
-                  <li key={code}>{code}</li>
-                ))}
-              </ul>
-              <Button
-                className="mt-4"
-                onClick={() => {
-                  setSetup(null);
-                  setBackupCodes(null);
-                }}
-                type="button"
-                variant="outline"
-              >
-                I saved these codes
+            <form className="space-y-3" onSubmit={disableTwoFactor}>
+              <Label htmlFor="disable-2fa-password">
+                Disable with password
+              </Label>
+              <Input
+                id="disable-2fa-password"
+                name="password"
+                required
+                type="password"
+              />
+              <Button disabled={pending} type="submit" variant="outline">
+                Disable 2FA
               </Button>
-            </div>
-          ) : null}
-        </section>
+            </form>
+          </div>
+        )}
 
-        <section className="bg-card rounded-xl border p-6 shadow-xs">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Active Sessions</h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Review devices and revoke access you no longer recognize.
-              </p>
-            </div>
+        {setup ? (
+          <div className="bg-muted/30 mt-6 rounded-xl border p-4">
+            <p className="text-sm font-medium">Authenticator setup URI</p>
+            <code className="text-muted-foreground mt-2 block text-xs break-all">
+              {setup.totpURI}
+            </code>
+          </div>
+        ) : null}
+
+        {visibleCodes ? (
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+            <h3 className="font-semibold">Save these recovery codes now</h3>
+            <p className="mt-1 text-sm">
+              Each code works once. They will not remain visible after you
+              dismiss them.
+            </p>
+            <ul className="mt-4 grid gap-2 font-mono text-sm sm:grid-cols-2">
+              {visibleCodes.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
             <Button
-              onClick={() => void revokeOtherSessions()}
+              className="mt-4"
+              onClick={() => {
+                setSetup(null);
+                setBackupCodes(null);
+              }}
+              type="button"
               variant="outline"
             >
-              Revoke every other Session
+              I saved these codes
             </Button>
           </div>
+        ) : null}
+      </section>
 
-          <div className="mt-5 divide-y rounded-xl border">
-            {sessions === null ? (
-              <p className="text-muted-foreground p-4 text-sm">
-                Loading Sessions…
-              </p>
-            ) : sessions.length === 0 ? (
-              <p className="text-muted-foreground p-4 text-sm">
-                No active Sessions found.
-              </p>
-            ) : (
-              sessions.map((item) => {
-                const isCurrent = item.token === currentToken;
-                const DeviceIcon = /iphone|android|mobile/i.test(
-                  item.userAgent ?? "",
-                )
-                  ? Smartphone
-                  : Laptop;
-                return (
-                  <div className="flex items-center gap-4 p-4" key={item.id}>
-                    <DeviceIcon
-                      aria-hidden="true"
-                      className="text-muted-foreground size-5"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">
-                        {deviceLabel(item.userAgent)}{" "}
-                        {isCurrent ? "(current)" : ""}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        {item.ipAddress ?? "IP unavailable"} · active{" "}
-                        {new Date(item.updatedAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <Button
-                      aria-label={`Revoke ${deviceLabel(item.userAgent)}`}
-                      onClick={() => void revokeSession(item.token)}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                );
-              })
-            )}
+      <section className="bg-card rounded-xl border p-6 shadow-xs">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Active Sessions</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Review devices and revoke access you no longer recognize.
+            </p>
           </div>
-        </section>
-      </div>
-    </AccountSettingsShell>
+          <Button onClick={() => void revokeOtherSessions()} variant="outline">
+            Revoke every other Session
+          </Button>
+        </div>
+
+        <div className="mt-5 divide-y rounded-xl border">
+          {sessions === null ? (
+            <p className="text-muted-foreground p-4 text-sm">
+              Loading Sessions…
+            </p>
+          ) : sessions.length === 0 ? (
+            <p className="text-muted-foreground p-4 text-sm">
+              No active Sessions found.
+            </p>
+          ) : (
+            sessions.map((item) => {
+              const isCurrent = item.token === currentToken;
+              const DeviceIcon = /iphone|android|mobile/i.test(
+                item.userAgent ?? "",
+              )
+                ? Smartphone
+                : Laptop;
+              return (
+                <div className="flex items-center gap-4 p-4" key={item.id}>
+                  <DeviceIcon
+                    aria-hidden="true"
+                    className="text-muted-foreground size-5"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">
+                      {deviceLabel(item.userAgent)}{" "}
+                      {isCurrent ? "(current)" : ""}
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {item.ipAddress ?? "IP unavailable"} · active{" "}
+                      {new Date(item.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <Button
+                    aria-label={`Revoke ${deviceLabel(item.userAgent)}`}
+                    onClick={() => void revokeSession(item.token)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

@@ -5,12 +5,15 @@ import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Icon,
+  type Icon,
+  IconArrowLeft,
   IconDashboard,
   IconFolder,
+  IconLock,
   IconPlus,
   IconSettings,
   IconShieldCheck,
+  IconUserCircle,
   IconUsers,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
@@ -20,7 +23,6 @@ import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -108,8 +110,12 @@ export function AppShell({
     organizationId,
   });
   const health = useQuery(api.system.health);
+  const accountContext = pathname.startsWith("/account");
+  const organizationContext =
+    pathname === `/org/${organizationSlug}/settings` ||
+    pathname === `/org/${organizationSlug}/audit`;
 
-  const mainNavigation: NavigationItem[] = [
+  const productNavigation: NavigationItem[] = [
     {
       label: "Overview",
       icon: IconDashboard,
@@ -128,6 +134,15 @@ export function AppShell({
       href: `/org/${organizationSlug}/members` as Route,
       visible: true,
     },
+  ];
+
+  const organizationNavigation: NavigationItem[] = [
+    {
+      label: "Organization settings",
+      icon: IconSettings,
+      href: `/org/${organizationSlug}/settings` as Route,
+      visible: authorization?.can.updateOrganization ?? false,
+    },
     {
       label: "Audit Log",
       icon: IconShieldCheck,
@@ -136,17 +151,27 @@ export function AppShell({
     },
   ];
 
-  const secondaryNavigation: NavigationItem[] = [
+  const accountNavigation: NavigationItem[] = [
     {
-      label: "Organization settings",
-      icon: IconSettings,
-      href: `/org/${organizationSlug}/settings` as Route,
-      visible: authorization?.can.updateOrganization ?? false,
+      label: "Profile",
+      icon: IconUserCircle,
+      href: "/account/profile" as Route,
+      visible: true,
+    },
+    {
+      label: "Security",
+      icon: IconLock,
+      href: "/account/security" as Route,
+      visible: true,
     },
   ];
 
-  const allNavigation = [...mainNavigation, ...secondaryNavigation];
-  const title = pageTitle(pathname, allNavigation);
+  const navigation = accountContext
+    ? accountNavigation
+    : organizationContext
+      ? organizationNavigation
+      : productNavigation;
+  const title = pageTitle(pathname, navigation);
 
   return (
     <SidebarProvider
@@ -160,6 +185,10 @@ export function AppShell({
       <Sidebar collapsible="offcanvas" variant="inset">
         <SidebarHeader>
           <OrganizationSwitcher
+            canReadAudit={authorization?.can.readAudit ?? false}
+            canUpdateOrganization={
+              authorization?.can.updateOrganization ?? false
+            }
             currentName={organizationName}
             currentSlug={organizationSlug}
           />
@@ -168,42 +197,37 @@ export function AppShell({
           <SidebarGroup>
             <SidebarGroupContent className="flex flex-col gap-2">
               <SidebarMenu>
-                <SidebarMenuItem className="flex items-center gap-2">
-                  <SidebarMenuButton
-                    asChild
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-                    tooltip="Create a project"
-                  >
-                    <Link
-                      href={`/org/${organizationSlug}/projects?new=1` as Route}
-                    >
-                      <IconPlus />
-                      <span>New project</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {authorization?.can.updateOrganization ? (
-                    <Button
-                      aria-label="Organization settings"
-                      asChild
-                      className="size-8 shrink-0"
-                      size="icon"
-                      variant="outline"
-                    >
-                      <Link href={`/org/${organizationSlug}/settings` as Route}>
-                        <IconSettings />
+                <SidebarMenuItem>
+                  {accountContext || organizationContext ? (
+                    <SidebarMenuButton asChild tooltip="Back to Overview">
+                      <Link
+                        href={`/org/${organizationSlug}/dashboard` as Route}
+                      >
+                        <IconArrowLeft />
+                        <span>Back to Overview</span>
                       </Link>
-                    </Button>
-                  ) : null}
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton
+                      asChild
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                      tooltip="Create a project"
+                    >
+                      <Link
+                        href={
+                          `/org/${organizationSlug}/projects?new=1` as Route
+                        }
+                      >
+                        <IconPlus />
+                        <span>New project</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <Navigation items={mainNavigation} pathname={pathname} />
-          <Navigation
-            className="mt-auto"
-            items={secondaryNavigation}
-            pathname={pathname}
-          />
+          <Navigation items={navigation} pathname={pathname} />
         </SidebarContent>
         <SidebarFooter>
           <NavUser />

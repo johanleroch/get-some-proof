@@ -3,7 +3,6 @@
 import { type FormEvent, useState } from "react";
 import { IconPhoto, IconUser } from "@tabler/icons-react";
 
-import { AccountSettingsShell } from "@/components/account/account-settings-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -170,15 +169,11 @@ export function AccountProfile() {
   const session = authClient.useSession();
   const user = session.data?.user;
 
-  return (
-    <AccountSettingsShell>
-      {user ? (
-        <ProfileEditor key={user.id} refetch={session.refetch} user={user} />
-      ) : (
-        <p className="text-muted-foreground text-sm" role="status">
-          Loading profile…
-        </p>
-      )}
-    </AccountSettingsShell>
+  return user ? (
+    <ProfileEditor key={user.id} refetch={session.refetch} user={user} />
+  ) : (
+    <p className="text-muted-foreground text-sm" role="status">
+      Loading profile…
+    </p>
   );
 }

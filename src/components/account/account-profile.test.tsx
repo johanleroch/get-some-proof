@@ -8,12 +8,6 @@ const mocks = vi.hoisted(() => ({
   updateUser: vi.fn(),
 }));
 
-vi.mock("@/components/account/account-settings-shell", () => ({
-  AccountSettingsShell: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     useSession: () => ({
