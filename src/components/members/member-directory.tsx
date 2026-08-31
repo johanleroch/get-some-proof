@@ -87,13 +87,10 @@ export function MemberDirectory({
 
   return (
     <section>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-primary text-sm font-medium">Access</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Members
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
+          <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Active Members can see this directory. Management actions follow the
             Owner and Admin boundary.
           </p>
@@ -118,7 +115,7 @@ export function MemberDirectory({
         </p>
       ) : null}
 
-      <div className="bg-card mt-6 divide-y rounded-2xl border shadow-sm">
+      <div className="bg-card mt-6 divide-y rounded-xl border shadow-xs">
         {members.map((member) => {
           const isCurrentUser = currentUser?.id === member.userId;
           const canAdminister =
@@ -131,7 +128,7 @@ export function MemberDirectory({
               className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center"
               key={member.id}
             >
-              <div className="bg-primary/10 text-primary grid size-10 place-items-center rounded-full text-sm font-semibold">
+              <div className="bg-muted text-foreground grid size-9 place-items-center rounded-full text-sm font-semibold">
                 {member.displayName.slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -204,7 +201,7 @@ export function MemberDirectory({
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
           role="alertdialog"
         >
-          <div className="bg-background w-full max-w-md rounded-2xl border p-6 shadow-xl">
+          <div className="bg-background w-full max-w-md rounded-xl border p-6 shadow-xl">
             <h2
               className="text-xl font-semibold"
               id="member-confirmation-title"
@@ -226,9 +223,9 @@ export function MemberDirectory({
                 Cancel
               </Button>
               <Button
-                className="bg-red-600 text-white hover:bg-red-700"
                 disabled={pending}
                 onClick={() => void confirmAction()}
+                variant="destructive"
               >
                 {pending ? "Working…" : "Confirm"}
               </Button>

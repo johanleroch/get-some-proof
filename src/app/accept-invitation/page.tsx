@@ -13,7 +13,7 @@ export default async function AcceptInvitationPage({
 
   if (!token) {
     return (
-      <main className="bg-muted/35 grid min-h-screen place-items-center px-6">
+      <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold">Invitation unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">

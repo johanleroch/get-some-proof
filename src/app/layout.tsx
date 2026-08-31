@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { productDescription, productName } from "@/lib/brand";
 import { getPublicEnvironment } from "@/lib/env/public-env";
 import { themeInitializationScript } from "@/lib/theme";
@@ -38,13 +39,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {environment.configured ? (
-          <ConvexClientProvider url={environment.convexUrl}>
-            {children}
-          </ConvexClientProvider>
-        ) : (
-          children
-        )}
+        <TooltipProvider>
+          {environment.configured ? (
+            <ConvexClientProvider url={environment.convexUrl}>
+              {children}
+            </ConvexClientProvider>
+          ) : (
+            children
+          )}
+        </TooltipProvider>
       </body>
     </html>
   );

@@ -12,7 +12,7 @@ export function OrganizationMembers({ slug }: { slug: string }) {
 
   if (organization === undefined) {
     return (
-      <main className="grid min-h-screen place-items-center">
+      <main className="grid min-h-svh place-items-center">
         Loading Members…
       </main>
     );
@@ -20,7 +20,7 @@ export function OrganizationMembers({ slug }: { slug: string }) {
 
   if (organization === null) {
     return (
-      <main className="grid min-h-screen place-items-center px-6 text-center">
+      <main className="grid min-h-svh place-items-center px-6 text-center">
         <div>
           <h1 className="text-2xl font-semibold">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -37,7 +37,7 @@ export function OrganizationMembers({ slug }: { slug: string }) {
       organizationName={organization.name}
       organizationSlug={organization.slug}
     >
-      <div className="space-y-10">
+      <div className="space-y-8">
         <MemberDirectory organizationId={organization.id} />
         <InvitationManager organizationId={organization.id} />
       </div>

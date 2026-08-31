@@ -1,20 +1,16 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FolderKanban,
   LayoutDashboard,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
   Settings,
   ShieldCheck,
   UserRound,
   Users,
-  X,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 
@@ -23,7 +19,23 @@ import type { Id } from "@convex/_generated/dataModel";
 import { BrandMark } from "@/components/brand-mark";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 type NavigationItem = {
   label: string;
@@ -31,6 +43,47 @@ type NavigationItem = {
   href: Route;
   visible: boolean;
 };
+
+function NavigationGroup({
+  items,
+  label,
+  pathname,
+}: {
+  items: NavigationItem[];
+  label: string;
+  pathname: string;
+}) {
+  const visibleItems = items.filter(({ visible }) => visible);
+
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {visibleItems.map(({ href, icon: Icon, label: itemLabel }) => {
+            const active = pathname === href;
+            return (
+              <SidebarMenuItem key={href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={itemLabel}
+                >
+                  <Link aria-current={active ? "page" : undefined} href={href}>
+                    <Icon aria-hidden="true" />
+                    <span>{itemLabel}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
 
 export function AppShell({
   children,
@@ -48,25 +101,8 @@ export function AppShell({
     organizationId,
   });
   const health = useQuery(api.system.health);
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const mobileCloseRef = useRef<HTMLButtonElement>(null);
-  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!mobileOpen) return;
-    mobileCloseRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-        mobileTriggerRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mobileOpen]);
-
-  const navigation: NavigationItem[] = [
+  const workspaceNavigation: NavigationItem[] = [
     {
       label: "Overview",
       icon: LayoutDashboard,
@@ -91,6 +127,9 @@ export function AppShell({
       href: `/org/${organizationSlug}/audit` as Route,
       visible: authorization?.can.readAudit ?? false,
     },
+  ];
+
+  const manageNavigation: NavigationItem[] = [
     {
       label: "Organization settings",
       icon: Settings,
@@ -105,144 +144,74 @@ export function AppShell({
     },
   ];
 
-  function navigationLinks(isCollapsed: boolean) {
-    return navigation
-      .filter(({ visible }) => visible)
-      .map(({ href, icon: Icon, label }) => {
-        const active = pathname === href;
-        return (
-          <Link
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "focus-visible:ring-ring flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
-              active
-                ? "bg-sidebar-accent text-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
-              isCollapsed && "justify-center px-2",
-            )}
-            href={href}
-            key={href}
-            onClick={() => setMobileOpen(false)}
-            title={isCollapsed ? label : undefined}
-          >
-            <Icon aria-hidden="true" className="size-4 shrink-0" />
-            <span className={isCollapsed ? "sr-only" : undefined}>{label}</span>
-          </Link>
-        );
-      });
-  }
-
   return (
-    <div className="bg-muted/35 min-h-screen">
-      <aside
-        className={cn(
-          "border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-30 hidden border-r p-4 transition-[width] md:block",
-          collapsed ? "w-20" : "w-64",
-        )}
-      >
-        <div className="flex min-h-14 items-start gap-3 px-1">
-          <BrandMark />
-          {!collapsed ? (
-            <OrganizationSwitcher
-              currentName={organizationName}
-              currentSlug={organizationSlug}
-            />
-          ) : null}
-        </div>
-        <nav aria-label="Primary" className="mt-6 space-y-1">
-          {navigationLinks(collapsed)}
-        </nav>
-        <button
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="text-muted-foreground hover:bg-sidebar-accent focus-visible:ring-ring absolute right-4 bottom-4 grid size-10 place-items-center rounded-lg focus-visible:ring-2 focus-visible:outline-none"
-          onClick={() => setCollapsed((value) => !value)}
-          type="button"
-        >
-          {collapsed ? (
-            <PanelLeftOpen aria-hidden="true" className="size-4" />
-          ) : (
-            <PanelLeftClose aria-hidden="true" className="size-4" />
-          )}
-        </button>
-      </aside>
-
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            aria-label="Close navigation"
-            className="absolute inset-0 bg-black/45"
-            onClick={() => setMobileOpen(false)}
-            tabIndex={-1}
-            type="button"
-          />
-          <aside
-            aria-label="Mobile navigation"
-            aria-modal="true"
-            className="bg-sidebar relative h-full w-[min(88vw,20rem)] border-r p-5 shadow-2xl"
-            id="mobile-navigation"
-            role="dialog"
-          >
-            <div className="flex items-start gap-3">
-              <BrandMark />
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "18rem",
+          "--sidebar-width-icon": "3rem",
+        } as CSSProperties
+      }
+    >
+      <Sidebar collapsible="icon" variant="inset">
+        <SidebarHeader>
+          <div className="flex min-h-12 items-start gap-2 p-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+            <BrandMark />
+            <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <OrganizationSwitcher
                 currentName={organizationName}
                 currentSlug={organizationSlug}
               />
-              <button
-                aria-label="Close navigation"
-                className="text-muted-foreground focus-visible:ring-ring grid size-10 shrink-0 place-items-center rounded-lg focus-visible:ring-2 focus-visible:outline-none"
-                onClick={() => setMobileOpen(false)}
-                ref={mobileCloseRef}
-                type="button"
-              >
-                <X aria-hidden="true" className="size-5" />
-              </button>
             </div>
-            <nav aria-label="Primary" className="mt-8 space-y-1">
-              {navigationLinks(false)}
-            </nav>
-          </aside>
-        </div>
-      ) : null}
-
-      <div
-        className={cn(
-          "transition-[padding]",
-          collapsed ? "md:pl-20" : "md:pl-64",
-        )}
-      >
-        <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-8">
-          <button
-            aria-controls="mobile-navigation"
-            aria-expanded={mobileOpen}
-            aria-label="Open navigation"
-            className="text-muted-foreground focus-visible:ring-ring grid size-10 place-items-center rounded-lg focus-visible:ring-2 focus-visible:outline-none md:hidden"
-            onClick={() => setMobileOpen(true)}
-            ref={mobileTriggerRef}
-            type="button"
-          >
-            <Menu aria-hidden="true" className="size-5" />
-          </button>
-          <p className="truncate text-sm font-medium md:hidden">
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <NavigationGroup
+            items={workspaceNavigation}
+            label="Workspace"
+            pathname={pathname}
+          />
+          <NavigationGroup
+            items={manageNavigation}
+            label="Manage"
+            pathname={pathname}
+          />
+        </SidebarContent>
+        <SidebarFooter>
+          <div className="text-sidebar-foreground/65 flex items-center gap-2 px-2 py-1 text-xs group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+            <span
+              aria-hidden="true"
+              className="size-1.5 rounded-full bg-emerald-500"
+            />
+            <span className="group-data-[collapsible=icon]:sr-only">
+              {health?.status === "ok" ? "Convex connected" : "Connecting"}
+            </span>
+          </div>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear">
+          <SidebarTrigger className="-ml-1" />
+          <Separator className="mr-2 h-4" orientation="vertical" />
+          <p className="min-w-0 truncate text-sm font-medium">
             {organizationName}
           </p>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto">
             <ThemeToggle />
-            <Link
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring hidden rounded-md text-sm font-medium focus-visible:ring-2 focus-visible:outline-none sm:inline"
-              href={"/account/security" as Route}
-            >
-              Account security
-            </Link>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl p-5 md:p-8">{children}</main>
+        <div className="flex flex-1 flex-col">
+          <div className="mx-auto w-full max-w-[1600px] flex-1 p-4 md:p-6">
+            {children}
+          </div>
+        </div>
         <span className="sr-only" aria-live="polite">
           {health?.status === "ok"
             ? "Convex connected"
             : "Connecting to Convex"}
         </span>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -40,13 +40,13 @@ export function OrganizationSwitcher({
 
   return (
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold">{productName}</p>
+      <p className="truncate text-sm leading-5 font-semibold">{productName}</p>
       {organizations && organizations.length > 1 ? (
         <label className="mt-1 block">
           <span className="sr-only">Switch Organization</span>
           <select
             aria-label="Switch Organization"
-            className="text-muted-foreground focus-visible:ring-ring -ml-1 w-full rounded-md border-0 bg-transparent py-1 pr-7 pl-1 text-xs font-medium outline-none focus-visible:ring-2"
+            className="text-muted-foreground focus-visible:ring-ring -ml-1 w-full rounded-md border-0 bg-transparent py-0.5 pr-7 pl-1 text-xs font-medium outline-none focus-visible:ring-2"
             onChange={(event) =>
               router.replace(
                 organizationSwitchRoute(pathname, event.target.value),
@@ -62,10 +62,12 @@ export function OrganizationSwitcher({
           </select>
         </label>
       ) : (
-        <p className="text-muted-foreground truncate text-xs">{currentName}</p>
+        <p className="text-muted-foreground truncate text-xs leading-4">
+          {currentName}
+        </p>
       )}
       <Link
-        className="text-primary mt-2 inline-flex items-center gap-1 text-xs font-medium hover:underline"
+        className="text-muted-foreground hover:text-foreground mt-1 inline-flex items-center gap-1 text-xs transition-colors"
         href={"/onboarding" as Route}
       >
         <Plus aria-hidden="true" className="size-3" />

@@ -39,20 +39,19 @@ export function AuditLog({
   return (
     <section aria-labelledby="audit-heading" className="space-y-6">
       <div>
-        <p className="text-primary text-sm font-medium">Security</p>
         <h1
-          className="mt-1 text-3xl font-semibold tracking-tight"
+          className="text-2xl font-semibold tracking-tight"
           id="audit-heading"
         >
           Audit Log
         </h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-6">
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-6">
           An immutable record of Organization administration. Authorization
           changes maintained by convex-authz remain in its separate history.
         </p>
       </div>
 
-      <div className="bg-card overflow-hidden rounded-2xl border shadow-sm">
+      <div className="bg-card overflow-hidden rounded-xl border shadow-xs">
         {status === "LoadingFirstPage" ? (
           <p className="text-muted-foreground p-6 text-sm" role="status">
             Loading activity…

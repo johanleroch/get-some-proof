@@ -1,8 +1,16 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { MoonStar } from "lucide-react";
+import { Laptop, Moon, Sun } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   resolvedTheme,
   themeStorageKey,
@@ -21,7 +29,7 @@ function storedTheme(): ThemePreference {
 function applyTheme(preference: ThemePreference) {
   const dark = resolvedTheme(
     preference,
-    window.matchMedia("(prefers-color-scheme: dark)").matches,
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
   );
   document.documentElement.classList.toggle("dark", dark === "dark");
   document.documentElement.style.colorScheme = dark;
@@ -31,18 +39,18 @@ function applyTheme(preference: ThemePreference) {
 export function ThemeToggle() {
   const theme = useSyncExternalStore(
     (onStoreChange) => {
-      const media = window.matchMedia("(prefers-color-scheme: dark)");
+      const media = window.matchMedia?.("(prefers-color-scheme: dark)");
       const updateSystemTheme = () => {
         if (storedTheme() === "system") applyTheme("system");
         onStoreChange();
       };
       window.addEventListener("storage", onStoreChange);
       window.addEventListener(themeChangeEvent, onStoreChange);
-      media.addEventListener("change", updateSystemTheme);
+      media?.addEventListener("change", updateSystemTheme);
       return () => {
         window.removeEventListener("storage", onStoreChange);
         window.removeEventListener(themeChangeEvent, onStoreChange);
-        media.removeEventListener("change", updateSystemTheme);
+        media?.removeEventListener("change", updateSystemTheme);
       };
     },
     storedTheme,
@@ -55,20 +63,34 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event(themeChangeEvent));
   }
 
+  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Laptop;
+
   return (
-    <label className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-      <MoonStar aria-hidden="true" className="size-4" />
-      <span className="sr-only sm:not-sr-only">Theme</span>
-      <select
-        aria-label="Theme"
-        className="border-border bg-background text-foreground focus-visible:ring-ring h-9 rounded-lg border px-2 text-xs outline-none focus-visible:ring-2"
-        onChange={(event) => updateTheme(event.target.value as ThemePreference)}
-        value={theme}
-      >
-        <option value="system">System</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
-    </label>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button aria-label="Theme" size="icon-sm" variant="ghost">
+          <Icon aria-hidden="true" className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuRadioGroup
+          onValueChange={(value) => updateTheme(value as ThemePreference)}
+          value={theme}
+        >
+          <DropdownMenuRadioItem value="light">
+            <Sun aria-hidden="true" />
+            Light
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="dark">
+            <Moon aria-hidden="true" />
+            Dark
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="system">
+            <Laptop aria-hidden="true" />
+            System
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

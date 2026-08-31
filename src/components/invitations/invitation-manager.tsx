@@ -68,7 +68,7 @@ export function InvitationManager({
 
       {access.can.manageMembers ? (
         <form
-          className="bg-card grid gap-4 rounded-2xl border p-5 shadow-sm md:grid-cols-[1fr_160px_auto] md:items-end"
+          className="bg-card grid gap-4 rounded-xl border p-5 shadow-xs md:grid-cols-[1fr_160px_auto] md:items-end"
           onSubmit={invite}
         >
           <div className="space-y-2">
@@ -118,7 +118,7 @@ export function InvitationManager({
               No pending Invitations.
             </p>
           ) : (
-            <div className="bg-card mt-3 divide-y rounded-2xl border">
+            <div className="bg-card mt-3 divide-y rounded-xl border shadow-xs">
               {invitations.map((invitation) => (
                 <div
                   className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center"

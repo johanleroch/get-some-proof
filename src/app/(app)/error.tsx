@@ -16,8 +16,8 @@ export default function AppError({
   }, [error]);
 
   return (
-    <main className="bg-muted/35 grid min-h-screen place-items-center px-6">
-      <div className="bg-card max-w-md rounded-2xl border p-8 text-center shadow-sm">
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
+      <div className="bg-card max-w-md rounded-xl border p-8 text-center shadow-xs">
         <h1 className="text-2xl font-semibold">This screen could not load</h1>
         <p className="text-muted-foreground mt-2 text-sm leading-6">
           Check your connection or permissions, then try again. No change was

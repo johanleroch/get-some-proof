@@ -12,6 +12,14 @@ import BarChart from "@/components/charts/bar-chart";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { Grid } from "@/components/charts/grid";
 import { ChartTooltip } from "@/components/charts/tooltip";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 function MetricCard({
   icon: Icon,
@@ -23,15 +31,20 @@ function MetricCard({
   value: number | null | undefined;
 }) {
   return (
-    <div className="bg-card rounded-2xl border p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-muted-foreground text-sm font-medium">{label}</p>
-        <Icon aria-hidden="true" className="text-primary size-4" />
-      </div>
-      <p className="mt-3 text-3xl font-semibold tabular-nums">
-        {value === undefined ? "—" : (value ?? "Restricted")}
-      </p>
-    </div>
+    <Card className="gap-4 py-5 shadow-xs">
+      <CardHeader className="grid grid-cols-[1fr_auto] items-center px-5">
+        <CardDescription className="font-medium">{label}</CardDescription>
+        <Icon aria-hidden="true" className="text-muted-foreground size-4" />
+      </CardHeader>
+      <CardContent className="px-5">
+        <p className="text-3xl font-semibold tracking-tight tabular-nums">
+          {value === undefined ? "—" : (value ?? "Restricted")}
+        </p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Current Organization
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -49,39 +62,44 @@ function MetricChart({
   const hasData = data.some((item) => Number(item[dataKey]) > 0);
 
   return (
-    <section className="bg-card rounded-2xl border p-5 shadow-sm">
-      <h2 className="font-semibold">{title}</h2>
-      {hasData ? (
-        <div
-          aria-label={`${title}: ${data.map((item) => `${item.label} ${item[dataKey]}`).join(", ")}`}
-          className="mt-5"
-          role="img"
-        >
-          <BarChart
-            animationDuration={700}
-            aspectRatio="16 / 8"
-            data={data}
-            margin={{ top: 12, right: 16, bottom: 42, left: 16 }}
-            xDataKey="label"
+    <Card className="shadow-xs">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>Live Organization data</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {hasData ? (
+          <div
+            aria-label={`${title}: ${data.map((item) => `${item.label} ${item[dataKey]}`).join(", ")}`}
+            className="min-h-56"
+            role="img"
           >
-            <Grid horizontal hideHorizontalEdgeLines />
-            <Bar
-              dataKey={dataKey}
-              fill="var(--chart-line-primary)"
-              lineCap={8}
-            />
-            <BarXAxis showAllLabels />
-            <ChartTooltip showCrosshair={false} />
-          </BarChart>
-        </div>
-      ) : (
-        <div className="bg-muted/45 mt-5 grid min-h-48 place-items-center rounded-xl border border-dashed p-6 text-center">
-          <p className="text-muted-foreground max-w-xs text-sm">
-            {emptyMessage}
-          </p>
-        </div>
-      )}
-    </section>
+            <BarChart
+              animationDuration={700}
+              aspectRatio="16 / 8"
+              data={data}
+              margin={{ top: 12, right: 16, bottom: 42, left: 16 }}
+              xDataKey="label"
+            >
+              <Grid horizontal hideHorizontalEdgeLines />
+              <Bar
+                dataKey={dataKey}
+                fill="var(--chart-line-primary)"
+                lineCap={8}
+              />
+              <BarXAxis showAllLabels />
+              <ChartTooltip showCrosshair={false} />
+            </BarChart>
+          </div>
+        ) : (
+          <div className="bg-muted/30 grid min-h-56 place-items-center rounded-lg border border-dashed p-6 text-center">
+            <p className="text-muted-foreground max-w-xs text-sm">
+              {emptyMessage}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -94,7 +112,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
 
   if (organization === undefined || (organization && overview === undefined)) {
     return (
-      <main className="bg-muted/35 grid min-h-screen place-items-center">
+      <main className="grid min-h-svh place-items-center">
         <p className="text-muted-foreground text-sm" role="status">
           Loading Organization overview…
         </p>
@@ -104,7 +122,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
 
   if (organization === null) {
     return (
-      <main className="bg-muted/35 grid min-h-screen place-items-center px-6">
+      <main className="grid min-h-svh place-items-center px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm leading-6">
@@ -122,23 +140,19 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
       organizationName={organization.name}
       organizationSlug={organization.slug}
     >
-      <div className="space-y-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-primary text-sm font-medium">Overview</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-              {organization.name}
-            </h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+            <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+            <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
               Live, Tenant-scoped activity from Projects and Memberships.
             </p>
           </div>
-          <Link
-            className="bg-primary text-primary-foreground focus-visible:ring-ring inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
-            href={`/org/${organization.slug}/projects` as Route}
-          >
-            View Projects
-          </Link>
+          <Button asChild>
+            <Link href={`/org/${organization.slug}/projects` as Route}>
+              View Projects
+            </Link>
+          </Button>
         </div>
 
         <section
@@ -167,7 +181,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
           />
         </section>
 
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           <MetricChart
             data={overview?.projectStatus ?? []}
             dataKey="projects"

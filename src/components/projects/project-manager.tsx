@@ -116,13 +116,10 @@ export function ProjectManager({
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-primary text-sm font-medium">Example resource</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Projects
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             A removable, Tenant-scoped module demonstrating the complete role
             matrix.
           </p>
@@ -153,7 +150,7 @@ export function ProjectManager({
       ) : null}
 
       {projects.length === 0 ? (
-        <section className="bg-card mt-8 rounded-2xl border border-dashed p-10 text-center">
+        <section className="bg-card mt-6 rounded-xl border border-dashed p-10 text-center shadow-xs">
           <h2 className="font-semibold">No Projects yet</h2>
           <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
             {canWrite
@@ -162,10 +159,10 @@ export function ProjectManager({
           </p>
         </section>
       ) : (
-        <div className="bg-card mt-8 overflow-hidden rounded-2xl border shadow-sm">
+        <div className="bg-card mt-6 overflow-hidden rounded-xl border shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-muted/45 text-muted-foreground border-b text-xs tracking-wide uppercase">
+              <thead className="bg-muted/40 text-muted-foreground border-b text-xs">
                 <tr>
                   <th className="px-5 py-3 font-medium" scope="col">
                     Name
@@ -254,7 +251,7 @@ export function ProjectManager({
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
           role="dialog"
         >
-          <div className="bg-background w-full max-w-lg rounded-2xl border p-6 shadow-xl">
+          <div className="bg-background w-full max-w-lg rounded-xl border p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold" id="project-editor-title">
@@ -325,7 +322,7 @@ export function ProjectManager({
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
           role="alertdialog"
         >
-          <div className="bg-background w-full max-w-md rounded-2xl border p-6 shadow-xl">
+          <div className="bg-background w-full max-w-md rounded-xl border p-6 shadow-xl">
             <h2 className="text-xl font-semibold" id="delete-project-title">
               Permanently delete Project?
             </h2>
@@ -341,9 +338,9 @@ export function ProjectManager({
                 Cancel
               </Button>
               <Button
-                className="bg-red-600 text-white hover:bg-red-700"
                 disabled={pending}
                 onClick={() => void confirmDelete()}
+                variant="destructive"
               >
                 {pending ? "Deleting…" : "Delete permanently"}
               </Button>

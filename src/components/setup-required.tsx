@@ -10,8 +10,8 @@ import {
 
 export function SetupRequired({ missing }: { missing: string[] }) {
   return (
-    <main className="bg-muted/40 grid min-h-screen place-items-center px-6 py-16">
-      <Card className="w-full max-w-2xl">
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-6 py-16">
+      <Card className="w-full max-w-2xl shadow-xs">
         <CardHeader>
           <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300">
             <CircleAlert aria-hidden="true" className="size-5" />
@@ -31,7 +31,7 @@ export function SetupRequired({ missing }: { missing: string[] }) {
               ))}
             </ul>
           </div>
-          <div className="border-border bg-background rounded-xl border p-4">
+          <div className="border-border bg-background rounded-lg border p-4">
             <p className="flex items-center gap-2 text-sm font-medium">
               <Terminal aria-hidden="true" className="size-4" />
               Next step

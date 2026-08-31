@@ -10,6 +10,7 @@ type VisualEvidenceConfig = {
     title: string;
     path: string;
     heading: string;
+    theme?: "light" | "dark";
   }>;
 };
 
@@ -22,6 +23,11 @@ const config = JSON.parse(
 
 for (const screen of config.screens) {
   test(`captures ${screen.title}`, async ({ page }, testInfo) => {
+    if (screen.theme) {
+      await page.addInitScript((theme) => {
+        localStorage.setItem("convex-admin-theme", theme);
+      }, screen.theme);
+    }
     await page.goto(screen.path);
     await expect(
       page.getByRole("heading", { name: screen.heading }),

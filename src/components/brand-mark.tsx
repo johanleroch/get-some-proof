@@ -1,4 +1,4 @@
-import { Activity } from "lucide-react";
+import { GalleryVerticalEnd } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -7,11 +7,11 @@ export function BrandMark({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "bg-primary text-primary-foreground grid size-9 shrink-0 place-items-center rounded-xl",
+        "bg-primary text-primary-foreground grid size-8 shrink-0 place-items-center rounded-lg",
         className,
       )}
     >
-      <Activity className="size-4" />
+      <GalleryVerticalEnd className="size-4" />
     </span>
   );
 }

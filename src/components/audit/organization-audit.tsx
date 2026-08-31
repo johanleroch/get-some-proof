@@ -15,7 +15,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
 
   if (organization === undefined || (organization && access === undefined)) {
     return (
-      <main className="bg-muted/35 grid min-h-screen place-items-center">
+      <main className="grid min-h-svh place-items-center">
         <p className="text-muted-foreground text-sm">Loading Audit Log…</p>
       </main>
     );
@@ -23,7 +23,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
 
   if (organization === null) {
     return (
-      <main className="bg-muted/35 grid min-h-screen place-items-center px-6">
+      <main className="grid min-h-svh place-items-center px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -43,7 +43,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
       {access?.can.readAudit ? (
         <AuditLog organizationId={organization.id} />
       ) : (
-        <section className="bg-card rounded-2xl border p-8 text-center shadow-sm">
+        <section className="bg-card rounded-xl border p-8 text-center shadow-xs">
           <h1 className="text-2xl font-semibold">Audit Log unavailable</h1>
           <p className="text-muted-foreground mx-auto mt-2 max-w-lg text-sm leading-6">
             Only an Organization Owner or Admin can review administrative

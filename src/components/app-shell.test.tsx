@@ -33,6 +33,11 @@ vi.mock("@/components/theme-toggle", () => ({
 describe("AppShell", () => {
   beforeEach(() => {
     cleanup();
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1024,
+      writable: true,
+    });
     mocks.pathname = "/org/acme-1234/dashboard";
     mocks.readAudit = true;
     mocks.updateOrganization = true;
@@ -85,7 +90,35 @@ describe("AppShell", () => {
     ).not.toHaveLength(0);
   });
 
-  it("supports a keyboard-dismissible mobile dialog and desktop collapse", () => {
+  it("supports native sidebar collapse", () => {
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationSlug="acme-1234"
+      >
+        Dashboard content
+      </AppShell>,
+    );
+
+    const sidebar = container.querySelector('[data-slot="sidebar"]');
+    expect(sidebar).toHaveAttribute("data-state", "expanded");
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Toggle Sidebar" })[1],
+    );
+    expect(sidebar).toHaveAttribute("data-state", "collapsed");
+    expect(screen.getAllByRole("link", { name: "Projects" })).not.toHaveLength(
+      0,
+    );
+  });
+
+  it("opens and dismisses the native mobile sidebar", () => {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 500,
+      writable: true,
+    });
+
     render(
       <AppShell
         organizationId={"organization-1" as never}
@@ -96,22 +129,9 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
-    expect(
-      screen.getByRole("dialog", { name: "Mobile navigation" }),
-    ).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Open navigation" }),
-    ).toHaveFocus();
-
-    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
-    expect(
-      screen.getByRole("button", { name: "Expand sidebar" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Projects" })).not.toHaveLength(
-      0,
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Toggle Sidebar" }));
+    expect(screen.getByRole("dialog", { name: "Sidebar" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Sidebar" })).toBeNull();
   });
 });

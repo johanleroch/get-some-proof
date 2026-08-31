@@ -8,6 +8,7 @@ import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 
 type Session = {
@@ -161,19 +162,22 @@ export function AccountSecurity() {
   const visibleCodes = setup?.backupCodes ?? backupCodes;
 
   return (
-    <main className="bg-muted/35 min-h-screen px-5 py-10">
-      <div className="mx-auto max-w-4xl space-y-8">
+    <main className="bg-muted/30 min-h-svh px-5 py-8">
+      <div className="mx-auto max-w-4xl space-y-6">
         <div>
-          <Link
-            className="text-primary text-sm font-medium hover:underline"
-            href="/dashboard"
-          >
-            ← Back to dashboard
-          </Link>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight">
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+              href="/dashboard"
+            >
+              ← Back to dashboard
+            </Link>
+            <ThemeToggle />
+          </div>
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight">
             Account security
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
+          <p className="text-muted-foreground mt-1 text-sm">
             These controls protect your User account across every Organization.
           </p>
         </div>
@@ -195,9 +199,9 @@ export function AccountSecurity() {
           </p>
         ) : null}
 
-        <section className="bg-card rounded-2xl border p-6 shadow-sm">
+        <section className="bg-card rounded-xl border p-6 shadow-xs">
           <div className="flex items-start gap-4">
-            <div className="bg-primary/10 text-primary grid size-10 place-items-center rounded-xl">
+            <div className="bg-muted text-foreground grid size-10 place-items-center rounded-lg">
               <ShieldCheck aria-hidden="true" className="size-5" />
             </div>
             <div>
@@ -296,7 +300,7 @@ export function AccountSecurity() {
           ) : null}
         </section>
 
-        <section className="bg-card rounded-2xl border p-6 shadow-sm">
+        <section className="bg-card rounded-xl border p-6 shadow-xs">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold">Active Sessions</h2>
