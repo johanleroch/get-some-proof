@@ -255,34 +255,37 @@ export function AppShell({
           <NavUser />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-surface border-border/70 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              className="mx-2 data-[orientation=vertical]:h-4"
-              orientation="vertical"
-            />
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-medium">{title}</h1>
+      <SidebarInset className="dashboard-frame border-border/70 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
+        <div className="dashboard-view">
+          <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
+            <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                className="mx-2 data-[orientation=vertical]:h-4"
+                orientation="vertical"
+              />
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-medium">{title}</h1>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <ThemeToggle />
+              </div>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <ThemeToggle />
+          </header>
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main mx-auto flex w-full max-w-[1600px] flex-1 flex-col">
+              <div className="flex flex-1 flex-col gap-5 p-4 md:p-6 lg:p-8">
+                {children}
+              </div>
             </div>
           </div>
-        </header>
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main mx-auto flex w-full max-w-[1600px] flex-1 flex-col">
-            <div className="flex flex-1 flex-col gap-5 p-4 md:p-6 lg:p-8">
-              {children}
-            </div>
-          </div>
+          <span className="sr-only" aria-live="polite">
+            {health?.status === "ok"
+              ? "Convex connected"
+              : "Connecting to Convex"}
+          </span>
         </div>
-        <span className="sr-only" aria-live="polite">
-          {health?.status === "ok"
-            ? "Convex connected"
-            : "Connecting to Convex"}
-        </span>
+        <div aria-hidden="true" className="dashboard-grain" />
       </SidebarInset>
     </SidebarProvider>
   );
