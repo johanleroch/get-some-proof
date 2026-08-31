@@ -206,6 +206,12 @@ body {
   display: none;
 }
 
+.dashboard-frame-background,
+.dashboard-glow,
+.dashboard-shine {
+  display: none;
+}
+
 .dark .dashboard-frame {
   background: rgb(9 10 11);
   border: 0;
@@ -213,11 +219,73 @@ body {
   box-shadow: none;
 }
 
+.dark .dashboard-frame-background {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 12px;
+  background: rgb(16 17 18);
+}
+
 .dark .dashboard-view {
   background: rgb(255 255 255 / 1%);
   border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 8px;
   box-shadow: 0 0 0 2px rgb(0 0 0 / 20%);
+}
+
+.dark .dashboard-glow {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 400px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  border-radius: 400px;
+  background: radial-gradient(
+    50% 50%,
+    rgb(255 255 255 / 4%) 0%,
+    rgb(255 255 255 / 0%) 90%
+  );
+}
+
+.dark .dashboard-shine {
+  --dashboard-shine-x: 0px;
+
+  pointer-events: none;
+  position: absolute;
+  z-index: 11;
+  display: block;
+  border: 1px solid rgb(255 255 255 / 8%);
+  mask-image: radial-gradient(
+    200px 200px at var(--dashboard-shine-x) 0%,
+    rgb(0 0 0) 0%,
+    rgb(0 0 0 / 60%) 30%,
+    rgb(0 0 0 / 20%) 50%,
+    rgb(0 0 0 / 0%) 70%
+  );
+}
+
+.dark .dashboard-shine-frame {
+  inset: 0;
+  border-radius: 12px;
+}
+
+.dark .dashboard-shine-view {
+  top: 8px;
+  bottom: 8px;
+  left: 288px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.dark .dashboard-shine-body {
+  --dashboard-shine-x: 8%;
 }
 
 .dark .dashboard-grain {

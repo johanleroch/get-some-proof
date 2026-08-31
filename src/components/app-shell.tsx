@@ -205,6 +205,7 @@ export function AppShell({
         } as CSSProperties
       }
     >
+      <div aria-hidden="true" className="dashboard-frame-background" />
       <Sidebar collapsible="offcanvas" variant="inset">
         <SidebarHeader>
           <OrganizationSwitcher
@@ -257,6 +258,7 @@ export function AppShell({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="dashboard-view border-border/70 min-h-0 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
+        <div aria-hidden="true" className="dashboard-glow" />
         <div className="flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -287,6 +289,22 @@ export function AppShell({
           </span>
         </div>
       </SidebarInset>
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-frame dashboard-shine-sidebar"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-view dashboard-shine-sidebar"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-frame dashboard-shine-body"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-view dashboard-shine-body"
+      />
       <div aria-hidden="true" className="dashboard-grain" />
     </SidebarProvider>
   );

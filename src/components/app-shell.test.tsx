@@ -177,9 +177,20 @@ describe("AppShell", () => {
     const frame = container.querySelector(".dashboard-frame");
     const view = container.querySelector(".dashboard-view");
     const grain = container.querySelector(".dashboard-grain");
+    const frameBackground = container.querySelector(
+      ".dashboard-frame-background",
+    );
+    const glow = container.querySelector(".dashboard-glow");
+    const shines = container.querySelectorAll(".dashboard-shine");
 
     expect(frame).toHaveAttribute("data-slot", "sidebar-wrapper");
     expect(view).toHaveAttribute("data-slot", "sidebar-inset");
+    expect(frameBackground?.parentElement).toBe(frame);
+    expect(glow?.parentElement).toBe(view);
+    expect(shines).toHaveLength(4);
+    expect([...shines].every((shine) => shine.parentElement === frame)).toBe(
+      true,
+    );
     expect(grain?.parentElement).toBe(frame);
     expect(view?.contains(grain)).toBe(false);
   });
