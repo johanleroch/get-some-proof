@@ -1,6 +1,8 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import type { Route } from "next";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 
@@ -34,6 +36,9 @@ export function ProjectManager({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const projects = useQuery(api.projects.list, { organizationId });
   const access = useQuery(api.organizationAuthorization.getMine, {
     organizationId,
@@ -54,10 +59,23 @@ export function ProjectManager({
 
   const canWrite = access.can.createProjects;
   const canDelete = access.can.deleteProjects;
+  const queryRequestsCreate = searchParams.get("new") === "1";
+  const activeEditor =
+    editor ??
+    (queryRequestsCreate && canWrite
+      ? ({ mode: "create" } satisfies EditorState)
+      : null);
+
+  function closeEditor() {
+    setEditor(null);
+    if (queryRequestsCreate) {
+      router.replace(pathname as Route, { scroll: false });
+    }
+  }
 
   async function submitProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editor) return;
+    if (!activeEditor) return;
     setPending(true);
     setError(null);
     setSuccess(null);
@@ -69,14 +87,14 @@ export function ProjectManager({
     };
 
     try {
-      if (editor.mode === "create") {
+      if (activeEditor.mode === "create") {
         await createProject(input);
         setSuccess("Project created.");
       } else {
-        await updateProject({ ...input, projectId: editor.project.id });
+        await updateProject({ ...input, projectId: activeEditor.project.id });
         setSuccess("Project updated.");
       }
-      setEditor(null);
+      closeEditor();
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -244,7 +262,7 @@ export function ProjectManager({
         </div>
       )}
 
-      {editor ? (
+      {activeEditor ? (
         <div
           aria-labelledby="project-editor-title"
           aria-modal="true"
@@ -255,7 +273,9 @@ export function ProjectManager({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold" id="project-editor-title">
-                  {editor.mode === "create" ? "Create Project" : "Edit Project"}
+                  {activeEditor.mode === "create"
+                    ? "Create Project"
+                    : "Edit Project"}
                 </h2>
                 <p className="text-muted-foreground mt-1 text-sm">
                   This record will remain scoped to the active Organization.
@@ -263,7 +283,7 @@ export function ProjectManager({
               </div>
               <Button
                 aria-label="Close Project editor"
-                onClick={() => setEditor(null)}
+                onClick={closeEditor}
                 size="icon"
                 variant="ghost"
               >
@@ -276,7 +296,9 @@ export function ProjectManager({
                 <Input
                   autoFocus
                   defaultValue={
-                    editor.mode === "edit" ? editor.project.name : ""
+                    activeEditor.mode === "edit"
+                      ? activeEditor.project.name
+                      : ""
                   }
                   id="project-name"
                   maxLength={100}
@@ -290,7 +312,9 @@ export function ProjectManager({
                 <textarea
                   className="border-input focus-visible:ring-ring min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2"
                   defaultValue={
-                    editor.mode === "edit" ? editor.project.description : ""
+                    activeEditor.mode === "edit"
+                      ? activeEditor.project.description
+                      : ""
                   }
                   id="project-description"
                   maxLength={1000}
@@ -298,11 +322,7 @@ export function ProjectManager({
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <Button
-                  onClick={() => setEditor(null)}
-                  type="button"
-                  variant="outline"
-                >
+                <Button onClick={closeEditor} type="button" variant="outline">
                   Cancel
                 </Button>
                 <Button disabled={pending} type="submit">

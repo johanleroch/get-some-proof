@@ -5,20 +5,22 @@ import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FolderKanban,
-  LayoutDashboard,
-  Settings,
-  ShieldCheck,
-  UserRound,
-  Users,
-} from "lucide-react";
+  Icon,
+  IconDashboard,
+  IconFolder,
+  IconPlus,
+  IconSettings,
+  IconShieldCheck,
+  IconUsers,
+} from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { BrandMark } from "@/components/brand-mark";
+import { NavUser } from "@/components/account/nav-user";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -26,7 +28,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -39,18 +40,18 @@ import {
 
 type NavigationItem = {
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: Icon;
   href: Route;
   visible: boolean;
 };
 
-function NavigationGroup({
+function Navigation({
+  className,
   items,
-  label,
   pathname,
 }: {
+  className?: string;
   items: NavigationItem[];
-  label: string;
   pathname: string;
 }) {
   const visibleItems = items.filter(({ visible }) => visible);
@@ -58,22 +59,19 @@ function NavigationGroup({
   if (visibleItems.length === 0) return null;
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+    <SidebarGroup className={className}>
       <SidebarGroupContent>
         <SidebarMenu>
-          {visibleItems.map(({ href, icon: Icon, label: itemLabel }) => {
-            const active = pathname === href;
+          {visibleItems.map(({ href, icon: IconComponent, label }) => {
+            const active =
+              pathname === href ||
+              (pathname.startsWith(`${href}/`) && href !== "/");
             return (
               <SidebarMenuItem key={href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={active}
-                  tooltip={itemLabel}
-                >
+                <SidebarMenuButton asChild isActive={active} tooltip={label}>
                   <Link aria-current={active ? "page" : undefined} href={href}>
-                    <Icon aria-hidden="true" />
-                    <span>{itemLabel}</span>
+                    <IconComponent aria-hidden="true" />
+                    <span>{label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -82,6 +80,15 @@ function NavigationGroup({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
+  );
+}
+
+function pageTitle(pathname: string, items: NavigationItem[]) {
+  return (
+    items.find(
+      ({ href }) =>
+        pathname === href || (pathname.startsWith(`${href}/`) && href !== "/"),
+    )?.label ?? "Dashboard"
   );
 }
 
@@ -102,108 +109,128 @@ export function AppShell({
   });
   const health = useQuery(api.system.health);
 
-  const workspaceNavigation: NavigationItem[] = [
+  const mainNavigation: NavigationItem[] = [
     {
       label: "Overview",
-      icon: LayoutDashboard,
+      icon: IconDashboard,
       href: `/org/${organizationSlug}/dashboard` as Route,
       visible: true,
     },
     {
       label: "Projects",
-      icon: FolderKanban,
+      icon: IconFolder,
       href: `/org/${organizationSlug}/projects` as Route,
       visible: true,
     },
     {
       label: "Members",
-      icon: Users,
+      icon: IconUsers,
       href: `/org/${organizationSlug}/members` as Route,
       visible: true,
     },
     {
       label: "Audit Log",
-      icon: ShieldCheck,
+      icon: IconShieldCheck,
       href: `/org/${organizationSlug}/audit` as Route,
       visible: authorization?.can.readAudit ?? false,
     },
   ];
 
-  const manageNavigation: NavigationItem[] = [
+  const secondaryNavigation: NavigationItem[] = [
     {
       label: "Organization settings",
-      icon: Settings,
+      icon: IconSettings,
       href: `/org/${organizationSlug}/settings` as Route,
       visible: authorization?.can.updateOrganization ?? false,
     },
-    {
-      label: "Account security",
-      icon: UserRound,
-      href: "/account/security" as Route,
-      visible: true,
-    },
   ];
+
+  const allNavigation = [...mainNavigation, ...secondaryNavigation];
+  const title = pageTitle(pathname, allNavigation);
 
   return (
     <SidebarProvider
       style={
         {
           "--sidebar-width": "18rem",
-          "--sidebar-width-icon": "3rem",
+          "--header-height": "3rem",
         } as CSSProperties
       }
     >
-      <Sidebar collapsible="icon" variant="inset">
+      <Sidebar collapsible="offcanvas" variant="inset">
         <SidebarHeader>
-          <div className="flex min-h-12 items-start gap-2 p-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-            <BrandMark />
-            <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-              <OrganizationSwitcher
-                currentName={organizationName}
-                currentSlug={organizationSlug}
-              />
-            </div>
-          </div>
+          <OrganizationSwitcher
+            currentName={organizationName}
+            currentSlug={organizationSlug}
+          />
         </SidebarHeader>
         <SidebarContent>
-          <NavigationGroup
-            items={workspaceNavigation}
-            label="Workspace"
-            pathname={pathname}
-          />
-          <NavigationGroup
-            items={manageNavigation}
-            label="Manage"
+          <SidebarGroup>
+            <SidebarGroupContent className="flex flex-col gap-2">
+              <SidebarMenu>
+                <SidebarMenuItem className="flex items-center gap-2">
+                  <SidebarMenuButton
+                    asChild
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                    tooltip="Create a project"
+                  >
+                    <Link
+                      href={`/org/${organizationSlug}/projects?new=1` as Route}
+                    >
+                      <IconPlus />
+                      <span>New project</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  {authorization?.can.updateOrganization ? (
+                    <Button
+                      aria-label="Organization settings"
+                      asChild
+                      className="size-8 shrink-0"
+                      size="icon"
+                      variant="outline"
+                    >
+                      <Link href={`/org/${organizationSlug}/settings` as Route}>
+                        <IconSettings />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <Navigation items={mainNavigation} pathname={pathname} />
+          <Navigation
+            className="mt-auto"
+            items={secondaryNavigation}
             pathname={pathname}
           />
         </SidebarContent>
         <SidebarFooter>
-          <div className="text-sidebar-foreground/65 flex items-center gap-2 px-2 py-1 text-xs group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-            <span
-              aria-hidden="true"
-              className="size-1.5 rounded-full bg-emerald-500"
-            />
-            <span className="group-data-[collapsible=icon]:sr-only">
-              {health?.status === "ok" ? "Convex connected" : "Connecting"}
-            </span>
-          </div>
+          <NavUser />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear">
-          <SidebarTrigger className="-ml-1" />
-          <Separator className="mr-2 h-4" orientation="vertical" />
-          <p className="min-w-0 truncate text-sm font-medium">
-            {organizationName}
-          </p>
-          <div className="ml-auto">
-            <ThemeToggle />
+        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
+          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              className="mx-2 data-[orientation=vertical]:h-4"
+              orientation="vertical"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-medium">{title}</h1>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeToggle />
+            </div>
           </div>
         </header>
         <div className="flex flex-1 flex-col">
-          <div className="mx-auto w-full max-w-[1600px] flex-1 p-4 md:p-6">
-            {children}
+          <div className="@container/main mx-auto flex w-full max-w-[1600px] flex-1 flex-col">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+              {children}
+            </div>
           </div>
         </div>
         <span className="sr-only" aria-live="polite">

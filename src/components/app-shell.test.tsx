@@ -26,6 +26,10 @@ vi.mock("@/components/organizations/organization-switcher", () => ({
   OrganizationSwitcher: () => <div>Organization switcher</div>,
 }));
 
+vi.mock("@/components/account/nav-user", () => ({
+  NavUser: () => <div>User menu</div>,
+}));
+
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div>Theme control</div>,
 }));
@@ -63,9 +67,7 @@ describe("AppShell", () => {
     expect(
       screen.getAllByRole("link", { name: "Organization settings" }),
     ).not.toHaveLength(0);
-    expect(
-      screen.getAllByRole("link", { name: "Account security" }),
-    ).not.toHaveLength(0);
+    expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
   it("hides privileged destinations for lower roles", () => {
@@ -85,9 +87,7 @@ describe("AppShell", () => {
     expect(
       screen.queryByRole("link", { name: "Organization settings" }),
     ).toBeNull();
-    expect(
-      screen.getAllByRole("link", { name: "Account security" }),
-    ).not.toHaveLength(0);
+    expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
   it("supports native sidebar collapse", () => {

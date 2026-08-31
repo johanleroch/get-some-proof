@@ -1,6 +1,13 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { OrganizationSwitcher } from "./organization-switcher";
 
 const mocks = vi.hoisted(() => ({
@@ -20,24 +27,37 @@ vi.mock("next/navigation", () => ({
 
 describe("OrganizationSwitcher", () => {
   beforeEach(() => {
+    cleanup();
     mocks.pathname = "/org/acme-1234/projects";
     mocks.replace.mockReset();
     mocks.useQuery.mockReset();
   });
 
-  it("keeps the switcher hidden for one active Membership", () => {
+  function renderSwitcher(currentName = "Acme", currentSlug = "acme-1234") {
+    return render(
+      <SidebarProvider>
+        <OrganizationSwitcher
+          currentName={currentName}
+          currentSlug={currentSlug}
+        />
+      </SidebarProvider>,
+    );
+  }
+
+  it("shows the active Organization and creation action", () => {
     mocks.useQuery.mockReturnValue([
       { id: "organization-1", name: "Acme", slug: "acme-1234" },
     ]);
 
-    render(<OrganizationSwitcher currentName="Acme" currentSlug="acme-1234" />);
+    renderSwitcher();
 
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Switch Organization" }),
+      { button: 0, ctrlKey: false },
+    );
+    expect(screen.getAllByText("Acme")).not.toHaveLength(0);
     expect(
-      screen.queryByLabelText("Switch Organization"),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Acme")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /create another organization/i }),
+      screen.getByRole("menuitem", { name: /create organization/i }),
     ).toHaveAttribute("href", "/onboarding");
   });
 
@@ -47,10 +67,12 @@ describe("OrganizationSwitcher", () => {
       { id: "organization-2", name: "Beta", slug: "beta-5678" },
     ]);
 
-    render(<OrganizationSwitcher currentName="Acme" currentSlug="acme-1234" />);
-    fireEvent.change(screen.getByLabelText("Switch Organization"), {
-      target: { value: "beta-5678" },
-    });
+    renderSwitcher();
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Switch Organization" }),
+      { button: 0, ctrlKey: false },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));
 
     expect(mocks.replace).toHaveBeenCalledWith("/org/beta-5678/projects");
   });
@@ -61,9 +83,7 @@ describe("OrganizationSwitcher", () => {
       { id: "organization-1", name: "Acme", slug: "acme-1234" },
     ]);
 
-    render(
-      <OrganizationSwitcher currentName="Revoked" currentSlug="revoked-1234" />,
-    );
+    renderSwitcher("Revoked", "revoked-1234");
 
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith("/org/acme-1234/settings");

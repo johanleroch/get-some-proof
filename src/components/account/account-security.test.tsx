@@ -25,6 +25,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
 }));
 
+vi.mock("@/components/account/account-settings-shell", () => ({
+  AccountSettingsShell: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     useSession: () => ({

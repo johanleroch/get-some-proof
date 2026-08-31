@@ -1,14 +1,13 @@
 "use client";
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 
+import { AccountSettingsShell } from "@/components/account/account-settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 
 type Session = {
@@ -162,21 +161,10 @@ export function AccountSecurity() {
   const visibleCodes = setup?.backupCodes ?? backupCodes;
 
   return (
-    <main className="bg-muted/30 min-h-svh px-5 py-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+    <AccountSettingsShell>
+      <div className="space-y-6">
         <div>
-          <div className="flex items-center justify-between gap-4">
-            <Link
-              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-              href="/dashboard"
-            >
-              ← Back to dashboard
-            </Link>
-            <ThemeToggle />
-          </div>
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-            Account security
-          </h1>
+          <h2 className="text-xl font-semibold tracking-tight">Security</h2>
           <p className="text-muted-foreground mt-1 text-sm">
             These controls protect your User account across every Organization.
           </p>
@@ -364,6 +352,6 @@ export function AccountSecurity() {
           </div>
         </section>
       </div>
-    </main>
+    </AccountSettingsShell>
   );
 }
