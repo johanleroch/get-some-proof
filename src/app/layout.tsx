@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
@@ -10,8 +10,8 @@ import { themeInitializationScript } from "@/lib/theme";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${inter.variable} ${geistMono.variable}`}>
         <TooltipProvider>
           {environment.configured ? (
             <ConvexClientProvider url={environment.convexUrl}>

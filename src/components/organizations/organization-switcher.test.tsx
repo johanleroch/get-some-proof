@@ -57,10 +57,16 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher();
 
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch Organization" }),
-      { button: 0, ctrlKey: false },
+    const trigger = screen.getByRole("button", {
+      name: "Switch Organization",
+    });
+    expect(trigger).toHaveClass("cursor-pointer");
+    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toHaveClass(
+      "bg-foreground",
+      "text-background",
     );
+
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     expect(screen.getAllByText("Acme")).not.toHaveLength(0);
     expect(
       screen.getByRole("menuitem", { name: /create organization/i }),
@@ -72,6 +78,9 @@ describe("OrganizationSwitcher", () => {
       "href",
       "/org/acme-1234/audit",
     );
+    for (const item of screen.getAllByRole("menuitem")) {
+      expect(item).toHaveClass("cursor-pointer");
+    }
   });
 
   it("hides Organization administration actions without permission", () => {

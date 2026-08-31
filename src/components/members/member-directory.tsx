@@ -7,6 +7,16 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DirectoryLoadingSkeleton } from "@/components/ui/page-skeletons";
 
@@ -129,7 +139,7 @@ export function MemberDirectory({
               className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center"
               key={member.id}
             >
-              <div className="bg-muted text-foreground grid size-9 place-items-center rounded-full text-sm font-semibold">
+              <div className="bg-foreground text-background grid size-9 place-items-center rounded-full text-sm font-semibold">
                 {member.displayName.slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -194,46 +204,43 @@ export function MemberDirectory({
         </details>
       ) : null}
 
-      {confirmation ? (
-        <div
-          aria-describedby="member-confirmation-description"
-          aria-labelledby="member-confirmation-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
-          role="alertdialog"
-        >
-          <div className="bg-background w-full max-w-md rounded-xl border p-6 shadow-xl">
-            <h2
-              className="text-xl font-semibold"
-              id="member-confirmation-title"
-            >
-              {confirmation.type === "leave"
-                ? "Leave Organization?"
-                : "Remove Member?"}
-            </h2>
-            <p
-              className="text-muted-foreground mt-2 text-sm"
-              id="member-confirmation-description"
-            >
-              {confirmation.type === "leave"
-                ? "Your Membership and Organization roles will be deactivated."
-                : `${confirmation.member.displayName} will lose access, while historical attribution is preserved.`}
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button onClick={() => setConfirmation(null)} variant="outline">
-                Cancel
-              </Button>
-              <Button
-                disabled={pending}
-                onClick={() => void confirmAction()}
-                variant="destructive"
-              >
-                {pending ? "Working…" : "Confirm"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) setConfirmation(null);
+        }}
+        open={confirmation !== null}
+      >
+        {confirmation ? (
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirmation.type === "leave"
+                  ? "Leave Organization?"
+                  : "Remove Member?"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmation.type === "leave"
+                  ? "Your Membership and Organization roles will be deactivated."
+                  : `${confirmation.member.displayName} will lose access, while historical attribution is preserved.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel asChild>
+                <Button variant="outline">Cancel</Button>
+              </AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  disabled={pending}
+                  onClick={() => void confirmAction()}
+                  variant="destructive"
+                >
+                  {pending ? "Working…" : "Confirm"}
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        ) : null}
+      </AlertDialog>
     </section>
   );
 }

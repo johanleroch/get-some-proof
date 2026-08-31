@@ -8,7 +8,26 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProjectsPageSkeleton } from "@/components/ui/page-skeletons";
@@ -263,34 +282,34 @@ export function ProjectManager({
         </div>
       )}
 
-      {activeEditor ? (
-        <div
-          aria-labelledby="project-editor-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
-          role="dialog"
-        >
-          <div className="bg-background w-full max-w-lg rounded-xl border p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold" id="project-editor-title">
-                  {activeEditor.mode === "create"
-                    ? "Create Project"
-                    : "Edit Project"}
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  This record will remain scoped to the active Organization.
-                </p>
-              </div>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) closeEditor();
+        }}
+        open={activeEditor !== null}
+      >
+        {activeEditor ? (
+          <DialogContent showCloseButton={false}>
+            <DialogHeader className="pr-10">
+              <DialogTitle>
+                {activeEditor.mode === "create"
+                  ? "Create Project"
+                  : "Edit Project"}
+              </DialogTitle>
+              <DialogDescription>
+                This record will remain scoped to the active Organization.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogClose asChild>
               <Button
                 aria-label="Close Project editor"
-                onClick={closeEditor}
+                className="absolute top-4 right-4"
                 size="icon"
                 variant="ghost"
               >
                 <X aria-hidden="true" className="size-4" />
               </Button>
-            </div>
+            </DialogClose>
             <form className="mt-6 space-y-5" onSubmit={submitProject}>
               <div className="space-y-2">
                 <Label htmlFor="project-name">Name</Label>
@@ -322,53 +341,53 @@ export function ProjectManager({
                   name="description"
                 />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button onClick={closeEditor} type="button" variant="outline">
-                  Cancel
-                </Button>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
                 <Button disabled={pending} type="submit">
                   {pending ? "Saving…" : "Save Project"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      ) : null}
+          </DialogContent>
+        ) : null}
+      </Dialog>
 
-      {deleteTarget ? (
-        <div
-          aria-describedby="delete-project-description"
-          aria-labelledby="delete-project-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
-          role="alertdialog"
-        >
-          <div className="bg-background w-full max-w-md rounded-xl border p-6 shadow-xl">
-            <h2 className="text-xl font-semibold" id="delete-project-title">
-              Permanently delete Project?
-            </h2>
-            <p
-              className="text-muted-foreground mt-2 text-sm leading-6"
-              id="delete-project-description"
-            >
-              {deleteTarget.name} will be removed immediately. This action
-              cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button onClick={() => setDeleteTarget(null)} variant="outline">
-                Cancel
-              </Button>
-              <Button
-                disabled={pending}
-                onClick={() => void confirmDelete()}
-                variant="destructive"
-              >
-                {pending ? "Deleting…" : "Delete permanently"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget !== null}
+      >
+        {deleteTarget ? (
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Permanently delete Project?</AlertDialogTitle>
+              <AlertDialogDescription className="leading-6">
+                {deleteTarget.name} will be removed immediately. This action
+                cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel asChild>
+                <Button variant="outline">Cancel</Button>
+              </AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  disabled={pending}
+                  onClick={() => void confirmDelete()}
+                  variant="destructive"
+                >
+                  {pending ? "Deleting…" : "Delete permanently"}
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        ) : null}
+      </AlertDialog>
     </>
   );
 }

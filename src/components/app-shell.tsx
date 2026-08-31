@@ -37,7 +37,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
@@ -255,7 +254,6 @@ export function AppShell({
         <SidebarFooter>
           <NavUser />
         </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
       <SidebarInset className="dashboard-surface border-border/70 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
         <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">

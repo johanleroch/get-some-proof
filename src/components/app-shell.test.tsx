@@ -152,9 +152,11 @@ describe("AppShell", () => {
 
     const sidebar = container.querySelector('[data-slot="sidebar"]');
     expect(sidebar).toHaveAttribute("data-state", "expanded");
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Toggle Sidebar" })[1],
-    );
+    const triggers = screen.getAllByRole("button", {
+      name: "Toggle Sidebar",
+    });
+    expect(triggers).toHaveLength(1);
+    fireEvent.click(triggers[0]);
     expect(sidebar).toHaveAttribute("data-state", "collapsed");
     expect(screen.getAllByRole("link", { name: "Projects" })).not.toHaveLength(
       0,

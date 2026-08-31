@@ -52,18 +52,19 @@ describe("NavUser", () => {
         <NavUser />
       </SidebarProvider>,
     );
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Open user menu" }),
-      {
-        button: 0,
-        ctrlKey: false,
-      },
-    );
+    const trigger = screen.getByRole("button", { name: "Open user menu" });
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+    return trigger;
   }
 
   it("links to profile and security settings", () => {
-    renderMenu();
+    const trigger = renderMenu();
 
+    expect(trigger).toHaveClass("cursor-pointer");
+    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toHaveClass(
+      "bg-foreground",
+      "text-background",
+    );
     expect(screen.getByRole("menuitem", { name: "Profile" })).toHaveAttribute(
       "href",
       "/account/profile",
@@ -72,6 +73,9 @@ describe("NavUser", () => {
       "href",
       "/account/security",
     );
+    for (const item of screen.getAllByRole("menuitem")) {
+      expect(item).toHaveClass("cursor-pointer");
+    }
   });
 
   it("signs out from the footer menu", async () => {

@@ -86,7 +86,7 @@ export function OrganizationSwitcher({
               size="lg"
             >
               <Avatar className="size-8 rounded-lg">
-                <AvatarFallback className="bg-primary text-primary-foreground rounded-lg text-xs font-semibold">
+                <AvatarFallback className="bg-foreground text-background rounded-lg text-xs font-semibold">
                   {organizationInitials(currentName) || "OR"}
                 </AvatarFallback>
               </Avatar>
@@ -123,7 +123,7 @@ export function OrganizationSwitcher({
                     }}
                   >
                     <Avatar className="size-6 rounded-md">
-                      <AvatarFallback className="bg-muted rounded-md text-[10px] font-medium">
+                      <AvatarFallback className="rounded-md text-[10px] font-medium">
                         {organizationInitials(organization.name) || "OR"}
                       </AvatarFallback>
                     </Avatar>
