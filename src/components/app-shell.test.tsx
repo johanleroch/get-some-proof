@@ -163,6 +163,27 @@ describe("AppShell", () => {
     );
   });
 
+  it("applies the Linear background layers to the complete application frame", () => {
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationSlug="acme-1234"
+      >
+        Dashboard content
+      </AppShell>,
+    );
+
+    const frame = container.querySelector(".dashboard-frame");
+    const view = container.querySelector(".dashboard-view");
+    const grain = container.querySelector(".dashboard-grain");
+
+    expect(frame).toHaveAttribute("data-slot", "sidebar-wrapper");
+    expect(view).toHaveAttribute("data-slot", "sidebar-inset");
+    expect(grain?.parentElement).toBe(frame);
+    expect(view?.contains(grain)).toBe(false);
+  });
+
   it("opens and dismisses the native mobile sidebar", () => {
     Object.defineProperty(window, "innerWidth", {
       configurable: true,

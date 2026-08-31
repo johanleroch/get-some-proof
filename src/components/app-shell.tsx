@@ -197,6 +197,7 @@ export function AppShell({
 
   return (
     <SidebarProvider
+      className="dashboard-frame h-svh overflow-hidden"
       style={
         {
           "--sidebar-width": "18rem",
@@ -255,8 +256,8 @@ export function AppShell({
           <NavUser />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-frame border-border/70 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
-        <div className="dashboard-view">
+      <SidebarInset className="dashboard-view border-border/70 min-h-0 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
+        <div className="flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
               <SidebarTrigger className="-ml-1" />
@@ -285,8 +286,8 @@ export function AppShell({
               : "Connecting to Convex"}
           </span>
         </div>
-        <div aria-hidden="true" className="dashboard-grain" />
       </SidebarInset>
+      <div aria-hidden="true" className="dashboard-grain" />
     </SidebarProvider>
   );
 }

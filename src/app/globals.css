@@ -194,7 +194,7 @@ body {
 
 .dashboard-view {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   display: flex;
   min-width: 0;
   flex: 1;
@@ -214,7 +214,6 @@ body {
 }
 
 .dark .dashboard-view {
-  inset: 0;
   background: rgb(255 255 255 / 1%);
   border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 8px;
@@ -225,22 +224,27 @@ body {
   pointer-events: none;
   position: absolute;
   inset: 1px;
-  z-index: 2;
+  z-index: 20;
   display: block;
   border-radius: 12px;
   background-image: url("/textures/dashboard-grain.png");
   background-repeat: repeat;
   background-size: 256px 256px;
+  filter: brightness(2.05);
   mix-blend-mode: overlay;
   opacity: 0.6;
 }
 
-.dark .dashboard-grain::after {
+.dark [data-slot="sidebar-inner"] {
+  position: relative;
+}
+
+.dark [data-slot="sidebar-inner"]::after {
   pointer-events: none;
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 6%);
+  border-radius: inherit;
+  background: rgb(247 248 248 / 3%);
   content: "";
 }
 
@@ -250,7 +254,7 @@ body {
     position: absolute;
     inset: 0 0 0 auto;
     z-index: 10;
-    width: 37.4%;
+    width: min(360px, 28.125%);
     background: linear-gradient(
       90deg,
       rgb(8 9 10 / 0%) 0%,
