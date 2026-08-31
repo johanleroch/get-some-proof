@@ -28,6 +28,14 @@ function isLocalSiteUrl(value: string | undefined) {
   }
 }
 
+function maskEmailAddress(value: string) {
+  const separatorIndex = value.lastIndexOf("@");
+
+  if (separatorIndex <= 0) return "***";
+
+  return `${value[0]}***${value.slice(separatorIndex)}`;
+}
+
 export async function sendTransactionalEmail(
   message: TransactionalEmailMessage,
 ): Promise<TransactionalEmailReceipt> {
@@ -45,11 +53,12 @@ export async function sendTransactionalEmail(
       throw new Error("EMAIL_PROVIDER=console is restricted to local URLs.");
     }
 
-    console.info("[transactional-email:console]", {
-      to: message.to,
+    console.info("📧 EMAIL PREVIEW", {
+      type: message.template,
+      to: maskEmailAddress(message.to),
       subject: message.subject,
-      template: message.template,
     });
+    console.info("🔗 OPEN LINK");
     console.info(message.actionUrl);
 
     return {

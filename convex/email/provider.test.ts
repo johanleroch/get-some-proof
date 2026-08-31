@@ -49,12 +49,20 @@ describe("transactional email console provider", () => {
       await expect(sendTransactionalEmail(message)).resolves.toMatchObject({
         provider: "console",
       });
-      expect(log).toHaveBeenCalledWith("[transactional-email:console]", {
-        subject: message.subject,
-        template: message.template,
-        to: message.to,
-      });
-      expect(log).toHaveBeenCalledWith(message.actionUrl);
+      expect(log.mock.calls).toEqual([
+        [
+          "📧 EMAIL PREVIEW",
+          {
+            subject: message.subject,
+            to: message.to.startsWith("operator")
+              ? "o***@example.com"
+              : "i***@example.com",
+            type: message.template,
+          },
+        ],
+        ["🔗 OPEN LINK"],
+        [message.actionUrl],
+      ]);
     },
   );
 
