@@ -1,3 +1,5 @@
+import { env } from "../_generated/server";
+
 export type TransactionalEmailTemplate =
   "verify-email" | "reset-password" | "organization-invitation";
 
@@ -10,14 +12,25 @@ export type TransactionalEmailMessage = {
 };
 
 export type TransactionalEmailReceipt = {
-  provider: "resend" | "test";
+  provider: "console" | "resend" | "test";
   providerMessageId: string;
 };
+
+function isLocalSiteUrl(value: string | undefined) {
+  if (!value) return false;
+
+  try {
+    const { hostname } = new URL(value);
+    return ["localhost", "127.0.0.1", "[::1]"].includes(hostname);
+  } catch {
+    return false;
+  }
+}
 
 export async function sendTransactionalEmail(
   message: TransactionalEmailMessage,
 ): Promise<TransactionalEmailReceipt> {
-  const provider = process.env.EMAIL_PROVIDER;
+  const provider = env.EMAIL_PROVIDER;
 
   if (provider === "test") {
     return {
@@ -26,14 +39,34 @@ export async function sendTransactionalEmail(
     };
   }
 
+  if (provider === "console") {
+    if (!isLocalSiteUrl(env.SITE_URL)) {
+      throw new Error(
+        "EMAIL_PROVIDER=console is restricted to a local SITE_URL.",
+      );
+    }
+
+    console.info("[transactional-email:console]", {
+      to: message.to,
+      subject: message.subject,
+      template: message.template,
+      text: message.text,
+    });
+
+    return {
+      provider: "console",
+      providerMessageId: `console-${crypto.randomUUID()}`,
+    };
+  }
+
   if (provider !== "resend") {
     throw new Error(
-      "EMAIL_PROVIDER must be explicitly set to `resend` or `test`.",
+      "EMAIL_PROVIDER must be explicitly set to `console`, `resend`, or `test`.",
     );
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
+  const apiKey = env.RESEND_API_KEY;
+  const from = env.EMAIL_FROM;
 
   if (!apiKey || !from) {
     throw new Error(

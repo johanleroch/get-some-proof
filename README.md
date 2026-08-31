@@ -34,7 +34,8 @@ pnpm convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 48)"
 
 Choose one authentication-email path:
 
-- For API and UI development that must not send email, set `pnpm convex env set EMAIL_PROVIDER test`. This adapter deliberately does not deliver verification or reset links.
+- To test complete local flows without an email service, set `pnpm convex env set EMAIL_PROVIDER console`. Verification, reset, and Invitation links appear in the `pnpm dev:convex` output and the Convex dashboard logs. This provider refuses any `SITE_URL` other than localhost.
+- For automated tests that must remain silent, set `pnpm convex env set EMAIL_PROVIDER test`. This adapter deliberately does not deliver or log links.
 - For a complete email/password flow, configure Resend:
 
 ```bash

@@ -35,7 +35,7 @@ Extend the permission tree and role definitions in `convex/authorization.ts`, th
 
 ## Email providers
 
-All transactional email goes through `convex/email/provider.ts`. Callers and templates use the application interface; provider credentials and result mapping remain in the selected adapter. The included choices are a non-delivering `test` adapter and Resend. To add Lumail or another provider, implement the same port, select it by environment configuration, and leave Invitation and Better Auth workflows unchanged.
+All transactional email goes through `convex/email/provider.ts`. Callers and templates use the application interface; provider credentials and result mapping remain in the selected adapter. The included choices are a silent `test` adapter, a localhost-only `console` preview, and Resend. To add Lumail or another provider, implement the same port, select it by environment configuration, and leave Invitation and Better Auth workflows unchanged.
 
 ## Audit Events
 
