@@ -149,12 +149,20 @@ export const getCurrentUser = query({
       return null;
     }
 
+    const profile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user_id", (index) => index.eq("userId", String(user._id)))
+      .unique();
+    const uploadedImage = profile?.avatarStorageId
+      ? await ctx.storage.getUrl(profile.avatarStorageId)
+      : null;
+
     return {
       id: String(user._id),
       name: user.name,
       email: user.email,
       emailVerified: user.emailVerified,
-      image: user.image ?? null,
+      image: uploadedImage ?? user.image ?? null,
     };
   },
 });

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccountProfile } from "./account-profile";
@@ -6,6 +12,17 @@ import { AccountProfile } from "./account-profile";
 const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
   updateUser: vi.fn(),
+  useMutation: vi.fn(() => vi.fn()),
+  useQuery: vi.fn(() => ({
+    email: "johan@example.com",
+    image: null,
+    name: "Johan Le Roch",
+  })),
+}));
+
+vi.mock("convex/react", () => ({
+  useMutation: mocks.useMutation,
+  useQuery: mocks.useQuery,
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -26,6 +43,7 @@ vi.mock("@/lib/auth-client", () => ({
 
 describe("AccountProfile", () => {
   beforeEach(() => {
+    cleanup();
     mocks.refetch.mockReset();
     mocks.updateUser.mockReset();
     mocks.updateUser.mockResolvedValue({ data: { status: true }, error: null });
@@ -37,14 +55,10 @@ describe("AccountProfile", () => {
     fireEvent.change(screen.getByLabelText("Full name"), {
       target: { value: "Johan LR" },
     });
-    fireEvent.change(screen.getByLabelText("Avatar URL"), {
-      target: { value: "https://example.com/johan.jpg" },
-    });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => {
       expect(mocks.updateUser).toHaveBeenCalledWith({
-        image: "https://example.com/johan.jpg",
         name: "Johan LR",
       });
     });
@@ -59,5 +73,17 @@ describe("AccountProfile", () => {
     expect(screen.getByLabelText("Email address")).toHaveValue(
       "johan@example.com",
     );
+  });
+
+  it("offers the GitHub-style profile picture entry point", () => {
+    render(<AccountProfile />);
+
+    expect(
+      screen.getByRole("button", { name: "Edit profile picture" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Upload image" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Avatar URL")).toBeNull();
   });
 });

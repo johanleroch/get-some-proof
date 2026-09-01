@@ -68,3 +68,38 @@ None for this scope. Resolved and revoked invitations remain available through t
 No P3 follow-up is required for the selected reference adaptation.
 
 final result: passed
+
+---
+
+# Design QA: Profile Images and Organization Logos
+
+## Sources
+
+- GitHub profile entry: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/org-profile-mobbin/05-github-profile-photo-entry.jpg`
+- GitHub upload menu: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/org-profile-mobbin/06-github-profile-photo-upload.jpg`
+- GitHub circular crop: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/org-profile-mobbin/07-github-profile-photo-crop.jpg`
+- Dovetail logo settings: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/alternative-logo-profile-mobbin/04-dovetail-logo-saved.jpg`
+- monday.com square logo crop: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/alternative-logo-profile-mobbin/01-monday-logo-crop.jpg`
+
+## Implementation captures
+
+- Desktop profile, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/profile-desktop.png`
+- Mobile profile, 390 x 844: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/profile-mobile.png`
+- Circular crop dialog, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/profile-crop-dialog-desktop.png`
+- Uploaded profile image, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/profile-uploaded-desktop.png`
+- Desktop Organization settings, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/organization-settings-desktop.png`
+- Mobile Organization settings, 390 x 844: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/organization-settings-mobile.png`
+- Square crop dialog, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/organization-logo-crop-dialog-desktop.png`
+- Uploaded Organization logo, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/organization-logo-uploaded-desktop.png`
+- Organization onboarding, 1440 x 1000: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/onboarding-desktop.png`
+
+## Comparison history
+
+1. Compared GitHub's circular crop with the implemented crop dialog in `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/github-profile-comparison.png`. Preserved the circular mask, direct manipulation, zoom, cancel, and explicit confirmation while using the starter's dialog, typography, spacing, and button system.
+2. Compared Dovetail's inline logo settings with the implemented Organization settings in `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-implementation/organization-logo-comparison.png`. Preserved the inline identity card, visible logo, replace/remove actions, and stable identifier while keeping the starter's denser shell.
+3. Verified 390 px layouts: controls stack without horizontal overflow, the sidebar becomes the existing mobile sheet, and all primary actions remain visible.
+4. Exercised both crop dialogs against real local routes, uploaded neutral project imagery to the dev deployment, and confirmed reactive image rendering in the profile, settings, user navigation, and Organization switcher.
+
+## Final result
+
+passed

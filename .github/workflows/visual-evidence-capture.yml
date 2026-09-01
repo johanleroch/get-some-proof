@@ -41,6 +41,7 @@ jobs:
         run: pnpm test:visual
         env:
           VISUAL_EVIDENCE_DIR: visual-evidence
+          VISUAL_EVIDENCE_FIXTURES: "true"
       - name: Build validated manifest
         run: pnpm visual:manifest
         env:

@@ -16,6 +16,10 @@ _Avoid_: Template Adopter, Developer
 An authenticated person whose identity can participate in one or more organizations.
 _Avoid_: Account, Member when referring to identity
 
+**Profile Image**:
+A square image uploaded and cropped by a user, rendered as a circle across their authenticated identity surfaces. The stored file belongs to that user and is replaced or removed only by them.
+_Avoid_: Avatar URL, Member Image
+
 **Organization**:
 A customer space whose members and resources share one business and access boundary.
 _Avoid_: Workspace, Account, Tenant in product language
@@ -23,6 +27,10 @@ _Avoid_: Workspace, Account, Tenant in product language
 **Organization Slug**:
 A stable URL identifier derived from an organization name and completed by four random lowercase alphanumeric characters for uniqueness; changing the organization name does not change it.
 _Avoid_: Organization ID, Tenant ID
+
+**Organization Logo**:
+An optional square image shared across an organization. Owners and admins may upload, replace, or remove it; other members can only view it.
+_Avoid_: Profile Image, Workspace Icon
 
 **Tenant**:
 The technical data and authorization partition corresponding to an organization.

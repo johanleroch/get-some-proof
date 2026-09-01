@@ -115,11 +115,13 @@ function pageTitle(pathname: string, items: NavigationItem[]) {
 export function AppShell({
   children,
   organizationId,
+  organizationLogoUrl,
   organizationName,
   organizationSlug,
 }: {
   children: ReactNode;
   organizationId: Id<"organizations">;
+  organizationLogoUrl?: string | null;
   organizationName: string;
   organizationSlug: string;
 }) {
@@ -214,6 +216,7 @@ export function AppShell({
               authorization?.can.updateOrganization ?? false
             }
             currentName={organizationName}
+            currentLogoUrl={organizationLogoUrl}
             currentSlug={organizationSlug}
           />
         </SidebarHeader>

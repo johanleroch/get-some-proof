@@ -11,6 +11,8 @@ import { AuditListSkeleton } from "@/components/ui/page-skeletons";
 const eventLabels = {
   "organization.created": "created the Organization",
   "organization.renamed": "renamed the Organization",
+  "organization.logo_updated": "updated the Organization logo",
+  "organization.logo_removed": "removed the Organization logo",
   "invitation.created": "created an Invitation",
   "invitation.resent": "resent an Invitation",
   "invitation.role_changed": "changed an Invitation role",

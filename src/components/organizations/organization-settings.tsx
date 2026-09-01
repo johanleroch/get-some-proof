@@ -4,9 +4,20 @@ import { type FormEvent, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uploadProfileImage } from "@/lib/upload-profile-image";
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
 
 export function OrganizationSettings({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
@@ -15,8 +26,11 @@ export function OrganizationSettings({ slug }: { slug: string }) {
     organization ? { organizationId: organization.id } : "skip",
   );
   const rename = useMutation(api.organizations.rename);
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const generateUploadUrl = useMutation(
+    api.organizations.generateLogoUploadUrl,
+  );
+  const setLogo = useMutation(api.organizations.setLogo);
+  const removeLogo = useMutation(api.organizations.removeLogo);
 
   if (organization === undefined || (organization && access === undefined)) {
     return (
@@ -39,17 +53,60 @@ export function OrganizationSettings({ slug }: { slug: string }) {
     );
   }
 
+  const organizationId = organization.id;
+
+  async function renameOrganization(name: string) {
+    await rename({ organizationId, name });
+  }
+
+  async function uploadLogo(blob: Blob) {
+    const uploadUrl = await generateUploadUrl({ organizationId });
+    const storageId = await uploadProfileImage(blob, uploadUrl);
+    await setLogo({ organizationId, storageId });
+  }
+
+  return (
+    <OrganizationSettingsView
+      canUpdate={access?.can.updateOrganization ?? false}
+      logoUrl={organization.logoUrl}
+      name={organization.name}
+      onRemoveLogo={async () => {
+        await removeLogo({ organizationId });
+      }}
+      onRename={renameOrganization}
+      onUploadLogo={uploadLogo}
+      slug={organization.slug}
+    />
+  );
+}
+
+export function OrganizationSettingsView({
+  canUpdate,
+  logoUrl,
+  name,
+  onRemoveLogo,
+  onRename,
+  onUploadLogo,
+  slug,
+}: {
+  canUpdate: boolean;
+  logoUrl: string | null;
+  name: string;
+  onRemoveLogo: () => Promise<void>;
+  onRename: (name: string) => Promise<void>;
+  onUploadLogo: (blob: Blob) => Promise<void>;
+  slug: string;
+}) {
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
   async function updateName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!organization) return;
     const form = event.currentTarget;
     setPending(true);
     setMessage(null);
     try {
-      await rename({
-        organizationId: organization.id,
-        name: String(new FormData(form).get("name")),
-      });
+      await onRename(String(new FormData(form).get("name")));
       setMessage("Organization name updated.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Update failed.");
@@ -65,11 +122,24 @@ export function OrganizationSettings({ slug }: { slug: string }) {
           Organization settings
         </h1>
         <p className="dashboard-page-description mt-1">
-          Update shared details without changing the stable Organization URL.
+          Update the identity shared across your Organization.
         </p>
       </div>
 
-      {access?.can.updateOrganization ? (
+      <div className="bg-card max-w-2xl rounded-xl border p-6 shadow-xs">
+        <ProfileImageControl
+          alt={`${name} logo`}
+          cropShape="rect"
+          fallback={initials(name) || "OR"}
+          imageUrl={logoUrl}
+          label="Organization logo"
+          onRemove={onRemoveLogo}
+          onUpload={onUploadLogo}
+          readOnly={!canUpdate}
+        />
+      </div>
+
+      {canUpdate ? (
         <form
           className="bg-card max-w-2xl space-y-5 rounded-xl border p-6 shadow-xs"
           onSubmit={updateName}
@@ -77,7 +147,7 @@ export function OrganizationSettings({ slug }: { slug: string }) {
           <div className="space-y-2">
             <Label htmlFor="organization-name">Organization name</Label>
             <Input
-              defaultValue={organization.name}
+              defaultValue={name}
               id="organization-name"
               name="name"
               required
@@ -89,7 +159,7 @@ export function OrganizationSettings({ slug }: { slug: string }) {
               aria-describedby="organization-slug-help"
               disabled
               id="organization-slug"
-              value={organization.slug}
+              value={slug}
             />
             <p
               className="text-muted-foreground text-xs"

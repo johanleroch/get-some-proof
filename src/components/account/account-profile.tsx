@@ -1,9 +1,10 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { IconPhoto, IconUser } from "@tabler/icons-react";
+import { useMutation, useQuery } from "convex/react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { api } from "@convex/_generated/api";
+import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,12 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
-
-type ProfileUser = {
-  email: string;
-  image?: string | null;
-  name: string;
-};
+import { uploadProfileImage } from "@/lib/upload-profile-image";
 
 function initials(name: string) {
   return name
@@ -31,38 +27,116 @@ function initials(name: string) {
     .join("");
 }
 
-function ProfileEditor({
-  refetch,
-  user,
+export function AccountProfile() {
+  const session = authClient.useSession();
+  const currentUser = useQuery(api.auth.getCurrentUser, {});
+  const user = session.data?.user;
+
+  if (!user || currentUser === undefined) {
+    return (
+      <p className="text-muted-foreground text-sm" role="status">
+        Loading profile…
+      </p>
+    );
+  }
+
+  return (
+    <AccountProfileContent
+      currentImage={currentUser?.image ?? null}
+      email={user.email}
+      initialName={user.name}
+      key={user.id ?? user.email}
+      refetchSession={session.refetch}
+    />
+  );
+}
+
+function AccountProfileContent({
+  currentImage,
+  email,
+  initialName,
+  refetchSession,
 }: {
-  refetch: () => Promise<unknown>;
-  user: ProfileUser;
+  currentImage: string | null;
+  email: string;
+  initialName: string;
+  refetchSession: () => Promise<unknown>;
 }) {
-  const [name, setName] = useState(user.name);
-  const [image, setImage] = useState(user.image ?? "");
+  const generateUploadUrl = useMutation(
+    api.profileImages.generateAvatarUploadUrl,
+  );
+  const setAvatar = useMutation(api.profileImages.setMyAvatar);
+  const removeAvatar = useMutation(api.profileImages.removeMyAvatar);
+
+  async function uploadAvatar(blob: Blob) {
+    const storageId = await uploadProfileImage(blob, await generateUploadUrl());
+    await setAvatar({ storageId });
+  }
+
+  async function removeProfileImage() {
+    const result = await authClient.updateUser({ image: null });
+    if (result.error) {
+      throw new Error(result.error.message ?? "Unable to remove your picture.");
+    }
+    await removeAvatar({});
+    await refetchSession();
+  }
+
+  async function saveName(name: string) {
+    const result = await authClient.updateUser({ name });
+    if (result.error) {
+      throw new Error(result.error.message ?? "Unable to update your profile.");
+    }
+    await refetchSession();
+  }
+
+  return (
+    <AccountProfileView
+      currentImage={currentImage}
+      email={email}
+      initialName={initialName}
+      onRemoveImage={removeProfileImage}
+      onSaveName={saveName}
+      onUploadImage={uploadAvatar}
+    />
+  );
+}
+
+export function AccountProfileView({
+  currentImage,
+  email,
+  initialName,
+  onRemoveImage,
+  onSaveName,
+  onUploadImage,
+}: {
+  currentImage: string | null;
+  email: string;
+  initialName: string;
+  onRemoveImage: () => Promise<void>;
+  onSaveName: (name: string) => Promise<void>;
+  onUploadImage: (blob: Blob) => Promise<void>;
+}) {
+  const [name, setName] = useState(initialName);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function updateProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    setError(null);
-    setSuccess(null);
-
-    const result = await authClient.updateUser({
-      image: image.trim() || null,
-      name: name.trim(),
-    });
-
-    setPending(false);
-    if (result.error) {
-      setError(result.error.message ?? "Unable to update your profile.");
-      return;
+    setMessage(null);
+    try {
+      await onSaveName(name.trim());
+      setMessage("Profile updated.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to update your profile.",
+      );
+    } finally {
+      setPending(false);
     }
-
-    await refetch();
-    setSuccess("Profile updated.");
   }
 
   return (
@@ -76,29 +150,33 @@ function ProfileEditor({
 
       <Card>
         <CardHeader>
+          <CardTitle>Profile picture</CardTitle>
+          <CardDescription>
+            This picture is shared with every Organization you join.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileImageControl
+            alt={initialName}
+            cropShape="round"
+            fallback={initials(initialName) || "U"}
+            imageUrl={currentImage}
+            label="Profile picture"
+            onRemove={onRemoveImage}
+            onUpload={onUploadImage}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Personal information</CardTitle>
           <CardDescription>
-            Your name and avatar are shared with the teams you join.
+            Your name and verified email are visible to your teams.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={updateProfile}>
-            <div className="flex items-center gap-4">
-              <Avatar className="size-16 rounded-xl">
-                {image ? <AvatarImage alt={name} src={image} /> : null}
-                <AvatarFallback className="rounded-xl text-base font-semibold">
-                  {initials(name) || <IconUser className="size-5" />}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">Profile picture</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Paste a public image URL below. Upload storage can be wired to
-                  this field later.
-                </p>
-              </div>
-            </div>
-
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Full name</Label>
@@ -112,49 +190,17 @@ function ProfileEditor({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-email">Email address</Label>
-                <Input
-                  disabled
-                  id="profile-email"
-                  type="email"
-                  value={user.email}
-                />
+                <Input disabled id="profile-email" type="email" value={email} />
                 <p className="text-muted-foreground text-xs">
                   Email changes require a verified email workflow.
                 </p>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="profile-image">Avatar URL</Label>
-              <div className="relative">
-                <IconPhoto className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  className="pl-9"
-                  id="profile-image"
-                  inputMode="url"
-                  onChange={(event) => setImage(event.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  type="url"
-                  value={image}
-                />
-              </div>
-            </div>
-
-            {error ? (
-              <p
-                aria-live="assertive"
-                className="text-destructive text-sm"
-                role="alert"
-              >
-                {error}
-              </p>
-            ) : null}
-            {success ? (
+            {message ? (
               <p aria-live="polite" className="text-sm">
-                {success}
+                {message}
               </p>
             ) : null}
-
             <Button disabled={pending || !name.trim()} type="submit">
               {pending ? "Saving…" : "Save changes"}
             </Button>
@@ -162,18 +208,5 @@ function ProfileEditor({
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-export function AccountProfile() {
-  const session = authClient.useSession();
-  const user = session.data?.user;
-
-  return user ? (
-    <ProfileEditor key={user.id} refetch={session.refetch} user={user} />
-  ) : (
-    <p className="text-muted-foreground text-sm" role="status">
-      Loading profile…
-    </p>
   );
 }

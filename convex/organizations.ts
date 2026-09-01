@@ -8,6 +8,7 @@ import {
   normalizeOrganizationName,
   randomSlugSuffix,
 } from "./domain/organizationSlug";
+import { validateExclusiveStoredImage } from "./domain/profileImage";
 import {
   findActiveOrganizationAccess,
   requireOrganizationPermission,
@@ -18,6 +19,10 @@ const organizationSummary = v.object({
   id: v.id("organizations"),
   name: v.string(),
   slug: v.string(),
+});
+
+const organizationSummaryWithLogo = organizationSummary.extend({
+  logoUrl: v.union(v.null(), v.string()),
 });
 
 export const create = mutation({
@@ -114,7 +119,7 @@ export const create = mutation({
 
 export const listMine = query({
   args: {},
-  returns: v.array(organizationSummary),
+  returns: v.array(organizationSummaryWithLogo),
   handler: async (ctx) => {
     const principal = await requireVerifiedPrincipal(ctx);
     const memberships = await ctx.db
@@ -128,14 +133,20 @@ export const listMine = query({
       memberships.map((membership) => ctx.db.get(membership.organizationId)),
     );
 
-    return organizations
-      .filter((organization) => organization !== null)
-      .map((organization) => ({
-        id: organization._id,
-        name: organization.name,
-        slug: organization.slug,
-      }))
-      .sort((left, right) => left.name.localeCompare(right.name));
+    return (
+      await Promise.all(
+        organizations
+          .filter((organization) => organization !== null)
+          .map(async (organization) => ({
+            id: organization._id,
+            name: organization.name,
+            slug: organization.slug,
+            logoUrl: organization.logoStorageId
+              ? await ctx.storage.getUrl(organization.logoStorageId)
+              : null,
+          })),
+      )
+    ).sort((left, right) => left.name.localeCompare(right.name));
   },
 });
 
@@ -143,7 +154,7 @@ export const getBySlug = query({
   args: {
     slug: v.string(),
   },
-  returns: v.union(v.null(), organizationSummary),
+  returns: v.union(v.null(), organizationSummaryWithLogo),
   handler: async (ctx, args) => {
     const access = await findActiveOrganizationAccess(ctx, {
       slug: args.slug,
@@ -157,7 +168,93 @@ export const getBySlug = query({
       id: access.organization._id,
       name: access.organization.name,
       slug: access.organization.slug,
+      logoUrl: access.organization.logoStorageId
+        ? await ctx.storage.getUrl(access.organization.logoStorageId)
+        : null,
     };
+  },
+});
+
+export const generateLogoUploadUrl = mutation({
+  args: { organizationId: v.id("organizations") },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "organization:update",
+    );
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const setLogo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    storageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "organization:update",
+    );
+    await validateExclusiveStoredImage(ctx, args.storageId, {
+      kind: "organization",
+      organizationId: access.organization._id,
+    });
+    const previousStorageId = access.organization.logoStorageId;
+    const now = Date.now();
+    await ctx.db.patch(access.organization._id, {
+      logoStorageId: args.storageId,
+      updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "organization.logo_updated",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "organization",
+      targetId: String(access.organization._id),
+      targetLabel: access.organization.name,
+      occurredAt: now,
+    });
+    if (previousStorageId && previousStorageId !== args.storageId) {
+      await ctx.storage.delete(previousStorageId);
+    }
+    return null;
+  },
+});
+
+export const removeLogo = mutation({
+  args: { organizationId: v.id("organizations") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "organization:update",
+    );
+    if (!access.organization.logoStorageId) return null;
+    const previousStorageId = access.organization.logoStorageId;
+    const now = Date.now();
+    await ctx.db.patch(access.organization._id, {
+      logoStorageId: undefined,
+      updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "organization.logo_removed",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "organization",
+      targetId: String(access.organization._id),
+      targetLabel: access.organization.name,
+      occurredAt: now,
+    });
+    await ctx.storage.delete(previousStorageId);
+    return null;
   },
 });
 

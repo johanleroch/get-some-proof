@@ -8,6 +8,8 @@ import { requireOrganizationPermission } from "./security/organizationAccess";
 export const auditEventTypeValidator = v.union(
   v.literal("organization.created"),
   v.literal("organization.renamed"),
+  v.literal("organization.logo_updated"),
+  v.literal("organization.logo_removed"),
   v.literal("invitation.created"),
   v.literal("invitation.resent"),
   v.literal("invitation.role_changed"),
@@ -26,6 +28,8 @@ export const auditEventTypeValidator = v.union(
 export type AuditEventType =
   | "organization.created"
   | "organization.renamed"
+  | "organization.logo_updated"
+  | "organization.logo_removed"
   | "invitation.created"
   | "invitation.resent"
   | "invitation.role_changed"

@@ -66,6 +66,7 @@ export function AuthenticatedApplicationShell({
   return (
     <AppShell
       organizationId={organization.id}
+      organizationLogoUrl={organization.logoUrl}
       organizationName={organization.name}
       organizationSlug={organization.slug}
     >

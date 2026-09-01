@@ -5,10 +5,20 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
+    logoStorageId: v.optional(v.id("_storage")),
     createdByUserId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_slug", ["slug"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_logo_storage_id", ["logoStorageId"]),
+  userProfiles: defineTable({
+    userId: v.string(),
+    avatarStorageId: v.optional(v.id("_storage")),
+    updatedAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_avatar_storage_id", ["avatarStorageId"]),
   memberships: defineTable({
     organizationId: v.id("organizations"),
     userId: v.string(),
@@ -74,6 +84,8 @@ export default defineSchema({
     eventType: v.union(
       v.literal("organization.created"),
       v.literal("organization.renamed"),
+      v.literal("organization.logo_updated"),
+      v.literal("organization.logo_removed"),
       v.literal("invitation.created"),
       v.literal("invitation.resent"),
       v.literal("invitation.role_changed"),

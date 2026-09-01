@@ -45,6 +45,33 @@
       "path": "/sign-up",
       "heading": "Create your account",
       "theme": "dark"
+    },
+    {
+      "slug": "profile-image",
+      "title": "Profile image",
+      "path": "/account/profile",
+      "fixturePath": "/visual-evidence/profile",
+      "heading": "Profile",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "organization-onboarding-logo",
+      "title": "Organization onboarding logo",
+      "path": "/onboarding",
+      "fixturePath": "/visual-evidence/onboarding",
+      "heading": "Create your Organization",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "organization-logo-settings",
+      "title": "Organization logo settings",
+      "path": "/org/:organizationSlug/settings",
+      "fixturePath": "/visual-evidence/organization-settings",
+      "heading": "Organization settings",
+      "theme": "light",
+      "requiresAuth": true
     }
   ]
 }

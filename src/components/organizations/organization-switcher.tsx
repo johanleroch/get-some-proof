@@ -15,7 +15,7 @@ import {
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,11 +47,13 @@ export function OrganizationSwitcher({
   canReadAudit,
   canUpdateOrganization,
   currentName,
+  currentLogoUrl,
   currentSlug,
 }: {
   canReadAudit: boolean;
   canUpdateOrganization: boolean;
   currentName: string;
+  currentLogoUrl?: string | null;
   currentSlug: string;
 }) {
   const organizations = useQuery(api.organizations.listMine, {});
@@ -86,6 +88,12 @@ export function OrganizationSwitcher({
               size="lg"
             >
               <Avatar className="size-8 rounded-lg">
+                {currentLogoUrl ? (
+                  <AvatarImage
+                    alt={`${currentName} logo`}
+                    src={currentLogoUrl}
+                  />
+                ) : null}
                 <AvatarFallback className="bg-foreground text-background rounded-lg text-xs font-semibold">
                   {organizationInitials(currentName) || "OR"}
                 </AvatarFallback>
@@ -123,6 +131,12 @@ export function OrganizationSwitcher({
                     }}
                   >
                     <Avatar className="size-6 rounded-md">
+                      {organization.logoUrl ? (
+                        <AvatarImage
+                          alt={`${organization.name} logo`}
+                          src={organization.logoUrl}
+                        />
+                      ) : null}
                       <AvatarFallback className="rounded-md text-[10px] font-medium">
                         {organizationInitials(organization.name) || "OR"}
                       </AvatarFallback>
