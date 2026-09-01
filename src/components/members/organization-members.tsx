@@ -18,7 +18,7 @@ export function OrganizationMembers({ slug }: { slug: string }) {
     return (
       <section className="grid min-h-[50vh] place-items-center px-6 text-center">
         <div>
-          <h1 className="text-2xl font-semibold">Organization unavailable</h1>
+          <h1 className="dashboard-page-title">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             This Organization does not exist or your Membership is inactive.
           </p>

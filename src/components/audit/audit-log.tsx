@@ -40,13 +40,10 @@ export function AuditLog({
   return (
     <section aria-labelledby="audit-heading" className="space-y-6">
       <div>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          id="audit-heading"
-        >
+        <h1 className="dashboard-page-title" id="audit-heading">
           Audit Log
         </h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-6">
+        <p className="dashboard-page-description mt-1 max-w-2xl">
           An immutable record of Organization administration. Authorization
           changes maintained by convex-authz remain in its separate history.
         </p>

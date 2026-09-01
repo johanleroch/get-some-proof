@@ -156,8 +156,8 @@ export function ProjectManager({
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
+          <h1 className="dashboard-page-title">Projects</h1>
+          <p className="dashboard-page-description mt-1 max-w-2xl">
             A removable, Tenant-scoped module demonstrating the complete role
             matrix.
           </p>

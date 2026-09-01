@@ -234,7 +234,7 @@ export function AppShell({
                   ) : (
                     <SidebarMenuButton
                       asChild
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                      className="dashboard-primary-sidebar-action bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
                       tooltip="Create a project"
                     >
                       <Link
@@ -268,7 +268,9 @@ export function AppShell({
                 orientation="vertical"
               />
               <div className="min-w-0">
-                <h1 className="truncate text-base font-medium">{title}</h1>
+                <h1 className="text-foreground truncate text-[13px] leading-normal font-[510]">
+                  {title}
+                </h1>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <ThemeToggle />

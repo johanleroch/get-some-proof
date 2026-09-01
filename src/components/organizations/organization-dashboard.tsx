@@ -33,14 +33,16 @@ function MetricCard({
   return (
     <Card className="gap-4 py-5 shadow-xs">
       <CardHeader className="grid grid-cols-[1fr_auto] items-center px-5">
-        <CardDescription className="font-medium">{label}</CardDescription>
+        <CardDescription className="text-[13px]! leading-[18px]! font-[510]! tracking-normal!">
+          {label}
+        </CardDescription>
         <Icon aria-hidden="true" className="text-muted-foreground size-4" />
       </CardHeader>
       <CardContent className="px-5">
-        <p className="text-3xl font-semibold tracking-tight tabular-nums">
+        <p className="text-[30px] leading-9 font-[590] tracking-[-0.45px] tabular-nums">
           {value === undefined ? "—" : (value ?? "Restricted")}
         </p>
-        <p className="text-muted-foreground mt-1 text-xs">
+        <p className="text-muted-foreground mt-1 text-xs leading-[14px]">
           Current Organization
         </p>
       </CardContent>
@@ -118,8 +120,8 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
     return (
       <section className="grid min-h-[50vh] place-items-center px-6">
         <div className="max-w-md text-center">
-          <h1 className="text-2xl font-semibold">Organization unavailable</h1>
-          <p className="text-muted-foreground mt-2 text-sm leading-6">
+          <h1 className="dashboard-page-title">Organization unavailable</h1>
+          <p className="dashboard-page-description mt-2">
             This Organization does not exist or your Membership is no longer
             active.
           </p>
@@ -132,8 +134,8 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
+          <h1 className="dashboard-page-title">Overview</h1>
+          <p className="dashboard-page-description mt-1 max-w-2xl">
             Live, Tenant-scoped activity from Projects and Memberships.
           </p>
         </div>

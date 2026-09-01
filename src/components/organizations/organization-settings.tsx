@@ -61,13 +61,10 @@ export function OrganizationSettings({ slug }: { slug: string }) {
   return (
     <section aria-labelledby="settings-heading" className="space-y-6">
       <div>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          id="settings-heading"
-        >
+        <h1 className="dashboard-page-title" id="settings-heading">
           Organization settings
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="dashboard-page-description mt-1">
           Update shared details without changing the stable Organization URL.
         </p>
       </div>

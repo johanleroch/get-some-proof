@@ -100,8 +100,8 @@ export function MemberDirectory({
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="dashboard-page-title">Members</h1>
+          <p className="dashboard-page-description mt-1">
             Active Members can see this directory. Management actions follow the
             Owner and Admin boundary.
           </p>

@@ -162,7 +162,7 @@ export function AccountSecurity() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Security</h2>
+        <h2 className="dashboard-page-title">Security</h2>
         <p className="text-muted-foreground mt-1 text-sm">
           These controls protect your User account across every Organization.
         </p>

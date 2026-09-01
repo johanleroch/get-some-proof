@@ -21,7 +21,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
     return (
       <section className="grid min-h-[50vh] place-items-center px-6">
         <div className="max-w-md text-center">
-          <h1 className="text-2xl font-semibold">Organization unavailable</h1>
+          <h1 className="dashboard-page-title">Organization unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             This Organization does not exist or your Membership is inactive.
           </p>
@@ -34,7 +34,7 @@ export function OrganizationAudit({ slug }: { slug: string }) {
     <AuditLog organizationId={organization.id} />
   ) : (
     <section className="bg-card rounded-xl border p-8 text-center shadow-xs">
-      <h1 className="text-2xl font-semibold">Audit Log unavailable</h1>
+      <h1 className="dashboard-page-title">Audit Log unavailable</h1>
       <p className="text-muted-foreground mx-auto mt-2 max-w-lg text-sm leading-6">
         Only an Organization Owner or Admin can review administrative activity.
       </p>

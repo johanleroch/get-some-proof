@@ -68,7 +68,7 @@ function ProfileEditor({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Profile</h2>
+        <h2 className="dashboard-page-title">Profile</h2>
         <p className="text-muted-foreground mt-1 text-sm">
           Update the information shown across your Organizations.
         </p>

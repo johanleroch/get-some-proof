@@ -63,17 +63,17 @@
 :root {
   --radius: 0.5rem;
   --background: oklch(0.985 0.002 286);
-  --foreground: oklch(0.145 0 0);
+  --foreground: rgb(31 32 35);
   --card: oklch(0.997 0.001 286);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: rgb(31 32 35);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: rgb(31 32 35);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: rgb(98 102 109);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -81,7 +81,7 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --sidebar: oklch(0.965 0.004 286);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: rgb(55 58 64);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
@@ -118,15 +118,15 @@
 
 .dark {
   --background: rgb(9 10 11);
-  --foreground: rgb(247 248 248);
+  --foreground: rgb(208 214 224);
   --card: rgb(12 13 14);
-  --card-foreground: rgb(247 248 248);
+  --card-foreground: rgb(208 214 224);
   --popover: rgb(14 15 17);
-  --popover-foreground: rgb(247 248 248);
+  --popover-foreground: rgb(208 214 224);
   --primary: rgb(247 248 248);
   --primary-foreground: rgb(25 27 29);
   --secondary: rgb(255 255 255 / 6%);
-  --secondary-foreground: rgb(247 248 248);
+  --secondary-foreground: rgb(208 214 224);
   --muted: rgb(255 255 255 / 5%);
   --muted-foreground: rgb(138 143 152);
   --destructive: oklch(0.704 0.191 22.216);
@@ -181,15 +181,96 @@ body {
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
     sans-serif;
+  font-feature-settings: "cv01", "ss03";
   -webkit-font-smoothing: antialiased;
-  text-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
 }
 
 .dashboard-frame {
   isolation: isolate;
   position: relative;
   background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.dashboard-page-title {
+  color: var(--foreground);
+  font-size: 20px;
+  font-weight: 590;
+  letter-spacing: -0.24px;
+  line-height: 26.6px;
+}
+
+.dashboard-page-description {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.182px;
+  line-height: 21px;
+}
+
+.dashboard-frame [data-slot="card-title"] {
+  color: var(--card-foreground);
+  font-size: 16px;
+  font-weight: 590;
+  letter-spacing: normal;
+  line-height: 28px;
+}
+
+.dashboard-frame [data-slot="card-description"] {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.182px;
+  line-height: 21px;
+}
+
+.dashboard-frame [data-slot="button"] {
+  font-size: 13px;
+  font-weight: 510;
+  letter-spacing: normal;
+  line-height: normal;
+}
+
+.dashboard-frame [data-sidebar="group-label"] {
+  color: rgb(98 102 109);
+  font-size: 12px;
+  font-weight: 510;
+  line-height: 14px;
+}
+
+.dashboard-frame [data-sidebar="menu-button"],
+.dashboard-frame [data-sidebar="menu-sub-button"] {
+  color: var(--sidebar-foreground);
+  font-size: 13px;
+  font-weight: 510;
+  letter-spacing: normal;
+  line-height: normal;
+}
+
+.dashboard-frame [data-sidebar="menu-button"][data-active="true"],
+.dashboard-frame [data-sidebar="menu-sub-button"][data-active="true"] {
+  color: var(--sidebar-foreground);
+}
+
+.dashboard-frame [data-sidebar="menu-button"]:hover,
+.dashboard-frame [data-sidebar="menu-sub-button"]:hover {
+  color: var(--sidebar-accent-foreground);
+}
+
+.dashboard-frame [data-sidebar="menu-button"].dashboard-primary-sidebar-action,
+.dashboard-frame
+  [data-sidebar="menu-button"].dashboard-primary-sidebar-action:hover {
+  color: var(--primary-foreground);
 }
 
 .dashboard-view {
