@@ -12,6 +12,8 @@ import type * as auditEvents from "../auditEvents.js";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
 import type * as billing from "../billing.js";
+import type * as billingActions from "../billingActions.js";
+import type * as billingService from "../billingService.js";
 import type * as dashboard from "../dashboard.js";
 import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
@@ -29,6 +31,7 @@ import type * as projects from "../projects.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
 import type * as security_principal from "../security/principal.js";
 import type * as seed from "../seed.js";
+import type * as stripeBillingProvider from "../stripeBillingProvider.js";
 import type * as system from "../system.js";
 
 import type {
@@ -42,6 +45,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authorization: typeof authorization;
   billing: typeof billing;
+  billingActions: typeof billingActions;
+  billingService: typeof billingService;
   dashboard: typeof dashboard;
   "domain/invitation": typeof domain_invitation;
   "domain/organizationSlug": typeof domain_organizationSlug;
@@ -59,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   "security/organizationAccess": typeof security_organizationAccess;
   "security/principal": typeof security_principal;
   seed: typeof seed;
+  stripeBillingProvider: typeof stripeBillingProvider;
   system: typeof system;
 }>;
 
@@ -91,4 +97,5 @@ export declare const internal: FilterApi<
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
   authz: import("@djpanda/convex-authz/_generated/component.js").ComponentApi<"authz">;
+  stripe: import("@convex-dev/stripe/_generated/component.js").ComponentApi<"stripe">;
 };

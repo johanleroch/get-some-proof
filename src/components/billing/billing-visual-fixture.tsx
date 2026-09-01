@@ -38,6 +38,28 @@ export function BillingVisualFixture({
         </aside>
         <main className="p-4 md:p-8">
           <BillingCockpit
+            navigateToCheckout={() => undefined}
+            offers={
+              availability === "available"
+                ? [
+                    {
+                      amount: 4_900,
+                      currency: "eur",
+                      interval: "month",
+                      lookupKey: "premium_monthly",
+                    },
+                    {
+                      amount: 49_000,
+                      currency: "eur",
+                      interval: "year",
+                      lookupKey: "premium_annual",
+                    },
+                  ]
+                : undefined
+            }
+            onStartCheckout={async () => ({
+              url: "https://checkout.stripe.example/session",
+            })}
             onUpdateContact={async () => undefined}
             overview={{
               availability,

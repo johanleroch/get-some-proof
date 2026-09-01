@@ -27,6 +27,7 @@ const eventLabels = {
   "project.archived": "archived a Project",
   "project.deleted": "deleted a Project",
   "billing.contact_updated": "updated the Billing Contact for",
+  "billing.checkout_started": "started Premium Checkout for",
 } as const;
 
 export function AuditLog({
