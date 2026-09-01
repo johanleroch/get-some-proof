@@ -53,6 +53,8 @@ pnpm convex env set GOOGLE_CLIENT_SECRET 'your-client-secret'
 
 Register `http://localhost:3000/api/auth/callback/google` as the local Google OAuth redirect URI.
 
+Stripe Billing is also optional. Without its two server secrets, every Organization safely remains on Free and no payment action is offered. To enable the complete UI-driven Premium flow in a Stripe sandbox, follow [Stripe Billing adoption and rehearsal](docs/stripe-billing.md). Stripe credentials belong to the linked Convex deployment, never to `.env.local` or a `NEXT_PUBLIC_` variable.
+
 Start Convex and Next.js in separate terminals:
 
 ```bash
@@ -107,5 +109,6 @@ pnpm test:e2e
 - [Authentication and authorization research](docs/research/authentication-authorization-multitenancy.md)
 - [Customization and Bklit boundary](docs/customization.md)
 - [Vercel + Convex deployment](docs/deployment.md)
+- [Stripe Billing adoption and sandbox rehearsal](docs/stripe-billing.md)
 - [Specification verification matrix](docs/verification.md)
 - [Domain language](CONTEXT.md) and [architecture decisions](docs/adr/)

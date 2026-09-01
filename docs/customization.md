@@ -17,3 +17,13 @@ The chart palette uses `--chart-1` through `--chart-5`; the default series map t
 The files in `src/components/charts/` were installed as source from the Bklit shadcn registry component `@bklit/bar-chart`. Bklit documents its registry chart components as MIT licensed, and the upstream notice is preserved in `src/components/charts/LICENSE.bklit.md`. Bklit Studio is proprietary and is intentionally not included. Update the chart source through the registry command documented in `components.json`, review the resulting diff, and preserve exact dependency pins.
 
 The registry source has a narrowly scoped ESLint override in `eslint.config.mjs` for React hook/compiler rules that the upstream chart implementation does not currently satisfy. Application code remains subject to the full lint configuration.
+
+## Stripe Billing
+
+- Rename the Stripe Product and set its statement, support, logo, icon, accent color, and hosted Checkout branding in the Platform Stripe Account. Keep application colors on the existing semantic theme tokens; do not copy Stripe branding into the dashboard.
+- Keep the code-level lookup keys `premium_monthly` and `premium_annual` unless the provider contract, validators, tests, and adoption guide are changed together. Prices and currency are configured in Stripe and read at runtime, not duplicated in React.
+- Configure both recurring Prices under the same Premium Product when possible. The monthly lookup key must resolve to one active monthly Price, and the annual key to one active annual Price.
+- Configure Customer Portal features in Stripe rather than rebuilding payment methods, invoices, plan changes, tax identifiers, or cancellation forms locally. If plan switching is enabled, expose only the Premium Prices supported by this starter.
+- Replace the single Project entitlement example only after the new paid capability has server-side checks and Free read behavior is intentional. Hidden buttons are never an entitlement boundary.
+
+See `docs/stripe-billing.md` for the complete sandbox-first setup and verification procedure.

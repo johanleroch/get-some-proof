@@ -67,3 +67,11 @@ Google login is omitted when either credential is absent; email/password remains
 - Exercise all four roles, cross-Organization selectors, Invitations, Session revocation, and the Audit Log.
 - Confirm real emails arrive with the correct absolute links and sender authentication.
 - Keep `ALLOW_DEMO_SEED` unset. The demonstration seed additionally refuses any non-local `SITE_URL`, but it is not a production migration tool.
+
+## 6. Promote Stripe Billing separately
+
+Stripe Billing is optional and must first pass the complete sandbox rehearsal in `docs/stripe-billing.md`. That rehearsal deliberately configures only a disposable Convex development deployment and Stripe test mode.
+
+Enabling live billing is a separate production change. It requires explicit approval for the exact Platform Stripe Account and Convex production deployment before any live-mode webhook, `sk_live_` secret, production `whsec_` secret, Price, Portal configuration, or `--prod` command is created or changed. Do not copy test-mode object IDs or secrets into live mode.
+
+After approval, repeat the documented setup in Stripe live mode with the final production origin and the production webhook URL. Store `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in the Convex production environment. Then repeat the verification matrix with a deliberately controlled live charge and refund plan agreed by the operator before opening traffic. Documentation or sandbox success alone is not authorization to perform these actions.

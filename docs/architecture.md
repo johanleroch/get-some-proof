@@ -41,6 +41,27 @@ All transactional email goes through `convex/email/provider.ts`. Callers and tem
 
 `auditEvents` is an append-only application table partitioned by Organization. Events copy stable actor and target labels so attribution survives Project deletion or Membership deactivation. Payloads expose no Invitation token, credential, provider secret, or delivery idempotency value. Owner and Admin can read the paginated application log. convex-authz keeps its own separate history of authorization changes.
 
+## Organization Billing and Premium Entitlement
+
+One Platform Stripe Account belongs to the company operating the deployment. Every Organization is a Customer of that account and may have one non-terminal fixed-price subscription. Stripe Connect, Organization-owned merchant accounts, and browser-managed credentials are outside this architecture.
+
+`@convex-dev/stripe` verifies the Stripe webhook signature and synchronizes Customer, Checkout, Subscription, Invoice, and Payment records in its isolated component tables. Application code wraps those component queries behind the same verified-principal, active-Membership, canonical-Organization, and convex-authz boundary used elsewhere. `billingProfiles` owns the one-to-one Organization Customer mapping, Billing Contact, and serialized Checkout or contact-update reservations. Temporary Checkout and Customer Portal URLs are returned directly to an authorized Owner and are never stored.
+
+The Billing permission split is deliberate:
+
+| Role   | Billing cockpit | Financial actions |
+| ------ | --------------- | ----------------- |
+| Owner  | Read            | Manage            |
+| Admin  | Read            | None              |
+| Editor | None            | None              |
+| Viewer | None            | None              |
+
+The server derives Premium Entitlement from synchronized Subscription state. `active`, `trialing`, and `past_due` grant Premium; cancellation scheduled on one of those states grants it through the synchronized period end. Terminal, unpaid, incomplete, missing, or unavailable states do not. Every public Project write checks both the existing role permission and this entitlement. Project reads use a minimal entitlement query and remain available on Free.
+
+The browser can select only `premium_monthly` or `premium_annual`. The server resolves exactly one active recurring Stripe Price for that lookup key, creates or reuses the Organization Customer, attaches canonical Organization metadata, and uses serialized reservations plus Stripe idempotency keys. The Checkout success or cancellation query parameter controls explanatory UI copy only. Premium is granted only after the webhook-synchronized Subscription changes.
+
+Provider boundaries, supported lifecycle states, setup, and sandbox checks are documented in `docs/stripe-billing.md`. The accepted global-account decision is recorded in ADR 0013.
+
 ## Dashboard and Bklit boundary
 
 Tailwind CSS and repository-owned shadcn components implement the interface. `src/components/charts/` contains the Bklit `@bklit/bar-chart` registry source and its preserved MIT notice. Bklit Studio and proprietary source or assets are not included. Brand and chart replacement points are documented in `docs/customization.md`.

@@ -22,10 +22,21 @@ The first release includes:
 - dashboard navigation and an overview page;
 - a removable organization-scoped `Project` example with listing, creation, editing, and archiving;
 - member, invitation, organization-settings, audit-log, and account-security screens;
+- Organization Billing for a Free or Premium plan, with Stripe-hosted Checkout and Customer Portal;
+- server-derived Premium Entitlement that keeps Project reads on Free and requires Premium for Project writes;
 - responsive light, dark, and system themes;
 - an explicit, optional demonstration seed that cannot run accidentally in production.
 
-The first release excludes billing, a marketing site, a blog, runtime custom-role builders, full internationalization, and organization deletion. A safe organization-deletion workflow requires an explicit retention, recovery, and purge design and is left as a documented extension.
+The first release excludes a marketing site, a blog, runtime custom-role builders, full internationalization, and organization deletion. A safe organization-deletion workflow requires an explicit retention, recovery, Stripe Customer handling, and purge design and is left as a documented extension.
+
+## Organization Billing
+
+- One deployment-wide Platform Stripe Account sells the Premium Plan to Organizations. Organizations are SaaS customers, never Stripe connected accounts.
+- Billing is optional at runtime. Missing Stripe configuration leaves Organizations safely on Free without affecting authentication, navigation, or readable Organization data.
+- Owner and Admin can read the Organization Billing cockpit. Only Owner can start Checkout, open the Customer Portal, recover a payment method, or change the Billing Contact.
+- Premium monthly and annual offers are resolved on the server from the allowlisted `premium_monthly` and `premium_annual` Stripe lookup keys. Amounts, currencies, Price IDs, Customer IDs, and temporary provider URLs are not trusted from the browser.
+- Active, trialing, and past-due subscriptions grant Premium. Cancellation at period end keeps Premium until the synchronized end date. Unpaid, canceled, incomplete-expired, missing, and unavailable states remain or return to Free.
+- Checkout and Customer Portal are hosted by Stripe. The application does not collect card data, embed the portal, or grant Premium from a return URL.
 
 ## Authentication and account security
 
@@ -85,7 +96,7 @@ The first release excludes billing, a marketing site, a blog, runtime custom-rol
 - Tailwind CSS and shadcn/ui form the general design system.
 - Only MIT-licensed Bklit registry chart components may be included; Bklit Studio and proprietary assets are excluded.
 - The visual direction is sober, responsive, accessible B2B software with replaceable brand tokens, logo, colors, and themes.
-- The main navigation covers overview, Projects, members and invitations, audit, organization settings, and account security.
+- The main navigation covers overview, Projects, members and invitations, Billing, audit, organization settings, and account security, subject to role permissions.
 - The application audit log is immutable, organization-scoped, visible to Owner and Admin, and records security-sensitive and administratively significant operations.
 
 ## Quality, versions, and deployment
