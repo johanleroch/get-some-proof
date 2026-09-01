@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   IconBuilding,
   IconCheck,
+  IconCreditCard,
   IconPlus,
   IconSelector,
   IconSettings,
@@ -45,12 +46,14 @@ function organizationInitials(name: string) {
 
 export function OrganizationSwitcher({
   canReadAudit,
+  canReadBilling,
   canUpdateOrganization,
   currentName,
   currentLogoUrl,
   currentSlug,
 }: {
   canReadAudit: boolean;
+  canReadBilling: boolean;
   canUpdateOrganization: boolean;
   currentName: string;
   currentLogoUrl?: string | null;
@@ -164,6 +167,14 @@ export function OrganizationSwitcher({
                   <Link href={`/org/${currentSlug}/audit` as Route}>
                     <IconShieldCheck />
                     Audit Log
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {canReadBilling ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/org/${currentSlug}/billing` as Route}>
+                    <IconCreditCard />
+                    Billing
                   </Link>
                 </DropdownMenuItem>
               ) : null}

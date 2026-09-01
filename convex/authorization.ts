@@ -32,6 +32,10 @@ export const permissions = definePermissions({
   audit: {
     read: true,
   },
+  billing: {
+    read: true,
+    manage: true,
+  },
 });
 
 export const roles = defineRoles(permissions, {
@@ -51,6 +55,7 @@ export const roles = defineRoles(permissions, {
     members: ["read", "manage"],
     invitations: ["manage"],
     audit: ["read"],
+    billing: ["read"],
   },
   owner: {
     organization: ["read", "update"],
@@ -59,6 +64,7 @@ export const roles = defineRoles(permissions, {
     invitations: ["manage"],
     ownership: ["manage"],
     audit: ["read"],
+    billing: ["read", "manage"],
   },
 });
 

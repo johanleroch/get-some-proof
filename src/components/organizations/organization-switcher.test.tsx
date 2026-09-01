@@ -36,12 +36,17 @@ describe("OrganizationSwitcher", () => {
   function renderSwitcher(
     currentName = "Acme",
     currentSlug = "acme-1234",
-    permissions = { canReadAudit: true, canUpdateOrganization: true },
+    permissions = {
+      canReadAudit: true,
+      canReadBilling: true,
+      canUpdateOrganization: true,
+    },
   ) {
     return render(
       <SidebarProvider>
         <OrganizationSwitcher
           canReadAudit={permissions.canReadAudit}
+          canReadBilling={permissions.canReadBilling}
           canUpdateOrganization={permissions.canUpdateOrganization}
           currentName={currentName}
           currentSlug={currentSlug}
@@ -78,6 +83,10 @@ describe("OrganizationSwitcher", () => {
       "href",
       "/org/acme-1234/audit",
     );
+    expect(screen.getByRole("menuitem", { name: "Billing" })).toHaveAttribute(
+      "href",
+      "/org/acme-1234/billing",
+    );
     for (const item of screen.getAllByRole("menuitem")) {
       expect(item).toHaveClass("cursor-pointer");
     }
@@ -90,6 +99,7 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher("Acme", "acme-1234", {
       canReadAudit: false,
+      canReadBilling: false,
       canUpdateOrganization: false,
     });
     fireEvent.pointerDown(
@@ -101,6 +111,7 @@ describe("OrganizationSwitcher", () => {
       screen.queryByRole("menuitem", { name: "Organization settings" }),
     ).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Audit Log" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Billing" })).toBeNull();
   });
 
   it("switches a multi-Organization User to the equivalent safe route", () => {
@@ -130,5 +141,22 @@ describe("OrganizationSwitcher", () => {
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith("/org/acme-1234/settings");
     });
+  });
+
+  it("preserves the Billing section when switching Organization", () => {
+    mocks.pathname = "/org/acme-1234/billing";
+    mocks.useQuery.mockReturnValue([
+      { id: "organization-1", name: "Acme", slug: "acme-1234" },
+      { id: "organization-2", name: "Beta", slug: "beta-5678" },
+    ]);
+
+    renderSwitcher();
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Switch Organization" }),
+      { button: 0, ctrlKey: false },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));
+
+    expect(mocks.replace).toHaveBeenCalledWith("/org/beta-5678/billing");
   });
 });

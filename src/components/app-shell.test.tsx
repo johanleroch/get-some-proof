@@ -5,6 +5,7 @@ import { AppShell } from "./app-shell";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/org/acme-1234/dashboard",
+  readBilling: true,
   readAudit: true,
   updateOrganization: true,
 }));
@@ -13,6 +14,7 @@ vi.mock("convex/react", () => ({
   useQuery: () => ({
     can: {
       readAudit: mocks.readAudit,
+      readBilling: mocks.readBilling,
       updateOrganization: mocks.updateOrganization,
     },
   }),
@@ -43,6 +45,7 @@ describe("AppShell", () => {
       writable: true,
     });
     mocks.pathname = "/org/acme-1234/dashboard";
+    mocks.readBilling = true;
     mocks.readAudit = true;
     mocks.updateOrganization = true;
   });
@@ -86,6 +89,10 @@ describe("AppShell", () => {
       screen.getByRole("link", { name: "Organization settings" }),
     ).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Audit Log" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Billing" })).toHaveAttribute(
+      "href",
+      "/org/acme-1234/billing",
+    );
     expect(
       screen.getByRole("link", { name: "Back to Overview" }),
     ).toHaveAttribute("href", "/org/acme-1234/dashboard");
@@ -121,6 +128,7 @@ describe("AppShell", () => {
   it("hides privileged destinations for lower roles", () => {
     mocks.pathname = "/org/acme-1234/settings";
     mocks.readAudit = false;
+    mocks.readBilling = false;
     mocks.updateOrganization = false;
     render(
       <AppShell
@@ -133,6 +141,7 @@ describe("AppShell", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
     expect(
       screen.queryByRole("link", { name: "Organization settings" }),
     ).toBeNull();

@@ -2,6 +2,7 @@ import type { Route } from "next";
 
 const safeOrganizationSections = new Set([
   "audit",
+  "billing",
   "dashboard",
   "members",
   "projects",

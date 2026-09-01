@@ -13,6 +13,8 @@ const app = defineApp({
     ),
     RESEND_API_KEY: v.optional(v.string()),
     SITE_URL: v.string(),
+    STRIPE_SECRET_KEY: v.optional(v.string()),
+    STRIPE_WEBHOOK_SECRET: v.optional(v.string()),
   },
 });
 

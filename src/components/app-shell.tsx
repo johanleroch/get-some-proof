@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import {
   type Icon,
   IconArrowLeft,
+  IconCreditCard,
   IconDashboard,
   IconFolder,
   IconLock,
@@ -133,7 +134,8 @@ export function AppShell({
   const accountContext = pathname.startsWith("/account");
   const organizationContext =
     pathname === `/org/${organizationSlug}/settings` ||
-    pathname === `/org/${organizationSlug}/audit`;
+    pathname === `/org/${organizationSlug}/audit` ||
+    pathname === `/org/${organizationSlug}/billing`;
 
   const productNavigation: NavigationItem[] = [
     {
@@ -168,6 +170,12 @@ export function AppShell({
       icon: IconShieldCheck,
       href: `/org/${organizationSlug}/audit` as Route,
       visible: authorization?.can.readAudit ?? false,
+    },
+    {
+      label: "Billing",
+      icon: IconCreditCard,
+      href: `/org/${organizationSlug}/billing` as Route,
+      visible: authorization?.can.readBilling ?? false,
     },
   ];
 
@@ -213,6 +221,7 @@ export function AppShell({
         <SidebarHeader>
           <OrganizationSwitcher
             canReadAudit={authorization?.can.readAudit ?? false}
+            canReadBilling={authorization?.can.readBilling ?? false}
             canUpdateOrganization={
               authorization?.can.updateOrganization ?? false
             }

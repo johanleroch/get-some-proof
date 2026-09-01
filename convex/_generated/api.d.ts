@@ -11,6 +11,7 @@
 import type * as auditEvents from "../auditEvents.js";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
+import type * as billing from "../billing.js";
 import type * as dashboard from "../dashboard.js";
 import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   auditEvents: typeof auditEvents;
   auth: typeof auth;
   authorization: typeof authorization;
+  billing: typeof billing;
   dashboard: typeof dashboard;
   "domain/invitation": typeof domain_invitation;
   "domain/organizationSlug": typeof domain_organizationSlug;

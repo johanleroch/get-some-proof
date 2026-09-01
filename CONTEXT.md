@@ -24,6 +24,30 @@ _Avoid_: Avatar URL, Member Image
 A customer space whose members and resources share one business and access boundary.
 _Avoid_: Workspace, Account, Tenant in product language
 
+**Platform Stripe Account**:
+The single Stripe merchant account owned by the company operating the deployed SaaS; it receives subscription payments from Organizations and is never an Organization-owned connected account.
+_Avoid_: Organization Stripe Account, Connected Account
+
+**Organization Subscription**:
+The single fixed-price billing relationship through which an Organization pays the deployed SaaS for its plan, independently of its member count and of the individual Owner who completes checkout on its behalf.
+_Avoid_: User Subscription, Membership
+
+**Billing Contact**:
+The Organization-level email recipient for Stripe billing communication and invoices. It initially uses the verified email of the subscribing Owner but remains independent of that User afterward.
+_Avoid_: Owner Email, Organization Identity
+
+**Free Plan**:
+The default non-paid Organization plan, with a deliberately limited product entitlement and no Stripe subscription.
+_Avoid_: Trial, Canceled Subscription
+
+**Premium Plan**:
+The paid Organization plan backed by a subscription on the Platform Stripe Account.
+_Avoid_: Membership Tier, User Plan
+
+**Premium Entitlement**:
+The server-derived permission for an Organization to use paid product behavior. Active, trialing, and temporarily past-due subscriptions grant it; unpaid, canceled, and expired incomplete subscriptions do not.
+_Avoid_: Client Flag, Checkout Success, Role
+
 **Organization Slug**:
 A stable URL identifier derived from an organization name and completed by four random lowercase alphanumeric characters for uniqueness; changing the organization name does not change it.
 _Avoid_: Organization ID, Tenant ID

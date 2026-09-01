@@ -23,6 +23,7 @@ export const auditEventTypeValidator = v.union(
   v.literal("project.updated"),
   v.literal("project.archived"),
   v.literal("project.deleted"),
+  v.literal("billing.contact_updated"),
 );
 
 export type AuditEventType =
@@ -42,9 +43,11 @@ export type AuditEventType =
   | "project.created"
   | "project.updated"
   | "project.archived"
-  | "project.deleted";
+  | "project.deleted"
+  | "billing.contact_updated";
 
-type AuditTargetType = "organization" | "invitation" | "membership" | "project";
+type AuditTargetType =
+  "organization" | "invitation" | "membership" | "project" | "billing";
 
 export async function recordOrganizationAuditEvent(
   ctx: MutationCtx,
@@ -77,6 +80,7 @@ const auditEventSummary = v.object({
     v.literal("invitation"),
     v.literal("membership"),
     v.literal("project"),
+    v.literal("billing"),
   ),
   targetId: v.string(),
   targetLabel: v.string(),

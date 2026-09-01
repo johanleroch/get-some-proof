@@ -117,6 +117,8 @@ describe("Organization onboarding", () => {
                 manageMembers: true,
                 manageOwnership: true,
                 readAudit: true,
+                readBilling: true,
+                manageBilling: true,
               }
             : role === "admin"
               ? {
@@ -126,6 +128,8 @@ describe("Organization onboarding", () => {
                   manageMembers: true,
                   manageOwnership: false,
                   readAudit: true,
+                  readBilling: true,
+                  manageBilling: false,
                 }
               : role === "editor"
                 ? {
@@ -135,6 +139,8 @@ describe("Organization onboarding", () => {
                     manageMembers: false,
                     manageOwnership: false,
                     readAudit: false,
+                    readBilling: false,
+                    manageBilling: false,
                   }
                 : {
                     updateOrganization: false,
@@ -143,6 +149,8 @@ describe("Organization onboarding", () => {
                     manageMembers: false,
                     manageOwnership: false,
                     readAudit: false,
+                    readBilling: false,
+                    manageBilling: false,
                   },
       });
 

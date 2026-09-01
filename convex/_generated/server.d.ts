@@ -34,6 +34,8 @@ type Env = {
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
   readonly RESEND_API_KEY: string | undefined;
   readonly SITE_URL: string;
+  readonly STRIPE_SECRET_KEY: string | undefined;
+  readonly STRIPE_WEBHOOK_SECRET: string | undefined;
 };
 
 /**

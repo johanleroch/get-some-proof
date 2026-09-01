@@ -89,6 +89,12 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await ctx.db.insert("billingProfiles", {
+      organizationId,
+      billingEmail: principal.email.trim().toLowerCase(),
+      createdAt: now,
+      updatedAt: now,
+    });
 
     await authzForOrganization(String(organizationId)).assignRole(
       ctx,

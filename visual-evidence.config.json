@@ -81,6 +81,20 @@
       "heading": "Overview",
       "theme": "dark",
       "requiresAuth": true
+    },
+    {
+      "slug": "billing-free-owner",
+      "title": "Billing - Free Owner",
+      "path": "/visual-evidence/billing?availability=available&role=owner",
+      "heading": "Billing",
+      "theme": "light"
+    },
+    {
+      "slug": "billing-unavailable-admin",
+      "title": "Billing - unavailable Admin",
+      "path": "/visual-evidence/billing?availability=unavailable&role=admin",
+      "heading": "Billing",
+      "theme": "light"
     }
   ]
 }

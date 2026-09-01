@@ -26,6 +26,8 @@ export const getMine = query({
       manageMembers: v.boolean(),
       manageOwnership: v.boolean(),
       readAudit: v.boolean(),
+      readBilling: v.boolean(),
+      manageBilling: v.boolean(),
     }),
   }),
   handler: async (ctx, args) => {
@@ -33,7 +35,17 @@ export const getMine = query({
       organizationId: args.organizationId,
     });
     const scopedAuthz = authzForOrganization(access.tenantId);
-    const [assignedRoles, ...capabilities] = await Promise.all([
+    const [
+      assignedRoles,
+      updateOrganization,
+      createProjects,
+      deleteProjects,
+      manageMembers,
+      manageOwnership,
+      readAudit,
+      readBilling,
+      manageBilling,
+    ] = await Promise.all([
       scopedAuthz.getUserRoles(ctx, access.principal.actorId),
       scopedAuthz.can(ctx, access.principal.actorId, "organization:update"),
       scopedAuthz.can(ctx, access.principal.actorId, "projects:create"),
@@ -41,6 +53,8 @@ export const getMine = query({
       scopedAuthz.can(ctx, access.principal.actorId, "members:manage"),
       scopedAuthz.can(ctx, access.principal.actorId, "ownership:manage"),
       scopedAuthz.can(ctx, access.principal.actorId, "audit:read"),
+      scopedAuthz.can(ctx, access.principal.actorId, "billing:read"),
+      scopedAuthz.can(ctx, access.principal.actorId, "billing:manage"),
     ]);
     const assignedRoleNames = new Set(
       assignedRoles.map((assignment) => assignment.role),
@@ -52,12 +66,14 @@ export const getMine = query({
     return {
       role,
       can: {
-        updateOrganization: capabilities[0],
-        createProjects: capabilities[1],
-        deleteProjects: capabilities[2],
-        manageMembers: capabilities[3],
-        manageOwnership: capabilities[4],
-        readAudit: capabilities[5],
+        updateOrganization,
+        createProjects,
+        deleteProjects,
+        manageMembers,
+        manageOwnership,
+        readAudit,
+        readBilling,
+        manageBilling,
       },
     };
   },

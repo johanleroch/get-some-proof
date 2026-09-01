@@ -76,7 +76,7 @@ for (const screen of config.screens) {
       path: path.join(projectDirectory, `${screen.slug}.png`),
       fullPage: true,
       animations: "disabled",
-      caret: "hide",
+      caret: "initial",
       scale: "css",
     });
   });

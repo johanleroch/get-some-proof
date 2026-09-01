@@ -32,6 +32,12 @@ export default defineSchema({
     .index("by_organization_user", ["organizationId", "userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_organization_status", ["organizationId", "status"]),
+  billingProfiles: defineTable({
+    organizationId: v.id("organizations"),
+    billingEmail: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_organization", ["organizationId"]),
   projects: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
@@ -99,6 +105,7 @@ export default defineSchema({
       v.literal("project.updated"),
       v.literal("project.archived"),
       v.literal("project.deleted"),
+      v.literal("billing.contact_updated"),
     ),
     actorUserId: v.string(),
     actorDisplayName: v.string(),
@@ -107,6 +114,7 @@ export default defineSchema({
       v.literal("invitation"),
       v.literal("membership"),
       v.literal("project"),
+      v.literal("billing"),
     ),
     targetId: v.string(),
     targetLabel: v.string(),
