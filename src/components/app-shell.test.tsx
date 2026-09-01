@@ -184,7 +184,6 @@ describe("AppShell", () => {
     );
     const viewEffects = container.querySelector(".dashboard-view-effects");
     const viewContent = container.querySelector(".dashboard-view-content");
-    const grains = container.querySelectorAll(".dashboard-surface-grain");
     const shines = container.querySelectorAll(".dashboard-shine");
     const sidebarInner = container.querySelector('[data-slot="sidebar-inner"]');
 
@@ -194,15 +193,11 @@ describe("AppShell", () => {
     expect(sidebarEffects?.parentElement).toBe(sidebarInner);
     expect(viewEffects?.parentElement).toBe(view);
     expect(viewContent?.parentElement).toBe(view);
-    expect(grains).toHaveLength(2);
-    expect(sidebarEffects?.contains(grains[0])).toBe(true);
-    expect(viewEffects?.contains(grains[1])).toBe(true);
     expect(shines).toHaveLength(4);
     expect([...shines].every((shine) => shine.parentElement === frame)).toBe(
       true,
     );
     expect(viewContent?.contains(viewEffects)).toBe(false);
-    expect(viewContent?.contains(grains[1])).toBe(false);
   });
 
   it("opens and dismisses the native mobile sidebar", () => {

@@ -107,9 +107,7 @@ export function DashboardBackgroundScreenFixture() {
           className="bg-sidebar text-sidebar-foreground relative flex h-full w-full flex-col overflow-hidden"
           data-slot="sidebar-inner"
         >
-          <div aria-hidden="true" className="dashboard-sidebar-effects">
-            <div className="dashboard-surface-grain" />
-          </div>
+          <div aria-hidden="true" className="dashboard-sidebar-effects" />
           <div className="flex flex-1 flex-col gap-6 p-3">
             <div>
               <p className="text-[13px] font-[510]">Visual Studio</p>
@@ -162,9 +160,7 @@ export function DashboardBackgroundScreenFixture() {
         </div>
       </aside>
       <main className="dashboard-view m-2 ml-0 min-h-0 overflow-hidden border shadow-2xl shadow-black/30">
-        <div aria-hidden="true" className="dashboard-view-effects">
-          <div className="dashboard-surface-grain" />
-        </div>
+        <div aria-hidden="true" className="dashboard-view-effects" />
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-12 shrink-0 items-center border-b px-6">
             <p className="text-[13px] font-[510]">Overview</p>

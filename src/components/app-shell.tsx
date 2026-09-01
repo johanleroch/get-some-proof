@@ -209,9 +209,7 @@ export function AppShell({
     >
       <div aria-hidden="true" className="dashboard-frame-background" />
       <Sidebar collapsible="offcanvas" variant="inset">
-        <div aria-hidden="true" className="dashboard-sidebar-effects">
-          <div className="dashboard-surface-grain" />
-        </div>
+        <div aria-hidden="true" className="dashboard-sidebar-effects" />
         <SidebarHeader>
           <OrganizationSwitcher
             canReadAudit={authorization?.can.readAudit ?? false}
@@ -264,9 +262,7 @@ export function AppShell({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="dashboard-view border-border/70 min-h-0 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
-        <div aria-hidden="true" className="dashboard-view-effects">
-          <div className="dashboard-surface-grain" />
-        </div>
+        <div aria-hidden="true" className="dashboard-view-effects" />
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
