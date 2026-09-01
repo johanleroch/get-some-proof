@@ -180,6 +180,44 @@ describe("OrganizationBilling", () => {
     ).toBeVisible();
   });
 
+  it("supports a deterministic annual cadence for visual evidence", () => {
+    render(
+      <BillingCockpit
+        initialLookupKey="premium_annual"
+        offers={[
+          {
+            amount: 4_900,
+            currency: "eur",
+            interval: "month",
+            lookupKey: "premium_monthly",
+          },
+          {
+            amount: 49_000,
+            currency: "eur",
+            interval: "year",
+            lookupKey: "premium_annual",
+          },
+        ]}
+        onUpdateContact={mocks.updateContact}
+        overview={{
+          availability: "available",
+          billingContact: "accounts@acme.example",
+          canManage: true,
+          effectivePlan: "free",
+          state: "missing",
+          subscription: null,
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /monthly.*€49/i }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByRole("button", { name: /annual.*€490/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
   it.each([
     ["success", /confirming your premium subscription/i],
     ["canceled", /no billing change was made/i],

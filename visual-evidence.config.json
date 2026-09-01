@@ -83,25 +83,32 @@
       "requiresAuth": true
     },
     {
-      "slug": "billing-free-owner",
-      "title": "Billing - Free Owner",
-      "path": "/visual-evidence/billing?availability=available&role=owner",
+      "slug": "billing-free-owner-monthly",
+      "title": "Billing - Free Owner monthly",
+      "path": "/visual-evidence/billing?availability=available&role=owner&cadence=monthly",
       "heading": "Billing",
       "theme": "light"
     },
     {
-      "slug": "billing-unavailable-admin",
-      "title": "Billing - unavailable Admin",
-      "path": "/visual-evidence/billing?availability=unavailable&role=admin",
+      "slug": "billing-free-owner-annual",
+      "title": "Billing - Free Owner annual",
+      "path": "/visual-evidence/billing?availability=available&role=owner&cadence=annual",
+      "heading": "Billing",
+      "theme": "dark"
+    },
+    {
+      "slug": "billing-free-admin",
+      "title": "Billing - Free Admin",
+      "path": "/visual-evidence/billing?availability=available&role=admin",
       "heading": "Billing",
       "theme": "light"
     },
     {
       "slug": "billing-premium-owner",
       "title": "Billing - Premium Owner",
-      "path": "/visual-evidence/billing?availability=available&role=owner&state=active",
+      "path": "/visual-evidence/billing?availability=available&role=owner&state=active&cadence=annual",
       "heading": "Billing",
-      "theme": "light"
+      "theme": "dark"
     },
     {
       "slug": "billing-past-due-owner",
@@ -113,9 +120,23 @@
     {
       "slug": "billing-canceling-admin",
       "title": "Billing - canceling Admin",
-      "path": "/visual-evidence/billing?availability=available&role=admin&state=cancellation_scheduled",
+      "path": "/visual-evidence/billing?availability=available&role=admin&state=cancellation_scheduled&cadence=annual",
+      "heading": "Billing",
+      "theme": "dark"
+    },
+    {
+      "slug": "billing-unavailable-admin",
+      "title": "Billing - unavailable Admin",
+      "path": "/visual-evidence/billing?availability=unavailable&role=admin",
       "heading": "Billing",
       "theme": "light"
+    },
+    {
+      "slug": "billing-checkout-pending-owner",
+      "title": "Billing - Checkout confirmation pending Owner",
+      "path": "/visual-evidence/billing?availability=available&role=owner&checkout=success",
+      "heading": "Billing",
+      "theme": "dark"
     },
     {
       "slug": "projects-free-owner",

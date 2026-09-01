@@ -335,6 +335,7 @@ export function OrganizationBilling({ slug }: { slug: string }) {
 
 export function BillingCockpit({
   checkoutReturn = null,
+  initialLookupKey = "premium_monthly",
   navigateToCheckout = (url) => window.location.assign(url),
   navigateToPortal = (url) => window.location.assign(url),
   offers,
@@ -347,6 +348,7 @@ export function BillingCockpit({
   overview,
 }: {
   checkoutReturn?: "success" | "canceled" | null;
+  initialLookupKey?: PremiumLookupKey;
   navigateToCheckout?: (url: string) => void;
   navigateToPortal?: (url: string) => void;
   offers?: PublicOffer[];
@@ -364,7 +366,7 @@ export function BillingCockpit({
   const [checkoutPending, setCheckoutPending] = useState(false);
   const [portalPending, setPortalPending] = useState(false);
   const [selectedLookupKey, setSelectedLookupKey] =
-    useState<PremiumLookupKey>("premium_monthly");
+    useState<PremiumLookupKey>(initialLookupKey);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);

@@ -7,6 +7,8 @@ export default async function BillingVisualEvidencePage({
 }: {
   searchParams: Promise<{
     availability?: string;
+    cadence?: string;
+    checkout?: string;
     role?: string;
     state?: string;
   }>;
@@ -16,6 +18,8 @@ export default async function BillingVisualEvidencePage({
   const params = await searchParams;
   const availability =
     params.availability === "unavailable" ? "unavailable" : "available";
+  const cadence = params.cadence === "annual" ? "year" : "month";
+  const checkoutReturn = params.checkout === "success" ? "success" : null;
   const role = params.role === "admin" ? "admin" : "owner";
   const state =
     params.state === "active" ||
@@ -27,6 +31,8 @@ export default async function BillingVisualEvidencePage({
   return (
     <BillingVisualFixture
       availability={availability}
+      cadence={cadence}
+      checkoutReturn={checkoutReturn}
       role={role}
       state={state}
     />

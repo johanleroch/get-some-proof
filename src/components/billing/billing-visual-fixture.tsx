@@ -6,10 +6,14 @@ import { BillingCockpit } from "./organization-billing";
 
 export function BillingVisualFixture({
   availability,
+  cadence = "month",
+  checkoutReturn = null,
   role,
   state = "missing",
 }: {
   availability: "available" | "unavailable";
+  cadence?: "month" | "year";
+  checkoutReturn?: "success" | null;
   role: "admin" | "owner";
   state?: "missing" | "active" | "past_due" | "cancellation_scheduled";
 }) {
@@ -44,6 +48,10 @@ export function BillingVisualFixture({
         </aside>
         <main className="p-4 md:p-8">
           <BillingCockpit
+            checkoutReturn={checkoutReturn}
+            initialLookupKey={
+              cadence === "month" ? "premium_monthly" : "premium_annual"
+            }
             navigateToCheckout={() => undefined}
             navigateToPortal={() => undefined}
             offers={
@@ -73,7 +81,11 @@ export function BillingVisualFixture({
             onUpdateContact={async () => undefined}
             subscriptionDetails={
               availability === "available" && state !== "missing"
-                ? { amount: 4_900, currency: "eur", interval: "month" }
+                ? {
+                    amount: cadence === "month" ? 4_900 : 49_000,
+                    currency: "eur",
+                    interval: cadence,
+                  }
                 : undefined
             }
             overview={{
