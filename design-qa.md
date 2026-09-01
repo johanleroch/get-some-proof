@@ -18,6 +18,9 @@
 - Mobile pending state: `visual-evidence/manual/members-pending-mobile.png`
 - Mobile invitation error state: `visual-evidence/manual/members-invite-error-mobile.png`
 - Mobile expired, revoked, or already-used state: `visual-evidence/manual/invitation-unavailable-mobile.png`
+- Post-polish tab comparison: `visual-evidence/manual/design-comparison-tabs-outline-fixed.png`
+- Post-polish desktop tabs: `visual-evidence/manual/members-tabs-outline-fixed.png`
+- Post-polish mobile tabs: `visual-evidence/manual/members-tabs-outline-fixed-mobile.png`
 
 ## Findings
 
@@ -29,12 +32,14 @@ No actionable P0, P1, or P2 differences remain.
 - Image quality and assets: the selected reference contains no product imagery required by the management surface. Existing shell icons and initials remain sourced from the starter; no custom SVG, CSS art, placeholder illustration, or generated raster substitute was introduced.
 - Copy and content: unsupported Slack states such as Requests, Accepted, and Invite Links were omitted. The supported views are Members, Pending invitations, and Former members. Invitation metadata describes inviter, expiry, role, sent date, and status without exposing provider details.
 - Behavior and accessibility: tabs expose full accessible names, the search input is labelled per view, destructive actions require confirmation, status feedback uses live regions, and row controls remain keyboard reachable.
+- Tab focus treatment: the browser-default rectangular outline no longer appears after a pointer click. Keyboard focus is preserved through a thicker `ring`-colored underline, while the selected state keeps the compact neutral underline used by the reference.
 
 ## Comparison history
 
 1. Initial mobile pass found a P2 responsive issue: the desktop labels `Pending invitations` and `Former members` clipped the final tab at 390 px.
 2. The tab controls received short mobile labels (`Pending` and `Former`) while preserving their full `aria-label` values.
 3. Post-fix evidence in `visual-evidence/manual/members-pending-mobile.png` shows all three tabs, the primary action, search field, invitation metadata, role selector, and row actions without horizontal page overflow.
+4. The follow-up tab polish removed the native rectangular outline visible around the selected tab. Desktop and mobile captures show a single clean underline with no surrounding box.
 
 ## Primary interactions tested
 

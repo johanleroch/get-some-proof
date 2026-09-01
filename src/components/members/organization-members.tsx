@@ -103,9 +103,9 @@ export function OrganizationMembers({ slug }: { slug: string }) {
           <button
             aria-label={item.label}
             aria-selected={selectedView === item.id}
-            className={`relative shrink-0 pb-2.5 text-sm font-medium transition-colors ${
+            className={`focus-visible:after:bg-ring relative shrink-0 pb-2.5 text-sm font-medium transition-colors outline-none after:absolute after:inset-x-0 after:bottom-[-1px] after:rounded-full focus-visible:after:h-1 ${
               selectedView === item.id
-                ? "text-foreground after:bg-foreground after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5"
+                ? "text-foreground after:bg-foreground after:h-0.5"
                 : "text-muted-foreground hover:text-foreground"
             }`}
             key={item.id}
