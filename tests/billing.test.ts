@@ -24,6 +24,8 @@ describe("Organization Billing", () => {
       billingContact: "alice@example.com",
       canManage: true,
       effectivePlan: "free",
+      state: "unavailable",
+      subscription: null,
     });
   });
 

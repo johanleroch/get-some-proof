@@ -27,5 +27,10 @@ export function OrganizationProjects({ slug }: { slug: string }) {
     );
   }
 
-  return <ProjectManager organizationId={organization.id} />;
+  return (
+    <ProjectManager
+      organizationId={organization.id}
+      organizationSlug={organization.slug}
+    />
+  );
 }

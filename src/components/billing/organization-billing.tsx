@@ -140,7 +140,7 @@ export function BillingCockpit({
     availability: "available" | "unavailable";
     billingContact: string | null;
     canManage: boolean;
-    effectivePlan: "free";
+    effectivePlan: "free" | "premium";
   };
 }) {
   const [contactPending, setContactPending] = useState(false);
@@ -265,22 +265,28 @@ export function BillingCockpit({
                 </div>
               </div>
               <span className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-xs font-medium">
-                Free
+                {overview.effectivePlan === "premium" ? "Premium" : "Free"}
               </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-sm leading-6">
-              Free keeps existing Organization data available. Premium upgrades
-              will unlock Project management for every Member with the right
-              role.
+              {overview.effectivePlan === "premium"
+                ? "Premium unlocks Project management for every Member with the right role."
+                : "Free keeps existing Organization data available. Premium upgrades will unlock Project management for every Member with the right role."}
             </p>
             <div className="bg-muted/40 rounded-lg border p-4">
-              <p className="text-sm font-medium">No active subscription</p>
+              <p className="text-sm font-medium">
+                {overview.effectivePlan === "premium"
+                  ? "Premium access is active"
+                  : "No active subscription"}
+              </p>
               <p className="text-muted-foreground mt-1 text-xs">
-                {overview.availability === "unavailable"
-                  ? "Stripe is unavailable, so no checkout or renewal can start."
-                  : "No Stripe subscription is active for this Organization."}
+                {overview.effectivePlan === "premium"
+                  ? "Stripe has synchronized a subscription that grants Premium."
+                  : overview.availability === "unavailable"
+                    ? "Stripe is unavailable, so no checkout or renewal can start."
+                    : "No Stripe subscription is active for this Organization."}
               </p>
             </div>
           </CardContent>
@@ -349,7 +355,8 @@ export function BillingCockpit({
           </CardContent>
         </Card>
 
-        {overview.availability === "available" ? (
+        {overview.availability === "available" &&
+        overview.effectivePlan === "free" ? (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Upgrade to Premium</CardTitle>

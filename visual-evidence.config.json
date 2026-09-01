@@ -95,6 +95,13 @@
       "path": "/visual-evidence/billing?availability=unavailable&role=admin",
       "heading": "Billing",
       "theme": "light"
+    },
+    {
+      "slug": "projects-free-owner",
+      "title": "Projects - Free Owner",
+      "path": "/visual-evidence/projects",
+      "heading": "Projects",
+      "theme": "light"
     }
   ]
 }

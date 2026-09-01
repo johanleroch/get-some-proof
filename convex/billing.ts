@@ -2,7 +2,6 @@ import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
 import {
-  env,
   internalMutation,
   internalQuery,
   mutation,
@@ -10,6 +9,10 @@ import {
 } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
+import {
+  billingStateValidator,
+  getOrganizationBillingEntitlement,
+} from "./billingEntitlements";
 import { premiumLookupKeyValidator } from "./billingService";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
@@ -21,7 +24,17 @@ export const getOverview = query({
     availability: v.union(v.literal("available"), v.literal("unavailable")),
     billingContact: v.union(v.string(), v.null()),
     canManage: v.boolean(),
-    effectivePlan: v.literal("free"),
+    effectivePlan: v.union(v.literal("free"), v.literal("premium")),
+    state: billingStateValidator,
+    subscription: v.union(
+      v.null(),
+      v.object({
+        cancelAt: v.optional(v.number()),
+        cancelAtPeriodEnd: v.boolean(),
+        currentPeriodEnd: v.number(),
+        status: v.string(),
+      }),
+    ),
   }),
   handler: async (ctx, args) => {
     const access = await requireOrganizationPermission(
@@ -29,7 +42,7 @@ export const getOverview = query({
       { organizationId: args.organizationId },
       "billing:read",
     );
-    const [profile, originalOwner, canManage] = await Promise.all([
+    const [profile, originalOwner, canManage, entitlement] = await Promise.all([
       ctx.db
         .query("billingProfiles")
         .withIndex("by_organization", (index) =>
@@ -49,17 +62,49 @@ export const getOverview = query({
         access.principal.actorId,
         "billing:manage",
       ),
+      getOrganizationBillingEntitlement(ctx, access.organization._id),
     ]);
 
     return {
       availability:
-        env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET
-          ? ("available" as const)
-          : ("unavailable" as const),
+        entitlement.state === "unavailable"
+          ? ("unavailable" as const)
+          : ("available" as const),
       billingContact: profile?.billingEmail ?? originalOwner?.email ?? null,
       canManage,
-      effectivePlan: "free" as const,
+      effectivePlan: entitlement.effectivePlan,
+      state: entitlement.state,
+      subscription: entitlement.subscription
+        ? {
+            cancelAt: entitlement.subscription.cancelAt,
+            cancelAtPeriodEnd: entitlement.subscription.cancelAtPeriodEnd,
+            currentPeriodEnd: entitlement.subscription.currentPeriodEnd,
+            status: entitlement.subscription.status,
+          }
+        : null,
     };
+  },
+});
+
+export const getProjectEntitlement = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    effectivePlan: v.union(v.literal("free"), v.literal("premium")),
+  }),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "projects:read",
+    );
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      access.organization._id,
+    );
+
+    return { effectivePlan: entitlement.effectivePlan };
   },
 });
 

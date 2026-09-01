@@ -9,14 +9,41 @@ import {
   type OrganizationRole,
 } from "../convex/authorization";
 import schema from "../convex/schema";
+import stripeTestSchema from "./stripe-test-component/schema";
 
 const modules = import.meta.glob("../convex/**/*.*s");
+const stripeTestModules = import.meta.glob("./stripe-test-component/**/*.*s");
 
 export function createConvexTest() {
   const t = convexTest(schema, modules);
   betterAuthTest.register(t);
   authzTest.register(t);
+  t.registerComponent("stripe", stripeTestSchema, stripeTestModules);
   return t;
+}
+
+export async function addStripeSubscription(
+  t: ReturnType<typeof convexTest>,
+  organizationId: string,
+  status: string,
+  {
+    cancelAtPeriodEnd = false,
+    stripeSubscriptionId = `sub_${organizationId}`,
+  }: {
+    cancelAtPeriodEnd?: boolean;
+    stripeSubscriptionId?: string;
+  } = {},
+) {
+  await t.mutation(components.stripe.private.handleSubscriptionCreated, {
+    cancelAtPeriodEnd,
+    currentPeriodEnd: Math.floor(Date.now() / 1_000) + 2_592_000,
+    metadata: { orgId: organizationId },
+    priceId: "price_premium_monthly",
+    quantity: 1,
+    status,
+    stripeCustomerId: `cus_${organizationId}`,
+    stripeSubscriptionId,
+  });
 }
 
 export async function authenticatedUser(

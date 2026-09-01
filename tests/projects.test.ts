@@ -1,13 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@convex/_generated/api";
 import {
   addMemberWithRole,
+  addStripeSubscription,
   authenticatedUser,
   createConvexTest,
 } from "./convex-test-helpers";
 
 describe("Project authorization", () => {
+  beforeEach(() => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_projects");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_projects");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it.each([
     ["owner", true, true],
     ["admin", true, true],
@@ -22,6 +32,7 @@ describe("Project authorization", () => {
         api.organizations.create,
         { name: "Project Matrix Company" },
       );
+      await addStripeSubscription(t, organization.id, "active");
       const baseline = await owner.client.mutation(api.projects.create, {
         organizationId: organization.id,
         name: "Baseline Project",
@@ -98,6 +109,7 @@ describe("Project authorization", () => {
       api.organizations.create,
       { name: "Alice Projects" },
     );
+    await addStripeSubscription(t, aliceOrganization.id, "active");
     const privateProject = await alice.client.mutation(api.projects.create, {
       organizationId: aliceOrganization.id,
       name: "Private Roadmap",
@@ -113,6 +125,7 @@ describe("Project authorization", () => {
         name: "Bob Projects",
       },
     );
+    await addStripeSubscription(t, bobOrganization.id, "active");
 
     await expect(
       bob.client.query(api.projects.get, {

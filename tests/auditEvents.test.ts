@@ -5,6 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { hashInvitationToken } from "@convex/domain/invitation";
 import {
   addMemberWithRole,
+  addStripeSubscription,
   authenticatedUser,
   createConvexTest,
 } from "./convex-test-helpers";
@@ -23,11 +24,15 @@ describe("Organization Audit Log", () => {
   beforeEach(() => {
     process.env.EMAIL_PROVIDER = "test";
     process.env.SITE_URL = "http://localhost:3000";
+    process.env.STRIPE_SECRET_KEY = "sk_test_audit";
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_audit";
   });
 
   afterEach(() => {
     delete process.env.EMAIL_PROVIDER;
     delete process.env.SITE_URL;
+    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
   });
 
   it("is Tenant-scoped and readable only by Owner and Admin", async () => {
@@ -88,6 +93,7 @@ describe("Organization Audit Log", () => {
     const organization = await owner.client.mutation(api.organizations.create, {
       name: "Event Company",
     });
+    await addStripeSubscription(t, organization.id, "active");
     await owner.client.mutation(api.organizations.rename, {
       organizationId: organization.id,
       name: "Renamed Event Company",
@@ -159,6 +165,7 @@ describe("Organization Audit Log", () => {
     const organization = await owner.client.mutation(api.organizations.create, {
       name: "Stable Attribution Company",
     });
+    await addStripeSubscription(t, organization.id, "active");
     const admin = await authenticatedUser(t, {
       email: "stable-admin@example.com",
       name: "Stable Admin",

@@ -1,19 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@convex/_generated/api";
 import {
   addMemberWithRole,
+  addStripeSubscription,
   authenticatedUser,
   createConvexTest,
 } from "./convex-test-helpers";
 
 describe("Organization overview", () => {
+  beforeEach(() => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dashboard");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_dashboard");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("returns real Tenant-scoped Project and Membership metrics", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const organization = await owner.client.mutation(api.organizations.create, {
       name: "Metrics Company",
     });
+    await addStripeSubscription(t, organization.id, "active");
     const activeProject = await owner.client.mutation(api.projects.create, {
       organizationId: organization.id,
       name: "Active Project",

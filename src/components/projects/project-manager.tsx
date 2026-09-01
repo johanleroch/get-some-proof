@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import type { Route } from "next";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -41,6 +42,43 @@ type Project = {
 
 type EditorState = { mode: "create" } | { mode: "edit"; project: Project };
 
+export function PremiumProjectNotice({
+  canManageBilling,
+  canReadBilling,
+  organizationSlug,
+}: {
+  canManageBilling: boolean;
+  canReadBilling: boolean;
+  organizationSlug: string;
+}) {
+  return (
+    <section
+      aria-labelledby="premium-projects-heading"
+      className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5 text-blue-950 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-100"
+      role="status"
+    >
+      <h2 className="font-semibold" id="premium-projects-heading">
+        Premium required for Project changes
+      </h2>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-current/75">
+        Existing Projects stay readable on Free. Upgrade this Organization to
+        create, edit, archive, or delete Projects.
+      </p>
+      {canReadBilling ? (
+        <Button asChild className="mt-4" size="sm">
+          <Link href={`/org/${organizationSlug}/billing` as Route}>
+            {canManageBilling ? "View Premium plans" : "Review Billing"}
+          </Link>
+        </Button>
+      ) : (
+        <p className="mt-3 text-xs text-current/75">
+          Ask an Organization Owner to upgrade.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function errorMessage(error: unknown) {
   if (!(error instanceof Error)) {
     return "The Project action could not be completed.";
@@ -48,19 +86,26 @@ function errorMessage(error: unknown) {
 
   return error.message.includes("ORGANIZATION_ACCESS_DENIED")
     ? "Your role does not allow this Project action."
-    : error.message;
+    : error.message.includes("PREMIUM_REQUIRED")
+      ? "Premium is required for Project changes. Existing Projects remain available."
+      : error.message;
 }
 
 export function ProjectManager({
   organizationId,
+  organizationSlug,
 }: {
   organizationId: Id<"organizations">;
+  organizationSlug: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const projects = useQuery(api.projects.list, { organizationId });
   const access = useQuery(api.organizationAuthorization.getMine, {
+    organizationId,
+  });
+  const entitlement = useQuery(api.billing.getProjectEntitlement, {
     organizationId,
   });
   const createProject = useMutation(api.projects.create);
@@ -73,12 +118,18 @@ export function ProjectManager({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  if (projects === undefined || access === undefined) {
+  if (
+    projects === undefined ||
+    access === undefined ||
+    entitlement === undefined
+  ) {
     return <ProjectsPageSkeleton />;
   }
 
-  const canWrite = access.can.createProjects;
-  const canDelete = access.can.deleteProjects;
+  const roleCanWrite = access.can.createProjects;
+  const hasPremium = entitlement.effectivePlan === "premium";
+  const canWrite = roleCanWrite && hasPremium;
+  const canDelete = access.can.deleteProjects && hasPremium;
   const queryRequestsCreate = searchParams.get("new") === "1";
   const activeEditor =
     editor ??
@@ -170,6 +221,14 @@ export function ProjectManager({
         ) : null}
       </div>
 
+      {roleCanWrite && !hasPremium ? (
+        <PremiumProjectNotice
+          canManageBilling={access.can.manageBilling}
+          canReadBilling={access.can.readBilling}
+          organizationSlug={organizationSlug}
+        />
+      ) : null}
+
       {error ? (
         <p
           aria-live="assertive"
@@ -193,7 +252,9 @@ export function ProjectManager({
           <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
             {canWrite
               ? "Create the first Project to see Tenant-scoped CRUD in action."
-              : "A Member with editing permission can create the first Project."}
+              : roleCanWrite && !hasPremium
+                ? "Projects remain readable on Free. Upgrade to Premium to create the first Project."
+                : "A Member with editing permission can create the first Project."}
           </p>
         </section>
       ) : (
