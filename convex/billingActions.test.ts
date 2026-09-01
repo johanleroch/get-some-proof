@@ -159,6 +159,7 @@ describe("Billing management action orchestration", () => {
         if (name === "billing:reserveContactUpdate") {
           return {
             customerId: "cus_acme",
+            leaseId: "contact_lease_acme",
             transitionId: "contact_transition_acme",
           };
         }
@@ -169,6 +170,7 @@ describe("Billing management action orchestration", () => {
       },
     );
     const dependencies: BillingManagementDependencies = {
+      createLeaseId: () => "contact_lease_acme",
       createProvider: () => provider,
       createTransitionId: () => "contact_transition_acme",
       requireConfiguration: vi.fn(),
@@ -288,13 +290,14 @@ describe("Billing management action orchestration", () => {
       {
         email: "accounts@acme.example",
         expectedCustomerId: "cus_acme",
+        leaseId: "contact_lease_acme",
         organizationId,
         transitionId: "contact_transition_acme",
       },
     );
   });
 
-  it("does not commit a contact after a provider failure", async () => {
+  it("releases the matching reservation without committing after a provider failure", async () => {
     const setupResult = setup();
     vi.mocked(setupResult.provider.updateCustomerEmail).mockRejectedValue(
       new Error("Stripe unavailable"),
@@ -311,6 +314,71 @@ describe("Billing management action orchestration", () => {
       setupResult.runMutation.mock.calls.map(([reference]) =>
         getFunctionName(reference),
       ),
-    ).toEqual(["billing:reserveContactUpdate"]);
+    ).toEqual(["billing:reserveContactUpdate", "billing:releaseContactUpdate"]);
+    expect(setupResult.runMutation).toHaveBeenLastCalledWith(
+      expect.objectContaining({}),
+      {
+        expectedCustomerId: "cus_acme",
+        leaseId: "contact_lease_acme",
+        organizationId,
+        transitionId: "contact_transition_acme",
+      },
+    );
+  });
+
+  it("reuses the Stripe idempotency key after an ambiguous same-contact failure", async () => {
+    const setupResult = setup();
+    let stableTransitionId: string | null = null;
+    setupResult.dependencies.createTransitionId = vi
+      .fn()
+      .mockReturnValueOnce("contact_transition_first")
+      .mockReturnValueOnce("contact_transition_second");
+    setupResult.dependencies.createLeaseId = vi
+      .fn()
+      .mockReturnValueOnce("contact_lease_first")
+      .mockReturnValueOnce("contact_lease_second");
+    setupResult.runMutation.mockImplementation(async (reference, args) => {
+      const name = getFunctionName(reference);
+      if (name === "billing:reserveContactUpdate") {
+        stableTransitionId ??= String(args.requestedTransitionId);
+        return {
+          customerId: "cus_acme",
+          leaseId: String(args.requestedLeaseId),
+          transitionId: stableTransitionId,
+        };
+      }
+      if (name === "billing:commitContactUpdate") {
+        return { email: args.email };
+      }
+      return null;
+    });
+    vi.mocked(setupResult.provider.updateCustomerEmail)
+      .mockRejectedValueOnce(new Error("Ambiguous Stripe timeout"))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(
+      updateContactHandler(
+        setupResult.context,
+        { email: "accounts@acme.example", organizationId },
+        setupResult.dependencies,
+      ),
+    ).rejects.toThrow("Ambiguous Stripe timeout");
+    await expect(
+      updateContactHandler(
+        setupResult.context,
+        { email: "accounts@acme.example", organizationId },
+        setupResult.dependencies,
+      ),
+    ).resolves.toEqual({ email: "accounts@acme.example" });
+
+    expect(setupResult.provider.updateCustomerEmail).toHaveBeenCalledTimes(2);
+    expect(
+      vi
+        .mocked(setupResult.provider.updateCustomerEmail)
+        .mock.calls.map(([call]) => call.idempotencyKey),
+    ).toEqual([
+      "billing_contact_contact_transition_first",
+      "billing_contact_contact_transition_first",
+    ]);
   });
 });

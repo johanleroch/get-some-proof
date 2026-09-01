@@ -171,14 +171,18 @@ export const getSubscriptionPriceContext = internalQuery({
   },
 });
 
+const CONTACT_UPDATE_LEASE_MS = 5 * 60 * 1000;
+
 export const reserveContactUpdate = internalMutation({
   args: {
     email: v.string(),
     organizationId: v.id("organizations"),
+    requestedLeaseId: v.string(),
     requestedTransitionId: v.string(),
   },
   returns: v.object({
     customerId: v.string(),
+    leaseId: v.string(),
     transitionId: v.string(),
   }),
   handler: async (ctx, args) => {
@@ -221,23 +225,59 @@ export const reserveContactUpdate = internalMutation({
         message: "No Stripe Customer is available for synchronization.",
       });
     }
-    if (profile.contactUpdateId) {
-      if (profile.contactUpdateEmail === args.email) {
-        return { customerId, transitionId: profile.contactUpdateId };
-      }
+    const now = Date.now();
+    const hasActiveLease =
+      Boolean(profile.contactUpdateLeaseId) &&
+      (profile.contactUpdateLeaseExpiresAt ?? 0) > now;
+    if (profile.contactUpdateId && hasActiveLease) {
       throw new ConvexError({
         code: "CONTACT_UPDATE_IN_PROGRESS",
         message: "The Billing Contact is already being synchronized.",
       });
     }
-    const now = Date.now();
+    const transitionId =
+      profile.contactUpdateId && profile.contactUpdateEmail === args.email
+        ? profile.contactUpdateId
+        : args.requestedTransitionId;
     await ctx.db.patch(profile._id, {
       contactUpdateEmail: args.email,
-      contactUpdateId: args.requestedTransitionId,
+      contactUpdateId: transitionId,
+      contactUpdateLeaseId: args.requestedLeaseId,
+      contactUpdateLeaseExpiresAt: now + CONTACT_UPDATE_LEASE_MS,
       stripeCustomerId: customerId,
       updatedAt: now,
     });
-    return { customerId, transitionId: args.requestedTransitionId };
+    return { customerId, leaseId: args.requestedLeaseId, transitionId };
+  },
+});
+
+export const releaseContactUpdate = internalMutation({
+  args: {
+    expectedCustomerId: v.string(),
+    leaseId: v.string(),
+    organizationId: v.id("organizations"),
+    transitionId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("billingProfiles")
+      .withIndex("by_organization", (index) =>
+        index.eq("organizationId", args.organizationId),
+      )
+      .unique();
+    if (
+      profile?.contactUpdateId === args.transitionId &&
+      profile.contactUpdateLeaseId === args.leaseId &&
+      profile.stripeCustomerId === args.expectedCustomerId
+    ) {
+      await ctx.db.patch(profile._id, {
+        contactUpdateLeaseExpiresAt: undefined,
+        contactUpdateLeaseId: undefined,
+        updatedAt: Date.now(),
+      });
+    }
+    return null;
   },
 });
 
@@ -245,6 +285,7 @@ export const commitContactUpdate = internalMutation({
   args: {
     email: v.string(),
     expectedCustomerId: v.union(v.string(), v.null()),
+    leaseId: v.union(v.string(), v.null()),
     organizationId: v.id("organizations"),
     transitionId: v.union(v.string(), v.null()),
   },
@@ -286,8 +327,10 @@ export const commitContactUpdate = internalMutation({
     }
     if (
       args.expectedCustomerId &&
-      (!args.transitionId ||
+      (!args.leaseId ||
+        !args.transitionId ||
         profile?.contactUpdateId !== args.transitionId ||
+        profile.contactUpdateLeaseId !== args.leaseId ||
         profile.contactUpdateEmail !== args.email)
     ) {
       throw new ConvexError({
@@ -302,6 +345,8 @@ export const commitContactUpdate = internalMutation({
         billingEmail: args.email,
         contactUpdateEmail: undefined,
         contactUpdateId: undefined,
+        contactUpdateLeaseExpiresAt: undefined,
+        contactUpdateLeaseId: undefined,
         stripeCustomerId: args.expectedCustomerId ?? undefined,
         updatedAt: now,
       });

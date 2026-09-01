@@ -15,6 +15,7 @@ describe("Organization Billing management boundaries", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
@@ -117,12 +118,14 @@ describe("Organization Billing management boundaries", () => {
       {
         email: "billing-updated@example.com",
         organizationId: organization.id,
+        requestedLeaseId: "contact_lease_audit",
         requestedTransitionId: "contact_transition_audit",
       },
     );
     await owner.client.mutation(internal.billing.commitContactUpdate, {
       email: "billing-updated@example.com",
       expectedCustomerId: customerId,
+      leaseId: reservation.leaseId,
       organizationId: organization.id,
       transitionId: reservation.transitionId,
     });
@@ -162,6 +165,7 @@ describe("Organization Billing management boundaries", () => {
       {
         email: "first@example.com",
         organizationId: organization.id,
+        requestedLeaseId: "contact_lease_first",
         requestedTransitionId: "contact_transition_first",
       },
     );
@@ -169,13 +173,17 @@ describe("Organization Billing management boundaries", () => {
       owner.client.mutation(internal.billing.reserveContactUpdate, {
         email: "first@example.com",
         organizationId: organization.id,
+        requestedLeaseId: "contact_lease_retry",
         requestedTransitionId: "contact_transition_retry",
       }),
-    ).resolves.toEqual(first);
+    ).rejects.toMatchObject({
+      data: { code: "CONTACT_UPDATE_IN_PROGRESS" },
+    });
     await expect(
       owner.client.mutation(internal.billing.reserveContactUpdate, {
         email: "second@example.com",
         organizationId: organization.id,
+        requestedLeaseId: "contact_lease_second",
         requestedTransitionId: "contact_transition_second",
       }),
     ).rejects.toMatchObject({
@@ -185,6 +193,7 @@ describe("Organization Billing management boundaries", () => {
     await owner.client.mutation(internal.billing.commitContactUpdate, {
       email: "first@example.com",
       expectedCustomerId: first.customerId,
+      leaseId: first.leaseId,
       organizationId: organization.id,
       transitionId: first.transitionId,
     });
@@ -192,11 +201,194 @@ describe("Organization Billing management boundaries", () => {
       owner.client.mutation(internal.billing.reserveContactUpdate, {
         email: "second@example.com",
         organizationId: organization.id,
+        requestedLeaseId: "contact_lease_second",
         requestedTransitionId: "contact_transition_second",
       }),
     ).resolves.toMatchObject({
       customerId: first.customerId,
+      leaseId: "contact_lease_second",
       transitionId: "contact_transition_second",
     });
+  });
+
+  it("allows a different contact after a failed provider transition is released", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Recoverable Contact Company",
+    });
+    await addStripeSubscription(t, organization.id, "active");
+
+    const failed = await owner.client.mutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email: "failed@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_failed",
+        requestedTransitionId: "contact_transition_failed",
+      },
+    );
+    await owner.client.mutation(internal.billing.releaseContactUpdate, {
+      expectedCustomerId: failed.customerId,
+      leaseId: failed.leaseId,
+      organizationId: organization.id,
+      transitionId: failed.transitionId,
+    });
+
+    const sameTargetRetry = await owner.client.mutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email: "failed@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_same_target_retry",
+        requestedTransitionId: "contact_transition_unused_retry",
+      },
+    );
+    expect(sameTargetRetry).toEqual({
+      customerId: failed.customerId,
+      leaseId: "contact_lease_same_target_retry",
+      transitionId: failed.transitionId,
+    });
+    await owner.client.mutation(internal.billing.releaseContactUpdate, {
+      expectedCustomerId: sameTargetRetry.customerId,
+      leaseId: sameTargetRetry.leaseId,
+      organizationId: organization.id,
+      transitionId: sameTargetRetry.transitionId,
+    });
+
+    await expect(
+      owner.client.mutation(internal.billing.reserveContactUpdate, {
+        email: "replacement@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_replacement",
+        requestedTransitionId: "contact_transition_replacement",
+      }),
+    ).resolves.toEqual({
+      customerId: failed.customerId,
+      leaseId: "contact_lease_replacement",
+      transitionId: "contact_transition_replacement",
+    });
+  });
+
+  it("releases a failed transition after the initiating Owner loses access", async () => {
+    const t = createConvexTest();
+    const initiatingOwner = await authenticatedUser(t);
+    const organization = await initiatingOwner.client.mutation(
+      api.organizations.create,
+      { name: "Billing Owner Handoff Company" },
+    );
+    const successor = await authenticatedUser(t, {
+      email: "successor@example.com",
+      name: "Successor Owner",
+    });
+    await addMemberWithRole(t, organization.id, successor.actorId, "owner");
+    await addStripeSubscription(t, organization.id, "active");
+
+    const failed = await initiatingOwner.client.mutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email: "failed-owner@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_owner_handoff",
+        requestedTransitionId: "contact_transition_owner_handoff",
+      },
+    );
+    const initiatingMembership = (
+      await successor.client.query(api.members.list, {
+        organizationId: organization.id,
+      })
+    ).find(({ userId }) => userId === initiatingOwner.actorId)!;
+    await successor.client.mutation(api.members.remove, {
+      membershipId: initiatingMembership.id,
+      organizationId: organization.id,
+    });
+
+    await initiatingOwner.client.mutation(
+      internal.billing.releaseContactUpdate,
+      {
+        expectedCustomerId: failed.customerId,
+        leaseId: failed.leaseId,
+        organizationId: organization.id,
+        transitionId: failed.transitionId,
+      },
+    );
+    await expect(
+      successor.client.mutation(internal.billing.reserveContactUpdate, {
+        email: "successor@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_successor",
+        requestedTransitionId: "contact_transition_successor",
+      }),
+    ).resolves.toMatchObject({
+      leaseId: "contact_lease_successor",
+      transitionId: "contact_transition_successor",
+    });
+  });
+
+  it("recovers an interrupted same-contact attempt without sharing its lease", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Recoverable Contact Lease Company",
+    });
+    await addStripeSubscription(t, organization.id, "active");
+
+    let now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const interrupted = await owner.client.mutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email: "stable@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_interrupted",
+        requestedTransitionId: "contact_transition_stable",
+      },
+    );
+
+    now += 6 * 60 * 1000;
+    const recovered = await owner.client.mutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email: "stable@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_recovered",
+        requestedTransitionId: "contact_transition_unused",
+      },
+    );
+    expect(recovered).toEqual({
+      customerId: interrupted.customerId,
+      leaseId: "contact_lease_recovered",
+      transitionId: "contact_transition_stable",
+    });
+
+    await owner.client.mutation(internal.billing.releaseContactUpdate, {
+      expectedCustomerId: interrupted.customerId,
+      leaseId: interrupted.leaseId,
+      organizationId: organization.id,
+      transitionId: interrupted.transitionId,
+    });
+    await expect(
+      owner.client.mutation(internal.billing.reserveContactUpdate, {
+        email: "different@example.com",
+        organizationId: organization.id,
+        requestedLeaseId: "contact_lease_different",
+        requestedTransitionId: "contact_transition_different",
+      }),
+    ).rejects.toMatchObject({
+      data: { code: "CONTACT_UPDATE_IN_PROGRESS" },
+    });
+
+    await owner.client.mutation(internal.billing.commitContactUpdate, {
+      email: "stable@example.com",
+      expectedCustomerId: recovered.customerId,
+      leaseId: recovered.leaseId,
+      organizationId: organization.id,
+      transitionId: recovered.transitionId,
+    });
+    await expect(
+      owner.client.query(api.billing.getOverview, {
+        organizationId: organization.id,
+      }),
+    ).resolves.toMatchObject({ billingContact: "stable@example.com" });
   });
 });

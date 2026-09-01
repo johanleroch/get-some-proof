@@ -75,6 +75,7 @@ describe("Organization Billing", () => {
         organizationId: organization.id,
         email: "billing@example.com",
         expectedCustomerId: null,
+        leaseId: null,
         transitionId: null,
       }),
     ).resolves.toEqual({ email: "billing@example.com" });
@@ -115,6 +116,7 @@ describe("Organization Billing", () => {
         organizationId: organization.id,
         email: "not-an-email",
         expectedCustomerId: null,
+        leaseId: null,
         transitionId: null,
       }),
     ).rejects.toMatchObject({
@@ -165,6 +167,7 @@ describe("Organization Billing", () => {
         organizationId: organization.id,
         email: "accounts@example.com",
         expectedCustomerId: null,
+        leaseId: null,
         transitionId: null,
       }),
     ).rejects.toMatchObject({

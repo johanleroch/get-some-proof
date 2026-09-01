@@ -41,6 +41,7 @@ export type StartCheckoutDependencies = {
 };
 
 export type BillingManagementDependencies = {
+  createLeaseId: () => string;
   createProvider: (ctx: ActionCtx) => BillingProvider;
   createTransitionId: () => string;
   requireConfiguration: () => void;
@@ -74,6 +75,7 @@ const productionCheckoutDependencies: StartCheckoutDependencies = {
 };
 
 const productionManagementDependencies: BillingManagementDependencies = {
+  createLeaseId: randomUUID,
   createProvider: createStripeBillingProvider,
   createTransitionId: randomUUID,
   requireConfiguration: requireStripeConfiguration,
@@ -319,6 +321,7 @@ export async function updateContactHandler(
     { organizationId: args.organizationId },
   );
   let transitionId: string | null = null;
+  let leaseId: string | null = null;
   let expectedCustomerId = context.customerId;
   if (context.customerId) {
     dependencies.requireConfiguration();
@@ -327,20 +330,35 @@ export async function updateContactHandler(
       {
         email,
         organizationId: context.organizationId,
+        requestedLeaseId: dependencies.createLeaseId(),
         requestedTransitionId: dependencies.createTransitionId(),
       },
     );
     transitionId = reservation.transitionId;
+    leaseId = reservation.leaseId;
     expectedCustomerId = reservation.customerId;
-    await dependencies.createProvider(ctx).updateCustomerEmail({
-      customerId: reservation.customerId,
-      email,
-      idempotencyKey: `billing_contact_${reservation.transitionId}`,
-    });
+    try {
+      await dependencies.createProvider(ctx).updateCustomerEmail({
+        customerId: reservation.customerId,
+        email,
+        idempotencyKey: `billing_contact_${reservation.transitionId}`,
+      });
+    } catch (caught) {
+      await ctx
+        .runMutation(internal.billing.releaseContactUpdate, {
+          expectedCustomerId: reservation.customerId,
+          leaseId: reservation.leaseId,
+          organizationId: context.organizationId,
+          transitionId: reservation.transitionId,
+        })
+        .catch(() => null);
+      throw caught;
+    }
   }
   return ctx.runMutation(internal.billing.commitContactUpdate, {
     email,
     expectedCustomerId,
+    leaseId,
     organizationId: context.organizationId,
     transitionId,
   });

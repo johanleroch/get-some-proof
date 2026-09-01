@@ -37,6 +37,8 @@ export default defineSchema({
     billingEmail: v.string(),
     contactUpdateEmail: v.optional(v.string()),
     contactUpdateId: v.optional(v.string()),
+    contactUpdateLeaseId: v.optional(v.string()),
+    contactUpdateLeaseExpiresAt: v.optional(v.number()),
     stripeCustomerId: v.optional(v.string()),
     checkoutReservationId: v.optional(v.string()),
     checkoutLeaseId: v.optional(v.string()),
