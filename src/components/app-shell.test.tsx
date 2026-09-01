@@ -176,23 +176,33 @@ describe("AppShell", () => {
 
     const frame = container.querySelector(".dashboard-frame");
     const view = container.querySelector(".dashboard-view");
-    const grain = container.querySelector(".dashboard-grain");
     const frameBackground = container.querySelector(
       ".dashboard-frame-background",
     );
-    const glow = container.querySelector(".dashboard-glow");
+    const sidebarEffects = container.querySelector(
+      ".dashboard-sidebar-effects",
+    );
+    const viewEffects = container.querySelector(".dashboard-view-effects");
+    const viewContent = container.querySelector(".dashboard-view-content");
+    const grains = container.querySelectorAll(".dashboard-surface-grain");
     const shines = container.querySelectorAll(".dashboard-shine");
+    const sidebarInner = container.querySelector('[data-slot="sidebar-inner"]');
 
     expect(frame).toHaveAttribute("data-slot", "sidebar-wrapper");
     expect(view).toHaveAttribute("data-slot", "sidebar-inset");
     expect(frameBackground?.parentElement).toBe(frame);
-    expect(glow?.parentElement).toBe(view);
+    expect(sidebarEffects?.parentElement).toBe(sidebarInner);
+    expect(viewEffects?.parentElement).toBe(view);
+    expect(viewContent?.parentElement).toBe(view);
+    expect(grains).toHaveLength(2);
+    expect(sidebarEffects?.contains(grains[0])).toBe(true);
+    expect(viewEffects?.contains(grains[1])).toBe(true);
     expect(shines).toHaveLength(4);
     expect([...shines].every((shine) => shine.parentElement === frame)).toBe(
       true,
     );
-    expect(grain?.parentElement).toBe(frame);
-    expect(view?.contains(grain)).toBe(false);
+    expect(viewContent?.contains(viewEffects)).toBe(false);
+    expect(viewContent?.contains(grains[1])).toBe(false);
   });
 
   it("opens and dismisses the native mobile sidebar", () => {

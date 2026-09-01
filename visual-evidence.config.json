@@ -72,6 +72,15 @@
       "heading": "Organization settings",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "dashboard-background-dark",
+      "title": "Dashboard background - dark",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/dashboard",
+      "heading": "Overview",
+      "theme": "dark",
+      "requiresAuth": true
     }
   ]
 }

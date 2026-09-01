@@ -283,12 +283,10 @@ body {
   overflow: hidden;
 }
 
-.dashboard-grain {
-  display: none;
-}
-
 .dashboard-frame-background,
-.dashboard-glow,
+.dashboard-sidebar-effects,
+.dashboard-surface-grain,
+.dashboard-view-effects,
 .dashboard-shine {
   display: none;
 }
@@ -318,21 +316,71 @@ body {
   box-shadow: 0 0 0 2px rgb(0 0 0 / 20%);
 }
 
-.dark .dashboard-glow {
+.dark .dashboard-sidebar-effects,
+.dark .dashboard-view-effects {
   pointer-events: none;
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
+  z-index: 0;
   display: block;
-  width: 400px;
-  height: 400px;
-  transform: translate(-50%, -50%);
-  border-radius: 400px;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.dark .dashboard-sidebar-effects {
+  background:
+    radial-gradient(
+      240px 320px at 0% 0%,
+      rgb(255 255 255 / 5%) 0%,
+      rgb(255 255 255 / 0%) 76%
+    ),
+    radial-gradient(
+      220px 360px at 100% 100%,
+      rgb(255 255 255 / 2.5%) 0%,
+      rgb(255 255 255 / 0%) 78%
+    ),
+    rgb(9 10 11);
+}
+
+.dark .dashboard-view-effects {
   background: radial-gradient(
-    50% 50%,
+    200px 200px at 0% 0%,
     rgb(255 255 255 / 4%) 0%,
     rgb(255 255 255 / 0%) 90%
   );
+}
+
+.dark .dashboard-view-effects::after {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 1;
+  width: min(360px, 28.125%);
+  background: linear-gradient(
+    90deg,
+    rgb(8 9 10 / 0%) 0%,
+    rgb(8 9 10 / 80%) 100%
+  );
+  content: "";
+}
+
+.dark .dashboard-surface-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  background-image: url("/textures/dashboard-grain.png");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  filter: brightness(2.05);
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+
+.dark .dashboard-view-content,
+.dark [data-slot="sidebar-inner"] > :not(.dashboard-sidebar-effects) {
+  position: relative;
+  z-index: 1;
 }
 
 .dark .dashboard-shine {
@@ -369,48 +417,9 @@ body {
   --dashboard-shine-x: 8%;
 }
 
-.dark .dashboard-grain {
-  pointer-events: none;
-  position: absolute;
-  inset: 1px;
-  z-index: 20;
-  display: block;
-  border-radius: 12px;
-  background-image: url("/textures/dashboard-grain.png");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-  filter: brightness(2.05);
-  mix-blend-mode: overlay;
-  opacity: 0.6;
-}
-
 .dark [data-slot="sidebar-inner"] {
   position: relative;
-}
-
-.dark [data-slot="sidebar-inner"]::after {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: rgb(247 248 248 / 3%);
-  content: "";
-}
-
-@media (min-width: 1024px) {
-  .dark .dashboard-frame::after {
-    pointer-events: none;
-    position: absolute;
-    inset: 0 0 0 auto;
-    z-index: 10;
-    width: min(360px, 28.125%);
-    background: linear-gradient(
-      90deg,
-      rgb(8 9 10 / 0%) 0%,
-      rgb(8 9 10 / 80%) 100%
-    );
-    content: "";
-  }
+  overflow: hidden;
 }
 
 button:not(:disabled),
