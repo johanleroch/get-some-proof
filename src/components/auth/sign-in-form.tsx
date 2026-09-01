@@ -16,6 +16,7 @@ export function SignInForm({
   callbackURL?: Route;
 }) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -28,7 +29,7 @@ export function SignInForm({
     const destination = callbackURL;
     sessionStorage.setItem("post-two-factor-route", destination);
     const result = await authClient.signIn.email({
-      email: String(form.get("email")),
+      email,
       password: String(form.get("password")),
       callbackURL: destination,
     });
@@ -72,8 +73,10 @@ export function SignInForm({
           autoComplete="email"
           id="email"
           name="email"
+          onChange={(event) => setEmail(event.target.value)}
           required
           type="email"
+          value={email}
         />
       </div>
       <div className="space-y-2">

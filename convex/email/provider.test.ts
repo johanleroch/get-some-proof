@@ -31,6 +31,15 @@ const messages: TransactionalEmailMessage[] = [
     text: "Open http://localhost:3000/invitations/fake-token",
     template: "organization-invitation",
   },
+  {
+    actionUrl:
+      "http://localhost:3000/api/auth/magic-link/verify?token=fake-token",
+    to: "operator@example.com",
+    subject: "Your sign-in link",
+    html: '<a href="http://localhost:3000/api/auth/magic-link/verify?token=fake-token">Sign in</a>',
+    text: "Open http://localhost:3000/api/auth/magic-link/verify?token=fake-token",
+    template: "magic-link",
+  },
 ];
 
 describe("transactional email console provider", () => {

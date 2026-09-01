@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, mutation, query, type ActionCtx } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
+import { authComponent, createAuth } from "./auth";
 import { authzForOrganization } from "./authorization";
 import {
   hashInvitationToken,
@@ -12,14 +13,13 @@ import {
   normalizeInvitationEmail,
   randomInvitationToken,
 } from "./domain/invitation";
-import { sendTransactionalEmail } from "./email/provider";
-import { buildOrganizationInvitationEmail } from "./email/templates";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { requireVerifiedPrincipal } from "./security/principal";
 
 const invitationSummary = v.object({
   id: v.id("invitations"),
   email: v.string(),
+  invitedByDisplayName: v.string(),
   role: invitationRoleValidator,
   status: v.union(
     v.literal("pending"),
@@ -33,6 +33,7 @@ const invitationSummary = v.object({
   ),
   expiresAt: v.number(),
   createdAt: v.number(),
+  updatedAt: v.number(),
 });
 
 type InvitationDelivery = {
@@ -42,23 +43,29 @@ type InvitationDelivery = {
   role: "admin" | "editor" | "viewer";
 };
 
-function summarizeInvitation(invitation: {
-  _id: Id<"invitations">;
-  email: string;
-  role: "admin" | "editor" | "viewer";
-  status: "pending" | "accepted" | "revoked";
-  deliveryStatus: "pending" | "sent" | "failed";
-  expiresAt: number;
-  createdAt: number;
-}) {
+function summarizeInvitation(
+  invitation: {
+    _id: Id<"invitations">;
+    email: string;
+    role: "admin" | "editor" | "viewer";
+    status: "pending" | "accepted" | "revoked";
+    deliveryStatus: "pending" | "sent" | "failed";
+    expiresAt: number;
+    createdAt: number;
+    updatedAt: number;
+  },
+  invitedByDisplayName: string,
+) {
   return {
     id: invitation._id,
     email: invitation.email,
+    invitedByDisplayName,
     role: invitation.role,
     status: invitation.status,
     deliveryStatus: invitation.deliveryStatus,
     expiresAt: invitation.expiresAt,
     createdAt: invitation.createdAt,
+    updatedAt: invitation.updatedAt,
   };
 }
 
@@ -69,21 +76,20 @@ async function deliver(
   deliveryIdempotencyKey: string,
 ) {
   const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
-  const message = buildOrganizationInvitationEmail({
-    email: invitation.email,
-    organizationName: invitation.organizationName,
-    role: invitation.role,
-    url: `${siteUrl}/accept-invitation?token=${encodeURIComponent(token)}`,
-  });
+  const callbackURL = `${siteUrl}/accept-invitation?token=${encodeURIComponent(token)}`;
 
   try {
-    const receipt = await sendTransactionalEmail(message);
-    await ctx.runMutation(internal.invitationRecords.recordDelivery, {
-      invitationId: invitation.invitationId,
-      deliveryIdempotencyKey,
-      status: "sent",
-      provider: receipt.provider,
-      providerMessageId: receipt.providerMessageId,
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx);
+    await auth.api.signInMagicLink({
+      body: {
+        email: invitation.email,
+        name: invitation.email.split("@")[0],
+        callbackURL,
+        newUserCallbackURL: callbackURL,
+        errorCallbackURL: `${siteUrl}/sign-in?error=invitation-link`,
+        metadata: { invitationToken: token, deliveryIdempotencyKey },
+      },
+      headers,
     });
   } catch (error) {
     await ctx.runMutation(internal.invitationRecords.recordDelivery, {
@@ -97,6 +103,34 @@ async function deliver(
     });
     throw error;
   }
+}
+
+async function rotateAndDeliver(
+  ctx: ActionCtx,
+  actorId: string,
+  args: {
+    organizationId: Id<"organizations">;
+    invitationId: Id<"invitations">;
+    role?: "admin" | "editor" | "viewer";
+  },
+) {
+  const token = randomInvitationToken();
+  const deliveryIdempotencyKey = crypto.randomUUID();
+  const rotated = await ctx.runMutation(
+    internal.invitationRecords.rotateRecord,
+    {
+      ...args,
+      actorId,
+      tokenHash: await hashInvitationToken(token),
+      deliveryIdempotencyKey,
+    },
+  );
+  await deliver(
+    ctx,
+    { ...rotated, invitationId: args.invitationId },
+    token,
+    deliveryIdempotencyKey,
+  );
 }
 
 export const create = action({
@@ -132,23 +166,7 @@ export const resend = action({
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
     const principal = await requireVerifiedPrincipal(ctx);
-    const token = randomInvitationToken();
-    const deliveryIdempotencyKey = crypto.randomUUID();
-    const rotated = await ctx.runMutation(
-      internal.invitationRecords.rotateRecord,
-      {
-        ...args,
-        actorId: principal.actorId,
-        tokenHash: await hashInvitationToken(token),
-        deliveryIdempotencyKey,
-      },
-    );
-    await deliver(
-      ctx,
-      { ...rotated, invitationId: args.invitationId },
-      token,
-      deliveryIdempotencyKey,
-    );
+    await rotateAndDeliver(ctx, principal.actorId, args);
     return null;
   },
 });
@@ -162,23 +180,7 @@ export const changeRole = action({
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
     const principal = await requireVerifiedPrincipal(ctx);
-    const token = randomInvitationToken();
-    const deliveryIdempotencyKey = crypto.randomUUID();
-    const rotated = await ctx.runMutation(
-      internal.invitationRecords.rotateRecord,
-      {
-        ...args,
-        actorId: principal.actorId,
-        tokenHash: await hashInvitationToken(token),
-        deliveryIdempotencyKey,
-      },
-    );
-    await deliver(
-      ctx,
-      { ...rotated, invitationId: args.invitationId },
-      token,
-      deliveryIdempotencyKey,
-    );
+    await rotateAndDeliver(ctx, principal.actorId, args);
     return null;
   },
 });
@@ -200,8 +202,24 @@ export const listPending = query({
           .eq("status", "pending"),
       )
       .order("desc")
-      .collect();
-    return invitations.map(summarizeInvitation);
+      .take(100);
+    return Promise.all(
+      invitations.map(async (invitation) => {
+        const inviterMembership = await ctx.db
+          .query("memberships")
+          .withIndex("by_organization_user", (index) =>
+            index
+              .eq("organizationId", access.organization._id)
+              .eq("userId", invitation.invitedByUserId),
+          )
+          .unique();
+
+        return summarizeInvitation(
+          invitation,
+          inviterMembership?.displayName ?? "A member",
+        );
+      }),
+    );
   },
 });
 

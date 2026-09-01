@@ -1,7 +1,11 @@
 import { ConvexError, v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, type MutationCtx } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+} from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
@@ -45,6 +49,49 @@ async function requireTrustedInvitationManager(
 
   return { membership, organization };
 }
+
+export const getMagicLinkDelivery = internalQuery({
+  args: {
+    tokenHash: v.string(),
+    email: v.string(),
+    deliveryIdempotencyKey: v.string(),
+    now: v.number(),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      invitationId: v.id("invitations"),
+      organizationName: v.string(),
+      role: invitationRoleValidator,
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const invitation = await ctx.db
+      .query("invitations")
+      .withIndex("by_token_hash", (index) =>
+        index.eq("tokenHash", args.tokenHash),
+      )
+      .unique();
+    if (
+      !invitation ||
+      invitation.email !== normalizeInvitationEmail(args.email) ||
+      invitation.deliveryIdempotencyKey !== args.deliveryIdempotencyKey ||
+      invitation.status !== "pending" ||
+      invitation.expiresAt <= args.now
+    ) {
+      return null;
+    }
+    const organization = await ctx.db.get(invitation.organizationId);
+    if (!organization) {
+      return null;
+    }
+    return {
+      invitationId: invitation._id,
+      organizationName: organization.name,
+      role: invitation.role,
+    };
+  },
+});
 
 export const createRecord = internalMutation({
   args: {

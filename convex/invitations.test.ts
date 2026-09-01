@@ -1,16 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { api, components } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
-import {
-  hashInvitationToken,
-  type InvitationRole,
-} from "@convex/domain/invitation";
+import { api, components, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { hashInvitationToken, type InvitationRole } from "./domain/invitation";
 import {
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
-} from "./convex-test-helpers";
+} from "../tests/convex-test-helpers";
 
 async function seedInvitation(
   t: ReturnType<typeof createConvexTest>,
@@ -84,6 +81,23 @@ describe("Member Invitations", () => {
     });
     expect(created).toEqual({ invitationId: expect.any(String) });
 
+    const magicLinks = await t.query(components.betterAuth.adapter.findMany, {
+      model: "verification",
+      paginationOpts: { cursor: null, numItems: 10 },
+      where: [
+        {
+          field: "value",
+          operator: "contains",
+          value: "new.member@example.com",
+        },
+      ],
+    });
+    expect(magicLinks.page).toEqual([
+      expect.objectContaining({
+        value: expect.stringContaining('"email":"new.member@example.com"'),
+      }),
+    ]);
+
     const pending = await admin.client.query(api.invitations.listPending, {
       organizationId: organization.id,
     });
@@ -140,6 +154,42 @@ describe("Member Invitations", () => {
     ).rejects.toThrow();
   });
 
+  it("binds magic-link delivery to the active Invitation email and token", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Magic Link Company",
+    });
+    const rawToken = "magic-link-invitation-token";
+    await seedInvitation(t, {
+      organizationId: organization.id,
+      invitedByUserId: owner.actorId,
+      email: "invitee@example.com",
+      rawToken,
+    });
+    const args = {
+      tokenHash: await hashInvitationToken(rawToken),
+      email: "invitee@example.com",
+      deliveryIdempotencyKey: `seed-${rawToken}`,
+      now: Date.now(),
+    };
+
+    await expect(
+      t.query(internal.invitationRecords.getMagicLinkDelivery, args),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        organizationName: "Magic Link Company",
+        role: "viewer",
+      }),
+    );
+    await expect(
+      t.query(internal.invitationRecords.getMagicLinkDelivery, {
+        ...args,
+        email: "forwarded@example.com",
+      }),
+    ).resolves.toBeNull();
+  });
+
   it("accepts once for the verified matching email and assigns the intended role", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -177,6 +227,50 @@ describe("Member Invitations", () => {
     await expect(
       invitee.client.mutation(api.invitations.accept, { token: rawToken }),
     ).rejects.toMatchObject({ data: { code: "INVITATION_UNAVAILABLE" } });
+  });
+
+  it("serializes concurrent acceptance so exactly one request succeeds", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Concurrent Acceptance Company",
+    });
+    const rawToken = "concurrent-acceptance-token";
+    await seedInvitation(t, {
+      organizationId: organization.id,
+      invitedByUserId: owner.actorId,
+      email: "concurrent@example.com",
+      rawToken,
+      role: "editor",
+    });
+    const invitee = await authenticatedUser(t, {
+      email: "concurrent@example.com",
+      name: "Concurrent Invitee",
+    });
+
+    const outcomes = await Promise.allSettled([
+      invitee.client.mutation(api.invitations.accept, { token: rawToken }),
+      invitee.client.mutation(api.invitations.accept, { token: rawToken }),
+    ]);
+
+    expect(
+      outcomes.filter(({ status }) => status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(outcomes.filter(({ status }) => status === "rejected")).toHaveLength(
+      1,
+    );
+    const memberships = await t.run((ctx) =>
+      ctx.db
+        .query("memberships")
+        .withIndex("by_organization_user", (index) =>
+          index
+            .eq("organizationId", organization.id)
+            .eq("userId", invitee.actorId),
+        )
+        .collect(),
+    );
+    expect(memberships).toHaveLength(1);
+    expect(memberships[0].status).toBe("active");
   });
 
   it("reactivates an inactive Membership during acceptance", async () => {
@@ -316,6 +410,42 @@ describe("Member Invitations", () => {
     ]);
   });
 
+  it("resends with a fresh expiry and invalidates the previous link", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Resend Company",
+    });
+    const oldToken = "resend-old-token";
+    const invitationId = await seedInvitation(t, {
+      organizationId: organization.id,
+      invitedByUserId: owner.actorId,
+      email: "resend@example.com",
+      rawToken: oldToken,
+      expiresAt: Date.now() - 1,
+    });
+    const before = await t.run((ctx) => ctx.db.get(invitationId));
+
+    await expect(
+      owner.client.action(api.invitations.resend, {
+        organizationId: organization.id,
+        invitationId,
+      }),
+    ).resolves.toBeNull();
+
+    const recipient = await authenticatedUser(t, {
+      email: "resend@example.com",
+      name: "Resent Recipient",
+    });
+    await expect(
+      recipient.client.mutation(api.invitations.accept, { token: oldToken }),
+    ).rejects.toMatchObject({ data: { code: "INVITATION_UNAVAILABLE" } });
+    const after = await t.run((ctx) => ctx.db.get(invitationId));
+    expect(after?.expiresAt).toBeGreaterThan(before?.expiresAt ?? 0);
+    expect(after?.updatedAt).toBeGreaterThanOrEqual(before?.updatedAt ?? 0);
+    expect(after?.deliveryStatus).toBe("sent");
+  });
+
   it("keeps a failed delivery observable without exposing provider internals", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -373,5 +503,12 @@ describe("Member Invitations", () => {
         invitationId,
       }),
     ).rejects.toMatchObject({ data: { code: "INVITATION_UNAVAILABLE" } });
+    await expect(
+      bob.client.action(api.invitations.create, {
+        organizationId: aliceOrganization.id,
+        email: "cross-tenant@example.com",
+        role: "viewer",
+      }),
+    ).rejects.toMatchObject({ data: { code: "ORGANIZATION_UNAVAILABLE" } });
   });
 });

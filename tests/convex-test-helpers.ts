@@ -2,13 +2,13 @@ import authzTest from "@djpanda/convex-authz/test";
 import betterAuthTest from "@convex-dev/better-auth/test";
 import { convexTest } from "convex-test";
 
-import { components } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
+import { components } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import {
   authzForOrganization,
   type OrganizationRole,
-} from "@convex/authorization";
-import schema from "@convex/schema";
+} from "../convex/authorization";
+import schema from "../convex/schema";
 
 const modules = import.meta.glob("../convex/**/*.*s");
 

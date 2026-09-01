@@ -62,6 +62,17 @@ export function buildResetPasswordEmail(email: string, url: string) {
   });
 }
 
+export function buildMagicLinkEmail(email: string, url: string) {
+  return buildActionEmail({
+    action: "Sign in",
+    description: "Use this secure one-time link to sign in.",
+    email,
+    subject: "Your sign-in link",
+    template: "magic-link",
+    url,
+  });
+}
+
 export function buildOrganizationInvitationEmail({
   email,
   organizationName,

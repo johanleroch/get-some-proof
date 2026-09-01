@@ -1,7 +1,7 @@
 import { env } from "../_generated/server";
 
 export type TransactionalEmailTemplate =
-  "verify-email" | "reset-password" | "organization-invitation";
+  "verify-email" | "reset-password" | "magic-link" | "organization-invitation";
 
 export type TransactionalEmailMessage = {
   to: string;

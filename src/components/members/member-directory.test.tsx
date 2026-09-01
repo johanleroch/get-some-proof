@@ -42,17 +42,23 @@ describe("MemberDirectory", () => {
   });
 
   it("dismisses an open confirmation dialog with Escape", () => {
-    render(<MemberDirectory organizationId={"organization-1" as never} />);
+    render(
+      <MemberDirectory
+        organizationId={"organization-1" as never}
+        searchQuery=""
+        view="active"
+      />,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Leave Organization" }));
+    fireEvent.click(screen.getByRole("button", { name: "Leave organization" }));
     expect(
-      screen.getByRole("alertdialog", { name: "Leave Organization?" }),
+      screen.getByRole("alertdialog", { name: "Leave organization?" }),
     ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(
-      screen.queryByRole("alertdialog", { name: "Leave Organization?" }),
+      screen.queryByRole("alertdialog", { name: "Leave organization?" }),
     ).toBeNull();
   });
 });

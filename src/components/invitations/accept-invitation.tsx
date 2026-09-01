@@ -8,6 +8,22 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 
+function invitationAcceptanceError(caught: unknown) {
+  const message = caught instanceof Error ? caught.message : "";
+
+  if (message.includes("INVITATION_UNAVAILABLE")) {
+    return "This invitation has expired, was revoked, or was already used. Ask an Organization admin for a new invitation.";
+  }
+  if (message.includes("INVITATION_EMAIL_MISMATCH")) {
+    return "Sign in with the verified email address that received this invitation.";
+  }
+  if (message.includes("EMAIL_NOT_VERIFIED")) {
+    return "Verify your email address before accepting this invitation.";
+  }
+
+  return "This invitation cannot be accepted. Ask an Organization admin for a new invitation.";
+}
+
 export function AcceptInvitation({ token }: { token: string }) {
   const router = useRouter();
   const accept = useMutation(api.invitations.accept);
@@ -21,11 +37,7 @@ export function AcceptInvitation({ token }: { token: string }) {
       const result = await accept({ token });
       router.replace(`/org/${result.organizationSlug}/dashboard` as Route);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "This Invitation cannot be accepted.",
-      );
+      setError(invitationAcceptanceError(caught));
       setPending(false);
     }
   }
@@ -42,7 +54,11 @@ export function AcceptInvitation({ token }: { token: string }) {
           link.
         </p>
         {error ? (
-          <p aria-live="assertive" className="mt-5 text-sm text-red-600">
+          <p
+            aria-live="assertive"
+            className="mt-5 text-sm text-red-600"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
