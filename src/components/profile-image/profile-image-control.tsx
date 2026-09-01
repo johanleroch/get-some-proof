@@ -95,7 +95,7 @@ export function ProfileImageControl({
         {!readOnly ? (
           <button
             aria-label={`Edit ${label.toLowerCase()}`}
-            className="bg-background/95 hover:bg-background absolute inset-x-2 bottom-2 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium shadow-sm"
+            className="bg-background/95 hover:bg-background pointer-events-none absolute inset-x-2 bottom-2 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium opacity-0 shadow-sm transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
             onClick={() => inputRef.current?.click()}
             type="button"
           >

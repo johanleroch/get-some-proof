@@ -45,6 +45,31 @@ describe("ProfileImageControl", () => {
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
   });
 
+  it("reveals the image edit action on hover or keyboard focus", () => {
+    render(
+      <ProfileImageControl
+        alt="Johan"
+        cropShape="round"
+        fallback="JL"
+        imageUrl="https://example.com/avatar.jpg"
+        label="Profile picture"
+        onRemove={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Edit profile picture" }),
+    ).toHaveClass(
+      "pointer-events-none",
+      "opacity-0",
+      "group-hover:pointer-events-auto",
+      "group-hover:opacity-100",
+      "focus-visible:pointer-events-auto",
+      "focus-visible:opacity-100",
+    );
+  });
+
   it("opens a crop dialog after a valid image is chosen", async () => {
     render(
       <ProfileImageControl

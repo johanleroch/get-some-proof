@@ -103,3 +103,13 @@ final result: passed
 ## Final result
 
 passed
+
+### Edit overlay polish
+
+- Reference: `/var/folders/4q/0rvcnp8x0pl_nclw7wbyzs2w0000gn/T/codex-clipboard-ef537527-5d45-4472-aa61-1d19dd371a5b.png`
+- Rest state: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-hover/profile-image-rest.png`
+- Hover state: `/Users/johanleroch/.codex/visualizations/2026/08/31/01a05741-f397-7f63-b774-2fface0465d5/profile-image-hover/profile-image-hover.png`
+
+The reference exposed the edit overlay permanently. The revised control keeps the image unobstructed at rest, fades the overlay in on hover, and also reveals it for keyboard focus. The separate upload or replace action remains visible for touch input.
+
+final result: passed
