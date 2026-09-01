@@ -37,6 +37,11 @@ export type BillingProvider = {
     priceId: string;
     successUrl: string;
   }) => Promise<{ sessionId: string; url: string | null }>;
+  createPortalSession: (input: {
+    customerId: string;
+    mode: "manage" | "payment_method_update";
+    returnUrl: string;
+  }) => Promise<{ url: string | null }>;
   expireCheckout: (sessionId: string) => Promise<void>;
   findCheckout: (
     customerId: string,
@@ -47,6 +52,16 @@ export type BillingProvider = {
     status: "complete" | "expired" | "open";
     url: string | null;
   }>;
+  retrieveSubscriptionPrice: (priceId: string) => Promise<{
+    amount: number;
+    currency: string;
+    interval: "month" | "year";
+  }>;
+  updateCustomerEmail: (input: {
+    customerId: string;
+    email: string;
+    idempotencyKey: string;
+  }) => Promise<void>;
 };
 
 export type CheckoutSnapshot = {

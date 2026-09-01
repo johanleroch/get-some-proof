@@ -7,10 +7,16 @@ import { BillingCockpit } from "./organization-billing";
 export function BillingVisualFixture({
   availability,
   role,
+  state = "missing",
 }: {
   availability: "available" | "unavailable";
   role: "admin" | "owner";
+  state?: "missing" | "active" | "past_due" | "cancellation_scheduled";
 }) {
+  const premium =
+    state === "active" ||
+    state === "past_due" ||
+    state === "cancellation_scheduled";
   return (
     <div className="bg-muted/30 min-h-svh p-3 md:p-6">
       <div className="bg-background mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-[1440px] overflow-hidden rounded-2xl border shadow-xl md:min-h-[calc(100svh-3rem)] md:grid-cols-[15rem_1fr]">
@@ -39,6 +45,7 @@ export function BillingVisualFixture({
         <main className="p-4 md:p-8">
           <BillingCockpit
             navigateToCheckout={() => undefined}
+            navigateToPortal={() => undefined}
             offers={
               availability === "available"
                 ? [
@@ -60,12 +67,31 @@ export function BillingVisualFixture({
             onStartCheckout={async () => ({
               url: "https://checkout.stripe.example/session",
             })}
+            onOpenPortal={async () => ({
+              url: "https://billing.stripe.example/session",
+            })}
             onUpdateContact={async () => undefined}
+            subscriptionDetails={
+              availability === "available" && state !== "missing"
+                ? { amount: 4_900, currency: "eur", interval: "month" }
+                : undefined
+            }
             overview={{
               availability,
               billingContact: "accounts@demo.example.invalid",
               canManage: role === "owner",
-              effectivePlan: "free",
+              effectivePlan: premium ? "premium" : "free",
+              state: availability === "unavailable" ? "unavailable" : state,
+              subscription:
+                availability === "available" && state !== "missing"
+                  ? {
+                      cancelAtPeriodEnd: state === "cancellation_scheduled",
+                      currentPeriodEnd: 1_799_999_999,
+                      priceRevision: "price-revision-fixture",
+                      status:
+                        state === "cancellation_scheduled" ? "active" : state,
+                    }
+                  : null,
             }}
           />
         </main>

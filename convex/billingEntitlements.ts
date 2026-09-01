@@ -39,6 +39,7 @@ export type StripeSubscriptionSnapshot = {
   currentPeriodEnd: number;
   priceId: string;
   status: string;
+  stripeCustomerId: string;
   stripeSubscriptionId: string;
 };
 
@@ -53,6 +54,15 @@ const statePriority = new Map<string, number>([
   ["canceled", 6],
   ["incomplete_expired", 7],
 ]);
+
+function opaquePriceRevision(priceId: string) {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < priceId.length; index += 1) {
+    hash ^= priceId.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return `price-revision-${priceId.length}-${(hash >>> 0).toString(36)}`;
+}
 
 function normalizedState(
   subscription: StripeSubscriptionSnapshot,
@@ -102,6 +112,7 @@ export function deriveBillingEntitlement(
     currentPeriodEnd: selected.currentPeriodEnd,
     priceId: selected.priceId,
     status: selected.status,
+    stripeCustomerId: selected.stripeCustomerId,
     stripeSubscriptionId: selected.stripeSubscriptionId,
   };
   const state = normalizedState(subscription);
@@ -110,7 +121,10 @@ export function deriveBillingEntitlement(
   return {
     effectivePlan: grantsPremium ? ("premium" as const) : ("free" as const),
     state,
-    subscription,
+    subscription: {
+      ...subscription,
+      priceRevision: opaquePriceRevision(subscription.priceId),
+    },
   };
 }
 

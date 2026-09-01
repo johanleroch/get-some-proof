@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { api } from "@convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 import {
   addMemberWithRole,
   authenticatedUser,
@@ -71,9 +71,11 @@ describe("Organization Billing", () => {
     });
 
     await expect(
-      owner.client.mutation(api.billing.updateContact, {
+      owner.client.mutation(internal.billing.commitContactUpdate, {
         organizationId: organization.id,
-        email: "  BILLING@EXAMPLE.COM ",
+        email: "billing@example.com",
+        expectedCustomerId: null,
+        transitionId: null,
       }),
     ).resolves.toEqual({ email: "billing@example.com" });
 
@@ -109,9 +111,11 @@ describe("Organization Billing", () => {
     });
 
     await expect(
-      owner.client.mutation(api.billing.updateContact, {
+      owner.client.mutation(internal.billing.commitContactUpdate, {
         organizationId: organization.id,
         email: "not-an-email",
+        expectedCustomerId: null,
+        transitionId: null,
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_BILLING_CONTACT" },
@@ -157,9 +161,11 @@ describe("Organization Billing", () => {
     ).resolves.toMatchObject({ canManage: false, effectivePlan: "free" });
 
     await expect(
-      admin.client.mutation(api.billing.updateContact, {
+      admin.client.mutation(internal.billing.commitContactUpdate, {
         organizationId: organization.id,
         email: "accounts@example.com",
+        expectedCustomerId: null,
+        transitionId: null,
       }),
     ).rejects.toMatchObject({
       data: { code: "ORGANIZATION_ACCESS_DENIED" },

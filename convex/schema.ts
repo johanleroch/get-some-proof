@@ -35,6 +35,8 @@ export default defineSchema({
   billingProfiles: defineTable({
     organizationId: v.id("organizations"),
     billingEmail: v.string(),
+    contactUpdateEmail: v.optional(v.string()),
+    contactUpdateId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     checkoutReservationId: v.optional(v.string()),
     checkoutLeaseId: v.optional(v.string()),
@@ -115,6 +117,7 @@ export default defineSchema({
       v.literal("project.deleted"),
       v.literal("billing.contact_updated"),
       v.literal("billing.checkout_started"),
+      v.literal("billing.portal_opened"),
     ),
     actorUserId: v.string(),
     actorDisplayName: v.string(),

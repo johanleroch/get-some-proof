@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, env, type ActionCtx } from "./_generated/server";
+import type { BillingState } from "./billingEntitlements";
 import {
   createOrganizationCheckout,
   listPublicOffers,
@@ -39,6 +40,13 @@ export type StartCheckoutDependencies = {
   siteUrl: () => string;
 };
 
+export type BillingManagementDependencies = {
+  createProvider: (ctx: ActionCtx) => BillingProvider;
+  createTransitionId: () => string;
+  requireConfiguration: () => void;
+  siteUrl: () => string;
+};
+
 type CheckoutContext = {
   billingEmail: string;
   existingCustomerId: string | null;
@@ -63,6 +71,27 @@ const productionCheckoutDependencies: StartCheckoutDependencies = {
   createReservationId: randomUUID,
   requireConfiguration: requireStripeConfiguration,
   siteUrl: () => env.SITE_URL,
+};
+
+const productionManagementDependencies: BillingManagementDependencies = {
+  createProvider: createStripeBillingProvider,
+  createTransitionId: randomUUID,
+  requireConfiguration: requireStripeConfiguration,
+  siteUrl: () => env.SITE_URL,
+};
+
+type ManagementContext = {
+  customerId: string | null;
+  organizationId: Id<"organizations">;
+  organizationName: string;
+  organizationSlug: string;
+  state: BillingState;
+};
+
+type SubscriptionDetails = {
+  amount: number;
+  currency: string;
+  interval: "month" | "year";
 };
 
 export const getOffers = action({
@@ -182,4 +211,147 @@ export const startCheckout = action({
   returns: v.object({ url: v.string() }),
   handler: (ctx, args): Promise<{ url: string }> =>
     startCheckoutHandler(ctx, args),
+});
+
+export async function openPortalHandler(
+  ctx: ActionCtx,
+  args: {
+    mode: "manage" | "payment_method_update";
+    organizationId: Id<"organizations">;
+  },
+  dependencies: BillingManagementDependencies = productionManagementDependencies,
+): Promise<{ url: string }> {
+  const context: ManagementContext = await ctx.runQuery(
+    internal.billing.getManagementContext,
+    { organizationId: args.organizationId },
+  );
+  dependencies.requireConfiguration();
+  if (!context.customerId || context.state === "missing") {
+    throw new ConvexError({
+      code: "PORTAL_UNAVAILABLE",
+      message: "No Stripe Customer Portal is available yet.",
+    });
+  }
+  if (args.mode === "payment_method_update" && context.state !== "past_due") {
+    throw new ConvexError({
+      code: "PAYMENT_RECOVERY_UNAVAILABLE",
+      message: "Payment recovery is only available for a past-due plan.",
+    });
+  }
+
+  const returnUrl = new URL(
+    `/org/${encodeURIComponent(context.organizationSlug)}/billing`,
+    dependencies.siteUrl(),
+  ).toString();
+  const result = await dependencies.createProvider(ctx).createPortalSession({
+    customerId: context.customerId,
+    mode: args.mode,
+    returnUrl,
+  });
+  if (!result.url) {
+    throw new ConvexError({
+      code: "PORTAL_UNAVAILABLE",
+      message: "Stripe did not return a Customer Portal URL.",
+    });
+  }
+  await ctx.runMutation(internal.billing.recordPortalOpened, {
+    customerId: context.customerId,
+    mode: args.mode,
+    organizationId: context.organizationId,
+  });
+  return { url: result.url };
+}
+
+export const openPortal = action({
+  args: {
+    mode: v.union(v.literal("manage"), v.literal("payment_method_update")),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({ url: v.string() }),
+  handler: (ctx, args): Promise<{ url: string }> =>
+    openPortalHandler(ctx, args),
+});
+
+export async function getSubscriptionDetailsHandler(
+  ctx: ActionCtx,
+  args: { organizationId: Id<"organizations"> },
+  dependencies: BillingManagementDependencies = productionManagementDependencies,
+): Promise<SubscriptionDetails | null> {
+  const context: { priceId: string } | null = await ctx.runQuery(
+    internal.billing.getSubscriptionPriceContext,
+    args,
+  );
+  if (!context) return null;
+  dependencies.requireConfiguration();
+  return dependencies
+    .createProvider(ctx)
+    .retrieveSubscriptionPrice(context.priceId);
+}
+
+export const getSubscriptionDetails = action({
+  args: { organizationId: v.id("organizations") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      amount: v.number(),
+      currency: v.string(),
+      interval: v.union(v.literal("month"), v.literal("year")),
+    }),
+  ),
+  handler: (ctx, args): Promise<SubscriptionDetails | null> =>
+    getSubscriptionDetailsHandler(ctx, args),
+});
+
+export async function updateContactHandler(
+  ctx: ActionCtx,
+  args: { email: string; organizationId: Id<"organizations"> },
+  dependencies: BillingManagementDependencies = productionManagementDependencies,
+): Promise<{ email: string }> {
+  const email = args.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new ConvexError({
+      code: "INVALID_BILLING_CONTACT",
+      message: "Enter a valid Billing Contact email address.",
+    });
+  }
+  const context: ManagementContext = await ctx.runQuery(
+    internal.billing.getManagementContext,
+    { organizationId: args.organizationId },
+  );
+  let transitionId: string | null = null;
+  let expectedCustomerId = context.customerId;
+  if (context.customerId) {
+    dependencies.requireConfiguration();
+    const reservation = await ctx.runMutation(
+      internal.billing.reserveContactUpdate,
+      {
+        email,
+        organizationId: context.organizationId,
+        requestedTransitionId: dependencies.createTransitionId(),
+      },
+    );
+    transitionId = reservation.transitionId;
+    expectedCustomerId = reservation.customerId;
+    await dependencies.createProvider(ctx).updateCustomerEmail({
+      customerId: reservation.customerId,
+      email,
+      idempotencyKey: `billing_contact_${reservation.transitionId}`,
+    });
+  }
+  return ctx.runMutation(internal.billing.commitContactUpdate, {
+    email,
+    expectedCustomerId,
+    organizationId: context.organizationId,
+    transitionId,
+  });
+}
+
+export const updateContact = action({
+  args: {
+    email: v.string(),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({ email: v.string() }),
+  handler: (ctx, args): Promise<{ email: string }> =>
+    updateContactHandler(ctx, args),
 });

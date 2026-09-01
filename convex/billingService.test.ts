@@ -13,6 +13,9 @@ function fakeProvider(): BillingProvider {
       url: "https://checkout.stripe.example/session",
     }),
     createCustomer: vi.fn().mockResolvedValue({ customerId: "cus_acme" }),
+    createPortalSession: vi.fn().mockResolvedValue({
+      url: "https://billing.stripe.example/session",
+    }),
     expireCheckout: vi.fn().mockResolvedValue(undefined),
     findCheckout: vi.fn().mockResolvedValue(null),
     resolveOffer: vi.fn().mockResolvedValue({
@@ -27,6 +30,12 @@ function fakeProvider(): BillingProvider {
       subscriptionId: null,
       url: "https://checkout.stripe.example/existing-session",
     }),
+    retrieveSubscriptionPrice: vi.fn().mockResolvedValue({
+      amount: 4_900,
+      currency: "eur",
+      interval: "month",
+    }),
+    updateCustomerEmail: vi.fn().mockResolvedValue(undefined),
   };
 }
 

@@ -5,7 +5,11 @@ import { BillingVisualFixture } from "@/components/billing/billing-visual-fixtur
 export default async function BillingVisualEvidencePage({
   searchParams,
 }: {
-  searchParams: Promise<{ availability?: string; role?: string }>;
+  searchParams: Promise<{
+    availability?: string;
+    role?: string;
+    state?: string;
+  }>;
 }) {
   if (process.env.VISUAL_EVIDENCE_MODE !== "true") notFound();
 
@@ -13,6 +17,18 @@ export default async function BillingVisualEvidencePage({
   const availability =
     params.availability === "unavailable" ? "unavailable" : "available";
   const role = params.role === "admin" ? "admin" : "owner";
+  const state =
+    params.state === "active" ||
+    params.state === "past_due" ||
+    params.state === "cancellation_scheduled"
+      ? params.state
+      : "missing";
 
-  return <BillingVisualFixture availability={availability} role={role} />;
+  return (
+    <BillingVisualFixture
+      availability={availability}
+      role={role}
+      state={state}
+    />
+  );
 }

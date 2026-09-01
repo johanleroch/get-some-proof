@@ -97,6 +97,27 @@
       "theme": "light"
     },
     {
+      "slug": "billing-premium-owner",
+      "title": "Billing - Premium Owner",
+      "path": "/visual-evidence/billing?availability=available&role=owner&state=active",
+      "heading": "Billing",
+      "theme": "light"
+    },
+    {
+      "slug": "billing-past-due-owner",
+      "title": "Billing - past due Owner",
+      "path": "/visual-evidence/billing?availability=available&role=owner&state=past_due",
+      "heading": "Billing",
+      "theme": "light"
+    },
+    {
+      "slug": "billing-canceling-admin",
+      "title": "Billing - canceling Admin",
+      "path": "/visual-evidence/billing?availability=available&role=admin&state=cancellation_scheduled",
+      "heading": "Billing",
+      "theme": "light"
+    },
+    {
       "slug": "projects-free-owner",
       "title": "Projects - Free Owner",
       "path": "/visual-evidence/projects",

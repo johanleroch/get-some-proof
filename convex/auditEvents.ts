@@ -25,6 +25,7 @@ export const auditEventTypeValidator = v.union(
   v.literal("project.deleted"),
   v.literal("billing.contact_updated"),
   v.literal("billing.checkout_started"),
+  v.literal("billing.portal_opened"),
 );
 
 export type AuditEventType =
@@ -46,7 +47,8 @@ export type AuditEventType =
   | "project.archived"
   | "project.deleted"
   | "billing.contact_updated"
-  | "billing.checkout_started";
+  | "billing.checkout_started"
+  | "billing.portal_opened";
 
 type AuditTargetType =
   "organization" | "invitation" | "membership" | "project" | "billing";

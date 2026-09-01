@@ -12,6 +12,7 @@ function subscription(
     currentPeriodEnd: 1_800_000_000,
     priceId: "price_premium_monthly",
     status,
+    stripeCustomerId: "cus_acme",
     stripeSubscriptionId,
   };
 }
@@ -69,5 +70,25 @@ describe("Organization Billing Entitlement", () => {
       state: "past_due",
       subscription: { status: "past_due" },
     });
+  });
+
+  it("changes the opaque price revision when Stripe changes the synchronized Price", () => {
+    const monthly = deriveBillingEntitlement([subscription("active")], true);
+    const annual = deriveBillingEntitlement(
+      [
+        {
+          ...subscription("active"),
+          priceId: "price_premium_annual",
+        },
+      ],
+      true,
+    );
+
+    expect(monthly.subscription?.priceRevision).not.toBe(
+      annual.subscription?.priceRevision,
+    );
+    expect(monthly.subscription?.priceRevision).not.toContain(
+      "price_premium_monthly",
+    );
   });
 });

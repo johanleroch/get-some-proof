@@ -28,17 +28,24 @@ export async function addStripeSubscription(
   status: string,
   {
     cancelAtPeriodEnd = false,
+    currentPeriodEnd = Math.floor(Date.now() / 1_000) + 2_592_000,
+    lookupKey = "premium_monthly",
     stripeSubscriptionId = `sub_${organizationId}`,
   }: {
     cancelAtPeriodEnd?: boolean;
+    currentPeriodEnd?: number;
+    lookupKey?: "premium_monthly" | "premium_annual";
     stripeSubscriptionId?: string;
   } = {},
 ) {
   await t.mutation(components.stripe.private.handleSubscriptionCreated, {
     cancelAtPeriodEnd,
-    currentPeriodEnd: Math.floor(Date.now() / 1_000) + 2_592_000,
-    metadata: { orgId: organizationId },
-    priceId: "price_premium_monthly",
+    currentPeriodEnd,
+    metadata: { lookupKey, orgId: organizationId },
+    priceId:
+      lookupKey === "premium_monthly"
+        ? "price_premium_monthly"
+        : "price_premium_annual",
     quantity: 1,
     status,
     stripeCustomerId: `cus_${organizationId}`,

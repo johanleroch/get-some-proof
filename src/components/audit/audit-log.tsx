@@ -28,6 +28,7 @@ const eventLabels = {
   "project.deleted": "deleted a Project",
   "billing.contact_updated": "updated the Billing Contact for",
   "billing.checkout_started": "started Premium Checkout for",
+  "billing.portal_opened": "opened the Stripe Customer Portal for",
 } as const;
 
 export function AuditLog({

@@ -48,6 +48,10 @@ describe("Billing overview Subscription normalization", () => {
       const overview = await owner.client.query(api.billing.getOverview, {
         organizationId: organization.id,
       });
+      expect(overview.subscription?.priceRevision).toMatch(/^price-revision-/);
+      expect(overview.subscription?.priceRevision).not.toContain(
+        "price_premium",
+      );
       expect(overview.subscription).not.toHaveProperty("priceId");
       expect(overview.subscription).not.toHaveProperty("stripeSubscriptionId");
     },

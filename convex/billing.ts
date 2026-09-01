@@ -1,12 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
@@ -32,6 +27,7 @@ export const getOverview = query({
         cancelAt: v.optional(v.number()),
         cancelAtPeriodEnd: v.boolean(),
         currentPeriodEnd: v.number(),
+        priceRevision: v.string(),
         status: v.string(),
       }),
     ),
@@ -79,6 +75,7 @@ export const getOverview = query({
             cancelAt: entitlement.subscription.cancelAt,
             cancelAtPeriodEnd: entitlement.subscription.cancelAtPeriodEnd,
             currentPeriodEnd: entitlement.subscription.currentPeriodEnd,
+            priceRevision: entitlement.subscription.priceRevision,
             status: entitlement.subscription.status,
           }
         : null,
@@ -108,10 +105,148 @@ export const getProjectEntitlement = query({
   },
 });
 
-export const updateContact = mutation({
-  args: {
+export const getManagementContext = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  returns: v.object({
+    customerId: v.union(v.string(), v.null()),
     organizationId: v.id("organizations"),
+    organizationName: v.string(),
+    organizationSlug: v.string(),
+    state: billingStateValidator,
+  }),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "billing:manage",
+    );
+    const [profile, entitlement] = await Promise.all([
+      ctx.db
+        .query("billingProfiles")
+        .withIndex("by_organization", (index) =>
+          index.eq("organizationId", access.organization._id),
+        )
+        .unique(),
+      getOrganizationBillingEntitlement(ctx, access.organization._id),
+    ]);
+    const subscriptionCustomerId =
+      entitlement.subscription?.stripeCustomerId ?? null;
+    if (
+      profile?.stripeCustomerId &&
+      subscriptionCustomerId &&
+      profile.stripeCustomerId !== subscriptionCustomerId
+    ) {
+      throw new ConvexError({
+        code: "BILLING_CUSTOMER_CONFLICT",
+        message: "The Organization Customer mapping is inconsistent.",
+      });
+    }
+
+    return {
+      customerId: profile?.stripeCustomerId ?? subscriptionCustomerId,
+      organizationId: access.organization._id,
+      organizationName: access.organization.name,
+      organizationSlug: access.organization.slug,
+      state: entitlement.state,
+    };
+  },
+});
+
+export const getSubscriptionPriceContext = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  returns: v.union(v.null(), v.object({ priceId: v.string() })),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "billing:read",
+    );
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      access.organization._id,
+    );
+    return entitlement.subscription
+      ? { priceId: entitlement.subscription.priceId }
+      : null;
+  },
+});
+
+export const reserveContactUpdate = internalMutation({
+  args: {
     email: v.string(),
+    organizationId: v.id("organizations"),
+    requestedTransitionId: v.string(),
+  },
+  returns: v.object({
+    customerId: v.string(),
+    transitionId: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "billing:manage",
+    );
+    const [profile, entitlement] = await Promise.all([
+      ctx.db
+        .query("billingProfiles")
+        .withIndex("by_organization", (index) =>
+          index.eq("organizationId", access.organization._id),
+        )
+        .unique(),
+      getOrganizationBillingEntitlement(ctx, access.organization._id),
+    ]);
+    if (!profile) {
+      throw new ConvexError({
+        code: "BILLING_PROFILE_REQUIRED",
+        message: "The Organization Billing profile is unavailable.",
+      });
+    }
+    const subscriptionCustomerId =
+      entitlement.subscription?.stripeCustomerId ?? null;
+    if (
+      profile.stripeCustomerId &&
+      subscriptionCustomerId &&
+      profile.stripeCustomerId !== subscriptionCustomerId
+    ) {
+      throw new ConvexError({
+        code: "BILLING_CUSTOMER_CONFLICT",
+        message: "The Organization Customer mapping is inconsistent.",
+      });
+    }
+    const customerId = profile.stripeCustomerId ?? subscriptionCustomerId;
+    if (!customerId) {
+      throw new ConvexError({
+        code: "BILLING_CUSTOMER_REQUIRED",
+        message: "No Stripe Customer is available for synchronization.",
+      });
+    }
+    if (profile.contactUpdateId) {
+      if (profile.contactUpdateEmail === args.email) {
+        return { customerId, transitionId: profile.contactUpdateId };
+      }
+      throw new ConvexError({
+        code: "CONTACT_UPDATE_IN_PROGRESS",
+        message: "The Billing Contact is already being synchronized.",
+      });
+    }
+    const now = Date.now();
+    await ctx.db.patch(profile._id, {
+      contactUpdateEmail: args.email,
+      contactUpdateId: args.requestedTransitionId,
+      stripeCustomerId: customerId,
+      updatedAt: now,
+    });
+    return { customerId, transitionId: args.requestedTransitionId };
+  },
+});
+
+export const commitContactUpdate = internalMutation({
+  args: {
+    email: v.string(),
+    expectedCustomerId: v.union(v.string(), v.null()),
+    organizationId: v.id("organizations"),
+    transitionId: v.union(v.string(), v.null()),
   },
   returns: v.object({ email: v.string() }),
   handler: async (ctx, args) => {
@@ -120,8 +255,7 @@ export const updateContact = mutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const email = args.email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(args.email)) {
       throw new ConvexError({
         code: "INVALID_BILLING_CONTACT",
         message: "Enter a valid Billing Contact email address.",
@@ -133,14 +267,49 @@ export const updateContact = mutation({
         index.eq("organizationId", access.organization._id),
       )
       .unique();
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      access.organization._id,
+    );
+    const synchronizedCustomerId =
+      entitlement.subscription?.stripeCustomerId ?? null;
+    if (
+      (profile?.stripeCustomerId &&
+        profile.stripeCustomerId !== args.expectedCustomerId) ||
+      (synchronizedCustomerId &&
+        synchronizedCustomerId !== args.expectedCustomerId)
+    ) {
+      throw new ConvexError({
+        code: "BILLING_CUSTOMER_CONFLICT",
+        message: "The Organization Customer mapping changed.",
+      });
+    }
+    if (
+      args.expectedCustomerId &&
+      (!args.transitionId ||
+        profile?.contactUpdateId !== args.transitionId ||
+        profile.contactUpdateEmail !== args.email)
+    ) {
+      throw new ConvexError({
+        code: "CONTACT_UPDATE_RESERVATION_CHANGED",
+        message: "The Billing Contact update changed before it completed.",
+      });
+    }
     const now = Date.now();
 
     if (profile) {
-      await ctx.db.patch(profile._id, { billingEmail: email, updatedAt: now });
+      await ctx.db.patch(profile._id, {
+        billingEmail: args.email,
+        contactUpdateEmail: undefined,
+        contactUpdateId: undefined,
+        stripeCustomerId: args.expectedCustomerId ?? undefined,
+        updatedAt: now,
+      });
     } else {
       await ctx.db.insert("billingProfiles", {
         organizationId: access.organization._id,
-        billingEmail: email,
+        billingEmail: args.email,
+        stripeCustomerId: args.expectedCustomerId ?? undefined,
         createdAt: now,
         updatedAt: now,
       });
@@ -158,7 +327,48 @@ export const updateContact = mutation({
       newValue: "configured",
     });
 
-    return { email };
+    return { email: args.email };
+  },
+});
+
+export const recordPortalOpened = internalMutation({
+  args: {
+    customerId: v.string(),
+    mode: v.union(v.literal("manage"), v.literal("payment_method_update")),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "billing:manage",
+    );
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      access.organization._id,
+    );
+    if (entitlement.subscription?.stripeCustomerId !== args.customerId) {
+      throw new ConvexError({
+        code: "BILLING_CUSTOMER_CONFLICT",
+        message: "The Organization Customer mapping changed.",
+      });
+    }
+
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "billing.portal_opened",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "billing",
+      targetId: String(access.organization._id),
+      targetLabel: access.organization.name,
+      newValue:
+        args.mode === "payment_method_update"
+          ? "Payment method update"
+          : "Subscription management",
+    });
+    return null;
   },
 });
 

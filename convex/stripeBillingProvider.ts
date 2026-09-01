@@ -6,12 +6,19 @@ import Stripe from "stripe";
 
 import { components } from "./_generated/api";
 import { env, type ActionCtx } from "./_generated/server";
-import type { BillingProvider, PremiumLookupKey } from "./billingService";
+import { type BillingProvider, type PremiumLookupKey } from "./billingService";
 
 function offerUnavailable(lookupKey: PremiumLookupKey): never {
   throw new ConvexError({
     code: "PREMIUM_OFFER_UNAVAILABLE",
     message: `The ${lookupKey} Stripe Price is unavailable or invalid.`,
+  });
+}
+
+function subscriptionPriceUnavailable(): never {
+  throw new ConvexError({
+    code: "SUBSCRIPTION_PRICE_UNAVAILABLE",
+    message: "The synchronized Stripe Price is unavailable or invalid.",
   });
 }
 
@@ -48,6 +55,51 @@ function checkoutSnapshot(session: Stripe.Checkout.Session) {
     code: "CHECKOUT_UNAVAILABLE",
     message: "Stripe returned an invalid Checkout status.",
   });
+}
+
+export function portalSessionParams(input: {
+  customerId: string;
+  mode: "manage" | "payment_method_update";
+  returnUrl: string;
+}): Stripe.BillingPortal.SessionCreateParams {
+  return {
+    customer: input.customerId,
+    flow_data:
+      input.mode === "payment_method_update"
+        ? {
+            after_completion: {
+              redirect: { return_url: input.returnUrl },
+              type: "redirect",
+            },
+            type: "payment_method_update",
+          }
+        : undefined,
+    return_url: input.returnUrl,
+  };
+}
+
+export function subscriptionPriceDetails(input: {
+  currency: string;
+  interval: string | null;
+  unitAmount: number | null;
+}): {
+  amount: number;
+  currency: string;
+  interval: "month" | "year";
+} {
+  const interval = input.interval;
+  if (
+    input.unitAmount === null ||
+    input.unitAmount < 0 ||
+    (interval !== "month" && interval !== "year")
+  ) {
+    subscriptionPriceUnavailable();
+  }
+  return {
+    amount: input.unitAmount,
+    currency: input.currency,
+    interval,
+  };
 }
 
 export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
@@ -112,6 +164,12 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       );
       return { sessionId: result.id, url: result.url };
     },
+    async createPortalSession(input) {
+      const session = await stripe.billingPortal.sessions.create(
+        portalSessionParams(input),
+      );
+      return { url: session.url };
+    },
     async expireCheckout(sessionId) {
       await stripe.checkout.sessions.expire(sessionId);
     },
@@ -129,6 +187,21 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       const { status, subscriptionId, url } = checkoutSnapshot(session);
       return { status, subscriptionId, url };
+    },
+    async retrieveSubscriptionPrice(priceId) {
+      const price = await stripe.prices.retrieve(priceId);
+      return subscriptionPriceDetails({
+        currency: price.currency,
+        interval: price.recurring?.interval ?? null,
+        unitAmount: price.unit_amount,
+      });
+    },
+    async updateCustomerEmail(input) {
+      await stripe.customers.update(
+        input.customerId,
+        { email: input.email },
+        { idempotencyKey: input.idempotencyKey },
+      );
     },
   };
 }
