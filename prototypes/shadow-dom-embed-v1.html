@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — iframe-free Shadow DOM embed</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f5;
+        color: #18181b;
+      }
+      button,
+      select {
+        font: inherit;
+      }
+      .prototype-shell {
+        margin: 0 auto;
+        max-width: 1440px;
+        padding: 24px;
+      }
+      .prototype-header,
+      .prototype-panel,
+      .compatibility {
+        border: 1px solid #d4d4d8;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+      }
+      .prototype-header,
+      .prototype-panel,
+      .compatibility {
+        padding: 20px;
+      }
+      .prototype-header h1,
+      .compatibility h2 {
+        margin: 0;
+      }
+      .prototype-header p,
+      .compatibility p {
+        color: #52525b;
+        line-height: 1.6;
+        margin: 8px 0 0;
+      }
+      .prototype-label {
+        color: #6d28d9;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .control {
+        display: grid;
+        gap: 6px;
+      }
+      .control span {
+        color: #52525b;
+        font-size: 12px;
+      }
+      .control select {
+        min-height: 40px;
+        border: 1px solid #a1a1aa;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 12px;
+      }
+      .readout {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .readout div {
+        border-radius: 10px;
+        background: #f4f4f5;
+        padding: 10px 12px;
+      }
+      .readout dt {
+        color: #71717a;
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+      .readout dd {
+        margin: 4px 0 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+      }
+      .prototype-panel {
+        margin-top: 16px;
+        overflow: hidden;
+      }
+      .host-description {
+        margin-bottom: 16px;
+      }
+      .host-description strong {
+        display: block;
+      }
+      .host-description span {
+        color: #52525b;
+        display: block;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-top: 4px;
+      }
+      .viewport-frame {
+        margin: 0 auto;
+        max-width: 100%;
+        transition: width 180ms ease;
+      }
+      .viewport-frame[data-width="mobile"] {
+        width: 360px;
+      }
+      .viewport-frame[data-width="tablet"] {
+        width: 720px;
+      }
+      .viewport-frame[data-width="desktop"] {
+        width: 1120px;
+      }
+      .host-stage {
+        min-height: 0;
+        border: 2px dashed #a1a1aa;
+        border-radius: 12px;
+        padding: 18px;
+      }
+      .host-sentinel {
+        margin: 0 0 16px;
+        padding: 10px;
+      }
+      .compatibility {
+        margin-top: 16px;
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #e4e4e7;
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: #52525b;
+        font-weight: 600;
+      }
+
+      /* Representative host presets intentionally attack generic embed markup. */
+      .host-stage[data-host="plain"] {
+        --gsp-accent: #7c3aed;
+        background: #fff;
+        color: #172033;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      .host-stage[data-host="wordpress"] {
+        --gsp-accent: #3858e9;
+        background: #f8f9fa;
+        color: #1e1e1e;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .host-stage[data-host="wordpress"] article,
+      .host-stage[data-host="wordpress"] p,
+      .host-stage[data-host="wordpress"] a {
+        border: 6px dotted tomato !important;
+        color: lime !important;
+        font-size: 28px !important;
+        line-height: 1 !important;
+      }
+      .host-stage[data-host="webflow"] {
+        --gsp-accent: #146ef5;
+        background: #0d0d0d;
+        color: #f5f5f5;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .host-stage[data-host="webflow"] * {
+        border-radius: 0 !important;
+        letter-spacing: 0.18em !important;
+        text-transform: uppercase !important;
+      }
+      .host-stage[data-host="framer"] {
+        --gsp-accent: #ff3366;
+        background: #fff7fb;
+        color: #24131b;
+        font-family: "Courier New", Courier, monospace;
+      }
+      .host-stage[data-host="framer"] button,
+      .host-stage[data-host="framer"] a,
+      .host-stage[data-host="framer"] article {
+        all: unset !important;
+      }
+      .host-stage[data-host] .host-sentinel {
+        border: 3px solid currentColor;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .viewport-frame {
+          transition: none;
+        }
+      }
+      @media (max-width: 640px) {
+        .prototype-shell {
+          padding: 12px;
+        }
+        .prototype-header,
+        .prototype-panel,
+        .compatibility {
+          border-radius: 12px;
+          padding: 14px;
+        }
+        .host-stage {
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="prototype-shell">
+      <section class="prototype-header">
+        <span class="prototype-label"
+          >Prototype v1 — throwaway branch only</span
+        >
+        <h1>Can one iframe-free Shadow DOM wall survive real host CSS?</h1>
+        <p>
+          This self-contained fixture renders the same public-safe projection in
+          four representative host environments. Change host, width, and content
+          state; the embed must inherit the host font, keep its Brand accent,
+          resize without loops, remain keyboard-visible, and collapse to zero
+          height when empty.
+        </p>
+        <p>
+          <strong>Run locally:</strong> open
+          <code>prototypes/shadow-dom-embed-v1.html</code> directly in a modern
+          browser. No server, account, or backend is required.
+        </p>
+        <div class="controls">
+          <label class="control">
+            <span>Host environment</span>
+            <select id="host-select">
+              <option value="plain">Plain HTML</option>
+              <option value="wordpress">WordPress</option>
+              <option value="webflow">Webflow</option>
+              <option value="framer">Framer</option>
+            </select>
+          </label>
+          <label class="control">
+            <span>Container width</span>
+            <select id="width-select">
+              <option value="desktop">Desktop · 1120 px</option>
+              <option value="tablet">Tablet · 720 px</option>
+              <option value="mobile">Mobile · 360 px</option>
+            </select>
+          </label>
+          <label class="control">
+            <span>Public Projection</span>
+            <select id="state-select">
+              <option value="mixed">Mixed cards</option>
+              <option value="short">One short card</option>
+              <option value="empty">Empty</option>
+            </select>
+          </label>
+        </div>
+        <dl class="readout" aria-live="polite">
+          <div>
+            <dt>Embed height</dt>
+            <dd id="height-readout">—</dd>
+          </div>
+          <div>
+            <dt>Inherited font</dt>
+            <dd id="font-readout">—</dd>
+          </div>
+          <div>
+            <dt>Columns</dt>
+            <dd id="columns-readout">—</dd>
+          </div>
+          <div>
+            <dt>Resize loop errors</dt>
+            <dd id="loop-readout">0</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="prototype-panel">
+        <div class="host-description">
+          <strong id="host-title">Plain HTML fixture</strong>
+          <span id="host-constraint"></span>
+        </div>
+        <div class="viewport-frame" data-width="desktop" id="viewport-frame">
+          <div class="host-stage" data-host="plain" id="host-stage">
+            <p class="host-sentinel">
+              Host sentinel: this line should look host-styled and must never
+              pick up card styles.
+            </p>
+            <gsp-wall-prototype id="wall"></gsp-wall-prototype>
+          </div>
+        </div>
+      </section>
+
+      <section class="compatibility">
+        <h2>Measured compatibility matrix</h2>
+        <p>
+          These are representative exported-page conditions, not editor-canvas
+          emulators. Actual platform installation constraints still apply.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Host</th>
+              <th>Stress applied</th>
+              <th>Installation constraint</th>
+              <th>Measured verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Plain HTML</td>
+              <td>Georgia host font and ordinary document flow</td>
+              <td>External script must be allowed</td>
+              <td>
+                Pass — isolation, inherited font, responsive columns, and
+                zero-height empty state
+              </td>
+            </tr>
+            <tr>
+              <td>WordPress</td>
+              <td>Hostile global article, paragraph, and link rules</td>
+              <td>
+                Custom HTML JavaScript requires unfiltered_html capability
+              </td>
+              <td>Pass — proceed with documented role requirement</td>
+            </tr>
+            <tr>
+              <td>Webflow</td>
+              <td>Global radius, letter-spacing, and uppercase reset</td>
+              <td>
+                Code Embed requires an eligible Workspace or active Site plan
+              </td>
+              <td>Pass — proceed with documented plan requirement</td>
+            </tr>
+            <tr>
+              <td>Framer</td>
+              <td>Host controls and cards reset with all: unset</td>
+              <td>Use an Embed component or body-end custom script</td>
+              <td>Pass — browser-only runtime must not run during prerender</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Platform constraints checked against
+          <a href="https://wordpress.org/documentation/article/custom-html/"
+            >WordPress Custom HTML</a
+          >,
+          <a
+            href="https://help.webflow.com/hc/en-us/articles/33961332238611-Custom-code-embed"
+            >Webflow Code Embed</a
+          >,
+          <a
+            href="https://www.framer.com/help/articles/how-to-add-an-iframe-or-embed-script/"
+            >Framer Embed scripts</a
+          >, and
+          <a
+            href="https://www.framer.com/help/articles/how-to-fix-cannot-set-properties-of-undefined-optimization-error/"
+            >Framer prerender constraints</a
+          >. Browser behavior follows the documented
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
+            >Shadow DOM isolation</a
+          >,
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver"
+            >ResizeObserver</a
+          >, and
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion"
+            >reduced-motion media query</a
+          >.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      const projections = {
+        mixed: [
+          {
+            id: "proof-1",
+            name: "Camille Martin",
+            role: "Founder",
+            company: "Atelier Nord",
+            rating: 5,
+            text: "We collected specific customer proof in an afternoon. The wall stayed clear even when our site theme changed every paragraph and link style.",
+          },
+          {
+            id: "proof-2",
+            name: "Noah Bernard",
+            role: "Product lead",
+            company: "Studio Sillage",
+            text: "Simple, direct, useful.",
+          },
+          {
+            id: "proof-3",
+            name: "Lina Robert",
+            company: "Maison Lune",
+            rating: 4,
+            text: "The cards follow the width of the section instead of the browser viewport. That matters inside visual builders where the embed can sit in a narrow column on a large screen.",
+          },
+          {
+            id: "proof-4",
+            name: "Hugo Petit",
+            role: "Consultant",
+            rating: 5,
+            text: "Keyboard focus remains obvious and the host cannot flatten the card layout.",
+          },
+        ],
+        short: [
+          {
+            id: "proof-short",
+            name: "Ana Silva",
+            role: "Owner",
+            company: "Quiet Goods",
+            rating: 5,
+            text: "Exactly the proof we needed.",
+          },
+        ],
+        empty: [],
+      };
+
+      const hostProfiles = {
+        plain: {
+          title: "Plain HTML fixture",
+          constraint:
+            "No builder runtime: the custom element lives directly in normal document flow.",
+        },
+        wordpress: {
+          title: "WordPress fixture",
+          constraint:
+            "Simulates aggressive theme selectors. Installation requires a role allowed to retain JavaScript in Custom HTML.",
+        },
+        webflow: {
+          title: "Webflow fixture",
+          constraint:
+            "Simulates a global design-system reset. Installation uses a Code Embed on an eligible Workspace or Site plan.",
+        },
+        framer: {
+          title: "Framer fixture",
+          constraint:
+            "Simulates component-level all: unset rules. The browser runtime belongs in Embed or body-end custom code, not server prerender.",
+        },
+      };
+
+      const embedCss = `
+        :host {
+          display: block;
+          width: 100%;
+          color: inherit;
+          font: inherit;
+          line-height: 1.5;
+          --_accent: var(--gsp-accent, #7c3aed);
+        }
+        :host([hidden]) { display: none; }
+        *, *::before, *::after { box-sizing: border-box; }
+        .wall { container-type: inline-size; width: 100%; }
+        .grid { column-count: 1; column-gap: 16px; }
+        .card {
+          break-inside: avoid;
+          display: inline-block;
+          width: 100%;
+          margin: 0 0 16px;
+          padding: 22px;
+          border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+          border-radius: 14px;
+          background: color-mix(in srgb, Canvas 96%, var(--_accent) 4%);
+          color: CanvasText;
+          font: inherit;
+          letter-spacing: normal;
+          text-align: left;
+          text-transform: none;
+          box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+        }
+        .identity { display: flex; align-items: center; gap: 12px; }
+        .avatar {
+          display: grid;
+          flex: 0 0 42px;
+          width: 42px;
+          height: 42px;
+          place-items: center;
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--_accent) 14%, Canvas);
+          color: var(--_accent);
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1;
+        }
+        .name { margin: 0; color: CanvasText; font-family: inherit; font-size: 15px; font-weight: 650; line-height: 1.3; }
+        .meta { margin: 2px 0 0; color: color-mix(in srgb, CanvasText 62%, transparent); font-family: inherit; font-size: 13px; font-weight: 400; line-height: 1.4; }
+        .stars { margin: 16px 0 0; color: var(--_accent); font-size: 18px; letter-spacing: 2px; }
+        blockquote { margin: 18px 0 0; color: CanvasText; font-family: inherit; font-size: 16px; font-weight: 400; line-height: 1.65; }
+        .attribution {
+          display: inline-block;
+          margin-top: 20px;
+          border-radius: 4px;
+          color: color-mix(in srgb, CanvasText 65%, transparent);
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.4;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          transition: color 120ms ease;
+        }
+        .attribution:hover { color: var(--_accent); }
+        .attribution:focus-visible { outline: 3px solid var(--_accent); outline-offset: 4px; }
+        @container (min-width: 42rem) { .grid { column-count: 2; } }
+        @container (min-width: 64rem) { .grid { column-count: 3; } }
+        @media (prefers-reduced-motion: reduce) { .attribution { transition: none; } }
+      `;
+
+      function initials(name) {
+        return name
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part) => part[0])
+          .join("")
+          .toUpperCase();
+      }
+
+      function cardMarkup(proof) {
+        const meta = [proof.role, proof.company].filter(Boolean).join(" · ");
+        const stars = proof.rating
+          ? `<p class="stars" aria-label="${proof.rating} out of 5 stars">${"★".repeat(proof.rating)}</p>`
+          : "";
+        return `<article class="card">
+          <div class="identity">
+            <span class="avatar" aria-hidden="true">${initials(proof.name)}</span>
+            <div><p class="name">${proof.name}</p>${meta ? `<p class="meta">${meta}</p>` : ""}</div>
+          </div>
+          ${stars}
+          <blockquote>“${proof.text}”</blockquote>
+          <a class="attribution" href="https://example.invalid/?utm_source=embed-prototype" rel="sponsored nofollow">Powered by Get Some Proof</a>
+        </article>`;
+      }
+
+      class GetSomeProofWallPrototype extends HTMLElement {
+        constructor() {
+          super();
+          this.attachShadow({ mode: "open" });
+          this.projection = [];
+          this.resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => {
+              this.dispatchEvent(
+                new CustomEvent("gsp-prototype-resize", {
+                  bubbles: true,
+                  detail: {
+                    height: Math.round(this.getBoundingClientRect().height),
+                  },
+                }),
+              );
+            });
+          });
+        }
+        connectedCallback() {
+          this.resizeObserver.observe(this);
+          this.render();
+        }
+        disconnectedCallback() {
+          this.resizeObserver.disconnect();
+        }
+        setProjection(projection) {
+          this.projection = projection;
+          this.hidden = projection.length === 0;
+          this.render();
+        }
+        render() {
+          this.shadowRoot.innerHTML = `<style>${embedCss}</style><section class="wall" aria-label="Demo Company testimonials"><div class="grid">${this.projection.map(cardMarkup).join("")}</div></section>`;
+        }
+      }
+      customElements.define("gsp-wall-prototype", GetSomeProofWallPrototype);
+
+      const hostSelect = document.querySelector("#host-select");
+      const widthSelect = document.querySelector("#width-select");
+      const stateSelect = document.querySelector("#state-select");
+      const stage = document.querySelector("#host-stage");
+      const frame = document.querySelector("#viewport-frame");
+      const wall = document.querySelector("#wall");
+      let loopErrors = 0;
+
+      function updateReadout() {
+        const grid = wall.shadowRoot.querySelector(".grid");
+        const card = wall.shadowRoot.querySelector(".card");
+        document.querySelector("#height-readout").textContent =
+          `${Math.round(wall.getBoundingClientRect().height)} px`;
+        document.querySelector("#font-readout").textContent = card
+          ? getComputedStyle(card).fontFamily
+          : getComputedStyle(wall).fontFamily;
+        document.querySelector("#columns-readout").textContent = wall.hidden
+          ? "0"
+          : getComputedStyle(grid).columnCount;
+        document.querySelector("#loop-readout").textContent =
+          String(loopErrors);
+      }
+
+      function applyControls() {
+        const profile = hostProfiles[hostSelect.value];
+        stage.dataset.host = hostSelect.value;
+        frame.dataset.width = widthSelect.value;
+        document.querySelector("#host-title").textContent = profile.title;
+        document.querySelector("#host-constraint").textContent =
+          profile.constraint;
+        wall.setProjection(projections[stateSelect.value]);
+        requestAnimationFrame(updateReadout);
+      }
+
+      for (const control of [hostSelect, widthSelect, stateSelect]) {
+        control.addEventListener("change", applyControls);
+      }
+      document.addEventListener("gsp-prototype-resize", updateReadout);
+      window.addEventListener("error", (event) => {
+        if (String(event.message).includes("ResizeObserver loop")) {
+          loopErrors += 1;
+          updateReadout();
+        }
+      });
+      applyControls();
+    </script>
+  </body>
+</html>
