@@ -135,6 +135,33 @@
       "heading": "Your testimonial",
       "theme": "light",
       "requiresBackend": true
+    },
+    {
+      "slug": "testimonial-inbox",
+      "title": "Testimonial Inbox",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "public-wall",
+      "title": "Published Public Wall",
+      "path": "/w/:publicSlug",
+      "fixturePath": "/visual-evidence/public-wall",
+      "heading": "Visual Studio",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "public-wall-empty",
+      "title": "Empty Public Wall",
+      "path": "/w/:publicSlug",
+      "fixturePath": "/visual-evidence/public-wall-empty",
+      "heading": "Visual Studio",
+      "theme": "light",
+      "requiresBackend": true
     }
   ]
 }
