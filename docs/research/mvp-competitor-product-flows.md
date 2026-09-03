@@ -23,14 +23,14 @@ La différence de modèle la plus importante est la suivante :
 
 ## Comparatif des parcours
 
-| Étape | Senja | Testimonial.to | Conséquence MVP |
-|---|---|---|---|
-| Conteneur | Un `Project` sépare témoignages, formulaires, widgets, membres et Walls | Un `Space` possède sa page de collecte, sa boîte de réception, ses réglages et son Wall | Adopter un seul concept métier, par exemple `espace`, rattaché à une organisation |
-| Premier formulaire | Chaque compte possède un formulaire de collecte par défaut ; on peut aussi créer depuis un modèle | La création d'un Space génère automatiquement une page de collecte | Générer un formulaire par défaut pendant l'onboarding |
-| Collecte | Texte, image et vidéo ; questions texte, vidéo et note ; formulaire simple ou multistep | Texte et vidéo par défaut ; questions, note, email et champs personnalisés | Pour le MVP : texte ou vidéo, note, identité, rôle/entreprise, avatar et consentement |
-| Modération | Nouvelle soumission `unapproved` par défaut ; approbation manuelle ou automatique | Nouvelle soumission dans l'Inbox ; ajout au Wall par un cœur, ou auto-population | Conserver un statut explicite `pending / approved / rejected` et publier seulement `approved` |
-| Présentation | Studio avec widgets et Walls séparés, sélection manuelle ou auto-add par filtres | Wall hébergé et embeds alimentés par les témoignages « liked » | Livrer un Wall hébergé et un widget masonry utilisant la même sélection |
-| Dépassement gratuit | Les formulaires restent ouverts ; les nouvelles entrées sont cachées jusqu'à l'upgrade | Les soumissions continuent ; le surplus est verrouillé jusqu'à l'upgrade | Ne jamais casser le formulaire public au quota : accepter, stocker et verrouiller côté propriétaire |
+| Étape               | Senja                                                                                             | Testimonial.to                                                                          | Conséquence MVP                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Conteneur           | Un `Project` sépare témoignages, formulaires, widgets, membres et Walls                           | Un `Space` possède sa page de collecte, sa boîte de réception, ses réglages et son Wall | Adopter un seul concept métier, par exemple `espace`, rattaché à une organisation                   |
+| Premier formulaire  | Chaque compte possède un formulaire de collecte par défaut ; on peut aussi créer depuis un modèle | La création d'un Space génère automatiquement une page de collecte                      | Générer un formulaire par défaut pendant l'onboarding                                               |
+| Collecte            | Texte, image et vidéo ; questions texte, vidéo et note ; formulaire simple ou multistep           | Texte et vidéo par défaut ; questions, note, email et champs personnalisés              | Pour le MVP : texte ou vidéo, note, identité, rôle/entreprise, avatar et consentement               |
+| Modération          | Nouvelle soumission `unapproved` par défaut ; approbation manuelle ou automatique                 | Nouvelle soumission dans l'Inbox ; ajout au Wall par un cœur, ou auto-population        | Conserver un statut explicite `pending / approved / rejected` et publier seulement `approved`       |
+| Présentation        | Studio avec widgets et Walls séparés, sélection manuelle ou auto-add par filtres                  | Wall hébergé et embeds alimentés par les témoignages « liked »                          | Livrer un Wall hébergé et un widget masonry utilisant la même sélection                             |
+| Dépassement gratuit | Les formulaires restent ouverts ; les nouvelles entrées sont cachées jusqu'à l'upgrade            | Les soumissions continuent ; le surplus est verrouillé jusqu'à l'upgrade                | Ne jamais casser le formulaire public au quota : accepter, stocker et verrouiller côté propriétaire |
 
 ## Senja
 
@@ -88,11 +88,11 @@ Ce format est documenté officiellement dans le [guide Angular de Senja](https:/
 
 ### 6. Quotas et comportement au dépassement
 
-| Plan Senja | Prix public | Témoignages | Formulaires | Projets | Sièges | Différenciation utile |
-|---|---:|---:|---:|---:|---:|---|
-| Free | 0 $ | 15 texte + vidéo combinés | 1 | 1 | 1 | Branding Senja, exports vidéo SD |
-| Starter | 29 $/mois | Illimités | 3 | 1 | 2 | Branding retirable, domaine personnalisé, exports HD, API/webhooks |
-| Pro | 59 $/mois | Illimités | Illimités | 5 | 5 | Rich snippets, traduction, projets et sièges additionnels |
+| Plan Senja | Prix public |               Témoignages | Formulaires | Projets | Sièges | Différenciation utile                                              |
+| ---------- | ----------: | ------------------------: | ----------: | ------: | -----: | ------------------------------------------------------------------ |
+| Free       |         0 $ | 15 texte + vidéo combinés |           1 |       1 |      1 | Branding Senja, exports vidéo SD                                   |
+| Starter    |   29 $/mois |                 Illimités |           3 |       1 |      2 | Branding retirable, domaine personnalisé, exports HD, API/webhooks |
+| Pro        |   59 $/mois |                 Illimités |   Illimités |       5 |      5 | Rich snippets, traduction, projets et sièges additionnels          |
 
 Sources : [pricing Senja](https://senja.io/pricing) et [comparatif officiel des plans](https://support.senja.io/what-are-the-differences-between-the-free-and-paid-plans-sdcfs).
 
@@ -151,12 +151,12 @@ Le collecting widget peut avoir plusieurs variantes nommées, chacune avec ses p
 
 ### 6. Quotas et comportement au dépassement
 
-| Plan Testimonial.to | Prix public annuel ramené au mois | Vidéos | Textes | Spaces | Formulaires/espace | Durée vidéo |
-|---|---:|---:|---:|---:|---:|---:|
-| Free | 0 $ | 2 au total | 10 au total | 1 | 1 | 2 min |
-| Starter | 25 $ | 2 au total | Illimités | 1 | 1 | 2 min |
-| Ultimate | 50 $/space | Illimitées | Illimités | 1, espaces payants en plus | Illimités | 5 min |
-| Ultimate+ | 95 $/space | Illimitées | Illimités | 1, espaces payants en plus | Illimités | 5 min |
+| Plan Testimonial.to | Prix public annuel ramené au mois |     Vidéos |      Textes |                     Spaces | Formulaires/espace | Durée vidéo |
+| ------------------- | --------------------------------: | ---------: | ----------: | -------------------------: | -----------------: | ----------: |
+| Free                |                               0 $ | 2 au total | 10 au total |                          1 |                  1 |       2 min |
+| Starter             |                              25 $ | 2 au total |   Illimités |                          1 |                  1 |       2 min |
+| Ultimate            |                        50 $/space | Illimitées |   Illimités | 1, espaces payants en plus |          Illimités |       5 min |
+| Ultimate+           |                        95 $/space | Illimitées |   Illimités | 1, espaces payants en plus |          Illimités |       5 min |
 
 Source : [pricing Testimonial.to](https://testimonial.to/pricing/).
 
@@ -166,18 +166,18 @@ Après épuisement des crédits gratuits, les visiteurs peuvent continuer à sou
 
 ### Priorité haute : écrans produit réels
 
-| Produit | URL | Écran capturable | Précaution |
-|---|---|---|---|
-| Senja | [Formulaire texte + vidéo](https://senja.io/p/framer-PH7/r/badejo) | Hero du formulaire et choix `Record a video` / `Write a testimonial` | Ne pas soumettre ; l'étape caméra peut demander une permission navigateur |
-| Senja | [Formulaire texte + vidéo alternatif](https://senja.io/p/mranand/r/ChrwTJ) | Variante de contenu avec les deux CTA | Page publique d'un utilisateur hébergée par Senja |
-| Senja | [Wall officiel de Senja](https://love.senja.io/) | Hero, grille/masonry, mélange de preuves et CTA | Page officielle liée depuis le footer de Senja |
-| Senja | [Wall public texte dense](https://senja.io/p/markpcolgan/testimonials) | Grille de cartes, avatars et titres | Contenu d'un utilisateur ; masquer les données personnelles si la capture sort du cahier des charges interne |
-| Senja | [Pricing](https://senja.io/pricing) | Free, Starter, Pro et limites | Capturer la date car les prix peuvent évoluer |
-| Testimonial.to | [Formulaire officiel de Testimonial](https://cname.testimonial.to/) | Page de collecte, questions et choix vidéo/texte | Domaine personnalisé officiel utilisé par Testimonial.to |
-| Testimonial.to | [Wall officiel](https://testimonial.to/wall-of-love/) | Wall hébergé et cards vidéo/texte | Le contenu embarqué exige JavaScript |
-| Testimonial.to | [Widget Wall direct](https://embed-v2.testimonial.to/w/wall-of-love-for-testimonial?theme=light&card=base) | Rendu isolé du widget sans navigation marketing | Idéal pour comparer la masonry et le responsive |
-| Testimonial.to | [Widgets](https://testimonial.to/widgets/) | Galerie des formats et étapes d'intégration | Marketing produit, pas éditeur authentifié |
-| Testimonial.to | [Pricing](https://testimonial.to/pricing/) | Les quatre plans et le tableau comparatif | Capturer la date car les prix peuvent évoluer |
+| Produit        | URL                                                                                                        | Écran capturable                                                     | Précaution                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Senja          | [Formulaire texte + vidéo](https://senja.io/p/framer-PH7/r/badejo)                                         | Hero du formulaire et choix `Record a video` / `Write a testimonial` | Ne pas soumettre ; l'étape caméra peut demander une permission navigateur                                    |
+| Senja          | [Formulaire texte + vidéo alternatif](https://senja.io/p/mranand/r/ChrwTJ)                                 | Variante de contenu avec les deux CTA                                | Page publique d'un utilisateur hébergée par Senja                                                            |
+| Senja          | [Wall officiel de Senja](https://love.senja.io/)                                                           | Hero, grille/masonry, mélange de preuves et CTA                      | Page officielle liée depuis le footer de Senja                                                               |
+| Senja          | [Wall public texte dense](https://senja.io/p/markpcolgan/testimonials)                                     | Grille de cartes, avatars et titres                                  | Contenu d'un utilisateur ; masquer les données personnelles si la capture sort du cahier des charges interne |
+| Senja          | [Pricing](https://senja.io/pricing)                                                                        | Free, Starter, Pro et limites                                        | Capturer la date car les prix peuvent évoluer                                                                |
+| Testimonial.to | [Formulaire officiel de Testimonial](https://cname.testimonial.to/)                                        | Page de collecte, questions et choix vidéo/texte                     | Domaine personnalisé officiel utilisé par Testimonial.to                                                     |
+| Testimonial.to | [Wall officiel](https://testimonial.to/wall-of-love/)                                                      | Wall hébergé et cards vidéo/texte                                    | Le contenu embarqué exige JavaScript                                                                         |
+| Testimonial.to | [Widget Wall direct](https://embed-v2.testimonial.to/w/wall-of-love-for-testimonial?theme=light&card=base) | Rendu isolé du widget sans navigation marketing                      | Idéal pour comparer la masonry et le responsive                                                              |
+| Testimonial.to | [Widgets](https://testimonial.to/widgets/)                                                                 | Galerie des formats et étapes d'intégration                          | Marketing produit, pas éditeur authentifié                                                                   |
+| Testimonial.to | [Pricing](https://testimonial.to/pricing/)                                                                 | Les quatre plans et le tableau comparatif                            | Capturer la date car les prix peuvent évoluer                                                                |
 
 ### Priorité moyenne : captures officielles du back-office dans l'aide
 

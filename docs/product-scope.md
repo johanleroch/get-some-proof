@@ -234,17 +234,17 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 
 ## Plans and entitlements
 
-| Capability | Free | Pro |
-| --- | --- | --- |
-| Price | EUR 0 | Target EUR 29/month |
-| Workspaces / Brands | 1 | 1 |
-| Collection Forms | 1 | 1 |
-| Public Walls | 1 | 1 |
-| Text collection | 13 lifetime Collection Credits | Unlimited |
-| Video collection/storage | 2 lifetime Collection Credits | 25 stored videos simultaneously |
-| Maximum video duration | 2 minutes | 2 minutes |
-| Attribution Badge | Required | Removable |
-| MP4 download | No | Yes, best available up to 1080p |
+| Capability               | Free                           | Pro                             |
+| ------------------------ | ------------------------------ | ------------------------------- |
+| Price                    | EUR 0                          | Target EUR 29/month             |
+| Workspaces / Brands      | 1                              | 1                               |
+| Collection Forms         | 1                              | 1                               |
+| Public Walls             | 1                              | 1                               |
+| Text collection          | 13 lifetime Collection Credits | Unlimited                       |
+| Video collection/storage | 2 lifetime Collection Credits  | 25 stored videos simultaneously |
+| Maximum video duration   | 2 minutes                      | 2 minutes                       |
+| Attribution Badge        | Required                       | Removable                       |
+| MP4 download             | No                             | Yes, best available up to 1080p |
 
 - Free credits count valid collected proof, not merely Published proof.
 - Deleting or archiving genuine Free proof never restores a credit.

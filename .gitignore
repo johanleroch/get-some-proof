@@ -1,0 +1,23 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next
+/out
+
+# Convex and local environment
+/.env.local
+/.env.*.local
+
+# tests and tooling
+/coverage
+/playwright-report
+/test-results
+/visual-evidence
+/.scratch
+*.tsbuildinfo
+
+# operating system and editors
+.DS_Store
+.idea
+.vscode
