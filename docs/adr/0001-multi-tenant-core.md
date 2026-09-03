@@ -1,3 +1,3 @@
-# Keep one multi-tenant core
+# Keep multi-tenant authorization beneath a single-workspace product
 
-Every deployment uses the same multi-tenant organization, membership, and authorization model. A deployment serving only one organization may hide organization selection and onboarding in its interface, but it does not use a separate data or security architecture; this avoids two authorization paths while keeping the starter convenient for single-organization products.
+Get Some Proof presents one Owner, one Brand, and one Workspace in the MVP while retaining the starter's organization membership and authorization boundary underneath. Team roles, invitations, organization switching, and client subaccounts stay out of the MVP interface; keeping one security architecture avoids a weaker single-user authorization path and preserves a safe route to later collaboration without positioning the product as an agency tool.

@@ -1,0 +1,3 @@
+# Split application and video ownership across Convex, Vercel, and Mux
+
+The single Next.js application and versioned embed runtime run on Vercel, Convex owns persistence, authorization, transactional product rules, and backend workflows, and Mux owns video ingest, processing, playback renditions, thumbnails, and media deletion. A Video Asset has a lifecycle separate from Testimonial moderation, so provider callbacks can change media availability without making private proof public; this provider boundary accepts Mux lock-in for video while keeping publication and entitlement policy in the application domain.
