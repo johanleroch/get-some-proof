@@ -1,3 +1,6 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
 import { expect, test } from "@playwright/test";
 
 const projection = [
@@ -58,7 +61,7 @@ const hosts = {
 test("renders isolated, responsive, ordered walls in every approved host fixture", async ({
   baseURL,
   page,
-}) => {
+}, testInfo) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
@@ -135,8 +138,13 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
       }));
     expect(linkStyle).toEqual({ outline: "solid", transition: "0s" });
 
+    const evidenceRoot = process.env.EMBED_EVIDENCE_DIR;
+    const screenshotPath = evidenceRoot
+      ? path.join(evidenceRoot, testInfo.project.name, `${host}-embed.png`)
+      : testInfo.outputPath(`${host}-embed.png`);
+    await mkdir(path.dirname(screenshotPath), { recursive: true });
     await page.screenshot({
-      path: `/tmp/get-some-proof-evidence.qi2r7W/ticket-6/${host}-embed.png`,
+      path: screenshotPath,
       fullPage: true,
     });
   }
