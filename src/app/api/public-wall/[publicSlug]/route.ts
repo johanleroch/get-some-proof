@@ -128,6 +128,28 @@ export async function GET(
     );
   }
 
+  const requestKey = requesterKey(request, secret);
+  try {
+    await fetchMutation(api.publicReadRateLimit.consumeLookup, {
+      requesterKey: requestKey,
+      secret,
+    });
+  } catch (error) {
+    if (errorContains(error, "PUBLIC_READ_RATE_LIMITED")) {
+      return json(
+        { code: "PUBLIC_READ_RATE_LIMITED", message: "Try again shortly." },
+        429,
+      );
+    }
+    return json(
+      {
+        code: "EMBED_PROTECTION_UNAVAILABLE",
+        message: "Embedded Wall unavailable.",
+      },
+      503,
+    );
+  }
+
   let brand;
   try {
     brand = await fetchQuery(api.publicWall.getBrand, { publicSlug });
@@ -152,7 +174,7 @@ export async function GET(
   try {
     rateLimit = await fetchMutation(api.publicReadRateLimit.consume, {
       publicSlug,
-      requesterKey: requesterKey(request, secret),
+      requesterKey: requestKey,
       secret,
     });
   } catch (error) {

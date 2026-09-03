@@ -84,7 +84,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
         },
       ],
     });
-    expect(fetchMutation).toHaveBeenCalledOnce();
+    expect(fetchMutation).toHaveBeenCalledTimes(2);
   });
 
   it("revalidates cached reads without replaying unchanged content", async () => {
@@ -188,7 +188,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
     await expect(response.json()).resolves.toMatchObject({
       code: "PUBLIC_READ_RATE_LIMITED",
     });
-    expect(fetchQuery).toHaveBeenCalledOnce();
+    expect(fetchQuery).not.toHaveBeenCalled();
   });
 
   it("does not create a rate-limit bucket for an unknown Brand", async () => {
@@ -200,7 +200,8 @@ describe("GET /api/public-wall/:publicSlug", () => {
     );
 
     expect(response.status).toBe(404);
-    expect(fetchMutation).not.toHaveBeenCalled();
+    expect(fetchMutation).toHaveBeenCalledOnce();
+    expect(fetchMutation.mock.calls[0]?.[1]).not.toHaveProperty("publicSlug");
   });
 
   it("isolates requester keys without storing a public IP", async () => {
@@ -217,11 +218,18 @@ describe("GET /api/public-wall/:publicSlug", () => {
     await GET(secondRequest, context);
 
     const firstArgs = fetchMutation.mock.calls[0]?.[1];
-    const secondArgs = fetchMutation.mock.calls[1]?.[1];
-    expect(firstArgs).toMatchObject({ publicSlug: "acme-proof" });
+    const secondArgs = fetchMutation.mock.calls[2]?.[1];
     expect(firstArgs.requesterKey).toMatch(/^[a-f0-9]{32}$/);
     expect(secondArgs.requesterKey).toMatch(/^[a-f0-9]{32}$/);
     expect(firstArgs.requesterKey).not.toBe(secondArgs.requesterKey);
+    expect(fetchMutation.mock.calls[1]?.[1]).toMatchObject({
+      publicSlug: "acme-proof",
+      requesterKey: firstArgs.requesterKey,
+    });
+    expect(fetchMutation.mock.calls[3]?.[1]).toMatchObject({
+      publicSlug: "acme-proof",
+      requesterKey: secondArgs.requesterKey,
+    });
     expect(JSON.stringify(fetchMutation.mock.calls)).not.toContain("203.0.113");
   });
 });

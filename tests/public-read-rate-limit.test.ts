@@ -11,6 +11,21 @@ describe("Public Wall read protection", () => {
     );
   });
 
+  it("bounds unknown-Brand lookups without creating slug-specific buckets", async () => {
+    const t = createConvexTest();
+    const args = {
+      requesterKey: "11111111111111111111111111111111",
+      secret: "test-rate-limit-secret-at-least-32-chars",
+    };
+
+    await expect(
+      t.mutation(api.publicReadRateLimit.consumeLookup, args),
+    ).resolves.toMatchObject({ remaining: 59 });
+    await expect(
+      t.mutation(api.publicReadRateLimit.consumeLookup, args),
+    ).resolves.toMatchObject({ remaining: 58 });
+  });
+
   it("counts embed reads independently from product collection quotas", async () => {
     const t = createConvexTest();
 
