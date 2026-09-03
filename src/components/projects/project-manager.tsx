@@ -42,7 +42,7 @@ type Project = {
 
 type EditorState = { mode: "create" } | { mode: "edit"; project: Project };
 
-export function PremiumProjectNotice({
+export function ProProjectNotice({
   canManageBilling,
   canReadBilling,
   organizationSlug,
@@ -58,7 +58,7 @@ export function PremiumProjectNotice({
       role="status"
     >
       <h2 className="font-semibold" id="premium-projects-heading">
-        Premium required for Project changes
+        Pro required for Project changes
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-current/75">
         Existing Projects stay readable on Free. Upgrade this Organization to
@@ -67,7 +67,7 @@ export function PremiumProjectNotice({
       {canReadBilling ? (
         <Button asChild className="mt-4" size="sm">
           <Link href={`/org/${organizationSlug}/billing` as Route}>
-            {canManageBilling ? "View Premium plans" : "Review Billing"}
+            {canManageBilling ? "View Pro plans" : "Review Billing"}
           </Link>
         </Button>
       ) : (
@@ -87,7 +87,7 @@ function errorMessage(error: unknown) {
   return error.message.includes("ORGANIZATION_ACCESS_DENIED")
     ? "Your role does not allow this Project action."
     : error.message.includes("PREMIUM_REQUIRED")
-      ? "Premium is required for Project changes. Existing Projects remain available."
+      ? "Pro is required for Project changes. Existing Projects remain available."
       : error.message;
 }
 
@@ -127,9 +127,9 @@ export function ProjectManager({
   }
 
   const roleCanWrite = access.can.createProjects;
-  const hasPremium = entitlement.effectivePlan === "premium";
-  const canWrite = roleCanWrite && hasPremium;
-  const canDelete = access.can.deleteProjects && hasPremium;
+  const hasPro = entitlement.effectivePlan === "premium";
+  const canWrite = roleCanWrite && hasPro;
+  const canDelete = access.can.deleteProjects && hasPro;
   const queryRequestsCreate = searchParams.get("new") === "1";
   const activeEditor =
     editor ??
@@ -221,8 +221,8 @@ export function ProjectManager({
         ) : null}
       </div>
 
-      {roleCanWrite && !hasPremium ? (
-        <PremiumProjectNotice
+      {roleCanWrite && !hasPro ? (
+        <ProProjectNotice
           canManageBilling={access.can.manageBilling}
           canReadBilling={access.can.readBilling}
           organizationSlug={organizationSlug}
@@ -252,8 +252,8 @@ export function ProjectManager({
           <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
             {canWrite
               ? "Create the first Project to see Tenant-scoped CRUD in action."
-              : roleCanWrite && !hasPremium
-                ? "Projects remain readable on Free. Upgrade to Premium to create the first Project."
+              : roleCanWrite && !hasPro
+                ? "Projects remain readable on Free. Upgrade to Pro to create the first Project."
                 : "A Member with editing permission can create the first Project."}
           </p>
         </section>

@@ -7,7 +7,7 @@ import {
   createConvexTest,
 } from "./convex-test-helpers";
 
-describe("Organization Premium Checkout boundary", () => {
+describe("Organization Pro Checkout boundary", () => {
   it("allows Billing readers to request offers but stays safe without Stripe configuration", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -51,7 +51,7 @@ describe("Organization Premium Checkout boundary", () => {
       await expect(
         member.client.action(api.billingActions.startCheckout, {
           organizationId: organization.id,
-          lookupKey: "premium_monthly",
+          lookupKey: "pro_monthly",
         }),
       ).rejects.toMatchObject({
         data: { code: "ORGANIZATION_ACCESS_DENIED" },
@@ -61,7 +61,7 @@ describe("Organization Premium Checkout boundary", () => {
       await expect(
         member.client.action(api.billingActions.startCheckout, {
           organizationId: organization.id,
-          lookupKey: "premium_monthly",
+          lookupKey: "pro_monthly",
         }),
       ).rejects.toMatchObject({
         data: { code: "ORGANIZATION_UNAVAILABLE" },
@@ -79,7 +79,7 @@ describe("Organization Premium Checkout boundary", () => {
     await expect(
       owner.client.action(api.billingActions.startCheckout, {
         organizationId: organization.id,
-        lookupKey: "price_from_browser" as "premium_monthly",
+        lookupKey: "price_from_browser" as "pro_monthly",
       }),
     ).rejects.toThrow();
   });
@@ -106,7 +106,7 @@ describe("Organization Premium Checkout boundary", () => {
     await expect(
       unverifiedOwner.client.action(api.billingActions.startCheckout, {
         organizationId: organization.id,
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
       }),
     ).rejects.toMatchObject({ data: { code: "EMAIL_NOT_VERIFIED" } });
   });
@@ -122,7 +122,7 @@ describe("Organization Premium Checkout boundary", () => {
       internal.billing.reserveCheckout,
       {
         billingEmail: "accounts@audited.example",
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
         organizationId: organization.id,
         requestedReservationId: "reservation_audited",
       },
@@ -133,10 +133,16 @@ describe("Organization Premium Checkout boundary", () => {
       organizationId: organization.id,
       reservationId: reservation.reservationId,
     });
+    await owner.client.mutation(internal.billing.saveCheckoutOffer, {
+      leaseId: reservation.leaseId,
+      organizationId: organization.id,
+      priceId: "price_pro_monthly",
+      reservationId: reservation.reservationId,
+    });
     await owner.client.mutation(internal.billing.recordCheckoutStarted, {
       customerId: "cus_server_created",
       leaseId: reservation.leaseId,
-      lookupKey: "premium_annual",
+      lookupKey: "pro_monthly",
       organizationId: organization.id,
       reservationId: reservation.reservationId,
       sessionId: "cs_server_created",
@@ -166,7 +172,7 @@ describe("Organization Premium Checkout boundary", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "billing.checkout_started",
-          newValue: "Premium annual",
+          newValue: "Pro monthly",
           previousValue: "Free",
           targetLabel: "Audited Checkout Company",
           targetType: "billing",
@@ -192,7 +198,7 @@ describe("Organization Premium Checkout boundary", () => {
         (requestedReservationId) =>
           owner.client.mutation(internal.billing.reserveCheckout, {
             billingEmail: "alice@example.com",
-            lookupKey: "premium_monthly",
+            lookupKey: "pro_monthly",
             organizationId: organization.id,
             requestedReservationId,
           }),
@@ -222,7 +228,7 @@ describe("Organization Premium Checkout boundary", () => {
       internal.billing.reserveCheckout,
       {
         billingEmail: "alice@example.com",
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: organization.id,
         requestedReservationId: "lease_first",
       },
@@ -244,7 +250,7 @@ describe("Organization Premium Checkout boundary", () => {
       internal.billing.reserveCheckout,
       {
         billingEmail: "alice@example.com",
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
         organizationId: organization.id,
         requestedReservationId: "lease_retry",
       },
@@ -252,7 +258,7 @@ describe("Organization Premium Checkout boundary", () => {
 
     expect(retry).toMatchObject({
       leaseId: "lease_retry",
-      lookupKey: "premium_monthly",
+      lookupKey: "pro_monthly",
       reservationId: first.reservationId,
     });
   });

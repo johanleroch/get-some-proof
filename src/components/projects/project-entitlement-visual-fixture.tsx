@@ -2,7 +2,7 @@
 
 import { CreditCard, FolderKanban, LayoutDashboard } from "lucide-react";
 
-import { PremiumProjectNotice } from "./project-manager";
+import { ProProjectNotice } from "./project-manager";
 
 export function ProjectEntitlementVisualFixture() {
   return (
@@ -35,7 +35,7 @@ export function ProjectEntitlementVisualFixture() {
               Tenant-scoped Projects for the active Organization.
             </p>
           </div>
-          <PremiumProjectNotice
+          <ProProjectNotice
             canManageBilling
             canReadBilling
             organizationSlug="demo-company"

@@ -35,7 +35,7 @@ Les mentions suivantes distinguent le niveau de preuve :
 
 **Recommandation.** L’écran interne ne doit pas imiter Checkout. Il doit préparer une décision simple :
 
-1. afficher Free et Premium ;
+1. afficher Free et Pro ;
 2. sélectionner `Monthly` ou `Annual` ;
 3. afficher le montant et la devise chargés depuis Stripe ;
 4. lancer `Continue to secure checkout` ;
@@ -47,14 +47,14 @@ Le bouton peut inclure une icône de lien externe et une courte aide « You’ll
 
 **Fait.** Stripe prévient qu’une page de réussite ne suffit pas à provisionner un achat : un client peut payer sans jamais charger cette page. Les webhooks sont le moyen fiable de confirmer le paiement, et Stripe les réessaie en cas d’échec de livraison. ([page de réussite Checkout](https://docs.stripe.com/payments/checkout/custom-success-page), [fulfillment Checkout](https://docs.stripe.com/checkout/fulfillment))
 
-**Implication.** `?success=true` ou un `session_id` dans l’URL ne doit jamais transformer localement l’Organization en Premium.
+**Implication.** `?success=true` ou un `session_id` dans l’URL ne doit jamais transformer localement l’Organization en Pro.
 
 **Recommandation.** Au retour de Checkout :
 
-- afficher `Payment received. Confirming your Premium plan…` dans un message `role="status"` ;
+- afficher `Payment received. Confirming your Pro plan…` dans un message `role="status"` ;
 - laisser la requête Convex réactive mettre à jour l’écran dès que le webhook a synchronisé l’abonnement ;
 - si le retour est annulé, afficher `Checkout canceled. No changes were made.` et conserver la sélection de cadence ;
-- après un délai raisonnable, remplacer le message d’attente par une aide non alarmiste et un bouton `Refresh status`, sans accorder Premium par anticipation.
+- après un délai raisonnable, remplacer le message d’attente par une aide non alarmiste et un bouton `Refresh status`, sans accorder Pro par anticipation.
 
 Le sample officiel `checkout-single-subscription` confirme le passage `pricing -> Checkout -> success -> Manage Billing`, mais son HTML est une démonstration minimale et non une référence visuelle à copier. ([sample Stripe officiel](https://github.com/stripe-samples/checkout-single-subscription), [écran success du sample](https://github.com/stripe-samples/checkout-single-subscription/blob/master/client/success.html))
 
@@ -123,11 +123,11 @@ Ordre vertical de la page :
 1. **En-tête** — `Billing` et « Manage this Organization’s plan and billing details. »
 2. **Bannière d’état conditionnelle** — uniquement pour confirmation en cours, `past_due`, fin programmée ou indisponibilité.
 3. **Current plan** — carte principale avec badge textuel, prix/cadence, date de renouvellement ou fin d’accès, puis action Owner.
-4. **Choose a plan** — seulement quand l’Organization est Free et Stripe disponible : sélecteur Monthly/Annual, carte Free actuelle et carte Premium.
+4. **Choose a plan** — seulement quand l’Organization est Free et Stripe disponible : sélecteur Monthly/Annual, carte Free actuelle et carte Pro.
 5. **Billing contact** — résumé de l’identité de facturation de l’Organization ; édition Owner dans l’application si ce champ appartient au domaine applicatif.
 6. **Secure billing note** — texte discret indiquant que paiement et factures sont gérés sur Stripe.
 
-Pour Premium actif, masquer le comparateur Free/Premium : l’écran est un résumé de gestion, pas une page marketing permanente.
+Pour Pro actif, masquer le comparateur Free/Pro : l’écran est un résumé de gestion, pas une page marketing permanente.
 
 ### Blueprint desktop
 
@@ -135,16 +135,16 @@ Pour Premium actif, masquer le comparateur Free/Premium : l’écran est un rés
 Billing
 Manage this Organization’s plan and billing details.
 
-[conditionnel : bannière Payment needs attention / Premium ends…]
+[conditionnel : bannière Payment needs attention / Pro ends…]
 
 ┌ Current plan ─────────────────────────────────────────────┐
-│ Premium  [Active]             €XX / month                 │
+│ Pro  [Active]             €XX / month                 │
 │ Renews on 12 Oct 2026         [Manage billing in Stripe]  │
 └────────────────────────────────────────────────────────────┘
 
 Free uniquement :
                            [ Monthly | Annual ]
-┌ Free ────────────────────┐  ┌ Premium ───────────────────┐
+┌ Free ────────────────────┐  ┌ Pro ───────────────────┐
 │ Current plan             │  │ €XX / month               │
 │ View projects            │  │ Create and manage projects│
 │ [Current]                │  │ [Continue to checkout]    │
@@ -155,7 +155,7 @@ Free uniquement :
 └────────────────────────────────────────────────────────────┘
 ```
 
-La liste de bénéfices doit rester liée à des entitlements réellement implémentés. Pour la première preuve, `Create and manage projects` suffit ; ne pas inventer une longue grille de fonctionnalités Premium.
+La liste de bénéfices doit rester liée à des entitlements réellement implémentés. Pour la première preuve, `Create and manage projects` suffit ; ne pas inventer une longue grille de fonctionnalités Pro.
 
 ### Blueprint mobile
 
@@ -170,12 +170,12 @@ La liste de bénéfices doit rester liée à des entitlements réellement implé
 
 | État métier affiché                                        | Présentation recommandée                                                                                  | Action Owner                                                                  | Vue Admin                                    |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
-| Free                                                       | Badge neutre `Free`, aucune échéance                                                                      | `Upgrade to Premium` après choix de cadence                                   | `An Owner can upgrade this Organization.`    |
-| Checkout en cours de confirmation                          | Message neutre `Confirming your Premium plan…`, Free reste effectif                                       | `Refresh status` après délai                                                  | Même état, sans action financière            |
-| `active` ou `trialing`                                     | Badge positif `Premium · Active`, prochaine échéance et cadence                                           | `Manage billing in Stripe`                                                    | Statut et échéance en lecture seule          |
-| `past_due`                                                 | Bannière ambre `Payment needs attention`; préciser que Premium reste temporairement disponible            | `Update payment method` vers un deep link portail                             | `Ask an Owner to update the payment method.` |
-| `cancel_at_period_end=true` sur un abonnement encore actif | Badge/bannière ambre douce `Premium ends on <date>` ; ne pas afficher `Canceled` avant la date            | `Manage plan in Stripe`                                                       | Date de fin en lecture seule                 |
-| `unpaid`, `canceled`, `incomplete_expired`                 | Plan effectif `Free` avec explication courte ; ne pas exposer seulement le statut API brut                | `Subscribe to Premium` si une nouvelle souscription est autorisée             | Free en lecture seule                        |
+| Free                                                       | Badge neutre `Free`, aucune échéance                                                                      | `Upgrade to Pro` après choix de cadence                                       | `An Owner can upgrade this Organization.`    |
+| Checkout en cours de confirmation                          | Message neutre `Confirming your Pro plan…`, Free reste effectif                                           | `Refresh status` après délai                                                  | Même état, sans action financière            |
+| `active` ou `trialing`                                     | Badge positif `Pro · Active`, prochaine échéance et cadence                                               | `Manage billing in Stripe`                                                    | Statut et échéance en lecture seule          |
+| `past_due`                                                 | Bannière ambre `Payment needs attention`; préciser que Pro reste temporairement disponible                | `Update payment method` vers un deep link portail                             | `Ask an Owner to update the payment method.` |
+| `cancel_at_period_end=true` sur un abonnement encore actif | Badge/bannière ambre douce `Pro ends on <date>` ; ne pas afficher `Canceled` avant la date                | `Manage plan in Stripe`                                                       | Date de fin en lecture seule                 |
+| `unpaid`, `canceled`, `incomplete_expired`                 | Plan effectif `Free` avec explication courte ; ne pas exposer seulement le statut API brut                | `Subscribe to Pro` si une nouvelle souscription est autorisée                 | Free en lecture seule                        |
 | Stripe non configuré ou indisponible                       | Bannière neutre `Billing is unavailable. This Organization remains on Free.` ; le reste de l’app continue | aucune action de paiement ; éventuellement `Retry` pour une panne transitoire | Même information                             |
 
 Stripe définit officiellement les statuts `trialing`, `active`, `incomplete`, `incomplete_expired`, `past_due`, `canceled`, `unpaid` et `paused`, et recommande de prévenir le client puis de lui faire mettre à jour ses informations de paiement lorsque l’abonnement devient `past_due`. ([cycle et statuts d’abonnement](https://docs.stripe.com/billing/subscriptions/overview), [webhooks d’abonnement et échecs de paiement](https://docs.stripe.com/billing/subscriptions/webhooks))
@@ -197,7 +197,7 @@ L’Owner peut :
 
 L’Admin peut voir :
 
-- Free ou Premium ;
+- Free ou Pro ;
 - cadence et tarif ;
 - prochaine échéance ou fin programmée ;
 - problème de paiement ou indisponibilité ;
@@ -209,13 +209,13 @@ Les contrôles doivent également être appliqués côté Convex ; la visibilit�
 
 ## Détails de langage et d’accessibilité
 
-- Employer les libellés produit `Free` et `Premium`, puis traduire les statuts Stripe en phrases humaines.
+- Employer les libellés produit `Free` et `Pro`, puis traduire les statuts Stripe en phrases humaines.
 - Ne jamais s’appuyer sur la couleur seule : badge + texte + date/conséquence.
 - Utiliser `role="alert"` pour un paiement nécessitant une action immédiate et `role="status"` pour une confirmation ou réussite non bloquante.
 - Le bouton de redirection passe à `Opening secure checkout…` ou `Opening Stripe…` pendant la création de session et empêche le double clic.
 - En cas d’erreur de création de session, rester sur place, rendre le bouton à nouveau disponible et afficher une erreur précise mais non technique.
-- Après une résiliation programmée, écrire `Premium remains available until <date>` plutôt qu’un badge ambigu `Canceled`.
-- Sur `past_due`, éviter le rouge destructif tant que Premium est conservé pendant les relances ; l’ambre indique mieux un problème récupérable. Réserver le style destructif aux états terminaux qui ont effectivement retiré l’accès.
+- Après une résiliation programmée, écrire `Pro remains available until <date>` plutôt qu’un badge ambigu `Canceled`.
+- Sur `past_due`, éviter le rouge destructif tant que Pro est conservé pendant les relances ; l’ambre indique mieux un problème récupérable. Réserver le style destructif aux états terminaux qui ont effectivement retiré l’accès.
 - Vérifier light/dark et les deux viewports Playwright du dépôt ; conserver les tokens du thème plutôt qu’une couleur Stripe violette ou bleue injectée dans l’application.
 
 ## Ce qu’il ne faut pas construire dans cette première intégration
@@ -226,7 +226,7 @@ Les contrôles doivent également être appliqués côté Convex ; la visibilit�
 - un écran local de modification de carte ;
 - plusieurs abonnements parallèles pour une Organization ;
 - une tarification par siège ou des contrôles de quantité ;
-- un badge Premium déduit de l’URL de retour Checkout ;
+- un badge Pro déduit de l’URL de retour Checkout ;
 - des montants, pourcentages d’économie ou `priceId` codés en dur dans le navigateur ;
 - le branding d’un produit observé : seuls l’ordre de l’information et les patterns comportementaux sont réutilisés.
 
@@ -237,9 +237,9 @@ La livraison visuelle devra couvrir au minimum, en desktop et mobile :
 - Free Owner, cadence mensuelle ;
 - Free Owner, cadence annuelle ;
 - Free Admin en lecture seule ;
-- Premium actif ;
-- Premium `past_due` avec action de récupération ;
-- Premium avec `cancel_at_period_end` et date explicite ;
+- Pro actif ;
+- Pro `past_due` avec action de récupération ;
+- Pro avec `cancel_at_period_end` et date explicite ;
 - Stripe indisponible ;
 - retour Checkout en attente de synchronisation.
 

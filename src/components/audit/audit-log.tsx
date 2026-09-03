@@ -28,7 +28,7 @@ const eventLabels = {
   "project.archived": "archived a Project",
   "project.deleted": "deleted a Project",
   "billing.contact_updated": "updated the Billing Contact for",
-  "billing.checkout_started": "started Premium Checkout for",
+  "billing.checkout_started": "started Pro Checkout for",
   "billing.portal_opened": "opened the Stripe Customer Portal for",
   "testimonial.published": "published a Testimonial from",
   "testimonial.archived": "archived a Testimonial from",

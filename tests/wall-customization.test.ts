@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, components, internal } from "@convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 import { buildPublicationConsent } from "@convex/domain/submission";
 import { legacyPublicOrderKey } from "@convex/migrations";
 import { publicOrderKeyBetween } from "@convex/publicProjection";
@@ -316,19 +316,10 @@ describe("Public Wall customization and curation", () => {
       current.t.query(api.publicWall.getBrand, { publicSlug: "acme-proof" }),
     ).resolves.toMatchObject({ attributionRequired: false });
 
-    await current.t.mutation(
-      components.stripe.private.handleSubscriptionUpdated,
-      {
-        cancelAtPeriodEnd: false,
-        currentPeriodEnd: Math.floor(Date.now() / 1_000),
-        metadata: {
-          lookupKey: "premium_monthly",
-          orgId: String(current.brand.id),
-        },
-        status: "canceled",
-        stripeSubscriptionId: `sub_${String(current.brand.id)}`,
-      },
-    );
+    await addStripeSubscription(current.t, current.brand.id, "canceled", {
+      eventCreated: Math.floor(Date.now() / 1_000) + 1,
+      eventId: "evt_attribution_downgrade",
+    });
     await expect(
       current.t.query(api.publicWall.getBrand, { publicSlug: "acme-proof" }),
     ).resolves.toMatchObject({ attributionRequired: true });

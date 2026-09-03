@@ -1,24 +1,21 @@
 import { ConvexError, v } from "convex/values";
 
-export const premiumLookupKeys = ["premium_monthly", "premium_annual"] as const;
+export const proLookupKey = "pro_monthly" as const;
 
-export type PremiumLookupKey = (typeof premiumLookupKeys)[number];
+export type ProLookupKey = typeof proLookupKey;
 
-export const premiumLookupKeyValidator = v.union(
-  v.literal("premium_monthly"),
-  v.literal("premium_annual"),
-);
+export const proLookupKeyValidator = v.literal(proLookupKey);
 
 export type ResolvedBillingOffer = {
   amount: number;
   currency: string;
-  interval: "month" | "year";
-  lookupKey: PremiumLookupKey;
+  interval: "month";
+  lookupKey: ProLookupKey;
   priceId: string;
 };
 
 export type BillingProvider = {
-  resolveOffer: (lookupKey: PremiumLookupKey) => Promise<ResolvedBillingOffer>;
+  resolveOffer: (lookupKey: ProLookupKey) => Promise<ResolvedBillingOffer>;
   createCustomer: (input: {
     email: string;
     idempotencyKey: string;
@@ -31,7 +28,7 @@ export type BillingProvider = {
     idempotencyKey: string;
     metadata: {
       checkoutReservationId: string;
-      lookupKey: PremiumLookupKey;
+      lookupKey: ProLookupKey;
       orgId: string;
     };
     priceId: string;
@@ -55,7 +52,7 @@ export type BillingProvider = {
   retrieveSubscriptionPrice: (priceId: string) => Promise<{
     amount: number;
     currency: string;
-    interval: "month" | "year";
+    interval: "month";
   }>;
   updateCustomerEmail: (input: {
     customerId: string;
@@ -78,16 +75,16 @@ const terminalSubscriptionStatuses = new Set([
 ]);
 
 export async function listPublicOffers(provider: BillingProvider) {
-  const offers = await Promise.all(
-    premiumLookupKeys.map((lookupKey) => provider.resolveOffer(lookupKey)),
-  );
-
-  return offers.map(({ amount, currency, interval, lookupKey }) => ({
-    amount,
-    currency,
-    interval,
-    lookupKey,
-  }));
+  const { amount, currency, interval, lookupKey } =
+    await provider.resolveOffer(proLookupKey);
+  return [
+    {
+      amount,
+      currency,
+      interval,
+      lookupKey,
+    },
+  ];
 }
 
 export async function createOrganizationCheckout(
@@ -96,13 +93,15 @@ export async function createOrganizationCheckout(
     billingEmail: string;
     cancelUrl: string;
     existingCustomerId: string | null;
+    expectedPriceId: string | null;
     existingSessionId: string | null;
     existingSubscriptions: Array<{ status: string; subscriptionId: string }>;
-    lookupKey: PremiumLookupKey;
+    lookupKey: ProLookupKey;
     organizationId: string;
     organizationName: string;
     persistCustomer: (customerId: string) => Promise<void>;
-    requestedLookupKey: PremiumLookupKey;
+    persistOffer: (priceId: string) => Promise<void>;
+    requestedLookupKey: ProLookupKey;
     reservationId: string;
     successUrl: string;
   },
@@ -133,6 +132,12 @@ export async function createOrganizationCheckout(
   }
 
   if (existingSession) {
+    if (!input.expectedPriceId) {
+      if (existingSession.status === "open") {
+        await provider.expireCheckout(existingSession.sessionId);
+      }
+      return { kind: "expired" as const };
+    }
     if (existingSession.status === "complete") {
       const synchronizedSubscription = input.existingSubscriptions.find(
         ({ subscriptionId }) =>
@@ -176,6 +181,7 @@ export async function createOrganizationCheckout(
   }
 
   const offer = await provider.resolveOffer(input.lookupKey);
+  await input.persistOffer(offer.priceId);
   const customerId =
     input.existingCustomerId ??
     (

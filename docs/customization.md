@@ -21,9 +21,8 @@ The registry source has a narrowly scoped ESLint override in `eslint.config.mjs`
 ## Stripe Billing
 
 - Rename the Stripe Product and set its statement, support, logo, icon, accent color, and hosted Checkout branding in the Platform Stripe Account. Keep application colors on the existing semantic theme tokens; do not copy Stripe branding into the dashboard.
-- Keep the code-level lookup keys `premium_monthly` and `premium_annual` unless the provider contract, validators, tests, and adoption guide are changed together. Prices and currency are configured in Stripe and read at runtime, not duplicated in React.
-- Configure both recurring Prices under the same Premium Product when possible. The monthly lookup key must resolve to one active monthly Price, and the annual key to one active annual Price.
-- Configure Customer Portal features in Stripe rather than rebuilding payment methods, invoices, plan changes, tax identifiers, or cancellation forms locally. If plan switching is enabled, expose only the Premium Prices supported by this starter.
-- Replace the single Project entitlement example only after the new paid capability has server-side checks and Free read behavior is intentional. Hidden buttons are never an entitlement boundary.
+- Keep the code-level lookup key `pro_monthly` unless the provider contract, validators, tests, and adoption guide are changed together. It must resolve to exactly one active EUR 29 monthly Price. The server validates the catalog value; React only renders the sanitized server response.
+- Configure Customer Portal features in Stripe rather than rebuilding payment methods, invoices, tax identifiers, or cancellation forms locally. Keep plan switching disabled for the one-plan MVP.
+- Keep paid capability checks server-side for text collection, stored Ready videos, MP4 download, and attribution removal. Hidden buttons are never an entitlement boundary.
 
 See `docs/stripe-billing.md` for the complete sandbox-first setup and verification procedure.

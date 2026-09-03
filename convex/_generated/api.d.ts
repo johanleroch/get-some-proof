@@ -14,6 +14,8 @@ import type * as authorization from "../authorization.js";
 import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
 import type * as billingEntitlements from "../billingEntitlements.js";
+import type * as billingMigrationQueries from "../billingMigrationQueries.js";
+import type * as billingMigrations from "../billingMigrations.js";
 import type * as billingService from "../billingService.js";
 import type * as collectionQuotas from "../collectionQuotas.js";
 import type * as collectionRateLimit from "../collectionRateLimit.js";
@@ -42,6 +44,9 @@ import type * as security_organizationAccess from "../security/organizationAcces
 import type * as security_principal from "../security/principal.js";
 import type * as seed from "../seed.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
+import type * as stripeConfiguration from "../stripeConfiguration.js";
+import type * as stripeWebhookReconciliation from "../stripeWebhookReconciliation.js";
+import type * as stripeWebhookSync from "../stripeWebhookSync.js";
 import type * as submissionManagement from "../submissionManagement.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
@@ -68,6 +73,8 @@ declare const fullApi: ApiFromModules<{
   billing: typeof billing;
   billingActions: typeof billingActions;
   billingEntitlements: typeof billingEntitlements;
+  billingMigrationQueries: typeof billingMigrationQueries;
+  billingMigrations: typeof billingMigrations;
   billingService: typeof billingService;
   collectionQuotas: typeof collectionQuotas;
   collectionRateLimit: typeof collectionRateLimit;
@@ -96,6 +103,9 @@ declare const fullApi: ApiFromModules<{
   "security/principal": typeof security_principal;
   seed: typeof seed;
   stripeBillingProvider: typeof stripeBillingProvider;
+  stripeConfiguration: typeof stripeConfiguration;
+  stripeWebhookReconciliation: typeof stripeWebhookReconciliation;
+  stripeWebhookSync: typeof stripeWebhookSync;
   submissionManagement: typeof submissionManagement;
   submissions: typeof submissions;
   system: typeof system;

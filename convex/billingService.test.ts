@@ -19,10 +19,10 @@ function fakeProvider(): BillingProvider {
     expireCheckout: vi.fn().mockResolvedValue(undefined),
     findCheckout: vi.fn().mockResolvedValue(null),
     resolveOffer: vi.fn().mockResolvedValue({
-      amount: 4_900,
+      amount: 2_900,
       currency: "eur",
       interval: "month",
-      lookupKey: "premium_monthly",
+      lookupKey: "pro_monthly",
       priceId: "price_server_resolved",
     }),
     retrieveCheckout: vi.fn().mockResolvedValue({
@@ -31,7 +31,7 @@ function fakeProvider(): BillingProvider {
       url: "https://checkout.stripe.example/existing-session",
     }),
     retrieveSubscriptionPrice: vi.fn().mockResolvedValue({
-      amount: 4_900,
+      amount: 2_900,
       currency: "eur",
       interval: "month",
     }),
@@ -40,49 +40,46 @@ function fakeProvider(): BillingProvider {
 }
 
 describe("Organization Checkout service", () => {
-  it("returns only the two allowlisted live offers without exposing Price IDs", async () => {
+  it("returns only the allowlisted monthly Pro offer without exposing its Price ID", async () => {
     const provider = fakeProvider();
     vi.mocked(provider.resolveOffer).mockImplementation(async (lookupKey) => ({
-      amount: lookupKey === "premium_monthly" ? 4_900 : 49_000,
+      amount: 2_900,
       currency: "eur",
-      interval: lookupKey === "premium_monthly" ? "month" : "year",
+      interval: "month",
       lookupKey,
       priceId: `price_${lookupKey}`,
     }));
 
     await expect(listPublicOffers(provider)).resolves.toEqual([
       {
-        amount: 4_900,
+        amount: 2_900,
         currency: "eur",
         interval: "month",
-        lookupKey: "premium_monthly",
-      },
-      {
-        amount: 49_000,
-        currency: "eur",
-        interval: "year",
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
       },
     ]);
-    expect(provider.resolveOffer).toHaveBeenNthCalledWith(1, "premium_monthly");
-    expect(provider.resolveOffer).toHaveBeenNthCalledWith(2, "premium_annual");
+    expect(provider.resolveOffer).toHaveBeenCalledOnce();
+    expect(provider.resolveOffer).toHaveBeenCalledWith("pro_monthly");
   });
 
   it("creates one idempotent Organization Customer and uses the server-resolved Price", async () => {
     const provider = fakeProvider();
     const persistCustomer = vi.fn().mockResolvedValue(undefined);
+    const persistOffer = vi.fn().mockResolvedValue(undefined);
 
     const result = await createOrganizationCheckout(provider, {
       billingEmail: "accounts@acme.example",
       cancelUrl: "https://app.example/org/acme/billing?checkout=canceled",
       existingCustomerId: null,
+      expectedPriceId: "price_server_resolved",
       existingSessionId: null,
       existingSubscriptions: [],
-      lookupKey: "premium_monthly",
+      lookupKey: "pro_monthly",
       organizationId: "organization_acme",
       organizationName: "Acme",
       persistCustomer,
-      requestedLookupKey: "premium_monthly",
+      persistOffer,
+      requestedLookupKey: "pro_monthly",
       reservationId: "reservation_acme",
       successUrl: "https://app.example/org/acme/billing?checkout=success",
     });
@@ -99,13 +96,17 @@ describe("Organization Checkout service", () => {
       idempotencyKey: "reservation_acme",
       metadata: {
         checkoutReservationId: "reservation_acme",
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         orgId: "organization_acme",
       },
       priceId: "price_server_resolved",
       successUrl: "https://app.example/org/acme/billing?checkout=success",
     });
     expect(persistCustomer).toHaveBeenCalledWith("cus_acme");
+    expect(persistOffer).toHaveBeenCalledWith("price_server_resolved");
+    expect(persistOffer.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(provider.createCheckout).mock.invocationCallOrder[0]!,
+    );
     expect(persistCustomer.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(provider.createCheckout).mock.invocationCallOrder[0]!,
     );
@@ -125,15 +126,17 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: null,
         existingSubscriptions: [
           { status: "active", subscriptionId: "sub_active" },
         ],
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_annual",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_acme",
         successUrl: "https://app.example/success",
       }),
@@ -153,13 +156,15 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: "cs_existing",
         existingSubscriptions: [],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_monthly",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_acme",
         successUrl: "https://app.example/success",
       }),
@@ -187,13 +192,15 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: "cs_expired",
         existingSubscriptions: [],
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_annual",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_old",
         successUrl: "https://app.example/success",
       }),
@@ -214,15 +221,17 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: "cs_complete",
         existingSubscriptions: [
           { status: "canceled", subscriptionId: "sub_historical" },
         ],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_monthly",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_complete",
         successUrl: "https://app.example/success",
       }),
@@ -247,22 +256,24 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: "cs_complete",
         existingSubscriptions: [
           { status: "canceled", subscriptionId: "sub_complete" },
         ],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_annual",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_complete",
         successUrl: "https://app.example/success",
       }),
     ).resolves.toEqual({ kind: "expired" });
   });
 
-  it("expires an open Session before changing cadence", async () => {
+  it("expires a legacy open Session without a trusted Pro Price mapping", async () => {
     const provider = fakeProvider();
 
     await expect(
@@ -270,13 +281,15 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: null,
         existingSessionId: "cs_monthly",
         existingSubscriptions: [],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_annual",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_monthly",
         successUrl: "https://app.example/success",
       }),
@@ -299,13 +312,15 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: "cus_existing",
+        expectedPriceId: "price_server_resolved",
         existingSessionId: null,
         existingSubscriptions: [],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer: vi.fn(),
-        requestedLookupKey: "premium_monthly",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_recovered",
         successUrl: "https://app.example/success",
       }),
@@ -334,13 +349,15 @@ describe("Organization Checkout service", () => {
         billingEmail: "accounts@acme.example",
         cancelUrl: "https://app.example/canceled",
         existingCustomerId: null,
+        expectedPriceId: "price_server_resolved",
         existingSessionId: null,
         existingSubscriptions: [],
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         organizationId: "organization_acme",
         organizationName: "Acme",
         persistCustomer,
-        requestedLookupKey: "premium_monthly",
+        persistOffer: vi.fn(),
+        requestedLookupKey: "pro_monthly",
         reservationId: "reservation_retryable",
         successUrl: "https://app.example/success",
       }),

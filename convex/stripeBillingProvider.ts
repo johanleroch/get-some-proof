@@ -6,9 +6,13 @@ import Stripe from "stripe";
 
 import { components } from "./_generated/api";
 import { env, type ActionCtx } from "./_generated/server";
-import { type BillingProvider, type PremiumLookupKey } from "./billingService";
+import { type BillingProvider, type ProLookupKey } from "./billingService";
+import { isStripeSandboxConfigured } from "./stripeConfiguration";
 
-function offerUnavailable(lookupKey: PremiumLookupKey): never {
+export const proMonthlyAmount = 2_900;
+export const proMonthlyCurrency = "eur";
+
+function offerUnavailable(lookupKey: ProLookupKey): never {
   throw new ConvexError({
     code: "PREMIUM_OFFER_UNAVAILABLE",
     message: `The ${lookupKey} Stripe Price is unavailable or invalid.`,
@@ -85,13 +89,13 @@ export function subscriptionPriceDetails(input: {
 }): {
   amount: number;
   currency: string;
-  interval: "month" | "year";
+  interval: "month";
 } {
   const interval = input.interval;
   if (
-    input.unitAmount === null ||
-    input.unitAmount < 0 ||
-    (interval !== "month" && interval !== "year")
+    input.unitAmount !== proMonthlyAmount ||
+    input.currency !== proMonthlyCurrency ||
+    interval !== "month"
   ) {
     subscriptionPriceUnavailable();
   }
@@ -103,16 +107,23 @@ export function subscriptionPriceDetails(input: {
 }
 
 export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
-  if (!env.STRIPE_SECRET_KEY) {
+  const secretKey = env.STRIPE_SECRET_KEY;
+  if (
+    !secretKey ||
+    !isStripeSandboxConfigured({
+      secretKey,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    })
+  ) {
     throw new ConvexError({
       code: "BILLING_UNAVAILABLE",
       message: "Stripe Billing is not configured.",
     });
   }
 
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+  const stripe = new Stripe(secretKey);
   const subscriptions = new StripeSubscriptions(components.stripe, {
-    STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY,
+    STRIPE_SECRET_KEY: secretKey,
   });
 
   return {
@@ -125,14 +136,12 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       });
       if (prices.data.length !== 1) offerUnavailable(lookupKey);
       const price = prices.data[0];
-      const expectedInterval =
-        lookupKey === "premium_monthly" ? "month" : "year";
       if (
         !price ||
         price.lookup_key !== lookupKey ||
-        price.unit_amount === null ||
-        price.unit_amount < 0 ||
-        price.recurring?.interval !== expectedInterval
+        price.unit_amount !== proMonthlyAmount ||
+        price.currency !== proMonthlyCurrency ||
+        price.recurring?.interval !== "month"
       ) {
         offerUnavailable(lookupKey);
       }
@@ -140,7 +149,7 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       return {
         amount: price.unit_amount,
         currency: price.currency,
-        interval: expectedInterval,
+        interval: "month",
         lookupKey,
         priceId: price.id,
       };
