@@ -144,10 +144,15 @@ export function deriveBillingEntitlement(
     const accessPriority =
       Number(subscriptionGrantsPro(right, nowSeconds)) -
       Number(subscriptionGrantsPro(left, nowSeconds));
+    const cancellationPriority =
+      Number(left.cancelAtPeriodEnd) - Number(right.cancelAtPeriodEnd);
     return (
       accessPriority ||
       (statePriority.get(left.status) ?? 100) -
-        (statePriority.get(right.status) ?? 100)
+        (statePriority.get(right.status) ?? 100) ||
+      cancellationPriority ||
+      right.currentPeriodEnd - left.currentPeriodEnd ||
+      left.stripeSubscriptionId.localeCompare(right.stripeSubscriptionId)
     );
   })[0]!;
   const subscription: StripeSubscriptionSnapshot = {

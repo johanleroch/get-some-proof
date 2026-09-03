@@ -48,14 +48,25 @@ export const authorizeDownload = internalMutation({
       testimonialUnavailable();
     }
     if (testimonial.moderationStatus === "spam") testimonialUnavailable();
-    const entitlement = await getOrganizationBillingEntitlement(
-      ctx,
-      access.organization._id,
-    );
-    if (entitlement.effectivePlan !== "premium") {
+    const [entitlement, retention] = await Promise.all([
+      getOrganizationBillingEntitlement(ctx, access.organization._id),
+      ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+    ]);
+    const hasExceptionalRetentionDownload =
+      retention?.status === "retained" && retention.expiresAt > Date.now();
+    if (
+      entitlement.effectivePlan !== "premium" &&
+      !hasExceptionalRetentionDownload
+    ) {
       throw new ConvexError({
         code: "PREMIUM_REQUIRED",
-        message: "Pro is required to download a Video Testimonial.",
+        message:
+          "Pro or an active downgrade retention window is required to download a Video Testimonial.",
       });
     }
     const asset = await ctx.db
@@ -132,19 +143,32 @@ export const attachDownloadAsset = internalMutation({
     ) {
       return candidateCleanup;
     }
-    const deletion = await ctx.db
-      .query("videoMediaDeletions")
-      .withIndex("by_testimonial", (index) =>
-        index.eq("testimonialId", testimonial._id),
-      )
-      .unique();
-    const asset = await ctx.db
-      .query("videoAssets")
-      .withIndex("by_testimonial", (index) =>
-        index.eq("testimonialId", testimonial._id),
-      )
-      .unique();
-    if (!asset || deletion) return candidateCleanup;
+    const [deletion, asset, retention] = await Promise.all([
+      ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("videoAssets")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+    ]);
+    const retentionAllowsAttachment =
+      !retention ||
+      (retention.status === "retained" && retention.expiresAt > Date.now());
+    if (!asset || deletion || !retentionAllowsAttachment) {
+      return candidateCleanup;
+    }
     if (asset.downloadPlaybackId && asset.downloadProviderAssetId) {
       return {
         accepted: true,
@@ -648,6 +672,7 @@ export const finalizeRemoval = internalMutation({
       consent,
       deliveries,
       projection,
+      retention,
       retryLinks,
       revisions,
       replacementItems,
@@ -672,6 +697,12 @@ export const finalizeRemoval = internalMutation({
         .collect(),
       ctx.db
         .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("videoDowngradeRetentions")
         .withIndex("by_testimonial", (index) =>
           index.eq("testimonialId", testimonial._id),
         )
@@ -704,6 +735,7 @@ export const finalizeRemoval = internalMutation({
       ),
     );
     if (projection) await ctx.db.delete(projection._id);
+    if (retention) await ctx.db.delete(retention._id);
     for (const retryLink of retryLinks) await ctx.db.delete(retryLink._id);
     for (const revision of revisions) {
       await ctx.db.delete(revision._id);

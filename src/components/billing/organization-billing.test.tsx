@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     slug: "acme-1234",
   } as { id: string; name: string; slug: string } | null | undefined,
   updateContact: vi.fn(),
+  updateDowngradeSelection: vi.fn(),
   startCheckout: vi.fn(),
   redirect: vi.fn(),
 }));
@@ -45,12 +46,24 @@ vi.mock("convex/react", async () => {
                 "billingActions:getSubscriptionDetails"
               ? mocks.getSubscriptionDetails
               : mocks.updateContact,
-    useQuery: (_reference: unknown, args: unknown) => {
+    useMutation: () => mocks.updateDowngradeSelection,
+    usePaginatedQuery: () => ({
+      loadMore: vi.fn(),
+      results: [],
+      status: "Exhausted",
+    }),
+    useQuery: (
+      reference: Parameters<typeof getFunctionName>[0],
+      args: unknown,
+    ) => {
       if (typeof args === "object" && args && "slug" in args) {
         return mocks.organization;
       }
 
       if (args === "skip") return undefined;
+      if (getFunctionName(reference) === "billingDowngrade:getPlan") {
+        return null;
+      }
 
       return {
         availability: mocks.availability,
@@ -80,6 +93,8 @@ describe("OrganizationBilling", () => {
       slug: "acme-1234",
     };
     mocks.updateContact.mockReset();
+    mocks.updateDowngradeSelection.mockReset();
+    mocks.updateDowngradeSelection.mockResolvedValue(null);
     mocks.updateContact.mockResolvedValue({ email: "new@acme.example" });
     mocks.getOffers.mockReset();
     mocks.getOffers.mockResolvedValue([
@@ -169,6 +184,77 @@ describe("OrganizationBilling", () => {
     expect(
       screen.getByText(/payment finishes securely on stripe/i),
     ).toBeVisible();
+  });
+
+  it("lets an Owner preselect downgrade keepers within the 2/13 limits", async () => {
+    const onSave = vi.fn().mockResolvedValue(null);
+    const onLoadMore = vi.fn();
+    render(
+      <BillingCockpit
+        downgradePlan={{
+          canManage: true,
+          scheduledFor: 1_800_000_000_000,
+          selectedTextIds: [],
+          selectedVideoIds: [],
+          textLimit: 13,
+          trigger: "scheduled_cancellation",
+          videoLimit: 2,
+        }}
+        downgradeCandidates={[
+          {
+            id: "video-1" as never,
+            name: "Video One",
+            publishedAt: 1_799_000_000_000,
+            type: "video",
+          },
+          {
+            id: "video-2" as never,
+            name: "Video Two",
+            publishedAt: 1_798_000_000_000,
+            type: "video",
+          },
+          {
+            id: "video-3" as never,
+            name: "Video Three",
+            publishedAt: 1_797_000_000_000,
+            type: "video",
+          },
+        ]}
+        downgradeCandidatesStatus="CanLoadMore"
+        onLoadMoreDowngradeCandidates={onLoadMore}
+        onUpdateDowngradeSelection={onSave}
+        onUpdateContact={mocks.updateContact}
+        overview={{
+          availability: "available",
+          billingContact: "accounts@acme.example",
+          canManage: true,
+          effectivePlan: "premium",
+          state: "cancellation_scheduled",
+          subscription: {
+            cancelAtPeriodEnd: true,
+            currentPeriodEnd: 1_800_000_000,
+            priceRevision: "revision",
+            status: "active",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText(/Video One/));
+    fireEvent.click(screen.getByLabelText(/Video Two/));
+    expect(screen.getByLabelText(/Video Three/)).toBeDisabled();
+    expect(screen.getByText(/2\/2 chosen/i)).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Load more Published Testimonials",
+      }),
+    );
+    expect(onLoadMore).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Save selection" }));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith([], ["video-1", "video-2"]),
+    );
+    expect(await screen.findByText("Downgrade selection saved.")).toBeVisible();
   });
 
   it.each([

@@ -62,6 +62,10 @@ The browser can request only `pro_monthly`. The server resolves exactly one acti
 
 Provider boundaries, supported lifecycle states, setup, and sandbox checks are documented in `docs/stripe-billing.md`. The accepted global-account decision is recorded in ADR 0031.
 
+Billing downgrade is an application-owned workflow rather than a Stripe-side side effect. Each Subscription has one versioned `billingDowngradeTransitions` record. Signed provider snapshots schedule either period-end, payment-grace, or immediate terminal processing; recovery increments the version so stale jobs cannot archive proof. D-7 and D-1 notices have durable delivery keys and pass through the same transactional email adapter.
+
+At the effective downgrade instant, Convex revalidates the Workspace's aggregate trusted entitlement, then freezes the Owner's valid keepers with a descending-`publishedAt` fallback. A versioned cursor applies the downgrade in bounded, durable batches so unlimited Pro text volume cannot exceed transaction limits: at most two videos and thirteen text Testimonials stay Published, excess text is archived, and excess video leaves public projections. Free Collection Credit records are never rewritten. Each excess video receives a separate 30-day retention record: its Mux media remains exceptionally downloadable while retained, warning deliveries are idempotent, re-publication after Pro recovery atomically cancels retention, and a leased provider-deletion outbox with an atomic watchdog retries safely before the local media record is finalized.
+
 ## Dashboard and Bklit boundary
 
 Tailwind CSS and repository-owned shadcn components implement the interface. `src/components/charts/` contains the Bklit `@bklit/bar-chart` registry source and its preserved MIT notice. Bklit Studio and proprietary source or assets are not included. Brand and chart replacement points are documented in `docs/customization.md`.

@@ -130,6 +130,89 @@ export default defineSchema({
   })
     .index("by_stripe_invoice", ["stripeInvoiceId"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+  billingDowngradeTransitions: defineTable({
+    organizationId: v.id("organizations"),
+    stripeSubscriptionId: v.string(),
+    version: v.number(),
+    trigger: v.union(
+      v.literal("scheduled_cancellation"),
+      v.literal("payment_grace"),
+      v.literal("terminal_status"),
+    ),
+    scheduledFor: v.number(),
+    status: v.union(
+      v.literal("scheduled"),
+      v.literal("processing"),
+      v.literal("applied"),
+      v.literal("recovered"),
+    ),
+    selectedTextIds: v.array(v.id("testimonials")),
+    selectedVideoIds: v.array(v.id("testimonials")),
+    resolvedTextIds: v.optional(v.array(v.id("testimonials"))),
+    resolvedVideoIds: v.optional(v.array(v.id("testimonials"))),
+    processingCursor: v.optional(v.string()),
+    appliedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_status", ["organizationId", "status"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+  billingLifecycleEmails: defineTable({
+    organizationId: v.id("organizations"),
+    transitionId: v.id("billingDowngradeTransitions"),
+    transitionVersion: v.number(),
+    deliveryKey: v.string(),
+    kind: v.union(
+      v.literal("downgrade_d7"),
+      v.literal("downgrade_d1"),
+      v.literal("video_retention_started"),
+      v.literal("video_retention_d7"),
+      v.literal("video_retention_d1"),
+    ),
+    recipientEmail: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sending"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("skipped"),
+    ),
+    attempts: v.number(),
+    leaseId: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    provider: v.optional(v.string()),
+    providerMessageId: v.optional(v.string()),
+    lastError: v.optional(v.string()),
+    scheduledFor: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_delivery_key", ["deliveryKey"])
+    .index("by_transition", ["transitionId"]),
+  videoDowngradeRetentions: defineTable({
+    organizationId: v.id("organizations"),
+    transitionId: v.id("billingDowngradeTransitions"),
+    testimonialId: v.id("testimonials"),
+    videoAssetId: v.id("videoAssets"),
+    retainedAt: v.number(),
+    expiresAt: v.number(),
+    status: v.union(
+      v.literal("retained"),
+      v.literal("deleting"),
+      v.literal("deleted"),
+    ),
+    attempts: v.number(),
+    deletionLeaseId: v.optional(v.string()),
+    deletionLeaseExpiresAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    deletedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_transition", ["transitionId"])
+    .index("by_expiry", ["status", "expiresAt"]),
   projects: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
@@ -370,6 +453,11 @@ export default defineSchema({
     ),
   )
     .index("by_organization_published_at", ["organizationId", "publishedAt"])
+    .index("by_organization_type_published_at", [
+      "organizationId",
+      "type",
+      "publishedAt",
+    ])
     .index("by_organization_order_key", ["organizationId", "publicOrderKey"])
     .index("by_testimonial", ["testimonialId"]),
   publicReadRateLimitBuckets: defineTable({

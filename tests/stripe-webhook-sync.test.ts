@@ -383,15 +383,25 @@ describe("Stripe webhook subscription projection", () => {
       stripeSubscriptionId: subscriptionId,
     });
 
-    const projection = await t.run((ctx) =>
-      ctx.db
+    const state = await t.run(async (ctx) => ({
+      projection: await ctx.db
         .query("billingSubscriptionStates")
         .withIndex("by_stripe_subscription", (index) =>
           index.eq("stripeSubscriptionId", subscriptionId),
         )
         .unique(),
-    );
-    expect(projection?.statusChangedAt).toBe(300);
+      transition: await ctx.db
+        .query("billingDowngradeTransitions")
+        .withIndex("by_stripe_subscription", (index) =>
+          index.eq("stripeSubscriptionId", subscriptionId),
+        )
+        .unique(),
+    }));
+    expect(state.projection?.statusChangedAt).toBe(300);
+    expect(state.transition).toMatchObject({
+      scheduledFor: 300_000 + 7 * 24 * 60 * 60 * 1_000,
+      trigger: "payment_grace",
+    });
   });
 
   it("converges on the more restrictive state for same-second events", async () => {

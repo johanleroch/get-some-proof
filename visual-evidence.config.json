@@ -92,6 +92,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "workspace-billing-downgrade",
+      "title": "Workspace Billing - downgrade selection",
+      "path": "/org/:organizationSlug/billing",
+      "fixturePath": "/visual-evidence/billing?state=cancellation_scheduled",
+      "heading": "Billing",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "collection-form-shell",
       "title": "Collection Form - choose type",
       "path": "/c/:publicSlug",

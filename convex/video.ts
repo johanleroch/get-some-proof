@@ -118,6 +118,12 @@ async function reserveForOrganization(
     ctx,
     organizationId,
   );
+  if (entitlement.state === "past_due") {
+    unavailable(
+      "PAYMENT_GRACE_VIDEO_BLOCKED",
+      "New video storage is paused until the payment method is updated.",
+    );
+  }
   const plan = entitlement.effectivePlan as VideoPlan;
   const availability = await getCollectionAvailability(ctx, organizationId);
   const now = Date.now();

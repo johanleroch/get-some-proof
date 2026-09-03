@@ -202,3 +202,37 @@ export function buildNewPendingTestimonialEmail({
     url,
   });
 }
+
+export function buildBillingLifecycleEmail({
+  brandName,
+  email,
+  kind,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  kind:
+    | "downgrade_d7"
+    | "downgrade_d1"
+    | "video_retention_started"
+    | "video_retention_d7"
+    | "video_retention_d1";
+  url: string;
+}) {
+  const downgrade = kind === "downgrade_d7" || kind === "downgrade_d1";
+  const days = kind.endsWith("d7") ? 7 : kind.endsWith("d1") ? 1 : 30;
+  return buildActionEmail({
+    action: downgrade
+      ? "Choose what stays published"
+      : "Review retained videos",
+    description: downgrade
+      ? `${brandName} moves to Free in ${days} ${days === 1 ? "day" : "days"}. Choose up to 2 videos and 13 text Testimonials to keep Published; otherwise the most recently Published proof stays public.`
+      : `${brandName} has video Testimonials retained for ${days} ${days === 1 ? "day" : "days"}. They remain exceptionally downloadable until their Mux media is permanently deleted.`,
+    email,
+    subject: downgrade
+      ? `${brandName} moves to Free in ${days} ${days === 1 ? "day" : "days"}`
+      : `${brandName}: retained videos delete in ${days} ${days === 1 ? "day" : "days"}`,
+    template: downgrade ? "downgrade-reminder" : "video-retention-warning",
+    url,
+  });
+}
