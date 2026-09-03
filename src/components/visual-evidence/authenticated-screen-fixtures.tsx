@@ -12,6 +12,8 @@ import { CollectionFormShellView } from "@/components/collection/collection-form
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
+import { HostedWall } from "@/components/public-wall/hosted-wall";
+import { TestimonialInboxView } from "@/components/testimonials/testimonial-inbox";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -169,6 +171,106 @@ export function ManagedSubmissionScreenFixture() {
   );
 }
 
+const testimonialFixture = {
+  avatarUrl: null,
+  company: "North Star Co",
+  consentAcceptedAt: Date.UTC(2026, 8, 3),
+  createdAt: Date.UTC(2026, 8, 3),
+  moderationStatus: "pending" as const,
+  rating: 5,
+  role: "Founder",
+  submissionType: "text" as const,
+  submitterEmail: "alice@example.invalid",
+  submitterName: "Alice Martin",
+  testimonialId: "fixture-testimonial",
+  text: collectionFormFixtureValues.text,
+};
+
+export function TestimonialInboxScreenFixture() {
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="dashboard-page-title">Inbox</h1>
+        <p className="dashboard-page-description mt-1">
+          Review private Submissions and choose what becomes public.
+        </p>
+      </div>
+      <div className="flex gap-3">
+        <select
+          aria-label="Status"
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        >
+          <option>All statuses</option>
+        </select>
+        <select
+          aria-label="Type"
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        >
+          <option>Text</option>
+        </select>
+        <select
+          aria-label="Sort"
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        >
+          <option>Newest first</option>
+        </select>
+      </div>
+      <TestimonialInboxView
+        onArchive={() => undefined}
+        onDeleteRequest={() => undefined}
+        onPublish={() => undefined}
+        testimonials={[testimonialFixture]}
+      />
+    </section>
+  );
+}
+
+const wallFixture = {
+  accentColor: collectionFormFixtureBrand.primaryColor,
+  attributionRequired: true,
+  brandName: collectionFormFixtureBrand.name,
+  publicSlug: collectionFormFixtureBrand.publicSlug,
+  testimonials: [
+    {
+      avatarUrl: null,
+      company: collectionFormFixtureValues.company,
+      id: "fixture-public-testimonial-1",
+      name: collectionFormFixtureValues.submitterName,
+      publishedAt: Date.UTC(2026, 8, 3),
+      rating: collectionFormFixtureValues.rating,
+      role: collectionFormFixtureValues.role,
+      text: collectionFormFixtureValues.text,
+      type: "text" as const,
+    },
+    {
+      avatarUrl: null,
+      id: "fixture-public-testimonial-2",
+      name: "Jordan Lee",
+      publishedAt: Date.UTC(2026, 8, 2),
+      text: "The collection flow felt calm, trustworthy, and refreshingly simple for our customers.",
+      type: "text" as const,
+    },
+    {
+      avatarUrl: null,
+      company: "Signal Works",
+      id: "fixture-public-testimonial-3",
+      name: "Morgan Reed",
+      publishedAt: Date.UTC(2026, 8, 1),
+      rating: 4,
+      text: "We went from scattered quotes to a clean public wall in one afternoon.",
+      type: "text" as const,
+    },
+  ],
+};
+
+export function PublicWallScreenFixture() {
+  return <HostedWall wall={wallFixture} />;
+}
+
+export function EmptyPublicWallScreenFixture() {
+  return <HostedWall wall={{ ...wallFixture, testimonials: [] }} />;
+}
+
 export function OrganizationSettingsScreenFixture() {
   const image = useFixtureImage();
   return (
@@ -222,6 +324,20 @@ export function DashboardBackgroundScreenFixture() {
                     type="button"
                   >
                     Overview
+                  </button>
+                  <button
+                    className="block rounded-lg p-2"
+                    data-sidebar="menu-button"
+                    type="button"
+                  >
+                    Inbox
+                  </button>
+                  <button
+                    className="block rounded-lg p-2"
+                    data-sidebar="menu-button"
+                    type="button"
+                  >
+                    Public Wall
                   </button>
                   <button
                     className="block rounded-lg p-2"

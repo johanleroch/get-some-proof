@@ -27,6 +27,9 @@ export const auditEventTypeValidator = v.union(
   v.literal("billing.contact_updated"),
   v.literal("billing.checkout_started"),
   v.literal("billing.portal_opened"),
+  v.literal("testimonial.published"),
+  v.literal("testimonial.archived"),
+  v.literal("testimonial.deleted"),
 );
 
 export type AuditEventType =
@@ -50,10 +53,18 @@ export type AuditEventType =
   | "project.deleted"
   | "billing.contact_updated"
   | "billing.checkout_started"
-  | "billing.portal_opened";
+  | "billing.portal_opened"
+  | "testimonial.published"
+  | "testimonial.archived"
+  | "testimonial.deleted";
 
 type AuditTargetType =
-  "organization" | "invitation" | "membership" | "project" | "billing";
+  | "organization"
+  | "invitation"
+  | "membership"
+  | "project"
+  | "billing"
+  | "testimonial";
 
 export async function recordOrganizationAuditEvent(
   ctx: MutationCtx,
@@ -87,6 +98,7 @@ const auditEventSummary = v.object({
     v.literal("membership"),
     v.literal("project"),
     v.literal("billing"),
+    v.literal("testimonial"),
   ),
   targetId: v.string(),
   targetLabel: v.string(),

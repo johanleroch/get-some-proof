@@ -31,12 +31,14 @@ import type * as organizationAuthorization from "../organizationAuthorization.js
 import type * as organizations from "../organizations.js";
 import type * as profileImages from "../profileImages.js";
 import type * as projects from "../projects.js";
+import type * as publicWall from "../publicWall.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
 import type * as security_principal from "../security/principal.js";
 import type * as seed from "../seed.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
+import type * as testimonialModeration from "../testimonialModeration.js";
 
 import type {
   ApiFromModules,
@@ -68,12 +70,14 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   profileImages: typeof profileImages;
   projects: typeof projects;
+  publicWall: typeof publicWall;
   "security/organizationAccess": typeof security_organizationAccess;
   "security/principal": typeof security_principal;
   seed: typeof seed;
   stripeBillingProvider: typeof stripeBillingProvider;
   submissions: typeof submissions;
   system: typeof system;
+  testimonialModeration: typeof testimonialModeration;
 }>;
 
 /**

@@ -129,6 +129,9 @@ export default defineSchema({
       v.literal("billing.contact_updated"),
       v.literal("billing.checkout_started"),
       v.literal("billing.portal_opened"),
+      v.literal("testimonial.published"),
+      v.literal("testimonial.archived"),
+      v.literal("testimonial.deleted"),
     ),
     actorUserId: v.string(),
     actorDisplayName: v.string(),
@@ -138,6 +141,7 @@ export default defineSchema({
       v.literal("membership"),
       v.literal("project"),
       v.literal("billing"),
+      v.literal("testimonial"),
     ),
     targetId: v.string(),
     targetLabel: v.string(),
@@ -171,8 +175,23 @@ export default defineSchema({
       "clientSubmissionId",
     ])
     .index("by_organization_status", ["organizationId", "moderationStatus"])
+    .index("by_organization_created_at", ["organizationId", "createdAt"])
     .index("by_management_token_hash", ["managementTokenHash"])
     .index("by_avatar_storage_id", ["avatarStorageId"]),
+  publicTestimonialProjections: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    type: v.literal("text"),
+    text: v.string(),
+    name: v.string(),
+    avatarStorageId: v.optional(v.id("_storage")),
+    role: v.optional(v.string()),
+    company: v.optional(v.string()),
+    rating: v.optional(v.number()),
+    publishedAt: v.number(),
+  })
+    .index("by_organization_published_at", ["organizationId", "publishedAt"])
+    .index("by_testimonial", ["testimonialId"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -212,6 +231,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_testimonial_recipient", ["testimonialId", "recipientKind"])
+    .index("by_testimonial", ["testimonialId"])
     .index("by_organization", ["organizationId"]),
   submissionAvatarUploads: defineTable({
     organizationId: v.id("organizations"),

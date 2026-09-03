@@ -7,10 +7,13 @@ import {
   CollectionFormSuccessScreenFixture,
   CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
+  EmptyPublicWallScreenFixture,
   ManagedSubmissionScreenFixture,
   OnboardingScreenFixture,
   OrganizationSettingsScreenFixture,
   ProfileScreenFixture,
+  PublicWallScreenFixture,
+  TestimonialInboxScreenFixture,
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
@@ -20,6 +23,9 @@ const screens = {
   "collection-form-write": CollectionFormWriteScreenFixture,
   "managed-submission": ManagedSubmissionScreenFixture,
   "privacy-notice": BrandPrivacyNoticeScreenFixture,
+  "public-wall": PublicWallScreenFixture,
+  "public-wall-empty": EmptyPublicWallScreenFixture,
+  "testimonial-inbox": TestimonialInboxScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
@@ -46,7 +52,8 @@ export default async function VisualEvidenceFixturePage({
     screen === "dashboard" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
-    screen === "privacy-notice" ? (
+    screen === "privacy-notice" ||
+    screen.startsWith("public-wall") ? (
     <Screen />
   ) : (
     <main className="bg-muted/30 min-h-svh px-5 py-10 sm:px-8">

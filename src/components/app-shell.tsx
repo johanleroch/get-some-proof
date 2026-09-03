@@ -8,9 +8,11 @@ import { usePathname } from "next/navigation";
 import {
   type Icon,
   IconDashboard,
+  IconInbox,
   IconLock,
   IconSettings,
   IconUserCircle,
+  IconWorld,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 
@@ -149,6 +151,18 @@ export function AppShell({
       label: "Overview",
       icon: IconDashboard,
       href: `/org/${organizationSlug}/dashboard` as Route,
+      visible: true,
+    },
+    {
+      label: "Inbox",
+      icon: IconInbox,
+      href: `/org/${organizationSlug}/inbox` as Route,
+      visible: authorization?.can.manageOwnership ?? false,
+    },
+    {
+      label: "Public Wall",
+      icon: IconWorld,
+      href: `/w/${organizationPublicSlug}` as Route,
       visible: true,
     },
     {
