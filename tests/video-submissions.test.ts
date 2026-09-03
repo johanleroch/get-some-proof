@@ -437,6 +437,7 @@ describe("Video Testimonial collection", () => {
       submitterName: "Alice Martin",
     });
 
+    vi.useFakeTimers();
     await t.action(api.videoWebhooks.ingest, {
       event: {
         data: { id: "failed-asset", passthrough: upload.reservationId },

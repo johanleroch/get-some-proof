@@ -74,6 +74,16 @@ for (const screen of config.screens) {
       page.getByRole("heading", { name: screen.heading, exact: true }),
     ).toBeVisible();
     await page.waitForTimeout(250);
+    if (
+      fixtureMode &&
+      (screen.slug === "testimonial-inbox" || screen.slug === "public-wall")
+    ) {
+      await page.waitForFunction(() =>
+        [...document.images]
+          .filter((image) => image.src.startsWith("https://image.mux.com/"))
+          .every((image) => image.complete && image.naturalWidth > 0),
+      );
+    }
 
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",

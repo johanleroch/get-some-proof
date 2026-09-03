@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TestimonialInboxView } from "./testimonial-inbox";
 
@@ -19,6 +25,7 @@ const testimonial = {
 };
 
 describe("TestimonialInboxView", () => {
+  beforeEach(cleanup);
   it("previews private data and exposes publish, archive, and permanent delete", () => {
     const onPublish = vi.fn();
     const onArchive = vi.fn();
@@ -73,5 +80,58 @@ describe("TestimonialInboxView", () => {
     expect(
       view.getByRole("button", { name: "Delete permanently" }),
     ).toBeDisabled();
+  });
+
+  it("shows video readiness and blocks publication until Ready", () => {
+    const onPublish = vi.fn();
+    const onDownload = vi.fn();
+    const video = {
+      avatarUrl: null,
+      captionsStatus: "requested" as const,
+      consentAcceptedAt: 1,
+      createdAt: 2,
+      moderationStatus: "pending" as const,
+      submissionType: "video" as const,
+      submitterEmail: "camille@example.invalid",
+      submitterName: "Camille Test",
+      testimonialId: "testimonial-video",
+      videoStatus: "processing" as const,
+    };
+    const { rerender } = render(
+      <TestimonialInboxView
+        onArchive={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        onDownload={onDownload}
+        onPublish={onPublish}
+        testimonials={[video]}
+      />,
+    );
+
+    expect(screen.getByText("Processing")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
+
+    rerender(
+      <TestimonialInboxView
+        onArchive={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        onDownload={onDownload}
+        onPublish={onPublish}
+        testimonials={[
+          {
+            ...video,
+            captionsStatus: "failed",
+            durationSeconds: 42,
+            playbackId: "owner-playback-id",
+            videoStatus: "ready",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Ready")).toBeVisible();
+    expect(screen.getByText("Captions unavailable")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Download MP4 (Pro)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(onDownload).toHaveBeenCalledOnce();
+    expect(onPublish).toHaveBeenCalledOnce();
   });
 });

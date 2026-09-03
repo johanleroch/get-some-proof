@@ -13,7 +13,7 @@ const inboxStatusValidator = v.union(
 );
 type InboxStatus = "pending" | "published" | "archived";
 
-const inboxItemValidator = v.object({
+const inboxIdentityValidator = {
   avatarUrl: v.union(v.null(), v.string()),
   company: v.optional(v.string()),
   consentAcceptedAt: v.number(),
@@ -21,12 +21,35 @@ const inboxItemValidator = v.object({
   moderationStatus: inboxStatusValidator,
   rating: v.optional(v.number()),
   role: v.optional(v.string()),
-  submissionType: v.literal("text"),
   submitterEmail: v.string(),
   submitterName: v.string(),
   testimonialId: v.id("testimonials"),
-  text: v.string(),
-});
+};
+
+const inboxItemValidator = v.union(
+  v.object({
+    ...inboxIdentityValidator,
+    submissionType: v.literal("text"),
+    text: v.string(),
+  }),
+  v.object({
+    ...inboxIdentityValidator,
+    captionsStatus: v.union(
+      v.literal("requested"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    durationSeconds: v.optional(v.number()),
+    playbackId: v.optional(v.string()),
+    submissionType: v.literal("video"),
+    videoStatus: v.union(
+      v.literal("awaiting_upload"),
+      v.literal("processing"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+  }),
+);
 
 function testimonialUnavailable(): never {
   throw new ConvexError({
@@ -53,7 +76,7 @@ export const listInbox = query({
     paginationOpts: paginationOptsValidator,
     sort: v.union(v.literal("newest"), v.literal("oldest")),
     status: v.optional(inboxStatusValidator),
-    submissionType: v.optional(v.literal("text")),
+    submissionType: v.optional(v.union(v.literal("text"), v.literal("video"))),
   },
   returns: v.object({
     continueCursor: v.string(),
@@ -87,13 +110,14 @@ export const listInbox = query({
           .withIndex("by_organization_created_at", (index) =>
             index.eq("organizationId", access.organization._id),
           );
-    const visibleQuery = indexedQuery.filter((filter) => {
-      const isNotSpam = filter.neq(filter.field("moderationStatus"), "spam");
-      return filter.and(
-        isNotSpam,
-        filter.eq(filter.field("submissionType"), "text"),
-      );
-    });
+    const visibleQuery = indexedQuery.filter((filter) =>
+      args.submissionType
+        ? filter.and(
+            filter.neq(filter.field("moderationStatus"), "spam"),
+            filter.eq(filter.field("submissionType"), args.submissionType),
+          )
+        : filter.neq(filter.field("moderationStatus"), "spam"),
+    );
     const page = await visibleQuery
       .order(args.sort === "newest" ? "desc" : "asc")
       .paginate(args.paginationOpts);
@@ -101,8 +125,7 @@ export const listInbox = query({
     const inboxItems = await Promise.all(
       page.page.map(async (testimonial) => {
         if (testimonial.moderationStatus === "spam") testimonialUnavailable();
-        if (testimonial.submissionType !== "text") testimonialUnavailable();
-        const [avatarUrl, consent] = await Promise.all([
+        const [avatarUrl, consent, videoAsset] = await Promise.all([
           testimonial.avatarStorageId
             ? ctx.storage.getUrl(testimonial.avatarStorageId)
             : null,
@@ -112,9 +135,17 @@ export const listInbox = query({
               index.eq("testimonialId", testimonial._id),
             )
             .unique(),
+          testimonial.submissionType === "video"
+            ? ctx.db
+                .query("videoAssets")
+                .withIndex("by_testimonial", (index) =>
+                  index.eq("testimonialId", testimonial._id),
+                )
+                .unique()
+            : null,
         ]);
         if (!consent) testimonialUnavailable();
-        return {
+        const identity = {
           avatarUrl,
           company: testimonial.company,
           consentAcceptedAt: consent.acceptedAt,
@@ -122,11 +153,25 @@ export const listInbox = query({
           moderationStatus: testimonial.moderationStatus,
           rating: testimonial.rating,
           role: testimonial.role,
-          submissionType: testimonial.submissionType,
           submitterEmail: testimonial.submitterEmail,
           submitterName: testimonial.submitterName,
           testimonialId: testimonial._id,
-          text: testimonial.text,
+        };
+        if (testimonial.submissionType === "text") {
+          return {
+            ...identity,
+            submissionType: "text" as const,
+            text: testimonial.text,
+          };
+        }
+        if (!videoAsset) testimonialUnavailable();
+        return {
+          ...identity,
+          captionsStatus: videoAsset.captionsStatus,
+          durationSeconds: videoAsset.durationSeconds,
+          playbackId: videoAsset.playbackId,
+          submissionType: "video" as const,
+          videoStatus: videoAsset.status,
         };
       }),
     );
@@ -159,6 +204,20 @@ export const setStatus = mutation({
       args.testimonialId,
     );
     if (testimonial.moderationStatus === "spam") testimonialUnavailable();
+    if (testimonial.submissionType === "video") {
+      const deletion = await ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (deletion) {
+        throw new ConvexError({
+          code: "VIDEO_DELETION_IN_PROGRESS",
+          message: "This Video Testimonial is being permanently deleted.",
+        });
+      }
+    }
     if (testimonial.moderationStatus === args.status) {
       return { moderationStatus: args.status };
     }
@@ -179,15 +238,34 @@ export const setStatus = mutation({
       .unique();
     const now = Date.now();
     if (args.status === "published") {
-      const consent = await ctx.db
-        .query("publicationConsents")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique();
+      const [consent, videoAsset] = await Promise.all([
+        ctx.db
+          .query("publicationConsents")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique(),
+        testimonial.submissionType === "video"
+          ? ctx.db
+              .query("videoAssets")
+              .withIndex("by_testimonial", (index) =>
+                index.eq("testimonialId", testimonial._id),
+              )
+              .unique()
+          : null,
+      ]);
       if (!consent) testimonialUnavailable();
+      if (
+        testimonial.submissionType === "video" &&
+        (!videoAsset || videoAsset.status !== "ready" || !videoAsset.playbackId)
+      ) {
+        throw new ConvexError({
+          code: "VIDEO_NOT_READY",
+          message: "Only a Ready video Testimonial can be Published.",
+        });
+      }
       const fields = new Set(consent.identityFields);
-      const projection = {
+      const identity = {
         avatarStorageId: fields.has("avatar")
           ? testimonial.avatarStorageId
           : undefined,
@@ -198,9 +276,23 @@ export const setStatus = mutation({
         rating: fields.has("rating") ? testimonial.rating : undefined,
         role: fields.has("role") ? testimonial.role : undefined,
         testimonialId: testimonial._id,
-        text: testimonial.text,
-        type: "text" as const,
       };
+      const projection =
+        testimonial.submissionType === "video" && videoAsset
+          ? {
+              ...identity,
+              captionsAvailable: videoAsset.captionsStatus === "ready",
+              playbackId: videoAsset.playbackId!,
+              posterTimeSeconds: videoAsset.durationSeconds
+                ? videoAsset.durationSeconds / 2
+                : undefined,
+              type: "video" as const,
+            }
+          : {
+              ...identity,
+              text: testimonial.text,
+              type: "text" as const,
+            };
       if (existingProjection) {
         await ctx.db.replace(existingProjection._id, projection);
       } else {
@@ -251,6 +343,13 @@ export const remove = mutation({
       args.testimonialId,
     );
     if (testimonial.moderationStatus === "spam") testimonialUnavailable();
+    if (testimonial.submissionType === "video") {
+      throw new ConvexError({
+        code: "VIDEO_DELETION_REQUIRES_MEDIA_ACTION",
+        message:
+          "Video Testimonials must be deleted through the media deletion workflow.",
+      });
+    }
     const [consent, deliveries, projection] = await Promise.all([
       ctx.db
         .query("publicationConsents")

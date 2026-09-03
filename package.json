@@ -8,8 +8,10 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "predev": "node scripts/copy-mux-player.mjs",
     "dev": "next dev",
     "dev:convex": "convex dev",
+    "prebuild": "node scripts/copy-mux-player.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
@@ -30,6 +32,8 @@
     "@convex-dev/better-auth": "0.12.5",
     "@convex-dev/stripe": "0.1.6",
     "@djpanda/convex-authz": "2.4.1",
+    "@mux/mux-player": "3.13.2",
+    "@mux/mux-player-react": "^3.13.2",
     "@mux/upchunk": "^3.5.0",
     "@number-flow/react": "0.6.2",
     "@tabler/icons-react": "3.46.0",
@@ -45,6 +49,7 @@
     "clsx": "2.1.1",
     "convex": "1.45.0",
     "d3-array": "3.2.4",
+    "jose": "^6.2.10",
     "lucide-react": "1.37.0",
     "motion": "13.1.1",
     "next": "16.3.3",

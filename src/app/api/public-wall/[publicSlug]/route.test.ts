@@ -87,6 +87,53 @@ describe("GET /api/public-wall/:publicSlug", () => {
     expect(fetchMutation).toHaveBeenCalledTimes(2);
   });
 
+  it("returns the same public-safe video projection without private identity", async () => {
+    fetchQuery
+      .mockReset()
+      .mockResolvedValueOnce({
+        accentColor: "#123abc",
+        attributionRequired: false,
+        brandName: "Acme Studio",
+        hasPublishedTestimonials: true,
+        publicSlug: "acme-proof",
+      })
+      .mockResolvedValueOnce({
+        continueCursor: "",
+        isDone: true,
+        page: [
+          {
+            avatarUrl: null,
+            captionsAvailable: true,
+            id: "video-projection",
+            name: "Camille Test",
+            playbackId: "public-playback-id",
+            publishedAt: 2,
+            type: "video",
+          },
+        ],
+      });
+
+    const response = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof"),
+      context,
+    );
+    const body = await response.json();
+
+    expect(body.testimonials).toEqual([
+      {
+        avatarUrl: null,
+        captionsAvailable: true,
+        id: "video-projection",
+        name: "Camille Test",
+        playbackId: "public-playback-id",
+        publishedAt: 2,
+        type: "video",
+      },
+    ]);
+    expect(JSON.stringify(body)).not.toContain("submitterEmail");
+    expect(JSON.stringify(body)).not.toContain("viewer");
+  });
+
   it("revalidates cached reads without replaying unchanged content", async () => {
     const first = await GET(
       new Request("https://proof.example/api/public-wall/acme-proof"),

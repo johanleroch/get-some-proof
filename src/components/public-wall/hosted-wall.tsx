@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 import {
   TestimonialCard,
-  type PublicTextTestimonial,
+  type PublicTestimonial,
 } from "@/components/testimonials/testimonial-card";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,7 @@ export type PublicWallValue = {
   attributionRequired: boolean;
   brandName: string;
   publicSlug: string;
-  testimonials: PublicTextTestimonial[];
+  testimonials: PublicTestimonial[];
 };
 
 export function HostedWall({

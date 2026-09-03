@@ -217,6 +217,23 @@ const testimonialFixture = {
   text: collectionFormFixtureValues.text,
 };
 
+const videoTestimonialFixture = {
+  avatarUrl: null,
+  captionsStatus: "ready" as const,
+  consentAcceptedAt: Date.UTC(2026, 8, 2),
+  createdAt: Date.UTC(2026, 8, 2),
+  durationSeconds: 68,
+  moderationStatus: "pending" as const,
+  playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
+  rating: 5,
+  role: "Founder",
+  submissionType: "video" as const,
+  submitterEmail: "remy@example.invalid",
+  submitterName: "Remy Jupille",
+  testimonialId: "fixture-video-testimonial",
+  videoStatus: "ready" as const,
+};
+
 export function TestimonialInboxScreenFixture() {
   return (
     <section className="space-y-6">
@@ -249,8 +266,9 @@ export function TestimonialInboxScreenFixture() {
       <TestimonialInboxView
         onArchive={() => undefined}
         onDeleteRequest={() => undefined}
+        onDownload={() => undefined}
         onPublish={() => undefined}
-        testimonials={[testimonialFixture]}
+        testimonials={[videoTestimonialFixture, testimonialFixture]}
       />
     </section>
   );
@@ -262,6 +280,18 @@ const wallFixture = {
   brandName: collectionFormFixtureBrand.name,
   publicSlug: collectionFormFixtureBrand.publicSlug,
   testimonials: [
+    {
+      avatarUrl: null,
+      captionsAvailable: true,
+      id: "fixture-public-video-1",
+      name: "Remy Jupille",
+      playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
+      posterTimeSeconds: 30,
+      publishedAt: Date.UTC(2026, 8, 4),
+      rating: 5,
+      role: "Founder",
+      type: "video" as const,
+    },
     {
       avatarUrl: null,
       company: collectionFormFixtureValues.company,

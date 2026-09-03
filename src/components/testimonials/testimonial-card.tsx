@@ -1,9 +1,14 @@
+"use client";
+
 import type { CSSProperties } from "react";
-import { Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Play, Star } from "lucide-react";
+import MuxPlayer from "@mux/mux-player-react/lazy";
 import Image from "next/image";
 import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
+import videoPlayerPolicy from "../../../public/embed/video-player-policy.json";
 
 export type PublicTextTestimonial = {
   avatarUrl: string | null;
@@ -16,6 +21,18 @@ export type PublicTextTestimonial = {
   text: string;
   type: "text";
 };
+
+export type PublicVideoTestimonial = Omit<
+  PublicTextTestimonial,
+  "text" | "type"
+> & {
+  captionsAvailable: boolean;
+  playbackId: string;
+  posterTimeSeconds?: number;
+  type: "video";
+};
+
+export type PublicTestimonial = PublicTextTestimonial | PublicVideoTestimonial;
 
 function initials(name: string) {
   return name
@@ -33,17 +50,87 @@ export function TestimonialCard({
 }: {
   accentColor: string;
   attributionRequired: boolean;
-  testimonial: PublicTextTestimonial;
+  testimonial: PublicTestimonial;
 }) {
   const identity = [testimonial.role, testimonial.company]
     .filter(Boolean)
     .join(" · ");
+  const [playerLoaded, setPlayerLoaded] = useState(false);
+  const playerRef = useRef<React.ElementRef<typeof MuxPlayer>>(null);
+  useEffect(() => {
+    if (playerLoaded) void playerRef.current?.play().catch(() => undefined);
+  }, [playerLoaded]);
+  const poster =
+    testimonial.type === "video"
+      ? `https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=720&height=1280&fit_mode=smartcrop&time=${testimonial.posterTimeSeconds ?? 0.5}`
+      : undefined;
 
   return (
     <Card
       className="mb-4 break-inside-avoid overflow-hidden rounded-xl shadow-xs"
       style={{ "--wall-accent": accentColor } as CSSProperties}
     >
+      {testimonial.type === "video" ? (
+        <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+          {playerLoaded ? (
+            <div
+              className="h-full w-full"
+              data-captions={
+                testimonial.captionsAvailable ? "visible" : "unavailable"
+              }
+              data-autoplay={videoPlayerPolicy.autoplay}
+              data-disable-cookies={videoPlayerPolicy.disableCookies}
+              data-playback-id={testimonial.playbackId}
+              data-preload="none"
+              data-testid="mux-video-player"
+            >
+              <MuxPlayer
+                accentColor={accentColor}
+                autoPlay={videoPlayerPolicy.autoplay}
+                className="block h-full w-full"
+                defaultHiddenCaptions={
+                  videoPlayerPolicy.hideCaptionsWhenUnavailable &&
+                  !testimonial.captionsAvailable
+                }
+                disableCookies={videoPlayerPolicy.disableCookies}
+                metadata={{
+                  video_id: testimonial.id,
+                  video_title: `${testimonial.name}${videoPlayerPolicy.metadataTitleSuffix}`,
+                }}
+                playbackId={testimonial.playbackId}
+                playsInline={videoPlayerPolicy.playsInline}
+                poster={poster}
+                preload={videoPlayerPolicy.preload as "none"}
+                ref={playerRef}
+                style={{ aspectRatio: "9 / 16", height: "100%", width: "100%" }}
+              />
+            </div>
+          ) : (
+            <button
+              aria-label={`Play ${testimonial.name}'s testimonial`}
+              className="group absolute inset-0 cursor-pointer"
+              onClick={() => setPlayerLoaded(true)}
+              type="button"
+            >
+              <Image
+                alt={`Video from ${testimonial.name}`}
+                className="object-cover"
+                fill
+                priority={false}
+                sizes="(min-width: 1280px) 360px, (min-width: 768px) 50vw, 100vw"
+                src={poster!}
+                unoptimized
+              />
+              <span className="bg-background/90 text-foreground absolute top-1/2 left-1/2 grid size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105">
+                <Play
+                  aria-hidden="true"
+                  className="ml-0.5 size-6 fill-current"
+                />
+              </span>
+            </button>
+          )}
+        </div>
+      ) : null}
       <CardContent className="space-y-5 p-5 sm:p-6">
         <div className="flex items-center gap-3">
           {testimonial.avatarUrl ? (
@@ -93,9 +180,11 @@ export function TestimonialCard({
           </div>
         ) : null}
 
-        <blockquote className="text-[15px] leading-7 font-medium tracking-[-0.01em]">
-          {testimonial.text}
-        </blockquote>
+        {testimonial.type === "text" ? (
+          <blockquote className="text-[15px] leading-7 font-medium tracking-[-0.01em]">
+            {testimonial.text}
+          </blockquote>
+        ) : null}
 
         {attributionRequired ? (
           <Link

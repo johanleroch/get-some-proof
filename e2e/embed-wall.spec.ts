@@ -191,3 +191,59 @@ test("keeps empty and failed embeds at zero height with explicit state", async (
     ),
   ).toEqual(["NETWORK_ERROR"]);
 });
+
+test("reserves a 9:16 video card and loads Mux only after explicit play", async ({
+  baseURL,
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await page.route("**/api/public-wall/acme-proof*", (route) =>
+    route.fulfill({
+      body: JSON.stringify(
+        response([
+          {
+            avatarUrl: null,
+            captionsAvailable: true,
+            company: "Example Studio",
+            id: "video-projection",
+            name: "Camille Test",
+            playbackId: "public-playback-id",
+            publishedAt: 3,
+            role: "Founder",
+            type: "video",
+          },
+        ]),
+      ),
+      contentType: "application/json",
+    }),
+  );
+  await page.route("https://*.mux.com/**", (route) => route.abort());
+  await page.setContent(`
+    <div style="width: 360px"><div data-gsp-wall data-public-slug="acme-proof"></div></div>
+    <script src="${baseURL}/embed/v1.js" data-api-origin="${baseURL}"></script>
+  `);
+
+  const wall = page.locator("[data-gsp-wall]");
+  await expect(wall).toHaveAttribute("data-gsp-state", "ready");
+  const video = wall.locator(".video-shell");
+  await expect(video).toHaveCSS("aspect-ratio", "9 / 16");
+  await expect(
+    wall.getByRole("button", { name: "Play Camille Test's testimonial" }),
+  ).toBeVisible();
+  expect(
+    requests.some((url) => /mux-player\.js|stream\.mux\.com/i.test(url)),
+  ).toBe(false);
+
+  await wall
+    .getByRole("button", { name: "Play Camille Test's testimonial" })
+    .click();
+  const player = wall.locator("mux-player");
+  await expect(player).toHaveAttribute("playback-id", "public-playback-id");
+  await expect(player).toHaveAttribute("preload", "none");
+  await expect(player).not.toHaveAttribute("autoplay", "");
+  await expect(player).not.toHaveAttribute("default-hidden-captions", "");
+  await expect(wall.locator("[data-testid='testimonial-banner']")).toHaveCount(
+    0,
+  );
+});
