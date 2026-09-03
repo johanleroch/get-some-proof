@@ -38,6 +38,7 @@ import type * as security_organizationAccess from "../security/organizationAcces
 import type * as security_principal from "../security/principal.js";
 import type * as seed from "../seed.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
+import type * as submissionManagement from "../submissionManagement.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 import type * as testimonialModeration from "../testimonialModeration.js";
@@ -85,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   "security/principal": typeof security_principal;
   seed: typeof seed;
   stripeBillingProvider: typeof stripeBillingProvider;
+  submissionManagement: typeof submissionManagement;
   submissions: typeof submissions;
   system: typeof system;
   testimonialModeration: typeof testimonialModeration;

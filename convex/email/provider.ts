@@ -7,6 +7,7 @@ export type TransactionalEmailTemplate =
   | "organization-invitation"
   | "submission-confirmation"
   | "video-submission-confirmation"
+  | "management-link-replacement"
   | "video-retry"
   | "new-pending-testimonial";
 

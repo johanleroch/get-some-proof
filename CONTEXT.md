@@ -35,7 +35,7 @@ A completed delivery of exactly one type of proof, text or video, together with 
 _Avoid_: Response, Lead, Draft
 
 **Submission Management Link**:
-The private, revocable link emailed to a Submitter for viewing their Submission, withdrawing consent, editing their own text, or replacing their own video without creating an account. It remains valid until the Testimonial is deleted and requesting a new link invalidates the previous one.
+The private, revocable link emailed to a Submitter for viewing their Submission, withdrawing consent, editing their own text, or replacing their own video without creating an account. It remains valid until the Testimonial is deleted. A rate-limited replacement request keeps the former link active until delivery succeeds, then atomically invalidates it; concurrent requests for the same email and Brand collapse into one delivery.
 _Avoid_: Public link, Owner link, Video Retry Link
 
 **Submission Revision**:

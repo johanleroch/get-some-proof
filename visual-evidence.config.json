@@ -141,7 +141,7 @@
       "title": "Private Submission Management Link",
       "path": "/s/:token",
       "fixturePath": "/visual-evidence/managed-submission",
-      "heading": "Your testimonial",
+      "heading": "Manage your testimonial",
       "theme": "light",
       "requiresBackend": true
     },

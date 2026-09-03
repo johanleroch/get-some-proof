@@ -112,7 +112,7 @@ The MVP does not block a Submission on email verification. A failed confirmation
 
 - A completed Submission triggers an email containing the Brand, a copy or link to the submitted content, its private Pending status, and a Submission Management Link.
 - The link requires no Submitter account, remains valid until Testimonial deletion, and can be rotated by requesting a replacement link at the original email address.
-- Rotating the link invalidates the previous token.
+- A replacement request is non-enumerating and rate limited, keeps the previous token active through delivery failure, collapses concurrent requests, and invalidates every previous token for that Brand and email only after durable delivery succeeds.
 - Email cannot be changed through the link.
 - The Submitter may edit their own text, name, avatar, role, company, and rating, replace their own video, or withdraw Publication Consent.
 - Work in progress never changes the current version.

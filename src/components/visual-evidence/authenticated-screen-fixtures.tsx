@@ -189,13 +189,23 @@ export function ManagedSubmissionScreenFixture() {
     <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
       <ManagedSubmissionView
         submission={{
+          avatarUrl: null,
           brandName: collectionFormFixtureBrand.name,
           company: collectionFormFixtureValues.company,
-          moderationStatus: "pending",
+          consentAcceptedAt: Date.UTC(2026, 8, 3),
+          contentVersion: 1,
+          currentVideo: {
+            playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
+            posterTimeSeconds: 30,
+          },
+          moderationStatus: "published",
+          privacyContact: collectionFormFixtureBrand.privacyContact,
+          publicSlug: collectionFormFixtureBrand.publicSlug,
           role: collectionFormFixtureValues.role,
+          submissionType: "video",
           submitterEmail: collectionFormFixtureValues.submitterEmail,
           submitterName: collectionFormFixtureValues.submitterName,
-          text: collectionFormFixtureValues.text,
+          text: "",
         }}
       />
     </main>

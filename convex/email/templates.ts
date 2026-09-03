@@ -153,6 +153,33 @@ export function buildVideoRetryEmail({
   });
 }
 
+export function buildReplacementManagementLinkEmail({
+  brandName,
+  email,
+  urls,
+}: {
+  brandName: string;
+  email: string;
+  urls: string[];
+}) {
+  const subject = `Your new management ${urls.length === 1 ? "link" : "links"} for ${brandName}`;
+  const description = `Use ${urls.length === 1 ? "this new private link" : "these new private links"} to manage your ${urls.length === 1 ? "submission" : "submissions"} to ${brandName}. Any previous management link is no longer active.`;
+  const links = urls
+    .map(
+      (url, index) =>
+        `<li style="margin:12px 0"><a href="${escapeHtml(url)}">Manage submission ${index + 1}</a></li>`,
+    )
+    .join("");
+  return {
+    actionUrl: urls[0]!,
+    html: `<div style="font-family:ui-sans-serif,system-ui;max-width:560px;margin:0 auto;color:#171717"><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(description)}</p><ol>${links}</ol><p style="color:#737373;font-size:14px">If you did not request this, you can ignore this email.</p></div>`,
+    subject,
+    template: "management-link-replacement" as const,
+    text: `${description}\n\n${urls.map((url, index) => `Submission ${index + 1}: ${url}`).join("\n")}\n\nIf you did not request this, you can ignore this email.`,
+    to: email,
+  };
+}
+
 export function buildNewPendingTestimonialEmail({
   brandName,
   email,

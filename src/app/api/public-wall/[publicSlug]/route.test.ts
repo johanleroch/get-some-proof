@@ -154,6 +154,38 @@ describe("GET /api/public-wall/:publicSlug", () => {
     expect(await response.text()).toBe("");
   });
 
+  it("returns a new ETag with no testimonial after immediate consent withdrawal", async () => {
+    const first = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof"),
+      context,
+    );
+    const priorEtag = first.headers.get("etag");
+    fetchQuery
+      .mockResolvedValueOnce({
+        accentColor: "#123abc",
+        attributionRequired: true,
+        brandName: "Acme Studio",
+        hasPublishedTestimonials: false,
+        publicSlug: "acme-proof",
+      })
+      .mockResolvedValueOnce({
+        continueCursor: "",
+        isDone: true,
+        page: [],
+      });
+
+    const response = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof", {
+        headers: { "If-None-Match": priorEtag! },
+      }),
+      context,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("etag")).not.toBe(priorEtag);
+    await expect(response.json()).resolves.toMatchObject({ testimonials: [] });
+  });
+
   it("accepts only a server-signed pagination cursor", async () => {
     const first = await GET(
       new Request("https://proof.example/api/public-wall/acme-proof"),

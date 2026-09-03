@@ -29,6 +29,8 @@ export const auditEventTypeValidator = v.union(
   v.literal("billing.portal_opened"),
   v.literal("testimonial.published"),
   v.literal("testimonial.archived"),
+  v.literal("testimonial.revised"),
+  v.literal("testimonial.consent_withdrawn"),
   v.literal("testimonial.deleted"),
 );
 
@@ -56,6 +58,8 @@ export type AuditEventType =
   | "billing.portal_opened"
   | "testimonial.published"
   | "testimonial.archived"
+  | "testimonial.revised"
+  | "testimonial.consent_withdrawn"
   | "testimonial.deleted";
 
 type AuditTargetType =

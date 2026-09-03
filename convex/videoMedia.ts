@@ -192,7 +192,8 @@ export const readProviderCleanup = internalMutation({
     v.null(),
     v.object({
       provider: providerValidator,
-      providerAssetId: v.string(),
+      providerAssetId: v.optional(v.string()),
+      providerUploadId: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -201,6 +202,7 @@ export const readProviderCleanup = internalMutation({
     return {
       provider: job.provider,
       providerAssetId: job.providerAssetId,
+      providerUploadId: job.providerUploadId,
     };
   },
 });
@@ -238,14 +240,21 @@ export const processProviderCleanup = internalAction({
   handler: async (ctx, args) => {
     const job: {
       provider: "fake" | "mux";
-      providerAssetId: string;
+      providerAssetId?: string;
+      providerUploadId?: string;
     } | null = await ctx.runMutation(
       internal.videoMedia.readProviderCleanup,
       args,
     );
     if (!job) return null;
     try {
-      await deleteVideoAsset(job.providerAssetId, job.provider);
+      if (job.providerAssetId) {
+        await deleteVideoAsset(job.providerAssetId, job.provider);
+      } else if (job.providerUploadId) {
+        await cancelVideoDirectUpload(job.providerUploadId, job.provider);
+      } else {
+        throw new Error("Video cleanup target missing.");
+      }
       await ctx.runMutation(
         internal.videoMedia.completeProviderCleanupSystem,
         args,
@@ -368,11 +377,26 @@ export const prepareRemoval = internalMutation({
         return {
           alreadyDeleted: false,
           cleanupJobIds: cleanupJobs.map((job) => job._id),
-          providerAssets: cleanupJobs.map((job) => ({
-            provider: job.provider,
-            providerAssetId: job.providerAssetId,
-          })),
-          providerUploads: [],
+          providerAssets: cleanupJobs.flatMap((job) =>
+            job.providerAssetId
+              ? [
+                  {
+                    provider: job.provider,
+                    providerAssetId: job.providerAssetId,
+                  },
+                ]
+              : [],
+          ),
+          providerUploads: cleanupJobs.flatMap((job) =>
+            job.providerUploadId
+              ? [
+                  {
+                    provider: job.provider,
+                    providerUploadId: job.providerUploadId,
+                  },
+                ]
+              : [],
+          ),
         };
       }
       return {
@@ -399,7 +423,7 @@ export const prepareRemoval = internalMutation({
       .unique();
     if (!asset) testimonialUnavailable();
 
-    const [cleanupJobs, projection, retryLinks] = await Promise.all([
+    const [cleanupJobs, projection, retryLinks, revisions] = await Promise.all([
       ctx.db
         .query("videoProviderCleanupJobs")
         .withIndex("by_testimonial", (index) =>
@@ -418,12 +442,24 @@ export const prepareRemoval = internalMutation({
           index.eq("testimonialId", testimonial._id),
         )
         .collect(),
+      ctx.db
+        .query("submissionVideoRevisions")
+        .withIndex("by_testimonial_status", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
     ]);
     if (projection) await ctx.db.delete(projection._id);
     const retryAssets = await Promise.all(
       retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
     );
-    const providerAssets = [asset, ...retryAssets]
+    const revisionAssets = await Promise.all(
+      revisions.map((revision) =>
+        revision.videoAssetId ? ctx.db.get(revision.videoAssetId) : null,
+      ),
+    );
+    const allAssets = [asset, ...retryAssets, ...revisionAssets];
+    const providerAssets = allAssets
       .filter((candidate) => candidate?.providerAssetId)
       .map((candidate) => ({
         provider: candidate!.provider,
@@ -437,13 +473,23 @@ export const prepareRemoval = internalMutation({
               other.providerAssetId === candidate.providerAssetId,
           ) === index,
       );
-    if (asset.downloadProviderAssetId) {
-      providerAssets.push({
-        provider: asset.provider,
-        providerAssetId: asset.downloadProviderAssetId,
-      });
+    for (const candidate of allAssets) {
+      if (
+        candidate?.downloadProviderAssetId &&
+        !providerAssets.some(
+          (target) =>
+            target.provider === candidate.provider &&
+            target.providerAssetId === candidate.downloadProviderAssetId,
+        )
+      ) {
+        providerAssets.push({
+          provider: candidate.provider,
+          providerAssetId: candidate.downloadProviderAssetId,
+        });
+      }
     }
     for (const cleanupJob of cleanupJobs) {
+      if (!cleanupJob.providerAssetId) continue;
       if (
         !providerAssets.some(
           (candidate) =>
@@ -457,7 +503,7 @@ export const prepareRemoval = internalMutation({
         });
       }
     }
-    const providerUploads = [asset, ...retryAssets]
+    const providerUploads = allAssets
       .filter(
         (candidate) =>
           candidate?.providerUploadId && !candidate.providerAssetId,
@@ -474,6 +520,21 @@ export const prepareRemoval = internalMutation({
               other.providerUploadId === candidate.providerUploadId,
           ) === index,
       );
+    for (const cleanupJob of cleanupJobs) {
+      if (
+        cleanupJob.providerUploadId &&
+        !providerUploads.some(
+          (candidate) =>
+            candidate.provider === cleanupJob.provider &&
+            candidate.providerUploadId === cleanupJob.providerUploadId,
+        )
+      ) {
+        providerUploads.push({
+          provider: cleanupJob.provider,
+          providerUploadId: cleanupJob.providerUploadId,
+        });
+      }
+    }
 
     const now = Date.now();
     if (existing) {
@@ -580,47 +641,89 @@ export const finalizeRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    const [asset, consent, deliveries, projection, retryLinks] =
-      await Promise.all([
-        ctx.db
-          .query("videoAssets")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("publicationConsents")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("submissionEmailDeliveries")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-        ctx.db
-          .query("publicTestimonialProjections")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("videoRetryLinks")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-      ]);
+    const [
+      asset,
+      consent,
+      deliveries,
+      projection,
+      retryLinks,
+      revisions,
+      replacementItems,
+    ] = await Promise.all([
+      ctx.db
+        .query("videoAssets")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("publicationConsents")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("submissionEmailDeliveries")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("videoRetryLinks")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("submissionVideoRevisions")
+        .withIndex("by_testimonial_status", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+    ]);
     const retryAssets = await Promise.all(
       retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
     );
+    const revisionAssets = await Promise.all(
+      revisions.map((revision) =>
+        revision.videoAssetId ? ctx.db.get(revision.videoAssetId) : null,
+      ),
+    );
     if (projection) await ctx.db.delete(projection._id);
     for (const retryLink of retryLinks) await ctx.db.delete(retryLink._id);
+    for (const revision of revisions) {
+      await ctx.db.delete(revision._id);
+      const reservation = await ctx.db.get(revision.reservationId);
+      if (reservation) await ctx.db.delete(reservation._id);
+    }
     for (const delivery of deliveries) await ctx.db.delete(delivery._id);
+    for (const item of replacementItems) {
+      await ctx.db.delete(item._id);
+      const remaining = await ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_request", (index) =>
+          index.eq("requestId", item.requestId),
+        )
+        .first();
+      if (!remaining) {
+        const request = await ctx.db.get(item.requestId);
+        if (request) await ctx.db.delete(request._id);
+      }
+    }
     if (consent) await ctx.db.delete(consent._id);
-    const appAssets = [asset, ...retryAssets].filter(
+    const appAssets = [asset, ...retryAssets, ...revisionAssets].filter(
       (candidate, index, all) =>
         candidate &&
         all.findIndex((other) => other?._id === candidate._id) === index,

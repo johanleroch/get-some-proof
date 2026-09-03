@@ -520,6 +520,7 @@ export const createTextRecords = internalMutation({
       avatarStorageId: args.avatarStorageId,
       clientSubmissionId,
       company: submission.company,
+      contentVersion: 1,
       managementTokenHash: args.managementTokenHash,
       moderationStatus: "pending",
       organizationId: brand._id,
@@ -847,7 +848,12 @@ export const getByManagementToken = query({
         index.eq("managementTokenHash", tokenHash),
       )
       .unique();
-    if (!testimonial) return null;
+    if (
+      !testimonial ||
+      (testimonial.managementTokenExpiresAt !== undefined &&
+        testimonial.managementTokenExpiresAt <= Date.now())
+    )
+      return null;
     const [brand, consent] = await Promise.all([
       ctx.db.get(testimonial.organizationId),
       ctx.db

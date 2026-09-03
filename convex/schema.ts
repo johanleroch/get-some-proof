@@ -131,6 +131,8 @@ export default defineSchema({
       v.literal("billing.portal_opened"),
       v.literal("testimonial.published"),
       v.literal("testimonial.archived"),
+      v.literal("testimonial.revised"),
+      v.literal("testimonial.consent_withdrawn"),
       v.literal("testimonial.deleted"),
     ),
     actorUserId: v.string(),
@@ -148,7 +150,13 @@ export default defineSchema({
     previousValue: v.optional(v.string()),
     newValue: v.optional(v.string()),
     occurredAt: v.number(),
-  }).index("by_organization_occurred_at", ["organizationId", "occurredAt"]),
+  })
+    .index("by_organization_occurred_at", ["organizationId", "occurredAt"])
+    .index("by_organization_target", [
+      "organizationId",
+      "targetType",
+      "targetId",
+    ]),
   testimonials: defineTable({
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
@@ -167,6 +175,8 @@ export default defineSchema({
     company: v.optional(v.string()),
     rating: v.optional(v.number()),
     managementTokenHash: v.string(),
+    managementTokenExpiresAt: v.optional(v.number()),
+    contentVersion: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -176,6 +186,10 @@ export default defineSchema({
     ])
     .index("by_organization_status", ["organizationId", "moderationStatus"])
     .index("by_organization_created_at", ["organizationId", "createdAt"])
+    .index("by_organization_submitter_email", [
+      "organizationId",
+      "submitterEmail",
+    ])
     .index("by_management_token_hash", ["managementTokenHash"])
     .index("by_avatar_storage_id", ["avatarStorageId"]),
   publicTestimonialProjections: defineTable(
@@ -218,6 +232,35 @@ export default defineSchema({
   })
     .index("by_resource_window", ["resourceKey", "windowStartedAt"])
     .index("by_expires_at", ["expiresAt"]),
+  managementLinkReplacementRequests: defineTable({
+    organizationId: v.optional(v.id("organizations")),
+    requestKey: v.string(),
+    recipientEmail: v.optional(v.string()),
+    brandName: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sending"),
+      v.literal("failed"),
+    ),
+    attempts: v.number(),
+    leaseId: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_request_key", ["requestKey"])
+    .index("by_organization", ["organizationId"]),
+  managementLinkReplacementItems: defineTable({
+    organizationId: v.id("organizations"),
+    requestId: v.id("managementLinkReplacementRequests"),
+    testimonialId: v.id("testimonials"),
+    tokenHash: v.string(),
+    tokenSeed: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_request", ["requestId"])
+    .index("by_testimonial", ["testimonialId"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -358,6 +401,22 @@ export default defineSchema({
     .index("by_token_hash", ["tokenHash"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_video_asset", ["videoAssetId"]),
+  submissionVideoRevisions: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    baseContentVersion: v.number(),
+    reservationId: v.id("videoReservations"),
+    videoAssetId: v.optional(v.id("videoAssets")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("confirmed"),
+      v.literal("superseded"),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_testimonial_status", ["testimonialId", "status"])
+    .index("by_reservation", ["reservationId"]),
   videoMediaDeletions: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -392,11 +451,13 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
     provider: v.union(v.literal("fake"), v.literal("mux")),
-    providerAssetId: v.string(),
+    providerAssetId: v.optional(v.string()),
+    providerUploadId: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_testimonial", ["testimonialId"])
-    .index("by_provider_asset", ["provider", "providerAssetId"]),
+    .index("by_provider_asset", ["provider", "providerAssetId"])
+    .index("by_provider_upload", ["provider", "providerUploadId"]),
   storageCleanupJobs: defineTable({
     attemptId: v.string(),
     key: v.literal("submission-avatar-orphans"),
