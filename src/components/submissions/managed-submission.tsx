@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, RefreshCw, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, Play, RefreshCw, Trash2, Upload } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react/lazy";
 import Image from "next/image";
 
@@ -72,6 +72,58 @@ function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Something went wrong. Try again.";
+}
+
+function CurrentManagedVideo({
+  playbackId,
+  posterTimeSeconds,
+}: {
+  playbackId: string;
+  posterTimeSeconds?: number;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const poster = `https://image.mux.com/${encodeURIComponent(playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${posterTimeSeconds ?? 0.5}`;
+
+  return (
+    <div
+      aria-label="Your current video testimonial"
+      className="relative mx-auto aspect-[9/16] w-full max-w-52 overflow-hidden rounded-lg bg-black"
+      data-playback-id={playbackId}
+      role="region"
+    >
+      {playing ? (
+        <MuxPlayer
+          autoPlay
+          className="block h-full w-full"
+          disableCookies
+          playbackId={playbackId}
+          playsInline
+          poster={poster}
+          preload="metadata"
+          style={{ aspectRatio: "9 / 16", height: "100%", width: "100%" }}
+        />
+      ) : (
+        <button
+          aria-label="Play your current video testimonial"
+          className="group absolute inset-0 cursor-pointer"
+          onClick={() => setPlaying(true)}
+          type="button"
+        >
+          <Image
+            alt="Current video testimonial"
+            className="object-cover"
+            fill
+            sizes="208px"
+            src={poster}
+            unoptimized
+          />
+          <span className="bg-background/90 text-foreground absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105">
+            <Play aria-hidden="true" className="ml-0.5 size-5 fill-current" />
+          </span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function ManagedSubmissionView({
@@ -321,21 +373,7 @@ export function ManagedSubmissionView({
           ) : (
             <div className="space-y-4 rounded-xl border p-4">
               {submission.currentVideo ? (
-                <div
-                  aria-label="Your current video testimonial"
-                  className="mx-auto w-full max-w-52 overflow-hidden rounded-lg bg-black"
-                  data-playback-id={submission.currentVideo.playbackId}
-                  role="region"
-                >
-                  <MuxPlayer
-                    className="block aspect-[9/16] w-full"
-                    disableCookies
-                    playbackId={submission.currentVideo.playbackId}
-                    playsInline
-                    poster={`https://image.mux.com/${encodeURIComponent(submission.currentVideo.playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${submission.currentVideo.posterTimeSeconds ?? 0.5}`}
-                    preload="metadata"
-                  />
-                </div>
+                <CurrentManagedVideo {...submission.currentVideo} />
               ) : null}
               <div>
                 <p className="font-medium">Replace your video</p>

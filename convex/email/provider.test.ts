@@ -5,7 +5,10 @@ import {
   type TransactionalEmailMessage,
   UncertainEmailDeliveryError,
 } from "./provider";
-import { buildVerificationEmail } from "./templates";
+import {
+  buildReplacementManagementLinkEmail,
+  buildVerificationEmail,
+} from "./templates";
 
 const messages: TransactionalEmailMessage[] = [
   {
@@ -48,6 +51,21 @@ describe("transactional email console provider", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+  });
+
+  it("groups every replacement management link into one email", () => {
+    const email = buildReplacementManagementLinkEmail({
+      brandName: "Acme Studio",
+      email: "alice@example.com",
+      urls: ["https://proof.example/s/first", "https://proof.example/s/second"],
+    });
+
+    expect(email.to).toBe("alice@example.com");
+    expect(email.text).toContain("Submission 1: https://proof.example/s/first");
+    expect(email.text).toContain(
+      "Submission 2: https://proof.example/s/second",
+    );
+    expect(email.template).toBe("management-link-replacement");
   });
 
   it("sends a stable idempotency key to Resend", async () => {

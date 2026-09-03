@@ -150,7 +150,13 @@ export default defineSchema({
     previousValue: v.optional(v.string()),
     newValue: v.optional(v.string()),
     occurredAt: v.number(),
-  }).index("by_organization_occurred_at", ["organizationId", "occurredAt"]),
+  })
+    .index("by_organization_occurred_at", ["organizationId", "occurredAt"])
+    .index("by_organization_target", [
+      "organizationId",
+      "targetType",
+      "targetId",
+    ]),
   testimonials: defineTable({
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
@@ -231,12 +237,6 @@ export default defineSchema({
     requestKey: v.string(),
     recipientEmail: v.optional(v.string()),
     brandName: v.optional(v.string()),
-    items: v.array(
-      v.object({
-        testimonialId: v.id("testimonials"),
-        token: v.string(),
-      }),
-    ),
     status: v.union(
       v.literal("pending"),
       v.literal("sending"),
@@ -251,6 +251,16 @@ export default defineSchema({
   })
     .index("by_request_key", ["requestKey"])
     .index("by_organization", ["organizationId"]),
+  managementLinkReplacementItems: defineTable({
+    organizationId: v.id("organizations"),
+    requestId: v.id("managementLinkReplacementRequests"),
+    testimonialId: v.id("testimonials"),
+    tokenHash: v.string(),
+    tokenSeed: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_request", ["requestId"])
+    .index("by_testimonial", ["testimonialId"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),

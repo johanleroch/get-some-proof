@@ -641,45 +641,58 @@ export const finalizeRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    const [asset, consent, deliveries, projection, retryLinks, revisions] =
-      await Promise.all([
-        ctx.db
-          .query("videoAssets")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("publicationConsents")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("submissionEmailDeliveries")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-        ctx.db
-          .query("publicTestimonialProjections")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("videoRetryLinks")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-        ctx.db
-          .query("submissionVideoRevisions")
-          .withIndex("by_testimonial_status", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-      ]);
+    const [
+      asset,
+      consent,
+      deliveries,
+      projection,
+      retryLinks,
+      revisions,
+      replacementItems,
+    ] = await Promise.all([
+      ctx.db
+        .query("videoAssets")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("publicationConsents")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("submissionEmailDeliveries")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("videoRetryLinks")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("submissionVideoRevisions")
+        .withIndex("by_testimonial_status", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+    ]);
     const retryAssets = await Promise.all(
       retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
     );
@@ -696,6 +709,19 @@ export const finalizeRemoval = internalMutation({
       if (reservation) await ctx.db.delete(reservation._id);
     }
     for (const delivery of deliveries) await ctx.db.delete(delivery._id);
+    for (const item of replacementItems) {
+      await ctx.db.delete(item._id);
+      const remaining = await ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_request", (index) =>
+          index.eq("requestId", item.requestId),
+        )
+        .first();
+      if (!remaining) {
+        const request = await ctx.db.get(item.requestId);
+        if (request) await ctx.db.delete(request._id);
+      }
+    }
     if (consent) await ctx.db.delete(consent._id);
     const appAssets = [asset, ...retryAssets, ...revisionAssets].filter(
       (candidate, index, all) =>

@@ -350,28 +350,48 @@ export const remove = mutation({
           "Video Testimonials must be deleted through the media deletion workflow.",
       });
     }
-    const [consent, deliveries, projection] = await Promise.all([
-      ctx.db
-        .query("publicationConsents")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("submissionEmailDeliveries")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("publicTestimonialProjections")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-    ]);
+    const [consent, deliveries, projection, replacementItems] =
+      await Promise.all([
+        ctx.db
+          .query("publicationConsents")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique(),
+        ctx.db
+          .query("submissionEmailDeliveries")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .collect(),
+        ctx.db
+          .query("publicTestimonialProjections")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique(),
+        ctx.db
+          .query("managementLinkReplacementItems")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .collect(),
+      ]);
     if (projection) await ctx.db.delete(projection._id);
     for (const delivery of deliveries) await ctx.db.delete(delivery._id);
+    for (const item of replacementItems) {
+      await ctx.db.delete(item._id);
+      const remaining = await ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_request", (index) =>
+          index.eq("requestId", item.requestId),
+        )
+        .first();
+      if (!remaining) {
+        const request = await ctx.db.get(item.requestId);
+        if (request) await ctx.db.delete(request._id);
+      }
+    }
     if (consent) await ctx.db.delete(consent._id);
     if (testimonial.avatarStorageId) {
       await ctx.storage.delete(testimonial.avatarStorageId);

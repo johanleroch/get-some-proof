@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
 import {
   buildPublicationConsent,
+  deriveSubmissionManagementToken,
   hashSubmissionManagementToken,
 } from "@convex/domain/submission";
 import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
@@ -194,6 +195,7 @@ async function createManagedVideo(t: ReturnType<typeof createConvexTest>) {
 describe("Submission Management Links", () => {
   beforeEach(() => {
     vi.stubEnv("EMAIL_PROVIDER", "test");
+    vi.stubEnv("MANAGEMENT_LINK_TOKEN_SECRET", "m".repeat(64));
     vi.stubEnv("MUX_PROVIDER", "fake");
     vi.stubEnv("SITE_URL", "http://localhost:3000");
   });
@@ -283,20 +285,37 @@ describe("Submission Management Links", () => {
     const request = await t.run((ctx) =>
       ctx.db.query("managementLinkReplacementRequests").unique(),
     );
+    const item = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementItems").unique(),
+    );
+    const derivedToken = await deriveSubmissionManagementToken(
+      "m".repeat(64),
+      item!.tokenSeed,
+    );
+    expect(JSON.stringify(item)).not.toContain(derivedToken);
     expect(request).not.toBeNull();
     await expect(
       t.query(api.submissionManagement.get, { token: originalToken }),
     ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
-    await t.action(
-      internal.submissionManagement.processReplacementLinkRequest,
-      { requestId: request!._id },
+    await t.mutation(
+      internal.submissionManagement.claimReplacementLinkRequest,
+      { leaseId: "successful-delivery", requestId: request!._id },
     );
+    await t.mutation(
+      internal.submissionManagement.finishReplacementLinkRequest,
+      {
+        leaseId: "successful-delivery",
+        requestId: request!._id,
+        sent: true,
+      },
+    );
+    await expect(t.run((ctx) => ctx.db.get(request!._id))).resolves.toBeNull();
     await expect(
       t.query(api.submissionManagement.get, { token: originalToken }),
     ).resolves.toBeNull();
     await expect(
       t.query(api.submissionManagement.get, {
-        token: request!.items[0]!.token,
+        token: derivedToken,
       }),
     ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
     await expect(
@@ -334,6 +353,38 @@ describe("Submission Management Links", () => {
     await expect(
       t.query(api.submissionManagement.get, { token: originalToken }),
     ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
+  });
+
+  it("purges HMAC material after an exhausted delivery lease expires", async () => {
+    const t = createConvexTest();
+    await createManagedText(t);
+    const requestId = await t.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      { email: "alice@example.com", publicSlug: "acme-proof" },
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(requestId!, {
+        attempts: 5,
+        leaseExpiresAt: Date.now() - 1,
+        leaseId: "crashed-final-attempt",
+        status: "sending",
+      }),
+    );
+
+    await expect(
+      t.mutation(internal.submissionManagement.claimReplacementLinkRequest, {
+        leaseId: "cleanup",
+        requestId: requestId!,
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      t.run(async (ctx) => ({
+        items: await ctx.db.query("managementLinkReplacementItems").collect(),
+        requests: await ctx.db
+          .query("managementLinkReplacementRequests")
+          .collect(),
+      })),
+    ).resolves.toEqual({ items: [], requests: [] });
   });
 
   it("rotates every matching Submission and suppresses concurrent recovery bursts", async () => {
@@ -383,16 +434,23 @@ describe("Submission Management Links", () => {
       ctx.db.query("managementLinkReplacementRequests").collect(),
     );
     expect(requests).toHaveLength(1);
-    expect(requests[0]!.items).toHaveLength(11);
-    await t.action(
-      internal.submissionManagement.processReplacementLinkRequest,
-      { requestId: requests[0]!._id },
+    const items = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementItems").collect(),
     );
-    const expectedHashes = await Promise.all(
-      requests[0]!.items.map(({ token }) =>
-        hashSubmissionManagementToken(token),
-      ),
+    expect(items).toHaveLength(11);
+    await t.mutation(
+      internal.submissionManagement.claimReplacementLinkRequest,
+      { leaseId: "all-delivered", requestId: requests[0]!._id },
     );
+    await t.mutation(
+      internal.submissionManagement.finishReplacementLinkRequest,
+      {
+        leaseId: "all-delivered",
+        requestId: requests[0]!._id,
+        sent: true,
+      },
+    );
+    const expectedHashes = items.map(({ tokenHash }) => tokenHash);
     const storedHashes = await t.run(async (ctx) =>
       (
         await ctx.db
@@ -579,6 +637,121 @@ describe("Submission Management Links", () => {
           .unique(),
       ),
     ).resolves.toBeNull();
+    await t.mutation(
+      internal.submissionManagement.recordDetachedReplacementUpload,
+      {
+        provider: "fake",
+        providerUploadId: "late-upload",
+        reservationId: reserved.reservationId,
+        testimonialId,
+      },
+    );
+    await expect(
+      t.run((ctx) =>
+        ctx.db
+          .query("videoProviderCleanupJobs")
+          .withIndex("by_provider_upload", (index) =>
+            index.eq("provider", "fake").eq("providerUploadId", "late-upload"),
+          )
+          .unique(),
+      ),
+    ).resolves.toMatchObject({ providerUploadId: "late-upload" });
+  });
+
+  it("refuses to confirm a Ready video replacement after permanent deletion was prepared", async () => {
+    const t = createConvexTest();
+    const { brand, owner, testimonialId } = await createManagedVideo(t);
+    const upload = await t.action(
+      api.submissionManagement.createVideoReplacementUpload,
+      {
+        expectedContentVersion: 1,
+        fileSizeBytes: 2_000,
+        mimeType: "video/mp4",
+        spokenLanguage: "en",
+        token: originalToken,
+      },
+    );
+    await owner.client.mutation(internal.videoMedia.prepareRemoval, {
+      organizationId: brand.id,
+      testimonialId,
+    });
+
+    await expect(
+      t.mutation(api.submissionManagement.confirmRevision, {
+        ...revisionArgs(),
+        revisionId: upload.revisionId,
+        text: "",
+      }),
+    ).rejects.toBeDefined();
+  });
+
+  it("withdraws only one item from a grouped link delivery", async () => {
+    const t = createConvexTest();
+    const { brand, consent, testimonialId } = await createManagedText(t);
+    const secondToken = "d".repeat(64);
+    const secondId = await t.run(async (ctx) => {
+      const now = Date.now();
+      const id = await ctx.db.insert("testimonials", {
+        clientSubmissionId: "managed-text-second",
+        contentVersion: 1,
+        createdAt: now,
+        managementTokenHash: await hashSubmissionManagementToken(secondToken),
+        moderationStatus: "pending",
+        organizationId: brand.id,
+        submissionType: "text",
+        submitterEmail: "alice@example.com",
+        submitterName: "Alice Martin",
+        text: "A second testimonial managed by the same original email.",
+        updatedAt: now,
+      });
+      await ctx.db.insert("publicationConsents", {
+        acceptedAt: now,
+        brandName: brand.name,
+        consentText: consent.text,
+        consentVersion: consent.version,
+        identityFields: consent.identityFields,
+        organizationId: brand.id,
+        testimonialId: id,
+      });
+      return id;
+    });
+    await t.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      { email: "alice@example.com", publicSlug: "acme-proof" },
+    );
+    const request = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementRequests").unique(),
+    );
+    const items = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementItems").collect(),
+    );
+    const secondItem = items.find((item) => item.testimonialId === secondId)!;
+    await t.mutation(
+      internal.submissionManagement.claimReplacementLinkRequest,
+      { leaseId: "delivered-batch", requestId: request!._id },
+    );
+
+    await t.mutation(api.submissionManagement.withdrawConsent, {
+      token: originalToken,
+    });
+    await t.mutation(
+      internal.submissionManagement.finishReplacementLinkRequest,
+      {
+        leaseId: "delivered-batch",
+        requestId: request!._id,
+        sent: true,
+      },
+    );
+
+    await expect(t.run((ctx) => ctx.db.get(testimonialId))).resolves.toBeNull();
+    await expect(
+      t.query(api.submissionManagement.get, {
+        token: await deriveSubmissionManagementToken(
+          "m".repeat(64),
+          secondItem.tokenSeed,
+        ),
+      }),
+    ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
   });
 
   it("withdraws consent idempotently, invalidates public content, and leaves only content-free audit", async () => {

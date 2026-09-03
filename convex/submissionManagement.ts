@@ -15,6 +15,7 @@ import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import {
   assertPublicationConsentSnapshot,
   buildPublicationConsent,
+  deriveSubmissionManagementToken,
   hashSubmissionManagementToken,
   randomSubmissionManagementToken,
 } from "./domain/submission";
@@ -302,7 +303,7 @@ export const confirmRevision = mutation({
     if (!args.consentAccepted) {
       unavailable("Fresh Publication Consent is required.");
     }
-    const [brand, consent, projection] = await Promise.all([
+    const [brand, consent, projection, deletion] = await Promise.all([
       ctx.db.get(testimonial.organizationId),
       ctx.db
         .query("publicationConsents")
@@ -316,8 +317,14 @@ export const confirmRevision = mutation({
           index.eq("testimonialId", testimonial._id),
         )
         .unique(),
+      ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
     ]);
-    if (!brand || !consent) unavailable();
+    if (!brand || !consent || deletion) unavailable();
     const identity = normalizeIdentity(args);
     const text = args.text.trim();
     if (
@@ -665,6 +672,27 @@ export const releaseVideoReplacement = internalMutation({
   },
 });
 
+export const recordDetachedReplacementUpload = internalMutation({
+  args: {
+    provider: v.union(v.literal("fake"), v.literal("mux")),
+    providerUploadId: v.string(),
+    reservationId: v.id("videoReservations"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const reservation = await ctx.db.get(args.reservationId);
+    if (!reservation) return null;
+    await enqueueAssetCleanup(ctx, {
+      organizationId: reservation.organizationId,
+      provider: args.provider,
+      providerUploadId: args.providerUploadId,
+      testimonialId: args.testimonialId,
+    });
+    return null;
+  },
+});
+
 export const createVideoReplacementUpload = action({
   args: {
     expectedContentVersion: v.number(),
@@ -739,19 +767,35 @@ export const createVideoReplacementUpload = action({
         uploadUrl: directUpload.uploadUrl,
       };
     } catch (error) {
-      if (directUpload) {
-        await cancelVideoDirectUpload(
-          directUpload.uploadId,
-          directUpload.provider,
+      try {
+        if (directUpload) {
+          await ctx.runMutation(
+            internal.submissionManagement.recordDetachedReplacementUpload,
+            {
+              provider: directUpload.provider,
+              providerUploadId: directUpload.uploadId,
+              reservationId: reserved.reservationId,
+              testimonialId: reserved.testimonialId,
+            },
+          );
+          try {
+            await cancelVideoDirectUpload(
+              directUpload.uploadId,
+              directUpload.provider,
+            );
+          } catch {
+            // The durable cleanup job owns retries after this best-effort cancel.
+          }
+        }
+      } finally {
+        await ctx.runMutation(
+          internal.submissionManagement.releaseVideoReplacement,
+          {
+            reservationId: reserved.reservationId,
+            revisionId: reserved.revisionId,
+          },
         );
       }
-      await ctx.runMutation(
-        internal.submissionManagement.releaseVideoReplacement,
-        {
-          reservationId: reserved.reservationId,
-          revisionId: reserved.revisionId,
-        },
-      );
       throw error;
     }
   },
@@ -784,7 +828,7 @@ export const withdrawConsent = mutation({
       currentAsset,
       deletion,
       priorAuditEvents,
-      replacementRequests,
+      replacementItems,
     ] = await Promise.all([
       ctx.db
         .query("publicationConsents")
@@ -832,14 +876,17 @@ export const withdrawConsent = mutation({
         .unique(),
       ctx.db
         .query("auditEvents")
-        .withIndex("by_organization_occurred_at", (index) =>
-          index.eq("organizationId", testimonial.organizationId),
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", testimonial.organizationId)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(testimonial._id)),
         )
         .collect(),
       ctx.db
-        .query("managementLinkReplacementRequests")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", testimonial.organizationId),
+        .query("managementLinkReplacementItems")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
         )
         .collect(),
     ]);
@@ -894,11 +941,17 @@ export const withdrawConsent = mutation({
     if (testimonial.avatarStorageId) {
       await ctx.storage.delete(testimonial.avatarStorageId);
     }
-    for (const request of replacementRequests) {
-      if (
-        request.items.some((item) => item.testimonialId === testimonial._id)
-      ) {
-        await ctx.db.delete(request._id);
+    for (const item of replacementItems) {
+      await ctx.db.delete(item._id);
+      const remaining = await ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_request", (index) =>
+          index.eq("requestId", item.requestId),
+        )
+        .first();
+      if (!remaining) {
+        const request = await ctx.db.get(item.requestId);
+        if (request) await ctx.db.delete(request._id);
       }
     }
     for (const event of priorAuditEvents) {
@@ -930,9 +983,18 @@ const replacementRequestsPerBrandWindow = 100;
 const replacementDeliveryLeaseMs = 5 * 60 * 1_000;
 const maximumReplacementDeliveryAttempts = 5;
 
+function managementLinkTokenSecret() {
+  const secret =
+    process.env.MANAGEMENT_LINK_TOKEN_SECRET ?? process.env.BETTER_AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("Management-link token delivery is not configured.");
+  }
+  return secret;
+}
+
 export const queueReplacementLinkRequest = internalMutation({
   args: { email: v.string(), publicSlug: v.string() },
-  returns: v.null(),
+  returns: v.union(v.null(), v.id("managementLinkReplacementRequests")),
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     const publicSlug = args.publicSlug.trim().toLowerCase();
@@ -1015,27 +1077,44 @@ export const queueReplacementLinkRequest = internalMutation({
           )
           .collect()
       : [];
-    const items = testimonials.map((testimonial) => ({
-      testimonialId: testimonial._id,
-      token: randomSubmissionManagementToken(),
-    }));
     const requestId = await ctx.db.insert("managementLinkReplacementRequests", {
       attempts: 0,
       brandName: brand?.name,
       createdAt: now,
-      items,
       organizationId: brand?._id,
-      recipientEmail: brand && items.length > 0 ? email : undefined,
+      recipientEmail: brand && testimonials.length > 0 ? email : undefined,
       requestKey,
       status: "pending",
       updatedAt: now,
     });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.submissionManagement.processReplacementLinkRequest,
-      { requestId },
-    );
-    return null;
+    if (brand && testimonials.length > 0) {
+      const secret = managementLinkTokenSecret();
+      const items = await Promise.all(
+        testimonials.map(async (testimonial) => {
+          const tokenSeed = randomSubmissionManagementToken();
+          const token = await deriveSubmissionManagementToken(
+            secret,
+            tokenSeed,
+          );
+          return {
+            organizationId: brand._id,
+            requestId,
+            testimonialId: testimonial._id,
+            tokenHash: await hashSubmissionManagementToken(token),
+            tokenSeed,
+          };
+        }),
+      );
+      await Promise.all(
+        items.map((item) =>
+          ctx.db.insert("managementLinkReplacementItems", {
+            ...item,
+            createdAt: now,
+          }),
+        ),
+      );
+    }
+    return requestId;
   },
 });
 
@@ -1050,7 +1129,11 @@ export const claimReplacementLinkRequest = internalMutation({
       attempt: v.number(),
       brandName: v.string(),
       items: v.array(
-        v.object({ testimonialId: v.id("testimonials"), token: v.string() }),
+        v.object({
+          testimonialId: v.id("testimonials"),
+          tokenHash: v.string(),
+          tokenSeed: v.string(),
+        }),
       ),
       recipientEmail: v.string(),
     }),
@@ -1059,18 +1142,21 @@ export const claimReplacementLinkRequest = internalMutation({
     const request = await ctx.db.get(args.requestId);
     const now = Date.now();
     if (!request) return null;
-    if (
-      !request.recipientEmail ||
-      !request.brandName ||
-      request.items.length === 0
-    ) {
+    const items = await ctx.db
+      .query("managementLinkReplacementItems")
+      .withIndex("by_request", (index) => index.eq("requestId", request._id))
+      .collect();
+    if (!request.recipientEmail || !request.brandName || items.length === 0) {
+      await Promise.all(items.map((item) => ctx.db.delete(item._id)));
       await ctx.db.delete(request._id);
       return null;
     }
-    if (
-      request.attempts >= maximumReplacementDeliveryAttempts ||
-      (request.leaseExpiresAt && request.leaseExpiresAt > now)
-    ) {
+    if (request.leaseExpiresAt && request.leaseExpiresAt > now) {
+      return null;
+    }
+    if (request.attempts >= maximumReplacementDeliveryAttempts) {
+      await Promise.all(items.map((item) => ctx.db.delete(item._id)));
+      await ctx.db.delete(request._id);
       return null;
     }
     const attempt = request.attempts + 1;
@@ -1090,7 +1176,11 @@ export const claimReplacementLinkRequest = internalMutation({
     return {
       attempt,
       brandName: request.brandName,
-      items: request.items,
+      items: items.map(({ testimonialId, tokenHash, tokenSeed }) => ({
+        testimonialId,
+        tokenHash,
+        tokenSeed,
+      })),
       recipientEmail: request.recipientEmail,
     };
   },
@@ -1107,11 +1197,15 @@ export const finishReplacementLinkRequest = internalMutation({
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request || request.leaseId !== args.leaseId) return null;
+    const items = await ctx.db
+      .query("managementLinkReplacementItems")
+      .withIndex("by_request", (index) => index.eq("requestId", request._id))
+      .collect();
     if (args.sent) {
       const now = Date.now();
       const replacements = await Promise.all(
-        request.items.map(async (item) => ({
-          managementTokenHash: await hashSubmissionManagementToken(item.token),
+        items.map(async (item) => ({
+          managementTokenHash: item.tokenHash,
           testimonial: await ctx.db.get(item.testimonialId),
         })),
       );
@@ -1131,10 +1225,12 @@ export const finishReplacementLinkRequest = internalMutation({
           });
         }),
       );
+      await Promise.all(items.map((item) => ctx.db.delete(item._id)));
       await ctx.db.delete(request._id);
       return null;
     }
     if (request.attempts >= maximumReplacementDeliveryAttempts) {
+      await Promise.all(items.map((item) => ctx.db.delete(item._id)));
       await ctx.db.delete(request._id);
       return null;
     }
@@ -1164,18 +1260,29 @@ export const processReplacementLinkRequest = internalAction({
         /\/$/,
         "",
       );
-      await Promise.all(
-        delivery.items.map(({ testimonialId, token }) =>
-          sendTransactionalEmail({
-            ...buildReplacementManagementLinkEmail({
-              brandName: delivery.brandName,
-              email: delivery.recipientEmail,
-              url: `${siteUrl}/s/${encodeURIComponent(token)}`,
-            }),
-            idempotencyKey: `management-link/${String(args.requestId)}/${String(testimonialId)}`,
-          }),
-        ),
+      const secret = managementLinkTokenSecret();
+      const tokens = await Promise.all(
+        delivery.items.map(async ({ tokenHash, tokenSeed }) => {
+          const token = await deriveSubmissionManagementToken(
+            secret,
+            tokenSeed,
+          );
+          if ((await hashSubmissionManagementToken(token)) !== tokenHash) {
+            throw new Error("Management-link token integrity check failed.");
+          }
+          return token;
+        }),
       );
+      await sendTransactionalEmail({
+        ...buildReplacementManagementLinkEmail({
+          brandName: delivery.brandName,
+          email: delivery.recipientEmail,
+          urls: tokens.map(
+            (token) => `${siteUrl}/s/${encodeURIComponent(token)}`,
+          ),
+        }),
+        idempotencyKey: `management-link/${String(args.requestId)}`,
+      });
       await ctx.runMutation(
         internal.submissionManagement.finishReplacementLinkRequest,
         { leaseId, requestId: args.requestId, sent: true },
@@ -1209,10 +1316,17 @@ export const requestReplacementLink = action({
   args: { email: v.string(), publicSlug: v.string() },
   returns: v.object({ accepted: v.literal(true) }),
   handler: async (ctx, args) => {
-    await ctx.runMutation(
+    const requestId = await ctx.runMutation(
       internal.submissionManagement.queueReplacementLinkRequest,
       args,
     );
+    if (requestId) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.submissionManagement.processReplacementLinkRequest,
+        { requestId },
+      );
+    }
     return { accepted: true as const };
   },
 });

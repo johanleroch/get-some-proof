@@ -33,6 +33,32 @@ export function randomSubmissionManagementToken() {
   );
 }
 
+export async function deriveSubmissionManagementToken(
+  secret: string,
+  seed: string,
+) {
+  if (secret.length < 32) {
+    throw new Error(
+      "Management-link token secret must contain at least 32 characters.",
+    );
+  }
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { hash: "SHA-256", name: "HMAC" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`submission-management:${seed}`),
+  );
+  return Array.from(new Uint8Array(signature), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
 export function buildSubmissionEmailIdempotencyKey(
   attemptId: string,
   deliveryId: string,
