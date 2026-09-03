@@ -1,7 +1,12 @@
 import { env } from "../_generated/server";
 
 export type TransactionalEmailTemplate =
-  "verify-email" | "reset-password" | "magic-link" | "organization-invitation";
+  | "verify-email"
+  | "reset-password"
+  | "magic-link"
+  | "organization-invitation"
+  | "submission-confirmation"
+  | "new-pending-testimonial";
 
 export type TransactionalEmailMessage = {
   to: string;
@@ -10,12 +15,15 @@ export type TransactionalEmailMessage = {
   text: string;
   template: TransactionalEmailTemplate;
   actionUrl: string;
+  idempotencyKey?: string;
 };
 
 export type TransactionalEmailReceipt = {
   provider: "console" | "resend" | "test";
   providerMessageId: string;
 };
+
+export class UncertainEmailDeliveryError extends Error {}
 
 function isLocalSiteUrl(value: string | undefined) {
   if (!value) return false;
@@ -82,29 +90,53 @@ export async function sendTransactionalEmail(
     );
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [message.to],
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      tags: [{ name: "template", value: message.template }],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        ...(message.idempotencyKey
+          ? { "Idempotency-Key": message.idempotencyKey }
+          : {}),
+      },
+      body: JSON.stringify({
+        from,
+        to: [message.to],
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        tags: [{ name: "template", value: message.template }],
+      }),
+    });
+  } catch {
+    throw new UncertainEmailDeliveryError(
+      "Transactional email delivery outcome is uncertain.",
+    );
+  }
 
   if (!response.ok) {
+    if (response.status >= 500) {
+      throw new UncertainEmailDeliveryError(
+        `Transactional email delivery outcome is uncertain (${response.status}).`,
+      );
+    }
     throw new Error(
       `Transactional email delivery failed (${response.status}).`,
     );
   }
 
-  const data = (await response.json()) as { id: string };
+  let data: { id: string };
+  try {
+    const parsed = (await response.json()) as { id?: unknown };
+    if (typeof parsed.id !== "string" || !parsed.id) throw new Error();
+    data = { id: parsed.id };
+  } catch {
+    throw new UncertainEmailDeliveryError(
+      "Transactional email was accepted but its receipt is unavailable.",
+    );
+  }
 
   return {
     provider: "resend",

@@ -13,11 +13,14 @@ import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
 import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
+import type * as billingEntitlements from "../billingEntitlements.js";
 import type * as billingService from "../billingService.js";
 import type * as dashboard from "../dashboard.js";
+import type * as domain_brand from "../domain/brand.js";
 import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
 import type * as domain_profileImage from "../domain/profileImage.js";
+import type * as domain_submission from "../domain/submission.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
@@ -32,6 +35,7 @@ import type * as security_organizationAccess from "../security/organizationAcces
 import type * as security_principal from "../security/principal.js";
 import type * as seed from "../seed.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
+import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 
 import type {
@@ -46,11 +50,14 @@ declare const fullApi: ApiFromModules<{
   authorization: typeof authorization;
   billing: typeof billing;
   billingActions: typeof billingActions;
+  billingEntitlements: typeof billingEntitlements;
   billingService: typeof billingService;
   dashboard: typeof dashboard;
+  "domain/brand": typeof domain_brand;
   "domain/invitation": typeof domain_invitation;
   "domain/organizationSlug": typeof domain_organizationSlug;
   "domain/profileImage": typeof domain_profileImage;
+  "domain/submission": typeof domain_submission;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
   http: typeof http;
@@ -65,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "security/principal": typeof security_principal;
   seed: typeof seed;
   stripeBillingProvider: typeof stripeBillingProvider;
+  submissions: typeof submissions;
   system: typeof system;
 }>;
 

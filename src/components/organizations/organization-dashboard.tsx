@@ -108,6 +108,10 @@ export function BrandDashboardView({
 
 export function OrganizationDashboard({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
+  const pendingCount = useQuery(
+    api.submissions.pendingCount,
+    organization ? { organizationId: organization.id } : "skip",
+  );
 
   if (organization === undefined) return <OverviewPageSkeleton />;
 
@@ -124,6 +128,8 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
     );
   }
 
+  if (pendingCount === undefined) return <OverviewPageSkeleton />;
+
   return (
     <BrandDashboardView
       copyCollectionUrl={() =>
@@ -132,7 +138,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
         )
       }
       name={organization.name}
-      pendingCount={0}
+      pendingCount={pendingCount}
       publicSlug={organization.publicSlug}
     />
   );

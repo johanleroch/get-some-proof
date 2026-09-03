@@ -7,9 +7,11 @@ import { IconMenu2 } from "@tabler/icons-react";
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandMark } from "@/components/brand-mark";
+import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
+import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -85,20 +87,85 @@ export function OnboardingScreenFixture() {
   );
 }
 
+const collectionFormFixtureBrand = {
+  collectionFormDescription:
+    "Tell us how our work changed your business. A few honest sentences are perfect.",
+  collectionFormTitle: "Share your Visual Studio story",
+  logoUrl: null,
+  name: "Visual Studio",
+  primaryColor: "#6d5dfc",
+  privacyContact: "privacy@example.invalid",
+  publicSlug: "visual-studio",
+};
+
+const collectionFormFixtureValues = {
+  ageConfirmed: true,
+  company: "North Star Co",
+  consentAccepted: true,
+  rating: 5,
+  role: "Founder",
+  submitterEmail: "alice@example.com",
+  submitterName: "Alice Martin",
+  text: "Visual Studio helped us turn scattered customer stories into clear proof that wins trust.",
+};
+
 export function CollectionFormScreenFixture() {
+  return <CollectionFormShellView brand={collectionFormFixtureBrand} />;
+}
+
+export function CollectionFormWriteScreenFixture() {
   return (
     <CollectionFormShellView
-      brand={{
-        collectionFormDescription:
-          "Tell us how our work changed your business. A few honest sentences are perfect.",
-        collectionFormTitle: "Share your Visual Studio story",
-        logoUrl: null,
-        name: "Visual Studio",
-        primaryColor: "#6d5dfc",
-        privacyContact: "privacy@example.invalid",
-        publicSlug: "visual-studio",
-      }}
+      brand={collectionFormFixtureBrand}
+      initialStep={2}
+      initialValues={collectionFormFixtureValues}
     />
+  );
+}
+
+export function CollectionFormDetailsScreenFixture() {
+  return (
+    <CollectionFormShellView
+      brand={collectionFormFixtureBrand}
+      initialStep={3}
+      initialValues={collectionFormFixtureValues}
+    />
+  );
+}
+
+export function CollectionFormSuccessScreenFixture() {
+  return (
+    <CollectionFormShellView
+      brand={collectionFormFixtureBrand}
+      initialStep={4}
+      initialValues={collectionFormFixtureValues}
+    />
+  );
+}
+
+export function BrandPrivacyNoticeScreenFixture() {
+  return (
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
+      <BrandPrivacyNoticeView brand={collectionFormFixtureBrand} />
+    </main>
+  );
+}
+
+export function ManagedSubmissionScreenFixture() {
+  return (
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
+      <ManagedSubmissionView
+        submission={{
+          brandName: collectionFormFixtureBrand.name,
+          company: collectionFormFixtureValues.company,
+          moderationStatus: "pending",
+          role: collectionFormFixtureValues.role,
+          submitterEmail: collectionFormFixtureValues.submitterEmail,
+          submitterName: collectionFormFixtureValues.submitterName,
+          text: collectionFormFixtureValues.text,
+        }}
+      />
+    </main>
   );
 }
 

@@ -84,10 +84,55 @@
     },
     {
       "slug": "collection-form-shell",
-      "title": "Collection Form shell",
+      "title": "Collection Form - choose type",
       "path": "/c/:publicSlug",
       "fixturePath": "/visual-evidence/collection-form",
       "heading": "Share your Visual Studio story",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "collection-form-write",
+      "title": "Collection Form - write text",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form-write",
+      "heading": "Tell your story",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "collection-form-details",
+      "title": "Collection Form - identity and consent",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form-details",
+      "heading": "About you",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "collection-form-success",
+      "title": "Collection Form - success",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form-success",
+      "heading": "Thank you for your proof",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "privacy-notice",
+      "title": "Brand privacy notice",
+      "path": "/c/:publicSlug/privacy",
+      "fixturePath": "/visual-evidence/privacy-notice",
+      "heading": "Testimonial privacy notice",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "managed-submission",
+      "title": "Private Submission Management Link",
+      "path": "/s/:token",
+      "fixturePath": "/visual-evidence/managed-submission",
+      "heading": "Your testimonial",
       "theme": "light",
       "requiresBackend": true
     }

@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation";
 
 import {
+  BrandPrivacyNoticeScreenFixture,
+  CollectionFormDetailsScreenFixture,
   CollectionFormScreenFixture,
+  CollectionFormSuccessScreenFixture,
+  CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
+  ManagedSubmissionScreenFixture,
   OnboardingScreenFixture,
   OrganizationSettingsScreenFixture,
   ProfileScreenFixture,
@@ -10,6 +15,11 @@ import {
 
 const screens = {
   "collection-form": CollectionFormScreenFixture,
+  "collection-form-details": CollectionFormDetailsScreenFixture,
+  "collection-form-success": CollectionFormSuccessScreenFixture,
+  "collection-form-write": CollectionFormWriteScreenFixture,
+  "managed-submission": ManagedSubmissionScreenFixture,
+  "privacy-notice": BrandPrivacyNoticeScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
@@ -34,7 +44,9 @@ export default async function VisualEvidenceFixturePage({
 
   return screen === "onboarding" ||
     screen === "dashboard" ||
-    screen === "collection-form" ? (
+    screen.startsWith("collection-form") ||
+    screen === "managed-submission" ||
+    screen === "privacy-notice" ? (
     <Screen />
   ) : (
     <main className="bg-muted/30 min-h-svh px-5 py-10 sm:px-8">
