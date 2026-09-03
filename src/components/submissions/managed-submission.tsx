@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, RefreshCw, Trash2, Upload } from "lucide-react";
+import MuxPlayer from "@mux/mux-player-react/lazy";
 import Image from "next/image";
 
 import { api } from "@convex/_generated/api";
@@ -34,6 +35,10 @@ type ManagedSubmissionValue = {
   company?: string;
   consentAcceptedAt: number;
   contentVersion: number;
+  currentVideo?: {
+    playbackId: string;
+    posterTimeSeconds?: number;
+  };
   moderationStatus: "pending" | "published" | "archived" | "spam";
   privacyContact: string;
   publicSlug: string;
@@ -315,6 +320,23 @@ export function ManagedSubmissionView({
             </div>
           ) : (
             <div className="space-y-4 rounded-xl border p-4">
+              {submission.currentVideo ? (
+                <div
+                  aria-label="Your current video testimonial"
+                  className="mx-auto w-full max-w-52 overflow-hidden rounded-lg bg-black"
+                  data-playback-id={submission.currentVideo.playbackId}
+                  role="region"
+                >
+                  <MuxPlayer
+                    className="block aspect-[9/16] w-full"
+                    disableCookies
+                    playbackId={submission.currentVideo.playbackId}
+                    playsInline
+                    poster={`https://image.mux.com/${encodeURIComponent(submission.currentVideo.playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${submission.currentVideo.posterTimeSeconds ?? 0.5}`}
+                    preload="metadata"
+                  />
+                </div>
+              ) : null}
               <div>
                 <p className="font-medium">Replace your video</p>
                 <p className="text-muted-foreground mt-1 text-sm">

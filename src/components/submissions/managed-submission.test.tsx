@@ -34,4 +34,33 @@ describe("ManagedSubmissionView", () => {
     expect(screen.getByDisplayValue(/alice@example.com/i)).toBeDisabled();
     expect(screen.getByText(/pending/i)).toBeVisible();
   });
+
+  it("lets a video Submitter play the currently stored video", () => {
+    const { container } = render(
+      <ManagedSubmissionView
+        submission={{
+          avatarUrl: null,
+          brandName: "Acme Studio",
+          consentAcceptedAt: Date.UTC(2026, 8, 3),
+          contentVersion: 1,
+          currentVideo: {
+            playbackId: "current-playback-id",
+            posterTimeSeconds: 12,
+          },
+          moderationStatus: "published",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-proof",
+          submissionType: "video",
+          submitterEmail: "alice@example.com",
+          submitterName: "Alice Martin",
+          text: "",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText("Your current video testimonial"),
+    ).toBeVisible();
+    expect(container.innerHTML).toContain("current-playback-id");
+  });
 });

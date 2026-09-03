@@ -273,18 +273,31 @@ describe("Submission Management Links", () => {
   it("rotates the link and invalidates the prior token without enumerating unknown emails", async () => {
     const t = createConvexTest();
     await createManagedText(t);
-    const newToken = "c".repeat(64);
-
-    await t.mutation(internal.submissionManagement.rotateManagementLinks, {
-      email: "alice@example.com",
-      publicSlug: "acme-proof",
-      tokens: [newToken],
-    });
+    await t.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+      },
+    );
+    const request = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementRequests").unique(),
+    );
+    expect(request).not.toBeNull();
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
+    await t.action(
+      internal.submissionManagement.processReplacementLinkRequest,
+      { requestId: request!._id },
+    );
     await expect(
       t.query(api.submissionManagement.get, { token: originalToken }),
     ).resolves.toBeNull();
     await expect(
-      t.query(api.submissionManagement.get, { token: newToken }),
+      t.query(api.submissionManagement.get, {
+        token: request!.items[0]!.token,
+      }),
     ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
     await expect(
       t.action(api.submissionManagement.requestReplacementLink, {
@@ -294,9 +307,115 @@ describe("Submission Management Links", () => {
     ).resolves.toEqual({ accepted: true });
   });
 
+  it("keeps the prior link active until durable replacement delivery succeeds", async () => {
+    const t = createConvexTest();
+    await createManagedText(t);
+    await t.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      { email: "alice@example.com", publicSlug: "acme-proof" },
+    );
+    const request = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementRequests").unique(),
+    );
+    await t.mutation(
+      internal.submissionManagement.claimReplacementLinkRequest,
+      { leaseId: "failed-delivery", requestId: request!._id },
+    );
+    await t.mutation(
+      internal.submissionManagement.finishReplacementLinkRequest,
+      {
+        error: "provider unavailable",
+        leaseId: "failed-delivery",
+        requestId: request!._id,
+        sent: false,
+      },
+    );
+
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
+  });
+
+  it("rotates every matching Submission and suppresses concurrent recovery bursts", async () => {
+    const t = createConvexTest();
+    const { testimonialId } = await createManagedText(t);
+    await t.run(async (ctx) => {
+      const source = await ctx.db.get(testimonialId);
+      const consent = await ctx.db
+        .query("publicationConsents")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonialId),
+        )
+        .unique();
+      if (!source || !consent) throw new Error("Expected managed testimonial");
+      for (let index = 1; index <= 10; index += 1) {
+        const id = await ctx.db.insert("testimonials", {
+          ...source,
+          _creationTime: undefined,
+          _id: undefined,
+          clientSubmissionId: `managed-text-${index + 1}`,
+          managementTokenHash: await hashSubmissionManagementToken(
+            String(index).padStart(64, "b"),
+          ),
+        });
+        await ctx.db.insert("publicationConsents", {
+          acceptedAt: consent.acceptedAt,
+          brandName: consent.brandName,
+          consentText: consent.consentText,
+          consentVersion: consent.consentVersion,
+          identityFields: consent.identityFields,
+          organizationId: consent.organizationId,
+          testimonialId: id,
+        });
+      }
+    });
+    await Promise.all([
+      t.mutation(internal.submissionManagement.queueReplacementLinkRequest, {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+      }),
+      t.mutation(internal.submissionManagement.queueReplacementLinkRequest, {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+      }),
+    ]);
+    const requests = await t.run((ctx) =>
+      ctx.db.query("managementLinkReplacementRequests").collect(),
+    );
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.items).toHaveLength(11);
+    await t.action(
+      internal.submissionManagement.processReplacementLinkRequest,
+      { requestId: requests[0]!._id },
+    );
+    const expectedHashes = await Promise.all(
+      requests[0]!.items.map(({ token }) =>
+        hashSubmissionManagementToken(token),
+      ),
+    );
+    const storedHashes = await t.run(async (ctx) =>
+      (
+        await ctx.db
+          .query("testimonials")
+          .withIndex("by_organization_submitter_email", (index) =>
+            index
+              .eq("organizationId", requests[0]!.organizationId!)
+              .eq("submitterEmail", "alice@example.com"),
+          )
+          .collect()
+      ).map(({ managementTokenHash }) => managementTokenHash),
+    );
+    expect(new Set(storedHashes)).toEqual(new Set(expectedHashes));
+  });
+
   it("keeps the old published video until a Ready replacement is confirmed", async () => {
     const t = createConvexTest();
     const { testimonialId, videoAssetId } = await createManagedVideo(t);
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toMatchObject({
+      currentVideo: { playbackId: "old-playback", posterTimeSeconds: 15 },
+    });
     const upload = await t.action(
       api.submissionManagement.createVideoReplacementUpload,
       {
@@ -421,9 +540,62 @@ describe("Submission Management Links", () => {
     ).resolves.toEqual({ assets: [], revisions: [], testimonials: [] });
   });
 
+  it("refuses a replacement attached after permanent deletion was prepared", async () => {
+    const t = createConvexTest();
+    const { brand, owner, testimonialId } = await createManagedVideo(t);
+    const tokenHash = await hashSubmissionManagementToken(originalToken);
+    const reserved = await t.mutation(
+      internal.submissionManagement.reserveVideoReplacement,
+      {
+        clientRevisionId: "deletion-race-revision",
+        expectedContentVersion: 1,
+        tokenHash,
+      },
+    );
+    await owner.client.mutation(internal.videoMedia.prepareRemoval, {
+      organizationId: brand.id,
+      testimonialId,
+    });
+
+    await expect(
+      t.mutation(internal.submissionManagement.attachVideoReplacement, {
+        fileSizeBytes: 2_000,
+        mimeType: "video/mp4",
+        provider: "fake",
+        providerUploadId: "late-upload",
+        reservationId: reserved.reservationId,
+        revisionId: reserved.revisionId,
+        spokenLanguage: "en",
+        tokenHash,
+      }),
+    ).rejects.toBeDefined();
+    await expect(
+      t.run((ctx) =>
+        ctx.db
+          .query("videoAssets")
+          .withIndex("by_provider_upload_id", (index) =>
+            index.eq("providerUploadId", "late-upload"),
+          )
+          .unique(),
+      ),
+    ).resolves.toBeNull();
+  });
+
   it("withdraws consent idempotently, invalidates public content, and leaves only content-free audit", async () => {
     const t = createConvexTest();
-    const { testimonialId } = await createManagedVideo(t);
+    const { brand, testimonialId } = await createManagedVideo(t);
+    await t.run((ctx) =>
+      ctx.db.insert("auditEvents", {
+        actorDisplayName: "Owner",
+        actorUserId: "owner",
+        eventType: "testimonial.published",
+        occurredAt: Date.now(),
+        organizationId: brand.id,
+        targetId: String(testimonialId),
+        targetLabel: "Alice Martin",
+        targetType: "testimonial",
+      }),
+    );
 
     await expect(
       t.mutation(api.submissionManagement.withdrawConsent, {
@@ -457,6 +629,9 @@ describe("Submission Management Links", () => {
     ]);
     expect(JSON.stringify(withdrawalAudit)).not.toContain("Alice");
     expect(JSON.stringify(withdrawalAudit)).not.toContain("old-playback");
+    expect(
+      stored.audit.filter(({ targetType }) => targetType === "testimonial"),
+    ).toHaveLength(1);
   });
 
   it("keeps withdrawal authoritative when it races a revision confirmation", async () => {

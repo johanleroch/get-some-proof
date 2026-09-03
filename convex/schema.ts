@@ -226,6 +226,31 @@ export default defineSchema({
   })
     .index("by_resource_window", ["resourceKey", "windowStartedAt"])
     .index("by_expires_at", ["expiresAt"]),
+  managementLinkReplacementRequests: defineTable({
+    organizationId: v.optional(v.id("organizations")),
+    requestKey: v.string(),
+    recipientEmail: v.optional(v.string()),
+    brandName: v.optional(v.string()),
+    items: v.array(
+      v.object({
+        testimonialId: v.id("testimonials"),
+        token: v.string(),
+      }),
+    ),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sending"),
+      v.literal("failed"),
+    ),
+    attempts: v.number(),
+    leaseId: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_request_key", ["requestKey"])
+    .index("by_organization", ["organizationId"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
