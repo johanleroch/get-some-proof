@@ -11,7 +11,9 @@ export type PublicWallValue = {
   attributionRequired: boolean;
   brandName: string;
   publicSlug: string;
+  theme: "light" | "dark" | "system";
   testimonials: PublicTestimonial[];
+  transparentEmbed: boolean;
 };
 
 export function HostedWall({
@@ -27,7 +29,8 @@ export function HostedWall({
 }) {
   return (
     <main
-      className="bg-muted/30 min-h-svh px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
+      className="public-wall-theme bg-muted/30 text-foreground min-h-svh px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
+      data-wall-theme={wall.theme}
       style={{ "--wall-accent": wall.accentColor } as CSSProperties}
     >
       <div className="mx-auto w-full max-w-6xl">

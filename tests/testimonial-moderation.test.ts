@@ -159,6 +159,7 @@ describe("Testimonial moderation and Public Projection", () => {
     expect(wall.page).toEqual([
       {
         avatarUrl: null,
+        avatarVisible: true,
         captionsAvailable: false,
         company: "Example Studio",
         id: expect.any(String),
@@ -300,9 +301,11 @@ describe("Testimonial moderation and Public Projection", () => {
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,
       publicSlug: "acme-proof",
+      theme: "system",
       testimonials: [
         {
           avatarUrl: null,
+          avatarVisible: true,
           company: "Example Studio",
           id: expect.any(String),
           name: "Camille Test",
@@ -313,6 +316,7 @@ describe("Testimonial moderation and Public Projection", () => {
           type: "text",
         },
       ],
+      transparentEmbed: false,
     });
     expect(JSON.stringify(wall)).not.toContain("camille@example.invalid");
     expect(JSON.stringify(wall)).not.toContain("organizationId");
@@ -647,7 +651,7 @@ describe("Testimonial moderation and Public Projection", () => {
     ).resolves.toMatchObject({ textAvailable: false });
   });
 
-  it("removes quarantined Spam from public surfaces and restores its prior order on undo", async () => {
+  it("removes quarantined Spam from public surfaces and restores it with a safe fresh order key", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const brand = await owner.client.mutation(api.organizations.create, {

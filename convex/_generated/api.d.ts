@@ -30,10 +30,12 @@ import type * as http from "../http.js";
 import type * as invitationRecords from "../invitationRecords.js";
 import type * as invitations from "../invitations.js";
 import type * as members from "../members.js";
+import type * as migrations from "../migrations.js";
 import type * as organizationAuthorization from "../organizationAuthorization.js";
 import type * as organizations from "../organizations.js";
 import type * as profileImages from "../profileImages.js";
 import type * as projects from "../projects.js";
+import type * as publicProjection from "../publicProjection.js";
 import type * as publicReadRateLimit from "../publicReadRateLimit.js";
 import type * as publicWall from "../publicWall.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
@@ -51,6 +53,7 @@ import type * as videoProvider from "../videoProvider.js";
 import type * as videoRetryDelivery from "../videoRetryDelivery.js";
 import type * as videoRetryLinks from "../videoRetryLinks.js";
 import type * as videoWebhooks from "../videoWebhooks.js";
+import type * as wallCustomization from "../wallCustomization.js";
 
 import type {
   ApiFromModules,
@@ -81,10 +84,12 @@ declare const fullApi: ApiFromModules<{
   invitationRecords: typeof invitationRecords;
   invitations: typeof invitations;
   members: typeof members;
+  migrations: typeof migrations;
   organizationAuthorization: typeof organizationAuthorization;
   organizations: typeof organizations;
   profileImages: typeof profileImages;
   projects: typeof projects;
+  publicProjection: typeof publicProjection;
   publicReadRateLimit: typeof publicReadRateLimit;
   publicWall: typeof publicWall;
   "security/organizationAccess": typeof security_organizationAccess;
@@ -102,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   videoRetryDelivery: typeof videoRetryDelivery;
   videoRetryLinks: typeof videoRetryLinks;
   videoWebhooks: typeof videoWebhooks;
+  wallCustomization: typeof wallCustomization;
 }>;
 
 /**

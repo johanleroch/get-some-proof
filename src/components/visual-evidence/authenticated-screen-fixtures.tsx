@@ -15,6 +15,7 @@ import { OrganizationSettingsView } from "@/components/organizations/organizatio
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import { TestimonialInboxView } from "@/components/testimonials/testimonial-inbox";
+import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -292,6 +293,23 @@ export function TestimonialInboxScreenFixture() {
           <option>Newest first</option>
         </select>
       </div>
+      <PublishedCurationView
+        onMove={async () => undefined}
+        onSetVisibility={async () => undefined}
+        testimonials={[
+          {
+            submissionType: "video",
+            submitterName: "Remy Jupille",
+            testimonialId: "fixture-published-video" as Id<"testimonials">,
+          },
+          {
+            overrides: { company: false },
+            submissionType: "text",
+            submitterName: "Alice Martin",
+            testimonialId: "fixture-published-text" as Id<"testimonials">,
+          },
+        ]}
+      />
       <TestimonialInboxView
         onArchive={() => undefined}
         onDeleteRequest={() => undefined}
@@ -314,6 +332,7 @@ const wallFixture = {
   attributionRequired: true,
   brandName: collectionFormFixtureBrand.name,
   publicSlug: collectionFormFixtureBrand.publicSlug,
+  theme: "system" as const,
   testimonials: [
     {
       avatarUrl: null,
@@ -357,6 +376,7 @@ const wallFixture = {
       type: "text" as const,
     },
   ],
+  transparentEmbed: false,
 };
 
 export function PublicWallScreenFixture() {
@@ -372,6 +392,7 @@ export function OrganizationSettingsScreenFixture() {
   return (
     <OrganizationSettingsView
       canChangePublicSlug
+      canManageWall
       canUpdate
       embedOrigin="https://proof.example"
       logoUrl={image.imageUrl}
@@ -380,8 +401,22 @@ export function OrganizationSettingsScreenFixture() {
       onRemoveLogo={image.remove}
       onRename={async () => undefined}
       onUploadLogo={image.upload}
+      onUpdateWallSettings={async () => undefined}
       publicSlug="visual-studio"
       publicSlugCanChange
+      wallSettings={{
+        accentColor: "#6d5dfc",
+        canHideAttribution: true,
+        hideAttribution: false,
+        theme: "system",
+        transparentEmbed: true,
+        visibility: {
+          avatar: true,
+          company: true,
+          rating: true,
+          role: true,
+        },
+      }}
     />
   );
 }

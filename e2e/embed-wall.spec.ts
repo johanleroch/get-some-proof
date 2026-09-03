@@ -6,6 +6,19 @@ import { expect, test } from "@playwright/test";
 const projection = [
   {
     avatarUrl: null,
+    avatarVisible: true,
+    captionsAvailable: true,
+    id: "projection-video",
+    name: "Video Person",
+    playbackId: "public-playback-id",
+    publishedAt: 3,
+    rating: 5,
+    role: "Founder",
+    type: "video" as const,
+  },
+  {
+    avatarUrl: null,
+    avatarVisible: false,
     company: "Example Studio",
     id: "projection-1",
     name: "Camille Test",
@@ -25,17 +38,52 @@ const projection = [
   },
 ];
 
-function response(testimonials = projection) {
+function testimonialHtml(testimonial: (typeof projection)[number]) {
+  const avatar =
+    testimonial.avatarVisible === false
+      ? ""
+      : `<span class="avatar" aria-hidden="true">${testimonial.name
+          .split(" ")
+          .map((part) => part[0])
+          .join("")}</span>`;
+  const video =
+    testimonial.type === "video"
+      ? `<div class="video-shell"><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from ${testimonial.name}" class="poster" src="https://image.mux.com/${testimonial.playbackId}/thumbnail.png?width=720&amp;height=1280&amp;fit_mode=smartcrop&amp;time=0.5"><span class="play-icon">Play</span></button></div>`
+      : "";
+  const text =
+    testimonial.type === "text"
+      ? `<blockquote>${testimonial.text}</blockquote>`
+      : "";
+  const stars = testimonial.rating
+    ? `<div aria-label="${testimonial.rating} out of 5 stars" class="stars" role="img">★★★★★</div>`
+    : "";
+
+  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content"><div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div></div>${stars}${text}<a class="attribution" href="https://proof.example/?utm_source=embedded_wall&amp;utm_medium=referral&amp;utm_campaign=powered_by" rel="sponsored nofollow">Powered by Get Some Proof</a></div></article>`;
+}
+
+function response(
+  testimonials = projection,
+  brandOverrides: Partial<{
+    theme: "light" | "dark" | "system";
+    transparentEmbed: boolean;
+  }> = {},
+) {
   return {
     brand: {
       accentColor: "#7c3aed",
       attributionRequired: true,
       name: "Acme Studio",
       publicSlug: "acme-proof",
+      theme: "system",
+      transparentEmbed: false,
+      ...brandOverrides,
     },
     pagination: { cursor: null },
     schemaVersion: 1,
-    testimonials,
+    testimonials: testimonials.map((testimonial) => ({
+      ...testimonial,
+      html: testimonialHtml(testimonial),
+    })),
   };
 }
 
@@ -97,6 +145,14 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
       "First published proof.",
       "Second published proof with a longer line for masonry sizing.",
     ]);
+    await expect(
+      walls
+        .first()
+        .locator("blockquote")
+        .first()
+        .locator("xpath=../..")
+        .locator(".avatar"),
+    ).toHaveCount(0);
     const computed = await walls.first().evaluate((wall) => {
       const shadow = wall.shadowRoot!;
       return {
@@ -109,6 +165,21 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
     expect(computed.cardFont).toContain(fixture.font);
     expect(computed.cardRadius).toBe("12px");
     expect(computed.columns).toBe("3");
+
+    await page.locator(".stage").evaluate((element) => {
+      (element as HTMLElement).style.width = "720px";
+    });
+    await expect
+      .poll(() =>
+        walls
+          .first()
+          .evaluate(
+            (wall) =>
+              getComputedStyle(wall.shadowRoot!.querySelector(".grid")!)
+                .columnCount,
+          ),
+      )
+      .toBe("2");
 
     await page.locator(".stage").evaluate((element) => {
       (element as HTMLElement).style.width = "360px";
@@ -127,7 +198,19 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
 
     await page.locator(".sentinel").focus();
     await page.keyboard.press("Tab");
-    await expect(walls.first().locator("a").first()).toBeFocused();
+    await expect(
+      walls.first().getByRole("button", {
+        name: "Play Video Person's testimonial",
+      }),
+    ).toBeFocused();
+    await page.keyboard.press("Tab");
+    const attribution = walls.first().locator("a").first();
+    await expect(attribution).toBeFocused();
+    await expect(attribution).toHaveAttribute("rel", "sponsored nofollow");
+    await expect(attribution).toHaveAttribute(
+      "href",
+      /utm_source=embedded_wall.*utm_medium=referral.*utm_campaign=powered_by/,
+    );
     const linkStyle = await walls
       .first()
       .locator("a")
@@ -150,9 +233,39 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
   }
 
   expect(
-    requests.some((url) => /mux|analytics|segment|posthog/i.test(url)),
+    requests.some(
+      (url) =>
+        !url.startsWith("https://image.mux.com/") &&
+        /mux|analytics|segment|posthog/i.test(url),
+    ),
   ).toBe(false);
   expect(await page.context().cookies()).toEqual([]);
+});
+
+test("applies the configured theme and transparent embed background", async ({
+  baseURL,
+  page,
+}) => {
+  await page.route("**/api/public-wall/acme-proof*", (route) =>
+    route.fulfill({
+      body: JSON.stringify(
+        response(projection, { theme: "dark", transparentEmbed: true }),
+      ),
+      contentType: "application/json",
+    }),
+  );
+  await page.setContent(`
+    <div data-gsp-wall data-public-slug="acme-proof"></div>
+    <script src="${baseURL}/embed/v1.js" data-api-origin="${baseURL}"></script>
+  `);
+  const wall = page.locator("[data-gsp-wall]");
+  await expect(wall).toHaveAttribute("data-theme", "dark");
+  await expect(wall).toHaveAttribute("data-transparent-embed", "true");
+  await expect(wall).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(wall.locator("article").first()).toHaveCSS(
+    "background-color",
+    "rgb(24, 24, 27)",
+  );
 });
 
 test("keeps empty and failed embeds at zero height with explicit state", async ({

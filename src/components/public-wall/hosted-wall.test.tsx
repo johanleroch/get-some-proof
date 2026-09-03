@@ -12,7 +12,9 @@ describe("HostedWall", () => {
           attributionRequired: true,
           brandName: "Acme Studio",
           publicSlug: "acme-proof",
+          theme: "system",
           testimonials: [],
+          transparentEmbed: false,
         }}
       />,
     );
@@ -21,6 +23,10 @@ describe("HostedWall", () => {
       screen.getByRole("heading", { name: "Acme Studio" }),
     ).toBeInTheDocument();
     expect(screen.getByText("No public testimonials yet.")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveAttribute(
+      "data-wall-theme",
+      "system",
+    );
   });
 
   it("renders published proof in a responsive masonry container", () => {
@@ -34,6 +40,7 @@ describe("HostedWall", () => {
           attributionRequired: true,
           brandName: "Acme Studio",
           publicSlug: "acme-proof",
+          theme: "system",
           testimonials: [
             {
               avatarUrl: null,
@@ -44,6 +51,7 @@ describe("HostedWall", () => {
               type: "text",
             },
           ],
+          transparentEmbed: false,
         }}
       />,
     );

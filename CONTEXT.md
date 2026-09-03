@@ -126,6 +126,14 @@ _Avoid_: Widget when referring to the published destination
 The public-safe representation of Published Testimonials shared by the Public Wall and Embedded Wall. It applies both Wall-wide and per-Testimonial visibility choices and excludes private identity, consent, tenancy, moderation, and audit data.
 _Avoid_: Public database, API response
 
+**Curated Order**:
+The Owner-controlled sequence of Published Testimonials shared by both public walls. Newly Published proof begins first until the Owner changes that sequence.
+_Avoid_: Sort, feed order
+
+**Visibility Override**:
+A per-Testimonial choice that replaces a Wall-wide visibility default for one optional public identity field. Submitter name is not optional and cannot receive an override.
+_Avoid_: Hidden field, privacy consent
+
 **Attribution Badge**:
 The visible Get Some Proof branding required on Free public surfaces and removable on Pro.
 _Avoid_: Backlink, SEO link

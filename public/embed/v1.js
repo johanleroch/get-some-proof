@@ -27,7 +27,9 @@
       --gsp-text: #18181b;
       --gsp-muted: #71717a;
       --gsp-border: #e4e4e7;
+      background: var(--gsp-surface);
     }
+    :host([data-transparent-embed="true"]) { background: transparent; }
     :host([data-theme="dark"]) {
       --gsp-surface: #18181b;
       --gsp-text: #fafafa;
@@ -179,42 +181,6 @@
     return node;
   }
 
-  function initials(name) {
-    return name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() || "")
-      .join("");
-  }
-
-  function renderAvatar(testimonial) {
-    const avatar = element("span", "avatar", initials(testimonial.name));
-    avatar.setAttribute("aria-hidden", "true");
-    if (testimonial.avatarUrl && testimonial.avatarUrl.startsWith("https://")) {
-      const image = element("img");
-      image.alt = "";
-      image.loading = "lazy";
-      image.referrerPolicy = "no-referrer";
-      image.src = testimonial.avatarUrl;
-      avatar.replaceChildren(image);
-    }
-    return avatar;
-  }
-
-  function renderStars(rating) {
-    const stars = element("div", "stars");
-    stars.setAttribute("aria-label", `${rating} out of 5 stars`);
-    stars.setAttribute("role", "img");
-    for (let index = 0; index < 5; index += 1) {
-      const star = element("span", "star", "★");
-      star.dataset.filled = String(index < rating);
-      star.setAttribute("aria-hidden", "true");
-      stars.append(star);
-    }
-    return stars;
-  }
-
   let muxPlayerPromise;
   let videoPlayerPolicyPromise;
   function loadMuxPlayer() {
@@ -257,19 +223,11 @@
     return videoPlayerPolicyPromise;
   }
 
-  function renderVideo(testimonial, brand) {
-    const shell = element("div", "video-shell");
-    const button = element("button", "play");
-    button.type = "button";
-    button.setAttribute("aria-label", `Play ${testimonial.name}'s testimonial`);
-    const poster = element("img", "poster");
-    poster.alt = `Video from ${testimonial.name}`;
-    poster.loading = "lazy";
-    poster.referrerPolicy = "no-referrer";
-    poster.src = `https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=720&height=1280&fit_mode=smartcrop&time=${testimonial.posterTimeSeconds || 0.5}`;
-    const icon = element("span", "play-icon", "▶");
-    icon.setAttribute("aria-hidden", "true");
-    button.append(poster, icon);
+  function hydrateVideo(card, testimonial, brand) {
+    const shell = card.querySelector(".video-shell");
+    const button = card.querySelector("[data-gsp-play]");
+    const poster = card.querySelector(".poster");
+    if (!shell || !button || !poster) throw new Error("INVALID_CARD_HTML");
     button.addEventListener("click", async () => {
       button.disabled = true;
       try {
@@ -308,44 +266,19 @@
         button.disabled = false;
       }
     });
-    shell.append(button);
-    return shell;
   }
 
-  function renderCard(testimonial, brand, origin) {
-    const card = element("article", "card");
-    const content = element("div", "content");
-    if (testimonial.type === "video") {
-      card.classList.add("video-card");
-      card.append(renderVideo(testimonial, brand));
+  function renderCard(testimonial, brand) {
+    if (typeof testimonial.html !== "string") {
+      throw new Error("INVALID_CARD_HTML");
     }
-    const identity = element("div", "identity");
-    const person = element("div", "person");
-    person.append(element("p", "name", testimonial.name));
-    const meta = [testimonial.role, testimonial.company]
-      .filter(Boolean)
-      .join(" · ");
-    if (meta) person.append(element("p", "meta", meta));
-    identity.append(renderAvatar(testimonial), person);
-    content.append(identity);
-    if (testimonial.rating) content.append(renderStars(testimonial.rating));
-    if (testimonial.type === "text") {
-      content.append(element("blockquote", "", testimonial.text));
+    const template = element("template");
+    template.innerHTML = testimonial.html;
+    const card = template.content.querySelector("[data-gsp-card]");
+    if (!card || !card.classList.contains("card")) {
+      throw new Error("INVALID_CARD_HTML");
     }
-    if (brand.attributionRequired) {
-      const attribution = element(
-        "a",
-        "attribution",
-        "Powered by Get Some Proof",
-      );
-      attribution.href = new URL(
-        "/?utm_source=embedded_wall&utm_medium=referral&utm_campaign=powered_by",
-        origin,
-      ).toString();
-      attribution.rel = "sponsored nofollow";
-      content.append(attribution);
-    }
-    card.append(content);
+    if (testimonial.type === "video") hydrateVideo(card, testimonial, brand);
     return card;
   }
 
@@ -438,9 +371,13 @@
         return;
       }
       host.style.setProperty("--gsp-accent", projection.brand.accentColor);
+      host.dataset.theme = projection.brand.theme;
+      host.dataset.transparentEmbed = String(
+        projection.brand.transparentEmbed === true,
+      );
       grid.replaceChildren(
         ...projection.testimonials.map((testimonial) =>
-          renderCard(testimonial, projection.brand, apiOrigin),
+          renderCard(testimonial, projection.brand),
         ),
       );
       wall.setAttribute("aria-label", `${projection.brand.name} testimonials`);
