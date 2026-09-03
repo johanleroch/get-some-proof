@@ -33,6 +33,10 @@ const eventLabels = {
   "testimonial.published": "published a Testimonial from",
   "testimonial.archived": "archived a Testimonial from",
   "testimonial.revised": "received a revised Testimonial from",
+  "testimonial.spam_marked": "quarantined Spam from",
+  "testimonial.spam_undone": "restored quarantined Testimonial",
+  "testimonial.spam_credit_restored": "approved Spam credit restoration for",
+  "testimonial.spam_expired": "permanently removed expired Spam",
   "testimonial.consent_withdrawn": "recorded consent withdrawal for",
   "testimonial.deleted": "permanently deleted",
 } as const;

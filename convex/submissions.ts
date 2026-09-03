@@ -19,6 +19,8 @@ import {
   randomSubmissionManagementToken,
 } from "./domain/submission";
 import { authzForOrganization } from "./authorization";
+import { getOrganizationBillingEntitlement } from "./billingEntitlements";
+import { consumeFreeCollectionCredit } from "./collectionQuotas";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
 import {
   sendTransactionalEmail,
@@ -450,7 +452,6 @@ export const createTextRecords = internalMutation({
         testimonialText: existing.text,
       };
     }
-
     let submission: ReturnType<typeof normalizeTextSubmission>;
     try {
       submission = normalizeTextSubmission({
@@ -516,6 +517,7 @@ export const createTextRecords = internalMutation({
       });
     }
     const now = Date.now();
+    const entitlement = await getOrganizationBillingEntitlement(ctx, brand._id);
     const testimonialId = await ctx.db.insert("testimonials", {
       avatarStorageId: args.avatarStorageId,
       clientSubmissionId,
@@ -532,6 +534,12 @@ export const createTextRecords = internalMutation({
       text: submission.text,
       createdAt: now,
       updatedAt: now,
+    });
+    await consumeFreeCollectionCredit(ctx, {
+      organizationId: brand._id,
+      plan: entitlement.effectivePlan,
+      submissionType: "text",
+      testimonialId,
     });
     await ctx.db.insert("publicationConsents", {
       acceptedAt: now,
@@ -731,6 +739,14 @@ export const submitText = action({
   args: textSubmissionArgs,
   returns: submissionResult,
   handler: async (ctx, args): Promise<SubmissionActionResult> => {
+    await ctx.runMutation(
+      internal.collectionRateLimit.recordPublicCollectionRequest,
+      {
+        clientSubmissionId: args.clientSubmissionId,
+        publicSlug: args.publicSlug,
+        submissionType: "text",
+      },
+    );
     const managementToken = randomSubmissionManagementToken();
     const deliveryAttemptId = randomSubmissionManagementToken();
     const created: CreatedTextRecords = await ctx.runMutation(

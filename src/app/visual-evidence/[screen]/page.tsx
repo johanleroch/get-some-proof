@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   BrandPrivacyNoticeScreenFixture,
   CollectionFormDetailsScreenFixture,
+  CollectionFormClosedScreenFixture,
   CollectionFormScreenFixture,
   CollectionFormSuccessScreenFixture,
   CollectionFormVideoScreenFixture,
@@ -20,6 +21,7 @@ import {
 
 const screens = {
   "collection-form": CollectionFormScreenFixture,
+  "collection-form-closed": CollectionFormClosedScreenFixture,
   "collection-form-details": CollectionFormDetailsScreenFixture,
   "collection-form-success": CollectionFormSuccessScreenFixture,
   "collection-form-video": CollectionFormVideoScreenFixture,

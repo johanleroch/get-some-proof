@@ -14,11 +14,14 @@ import {
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { authzForOrganization } from "./authorization";
 import {
+  consumeFreeCollectionCredit,
+  getCollectionAvailability,
+} from "./collectionQuotas";
+import {
   assertVideoMetadata,
   deriveVideoRetryToken,
   normalizeVideoMimeType,
   supportedVideoMimeTypes,
-  videoCapacityLimit,
   type VideoPlan,
 } from "./domain/video";
 import {
@@ -115,28 +118,12 @@ async function reserveForOrganization(
     organizationId,
   );
   const plan = entitlement.effectivePlan as VideoPlan;
-  const [reserved, consumed] = await Promise.all([
-    ctx.db
-      .query("videoReservations")
-      .withIndex("by_organization_status", (index) =>
-        index.eq("organizationId", organizationId).eq("status", "reserved"),
-      )
-      .collect(),
-    ctx.db
-      .query("videoReservations")
-      .withIndex("by_organization_status", (index) =>
-        index.eq("organizationId", organizationId).eq("status", "consumed"),
-      )
-      .collect(),
-  ]);
+  const availability = await getCollectionAvailability(ctx, organizationId);
   const now = Date.now();
-  const liveReserved = reserved.filter(({ expiresAt }) => expiresAt > now);
-  if (liveReserved.length + consumed.length >= videoCapacityLimit(plan)) {
+  if (!availability.videoAvailable) {
     unavailable(
       "VIDEO_CAPACITY_REACHED",
-      plan === "free"
-        ? "This Brand has used its two Free video credits."
-        : "This Brand has reached its active video limit.",
+      "Video testimonials are temporarily unavailable for this Brand.",
     );
   }
   const expiresAt = now + reservationTtlMs;
@@ -285,6 +272,7 @@ export const reserveRetryCapacity = internalMutation({
       !failedAsset ||
       failedAsset.status !== "failed" ||
       !testimonial ||
+      testimonial.moderationStatus === "spam" ||
       deletion ||
       failedAsset.testimonialId !== testimonial._id ||
       testimonial.organizationId !== retry.organizationId
@@ -356,6 +344,7 @@ export const attachRetryProviderUpload = internalMutation({
       failedAsset.status !== "failed" ||
       failedAsset.testimonialId !== args.testimonialId ||
       !testimonial ||
+      testimonial.moderationStatus === "spam" ||
       deletion ||
       testimonial.organizationId !== reservation.organizationId
     ) {
@@ -617,6 +606,14 @@ export const createDirectUpload = action({
     uploadUrl: v.string(),
   }),
   handler: async (ctx: ActionCtx, args) => {
+    await ctx.runMutation(
+      internal.collectionRateLimit.recordPublicCollectionRequest,
+      {
+        clientSubmissionId: args.clientSubmissionId,
+        publicSlug: args.publicSlug,
+        submissionType: "video",
+      },
+    );
     const mimeType = validateUploadRequest(args.mimeType, args.fileSizeBytes);
     const reserved: {
       expiresAt: number;
@@ -969,6 +966,14 @@ export const createVideoRecords = internalMutation({
       testimonialId,
       updatedAt: now,
     });
+    if (asset.status === "ready") {
+      await consumeFreeCollectionCredit(ctx, {
+        organizationId: brand._id,
+        plan: reservation.plan,
+        submissionType: "video",
+        testimonialId,
+      });
+    }
     if (args.avatarReservationId) await ctx.db.delete(args.avatarReservationId);
 
     const deliveries: VideoDelivery[] = [];
@@ -1128,6 +1133,12 @@ export const completeFakeAsset = internalMutation({
       status: "consumed",
       updatedAt: now,
     });
+    await consumeFreeCollectionCredit(ctx, {
+      organizationId: reservation.organizationId,
+      plan: reservation.plan,
+      submissionType: "video",
+      testimonialId: args.testimonialId,
+    });
     return null;
   },
 });
@@ -1196,11 +1207,19 @@ export const getRetryContext = query({
       .withIndex("by_token_hash", (index) => index.eq("tokenHash", tokenHash))
       .unique();
     if (!retry || retry.usedAt || retry.expiresAt <= Date.now()) return null;
-    const [brand, asset] = await Promise.all([
+    const [brand, asset, testimonial] = await Promise.all([
       ctx.db.get(retry.organizationId),
       ctx.db.get(retry.videoAssetId),
+      ctx.db.get(retry.testimonialId),
     ]);
-    if (!brand || !asset || asset.status !== "failed") return null;
+    if (
+      !brand ||
+      !asset ||
+      asset.status !== "failed" ||
+      !testimonial ||
+      testimonial.moderationStatus === "spam"
+    )
+      return null;
     return {
       brandName: brand.name,
       publicSlug: brand.publicSlug,

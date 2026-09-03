@@ -15,6 +15,8 @@ import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
 import type * as billingEntitlements from "../billingEntitlements.js";
 import type * as billingService from "../billingService.js";
+import type * as collectionQuotas from "../collectionQuotas.js";
+import type * as collectionRateLimit from "../collectionRateLimit.js";
 import type * as dashboard from "../dashboard.js";
 import type * as domain_brand from "../domain/brand.js";
 import type * as domain_invitation from "../domain/invitation.js";
@@ -63,6 +65,8 @@ declare const fullApi: ApiFromModules<{
   billingActions: typeof billingActions;
   billingEntitlements: typeof billingEntitlements;
   billingService: typeof billingService;
+  collectionQuotas: typeof collectionQuotas;
+  collectionRateLimit: typeof collectionRateLimit;
   dashboard: typeof dashboard;
   "domain/brand": typeof domain_brand;
   "domain/invitation": typeof domain_invitation;

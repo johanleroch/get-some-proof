@@ -1,8 +1,15 @@
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
-import type { Id } from "./_generated/dataModel";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
@@ -10,8 +17,9 @@ const inboxStatusValidator = v.union(
   v.literal("pending"),
   v.literal("published"),
   v.literal("archived"),
+  v.literal("spam"),
 );
-type InboxStatus = "pending" | "published" | "archived";
+type InboxStatus = "pending" | "published" | "archived" | "spam";
 
 const inboxIdentityValidator = {
   avatarUrl: v.union(v.null(), v.string()),
@@ -19,6 +27,8 @@ const inboxIdentityValidator = {
   consentAcceptedAt: v.number(),
   createdAt: v.number(),
   moderationStatus: inboxStatusValidator,
+  quarantineExpiresAt: v.optional(v.number()),
+  spamCreditRestored: v.optional(v.boolean()),
   rating: v.optional(v.number()),
   role: v.optional(v.string()),
   submitterEmail: v.string(),
@@ -110,22 +120,18 @@ export const listInbox = query({
           .withIndex("by_organization_created_at", (index) =>
             index.eq("organizationId", access.organization._id),
           );
-    const visibleQuery = indexedQuery.filter((filter) =>
-      args.submissionType
-        ? filter.and(
-            filter.neq(filter.field("moderationStatus"), "spam"),
-            filter.eq(filter.field("submissionType"), args.submissionType),
-          )
-        : filter.neq(filter.field("moderationStatus"), "spam"),
-    );
+    const visibleQuery = args.submissionType
+      ? indexedQuery.filter((filter) =>
+          filter.eq(filter.field("submissionType"), args.submissionType),
+        )
+      : indexedQuery;
     const page = await visibleQuery
       .order(args.sort === "newest" ? "desc" : "asc")
       .paginate(args.paginationOpts);
 
     const inboxItems = await Promise.all(
       page.page.map(async (testimonial) => {
-        if (testimonial.moderationStatus === "spam") testimonialUnavailable();
-        const [avatarUrl, consent, videoAsset] = await Promise.all([
+        const [avatarUrl, consent, videoAsset, quarantine] = await Promise.all([
           testimonial.avatarStorageId
             ? ctx.storage.getUrl(testimonial.avatarStorageId)
             : null,
@@ -143,6 +149,15 @@ export const listInbox = query({
                 )
                 .unique()
             : null,
+          testimonial.moderationStatus === "spam"
+            ? ctx.db
+                .query("spamQuarantines")
+                .withIndex("by_testimonial", (index) =>
+                  index.eq("testimonialId", testimonial._id),
+                )
+                .order("desc")
+                .first()
+            : null,
         ]);
         if (!consent) testimonialUnavailable();
         const identity = {
@@ -151,10 +166,12 @@ export const listInbox = query({
           consentAcceptedAt: consent.acceptedAt,
           createdAt: testimonial.createdAt,
           moderationStatus: testimonial.moderationStatus,
+          quarantineExpiresAt: quarantine?.expiresAt,
           rating: testimonial.rating,
           role: testimonial.role,
           submitterEmail: testimonial.submitterEmail,
           submitterName: testimonial.submitterName,
+          spamCreditRestored: quarantine?.creditRestored,
           testimonialId: testimonial._id,
         };
         if (testimonial.submissionType === "text") {
@@ -183,7 +200,74 @@ const allowedTransitions: Record<InboxStatus, InboxStatus[]> = {
   pending: ["published", "archived"],
   published: ["archived"],
   archived: ["published"],
+  spam: [],
 };
+
+async function restorePublishedProjection(
+  ctx: MutationCtx,
+  testimonial: Doc<"testimonials">,
+  publishedAt: number,
+) {
+  const [consent, videoAsset, existingProjection] = await Promise.all([
+    ctx.db
+      .query("publicationConsents")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .unique(),
+    testimonial.submissionType === "video"
+      ? ctx.db
+          .query("videoAssets")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique()
+      : null,
+    ctx.db
+      .query("publicTestimonialProjections")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .unique(),
+  ]);
+  if (!consent) testimonialUnavailable();
+  if (
+    testimonial.submissionType === "video" &&
+    (!videoAsset || videoAsset.status !== "ready" || !videoAsset.playbackId)
+  ) {
+    testimonialUnavailable();
+  }
+  const fields = new Set(consent.identityFields);
+  const identity = {
+    avatarStorageId: fields.has("avatar")
+      ? testimonial.avatarStorageId
+      : undefined,
+    company: fields.has("company") ? testimonial.company : undefined,
+    name: testimonial.submitterName,
+    organizationId: testimonial.organizationId,
+    publishedAt,
+    rating: fields.has("rating") ? testimonial.rating : undefined,
+    role: fields.has("role") ? testimonial.role : undefined,
+    testimonialId: testimonial._id,
+  };
+  const projection =
+    testimonial.submissionType === "video" && videoAsset
+      ? {
+          ...identity,
+          captionsAvailable: videoAsset.captionsStatus === "ready",
+          playbackId: videoAsset.playbackId!,
+          posterTimeSeconds: videoAsset.durationSeconds
+            ? videoAsset.durationSeconds / 2
+            : undefined,
+          type: "video" as const,
+        }
+      : { ...identity, text: testimonial.text, type: "text" as const };
+  if (existingProjection) {
+    await ctx.db.replace(existingProjection._id, projection);
+  } else {
+    await ctx.db.insert("publicTestimonialProjections", projection);
+  }
+}
 
 export const setStatus = mutation({
   args: {
@@ -322,6 +406,441 @@ export const setStatus = mutation({
       occurredAt: now,
     });
     return { moderationStatus: args.status };
+  },
+});
+
+const spamQuarantineDurationMs = 7 * 24 * 60 * 60 * 1_000;
+const automaticSpamRestorationWindowMs = 30 * 24 * 60 * 60 * 1_000;
+const automaticSpamRestorationLimit = 3;
+
+export const markSpam = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.object({ creditRestored: v.boolean(), expiresAt: v.number() }),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const testimonial = await findTestimonial(
+      ctx,
+      access.organization._id,
+      args.testimonialId,
+    );
+    if (testimonial.moderationStatus === "spam") {
+      const existing = await ctx.db
+        .query("spamQuarantines")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .order("desc")
+        .first();
+      if (!existing || existing.status !== "active") testimonialUnavailable();
+      return {
+        creditRestored: existing.creditRestored,
+        expiresAt: existing.expiresAt,
+      };
+    }
+    if (testimonial.submissionType === "video") {
+      const deletion = await ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (deletion) testimonialUnavailable();
+    }
+    const now = Date.now();
+    const [credit, projection, recentReports] = await Promise.all([
+      ctx.db
+        .query("collectionCredits")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("spamQuarantines")
+        .withIndex("by_organization_reported_at", (index) =>
+          index
+            .eq("organizationId", access.organization._id)
+            .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+        )
+        .collect(),
+    ]);
+    const automaticRestorations = recentReports.filter(
+      ({ restorationMode }) => restorationMode === "automatic",
+    ).length;
+    const creditRestored = Boolean(
+      credit &&
+      credit.restoredAt === undefined &&
+      automaticRestorations < automaticSpamRestorationLimit,
+    );
+    if (credit && creditRestored) {
+      await ctx.db.patch(credit._id, {
+        restorationMode: "automatic",
+        restoredAt: now,
+      });
+    }
+    if (projection) await ctx.db.delete(projection._id);
+    const expiresAt = now + spamQuarantineDurationMs;
+    const quarantineId = await ctx.db.insert("spamQuarantines", {
+      creditRestored,
+      expiresAt,
+      organizationId: access.organization._id,
+      previousModerationStatus: testimonial.moderationStatus,
+      previousPublishedAt: projection?.publishedAt,
+      reportedAt: now,
+      restorationMode: creditRestored ? "automatic" : undefined,
+      status: "active",
+      testimonialId: testimonial._id,
+      updatedAt: now,
+    });
+    await ctx.db.patch(testimonial._id, {
+      moderationStatus: "spam",
+      updatedAt: now,
+    });
+    await ctx.scheduler.runAfter(
+      spamQuarantineDurationMs,
+      internal.testimonialModeration.expireSpamQuarantine,
+      { quarantineId },
+    );
+    await recordOrganizationAuditEvent(ctx, {
+      actorDisplayName: access.principal.name,
+      actorUserId: access.principal.actorId,
+      eventType: "testimonial.spam_marked",
+      newValue: creditRestored ? "credit_restored" : "quarantined",
+      organizationId: access.organization._id,
+      previousValue: testimonial.moderationStatus,
+      targetId: String(testimonial._id),
+      targetLabel: "Quarantined Testimonial",
+      targetType: "testimonial",
+    });
+    return { creditRestored, expiresAt };
+  },
+});
+
+export const undoSpam = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.object({ moderationStatus: inboxStatusValidator }),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const testimonial = await findTestimonial(
+      ctx,
+      access.organization._id,
+      args.testimonialId,
+    );
+    const quarantine = await ctx.db
+      .query("spamQuarantines")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .order("desc")
+      .first();
+    const now = Date.now();
+    if (
+      testimonial.moderationStatus !== "spam" ||
+      !quarantine ||
+      quarantine.status !== "active" ||
+      quarantine.expiresAt <= now
+    ) {
+      testimonialUnavailable();
+    }
+    const credit = quarantine.creditRestored
+      ? await ctx.db
+          .query("collectionCredits")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique()
+      : null;
+    if (credit) {
+      await ctx.db.patch(credit._id, {
+        restorationMode: undefined,
+        restoredAt: undefined,
+      });
+    }
+    if (quarantine.previousModerationStatus === "published") {
+      await restorePublishedProjection(
+        ctx,
+        testimonial,
+        quarantine.previousPublishedAt ?? now,
+      );
+    }
+    await ctx.db.patch(testimonial._id, {
+      moderationStatus: quarantine.previousModerationStatus,
+      updatedAt: now,
+    });
+    await ctx.db.patch(quarantine._id, { status: "undone", updatedAt: now });
+    await recordOrganizationAuditEvent(ctx, {
+      actorDisplayName: access.principal.name,
+      actorUserId: access.principal.actorId,
+      eventType: "testimonial.spam_undone",
+      newValue: quarantine.previousModerationStatus,
+      organizationId: access.organization._id,
+      previousValue: "spam",
+      targetId: String(testimonial._id),
+      targetLabel: "Restored Testimonial",
+      targetType: "testimonial",
+    });
+    return { moderationStatus: quarantine.previousModerationStatus };
+  },
+});
+
+export const approveSpamCreditRestoration = internalMutation({
+  args: {
+    actorDisplayName: v.string(),
+    quarantineId: v.id("spamQuarantines"),
+  },
+  returns: v.object({ restored: v.boolean() }),
+  handler: async (ctx, args) => {
+    const quarantine = await ctx.db.get(args.quarantineId);
+    if (!quarantine || quarantine.status !== "active") {
+      return { restored: false };
+    }
+    const credit = await ctx.db
+      .query("collectionCredits")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", quarantine.testimonialId),
+      )
+      .unique();
+    if (!credit || credit.restoredAt !== undefined) {
+      return { restored: false };
+    }
+    const now = Date.now();
+    await ctx.db.patch(credit._id, {
+      restorationMode: "support",
+      restoredAt: now,
+    });
+    await ctx.db.patch(quarantine._id, {
+      creditRestored: true,
+      restorationMode: "support",
+      supportActor: args.actorDisplayName.trim().slice(0, 100) || "Support",
+      updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      actorDisplayName: args.actorDisplayName.trim().slice(0, 100) || "Support",
+      actorUserId: "support-operation",
+      eventType: "testimonial.spam_credit_restored",
+      newValue: "credit_restored",
+      organizationId: quarantine.organizationId,
+      previousValue: "manual_review",
+      targetId: String(quarantine.testimonialId),
+      targetLabel: "Quarantined Testimonial",
+      targetType: "testimonial",
+    });
+    return { restored: true };
+  },
+});
+
+export const expireSpamQuarantine = internalMutation({
+  args: { quarantineId: v.id("spamQuarantines") },
+  returns: v.object({ expired: v.boolean() }),
+  handler: async (ctx, args) => {
+    const quarantine = await ctx.db.get(args.quarantineId);
+    const now = Date.now();
+    if (!quarantine || quarantine.status !== "active") {
+      return { expired: false };
+    }
+    if (quarantine.expiresAt > now) {
+      await ctx.scheduler.runAfter(
+        quarantine.expiresAt - now,
+        internal.testimonialModeration.expireSpamQuarantine,
+        args,
+      );
+      return { expired: false };
+    }
+    const testimonial = await ctx.db.get(quarantine.testimonialId);
+    if (!testimonial || testimonial.moderationStatus !== "spam") {
+      await ctx.db.patch(quarantine._id, { status: "expired", updatedAt: now });
+      return { expired: true };
+    }
+    const [
+      assets,
+      consent,
+      deliveries,
+      priorAuditEvents,
+      projection,
+      replacementItems,
+      retryLinks,
+      revisions,
+      deletion,
+    ] = await Promise.all([
+      ctx.db
+        .query("videoAssets")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("publicationConsents")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("submissionEmailDeliveries")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", testimonial.organizationId)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(testimonial._id)),
+        )
+        .collect(),
+      ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      ctx.db
+        .query("managementLinkReplacementItems")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("videoRetryLinks")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("submissionVideoRevisions")
+        .withIndex("by_testimonial_status", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .collect(),
+      ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+    ]);
+    const [revisionAssets, retryAssets] = await Promise.all([
+      Promise.all(
+        revisions.map((revision) =>
+          revision.videoAssetId ? ctx.db.get(revision.videoAssetId) : null,
+        ),
+      ),
+      Promise.all(
+        retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
+      ),
+    ]);
+    const allAssets = [...assets, ...revisionAssets, ...retryAssets].filter(
+      (asset, index, candidates): asset is Doc<"videoAssets"> =>
+        Boolean(asset) &&
+        candidates.findIndex((candidate) => candidate?._id === asset?._id) ===
+          index,
+    );
+    const cleanupTargets = allAssets.flatMap((asset) =>
+      [
+        asset.providerAssetId
+          ? { asset, providerAssetId: asset.providerAssetId }
+          : { asset, providerUploadId: asset.providerUploadId },
+        asset.downloadProviderAssetId
+          ? { asset, providerAssetId: asset.downloadProviderAssetId }
+          : null,
+      ].filter(Boolean),
+    ) as Array<{
+      asset: Doc<"videoAssets">;
+      providerAssetId?: string;
+      providerUploadId?: string;
+    }>;
+    const cleanupJobIds = await Promise.all(
+      cleanupTargets.map(({ asset, ...target }) =>
+        ctx.db.insert("videoProviderCleanupJobs", {
+          attempts: 0,
+          createdAt: now,
+          organizationId: testimonial.organizationId,
+          provider: asset.provider,
+          ...target,
+          testimonialId: testimonial._id,
+        }),
+      ),
+    );
+    await Promise.all(
+      cleanupJobIds.map((cleanupJobId) =>
+        ctx.scheduler.runAfter(0, internal.videoMedia.processProviderCleanup, {
+          cleanupJobId,
+        }),
+      ),
+    );
+    if (projection) await ctx.db.delete(projection._id);
+    if (consent) await ctx.db.delete(consent._id);
+    if (deletion) await ctx.db.delete(deletion._id);
+    await Promise.all([
+      ...deliveries.map((delivery) => ctx.db.delete(delivery._id)),
+      ...retryLinks.map((retryLink) => ctx.db.delete(retryLink._id)),
+      ...revisions.map((revision) => ctx.db.delete(revision._id)),
+      ...replacementItems.map((item) => ctx.db.delete(item._id)),
+      ...allAssets.map((asset) => ctx.db.delete(asset._id)),
+      ...priorAuditEvents.map((event) => ctx.db.delete(event._id)),
+    ]);
+    const replacementRequestIds = [
+      ...new Set(replacementItems.map((item) => item.requestId)),
+    ];
+    await Promise.all(
+      replacementRequestIds.map(async (requestId) => {
+        const remaining = await ctx.db
+          .query("managementLinkReplacementItems")
+          .withIndex("by_request", (index) => index.eq("requestId", requestId))
+          .first();
+        const request = remaining ? null : await ctx.db.get(requestId);
+        if (request) await ctx.db.delete(request._id);
+      }),
+    );
+    const reservationIds = new Set([
+      ...allAssets.map((asset) => asset.reservationId),
+      ...revisions.map((revision) => revision.reservationId),
+    ]);
+    const reservations = await Promise.all(
+      [...reservationIds].map((reservationId) => ctx.db.get(reservationId)),
+    );
+    await Promise.all(
+      reservations.map((reservation) =>
+        reservation ? ctx.db.delete(reservation._id) : Promise.resolve(),
+      ),
+    );
+    if (testimonial.avatarStorageId) {
+      await ctx.storage.delete(testimonial.avatarStorageId);
+    }
+    await ctx.db.delete(testimonial._id);
+    await ctx.db.patch(quarantine._id, { status: "expired", updatedAt: now });
+    await recordOrganizationAuditEvent(ctx, {
+      actorDisplayName: "System",
+      actorUserId: "spam-quarantine-expiry",
+      eventType: "testimonial.spam_expired",
+      newValue: "deleted",
+      organizationId: testimonial.organizationId,
+      previousValue: "spam",
+      targetId: String(testimonial._id),
+      targetLabel: "Expired Spam",
+      targetType: "testimonial",
+    });
+    return { expired: true };
   },
 });
 

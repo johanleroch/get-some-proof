@@ -10,6 +10,7 @@ import {
 import { hashSubmissionManagementToken } from "./domain/submission";
 import { deriveVideoRetryToken } from "./domain/video";
 import { createVideoRetryLink } from "./videoRetryLinks";
+import { consumeFreeCollectionCredit } from "./collectionQuotas";
 
 const eventValidator = v.object({
   data: v.any(),
@@ -243,6 +244,14 @@ export const applyEvent = internalMutation({
               status: "consumed",
               updatedAt: Date.now(),
             });
+            if (asset.testimonialId) {
+              await consumeFreeCollectionCredit(ctx, {
+                organizationId: reservation.organizationId,
+                plan: reservation.plan,
+                submissionType: "video",
+                testimonialId: asset.testimonialId,
+              });
+            }
             outcome = "ready";
           }
         }

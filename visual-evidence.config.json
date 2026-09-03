@@ -92,6 +92,15 @@
       "requiresBackend": true
     },
     {
+      "slug": "collection-form-closed",
+      "title": "Collection Form - closed",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form-closed",
+      "heading": "Collection is temporarily closed",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
       "slug": "collection-form-write",
       "title": "Collection Form - write text",
       "path": "/c/:publicSlug",

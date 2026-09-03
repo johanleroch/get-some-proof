@@ -63,6 +63,33 @@ describe("TestimonialInboxView", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows reversible Spam quarantine without ordinary moderation actions", () => {
+    const onUndoSpam = vi.fn();
+    const spam = {
+      ...testimonial,
+      moderationStatus: "spam" as const,
+      quarantineExpiresAt: Date.UTC(2026, 8, 10),
+      spamCreditRestored: true,
+    };
+    render(
+      <TestimonialInboxView
+        onArchive={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        onPublish={vi.fn()}
+        onUndoSpam={onUndoSpam}
+        testimonials={[spam]}
+      />,
+    );
+
+    expect(screen.getByText(/Collection capacity was restored/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Undo Spam" }));
+    expect(onUndoSpam).toHaveBeenCalledWith(spam);
+    expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Delete permanently" }),
+    ).toBeNull();
+  });
+
   it("disables every moderation action while a mutation is pending", () => {
     const { container } = render(
       <TestimonialInboxView

@@ -298,10 +298,26 @@ function VideoStep({
 function ProofTypeStep({
   onText,
   onVideo,
+  textAvailable,
+  videoAvailable,
 }: {
   onText: () => void;
   onVideo: () => void;
+  textAvailable: boolean;
+  videoAvailable: boolean;
 }) {
+  if (!textAvailable && !videoAvailable) {
+    return (
+      <section className="space-y-2 text-center" aria-live="polite">
+        <h2 className="text-lg font-semibold">
+          Collection is temporarily closed
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          This Brand is not accepting new testimonials right now.
+        </p>
+      </section>
+    );
+  }
   return (
     <section className="space-y-4" aria-labelledby="choose-proof-type">
       <div>
@@ -314,7 +330,8 @@ function ProofTypeStep({
       </div>
       <button
         aria-label="Send a text testimonial"
-        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-(--brand-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent)"
+        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!textAvailable}
         onClick={onText}
         type="button"
       >
@@ -324,13 +341,16 @@ function ProofTypeStep({
         <span>
           <span className="block font-medium">Send a text testimonial</span>
           <span className="text-muted-foreground text-sm">
-            Write 20 to 2,000 characters
+            {textAvailable
+              ? "Write 20 to 2,000 characters"
+              : "Text testimonials are currently unavailable"}
           </span>
         </span>
       </button>
       <button
         aria-label="Record or upload a video"
-        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-(--brand-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent)"
+        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!videoAvailable}
         onClick={onVideo}
         type="button"
       >
@@ -339,7 +359,11 @@ function ProofTypeStep({
         </span>
         <span>
           <span className="block font-medium">Record or upload a video</span>
-          <span className="text-muted-foreground text-sm">Up to 2 minutes</span>
+          <span className="text-muted-foreground text-sm">
+            {videoAvailable
+              ? "Up to 2 minutes"
+              : "Video testimonials are currently unavailable"}
+          </span>
         </span>
       </button>
     </section>
@@ -950,6 +974,7 @@ function buildConsentForForm(input: {
 }
 
 export function CollectionFormShellView({
+  availability = { textAvailable: true, videoAvailable: true },
   brand,
   cancelVideo = async () => undefined,
   createDirectUpload = async () => {
@@ -969,6 +994,7 @@ export function CollectionFormShellView({
   uploadVideo = uploadDirectVideo,
   inspectVideo = inspectVideoFile,
 }: {
+  availability?: { textAvailable: boolean; videoAvailable: boolean };
   brand: PublicBrand;
   cancelVideo?: (input: {
     clientSubmissionId: string;
@@ -1080,6 +1106,8 @@ export function CollectionFormShellView({
                 setProofType("video");
                 setStep(2);
               }}
+              textAvailable={availability.textAvailable}
+              videoAvailable={availability.videoAvailable}
             />
           ) : null}
 
@@ -1237,6 +1265,9 @@ export function CollectionFormShellView({
 
 export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   const brand = useQuery(api.organizations.getByPublicSlug, { publicSlug });
+  const availability = useQuery(api.collectionQuotas.getPublicAvailability, {
+    publicSlug,
+  });
   const submitText = useAction(api.submissions.submitText);
   const createDirectUpload = useAction(api.video.createDirectUpload);
   const submitVideo = useAction(api.video.submit);
@@ -1251,7 +1282,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
     api.submissionManagement.requestReplacementLink,
   );
 
-  if (brand === undefined) {
+  if (brand === undefined || availability === undefined) {
     return (
       <main className="bg-muted/30 grid min-h-svh place-items-center px-5">
         <p className="text-muted-foreground text-sm" role="status">
@@ -1260,7 +1291,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
       </main>
     );
   }
-  if (brand === null) {
+  if (brand === null || availability === null) {
     return (
       <main className="bg-muted/30 grid min-h-svh place-items-center px-5 text-center">
         <div>
@@ -1276,6 +1307,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   }
   return (
     <CollectionFormShellView
+      availability={availability}
       brand={brand}
       cancelVideo={cancelVideo}
       createDirectUpload={createDirectUpload}

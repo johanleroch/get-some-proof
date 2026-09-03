@@ -132,6 +132,10 @@ export default defineSchema({
       v.literal("testimonial.published"),
       v.literal("testimonial.archived"),
       v.literal("testimonial.revised"),
+      v.literal("testimonial.spam_marked"),
+      v.literal("testimonial.spam_undone"),
+      v.literal("testimonial.spam_credit_restored"),
+      v.literal("testimonial.spam_expired"),
       v.literal("testimonial.consent_withdrawn"),
       v.literal("testimonial.deleted"),
     ),
@@ -192,6 +196,44 @@ export default defineSchema({
     ])
     .index("by_management_token_hash", ["managementTokenHash"])
     .index("by_avatar_storage_id", ["avatarStorageId"]),
+  collectionCredits: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    submissionType: v.union(v.literal("text"), v.literal("video")),
+    consumedAt: v.number(),
+    restoredAt: v.optional(v.number()),
+    restorationMode: v.optional(
+      v.union(v.literal("automatic"), v.literal("support")),
+    ),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization_type", ["organizationId", "submissionType"]),
+  spamQuarantines: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    previousModerationStatus: v.union(
+      v.literal("pending"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    previousPublishedAt: v.optional(v.number()),
+    reportedAt: v.number(),
+    expiresAt: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("undone"),
+      v.literal("expired"),
+    ),
+    creditRestored: v.boolean(),
+    restorationMode: v.optional(
+      v.union(v.literal("automatic"), v.literal("support")),
+    ),
+    supportActor: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization_reported_at", ["organizationId", "reportedAt"])
+    .index("by_status_expiry", ["status", "expiresAt"]),
   publicTestimonialProjections: defineTable(
     v.union(
       v.object({

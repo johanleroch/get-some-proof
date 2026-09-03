@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Download, ExternalLink, Send, Trash2 } from "lucide-react";
+import {
+  Archive,
+  Download,
+  ExternalLink,
+  Send,
+  ShieldAlert,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,11 +42,13 @@ type InboxTestimonialIdentity = {
   company?: string;
   consentAcceptedAt: number;
   createdAt: number;
-  moderationStatus: "pending" | "published" | "archived";
+  moderationStatus: "pending" | "published" | "archived" | "spam";
+  quarantineExpiresAt?: number;
   rating?: number;
   role?: string;
   submitterEmail: string;
   submitterName: string;
+  spamCreditRestored?: boolean;
   testimonialId: Id<"testimonials"> | string;
 };
 
@@ -55,7 +65,7 @@ type InboxTestimonial =
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
     });
 
-type ModerationFilter = "all" | "pending" | "published" | "archived";
+type ModerationFilter = "all" | "pending" | "published" | "archived" | "spam";
 type SubmissionTypeFilter = "all" | "text" | "video";
 type InboxSort = "newest" | "oldest";
 
@@ -73,6 +83,8 @@ export function TestimonialInboxView({
   onDeleteRequest,
   onDownload,
   onPublish,
+  onSpam,
+  onUndoSpam,
   testimonials,
 }: {
   actionsDisabled?: boolean;
@@ -80,6 +92,8 @@ export function TestimonialInboxView({
   onDeleteRequest: (testimonial: InboxTestimonial) => void;
   onDownload?: (testimonial: InboxTestimonial) => void;
   onPublish: (testimonial: InboxTestimonial) => void;
+  onSpam?: (testimonial: InboxTestimonial) => void;
+  onUndoSpam?: (testimonial: InboxTestimonial) => void;
   testimonials: InboxTestimonial[];
 }) {
   if (testimonials.length === 0) {
@@ -161,8 +175,31 @@ export function TestimonialInboxView({
                 {testimonial.rating ? ` · ${testimonial.rating}/5` : ""}
               </p>
             ) : null}
+            {testimonial.moderationStatus === "spam" ? (
+              <p className="text-muted-foreground rounded-xl border p-3 text-sm">
+                Quarantined until{" "}
+                {testimonial.quarantineExpiresAt
+                  ? formatShortDate(testimonial.quarantineExpiresAt)
+                  : "expiry"}
+                .{" "}
+                {testimonial.spamCreditRestored
+                  ? "Collection capacity was restored."
+                  : "Credit restoration requires support review."}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-2">
-              {testimonial.moderationStatus !== "published" ? (
+              {testimonial.moderationStatus === "spam" && onUndoSpam ? (
+                <Button
+                  disabled={actionsDisabled}
+                  onClick={() => onUndoSpam(testimonial)}
+                  size="sm"
+                >
+                  <Undo2 aria-hidden="true" />
+                  Undo Spam
+                </Button>
+              ) : null}
+              {testimonial.moderationStatus !== "spam" &&
+              testimonial.moderationStatus !== "published" ? (
                 <Button
                   disabled={
                     actionsDisabled ||
@@ -176,7 +213,8 @@ export function TestimonialInboxView({
                   Publish
                 </Button>
               ) : null}
-              {testimonial.moderationStatus !== "archived" ? (
+              {testimonial.moderationStatus !== "spam" &&
+              testimonial.moderationStatus !== "archived" ? (
                 <Button
                   disabled={actionsDisabled}
                   onClick={() => onArchive(testimonial)}
@@ -187,7 +225,8 @@ export function TestimonialInboxView({
                   Archive
                 </Button>
               ) : null}
-              {testimonial.submissionType === "video" &&
+              {testimonial.moderationStatus !== "spam" &&
+              testimonial.submissionType === "video" &&
               testimonial.videoStatus === "ready" &&
               onDownload ? (
                 <Button
@@ -200,15 +239,30 @@ export function TestimonialInboxView({
                   Download MP4 (Pro)
                 </Button>
               ) : null}
-              <Button
-                disabled={actionsDisabled}
-                onClick={() => onDeleteRequest(testimonial)}
-                size="sm"
-                variant="outline"
-              >
-                <Trash2 aria-hidden="true" />
-                Delete permanently
-              </Button>
+              {testimonial.moderationStatus !== "spam" ? (
+                <>
+                  {onSpam ? (
+                    <Button
+                      disabled={actionsDisabled}
+                      onClick={() => onSpam(testimonial)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <ShieldAlert aria-hidden="true" />
+                      Mark as Spam
+                    </Button>
+                  ) : null}
+                  <Button
+                    disabled={actionsDisabled}
+                    onClick={() => onDeleteRequest(testimonial)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Trash2 aria-hidden="true" />
+                    Delete permanently
+                  </Button>
+                </>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -299,6 +353,7 @@ function InboxFilters({
           <option value="pending">Pending</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
+          <option value="spam">Spam quarantine</option>
         </select>
       </label>
       <label className="space-y-1 text-sm">
@@ -443,6 +498,8 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     { initialNumItems: 20 },
   );
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
+  const markSpam = useMutation(api.testimonialModeration.markSpam);
+  const undoSpam = useMutation(api.testimonialModeration.undoSpam);
   const removeText = useMutation(api.testimonialModeration.remove);
   const removeVideo = useAction(api.videoMedia.remove);
   const requestDownload = useAction(api.videoMedia.requestDownload);
@@ -510,6 +567,32 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     });
   }
 
+  async function changeSpamStatus(
+    testimonial: InboxTestimonial,
+    action: "mark" | "undo",
+  ) {
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPending(false),
+      onStart: () => {
+        setPending(true);
+        setError(null);
+        setMessage(null);
+      },
+      onSuccess: () =>
+        setMessage(
+          action === "mark"
+            ? "Testimonial moved to seven-day Spam quarantine."
+            : "Spam report undone and collection capacity updated.",
+        ),
+      run: () =>
+        (action === "mark" ? markSpam : undoSpam)({
+          organizationId: activeOrganization.id,
+          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+        }),
+    });
+  }
+
   async function downloadVideo(testimonial: InboxTestimonial) {
     if (testimonial.submissionType !== "video") return;
     await runInboxAction({
@@ -572,6 +655,10 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           onDownload={(testimonial) => void downloadVideo(testimonial)}
           onPublish={(testimonial) =>
             void changeStatus(testimonial, "published")
+          }
+          onSpam={(testimonial) => void changeSpamStatus(testimonial, "mark")}
+          onUndoSpam={(testimonial) =>
+            void changeSpamStatus(testimonial, "undo")
           }
           testimonials={testimonials}
         />
