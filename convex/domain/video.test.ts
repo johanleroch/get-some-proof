@@ -37,7 +37,7 @@ describe("Video Testimonial domain", () => {
     );
   });
 
-  it("keeps the MVP capacity policy explicit for Free and Premium", () => {
+  it("keeps the MVP capacity policy explicit for Free and Pro", () => {
     expect(videoCapacityLimit("free")).toBe(2);
     expect(videoCapacityLimit("premium")).toBe(25);
   });

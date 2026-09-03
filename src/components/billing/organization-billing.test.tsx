@@ -84,21 +84,15 @@ describe("OrganizationBilling", () => {
     mocks.getOffers.mockReset();
     mocks.getOffers.mockResolvedValue([
       {
-        amount: 4_900,
+        amount: 2_900,
         currency: "eur",
         interval: "month",
-        lookupKey: "premium_monthly",
-      },
-      {
-        amount: 49_000,
-        currency: "eur",
-        interval: "year",
-        lookupKey: "premium_annual",
+        lookupKey: "pro_monthly",
       },
     ]);
     mocks.getSubscriptionDetails.mockReset();
     mocks.getSubscriptionDetails.mockResolvedValue({
-      amount: 4_900,
+      amount: 2_900,
       currency: "eur",
       interval: "month",
     });
@@ -157,21 +151,18 @@ describe("OrganizationBilling", () => {
     );
     expect(screen.queryByText("Billing is not connected")).toBeNull();
     expect(
-      screen.getByText(
-        "No Stripe subscription is active for this Organization.",
-      ),
+      screen.getByText("No Stripe subscription is active for this Workspace."),
     ).toBeVisible();
   });
 
-  it("loads the live monthly and annual Premium offers for a Free Owner", async () => {
+  it("loads the single EUR 29 monthly Pro offer for a Free Owner", async () => {
     mocks.availability = "available";
 
     render(<OrganizationBilling slug="acme-1234" />);
 
-    expect(
-      await screen.findByRole("button", { name: /monthly.*€49/i }),
-    ).toBeVisible();
-    expect(screen.getByRole("button", { name: /annual.*€490/i })).toBeVisible();
+    expect(await screen.findByText("€29")).toBeVisible();
+    expect(screen.getByText("Pro monthly")).toBeVisible();
+    expect(screen.queryByText(/annual/i)).toBeNull();
     expect(mocks.getOffers).toHaveBeenCalledWith({
       organizationId: "organization-1",
     });
@@ -180,46 +171,8 @@ describe("OrganizationBilling", () => {
     ).toBeVisible();
   });
 
-  it("supports a deterministic annual cadence for visual evidence", () => {
-    render(
-      <BillingCockpit
-        initialLookupKey="premium_annual"
-        offers={[
-          {
-            amount: 4_900,
-            currency: "eur",
-            interval: "month",
-            lookupKey: "premium_monthly",
-          },
-          {
-            amount: 49_000,
-            currency: "eur",
-            interval: "year",
-            lookupKey: "premium_annual",
-          },
-        ]}
-        onUpdateContact={mocks.updateContact}
-        overview={{
-          availability: "available",
-          billingContact: "accounts@acme.example",
-          canManage: true,
-          effectivePlan: "free",
-          state: "missing",
-          subscription: null,
-        }}
-      />,
-    );
-
-    expect(
-      screen.getByRole("button", { name: /monthly.*€49/i }),
-    ).toHaveAttribute("aria-pressed", "false");
-    expect(
-      screen.getByRole("button", { name: /annual.*€490/i }),
-    ).toHaveAttribute("aria-pressed", "true");
-  });
-
   it.each([
-    ["success", /confirming your premium subscription/i],
+    ["success", /confirming your pro subscription/i],
     ["canceled", /no billing change was made/i],
   ])(
     "treats a Checkout %s return as transient copy only",
@@ -248,10 +201,10 @@ describe("OrganizationBilling", () => {
         navigateToCheckout={mocks.redirect}
         offers={[
           {
-            amount: 4_900,
+            amount: 2_900,
             currency: "eur",
             interval: "month",
-            lookupKey: "premium_monthly",
+            lookupKey: "pro_monthly",
           },
         ]}
         onStartCheckout={onStartCheckout}
@@ -274,7 +227,7 @@ describe("OrganizationBilling", () => {
     fireEvent.click(checkoutButton);
 
     expect(onStartCheckout).toHaveBeenCalledTimes(1);
-    expect(onStartCheckout).toHaveBeenCalledWith("premium_monthly");
+    expect(onStartCheckout).toHaveBeenCalledWith("pro_monthly");
     expect(checkoutButton).toBeDisabled();
 
     finishCheckout({ url: "https://checkout.stripe.example/server-session" });
@@ -299,10 +252,10 @@ describe("OrganizationBilling", () => {
         navigateToPortal={mocks.redirect}
         offers={[
           {
-            amount: 49_000,
+            amount: 2_900,
             currency: "eur",
-            interval: "year",
-            lookupKey: "premium_annual",
+            interval: "month",
+            lookupKey: "pro_monthly",
           },
         ]}
         onOpenPortal={onOpenPortal}
@@ -374,7 +327,7 @@ describe("OrganizationBilling", () => {
     expect(button).toBeEnabled();
   });
 
-  it("keeps past_due Premium and offers Owner-only payment recovery", () => {
+  it("keeps past_due Pro and offers Owner-only payment recovery", () => {
     const { rerender } = render(
       <BillingCockpit
         onOpenPortal={mocks.openPortal}
@@ -398,7 +351,7 @@ describe("OrganizationBilling", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Payment needs attention",
     );
-    expect(screen.getByText("Premium", { selector: "span" })).toBeVisible();
+    expect(screen.getByText("Pro", { selector: "span" })).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Update payment method" }),
     ).toBeVisible();
@@ -435,17 +388,17 @@ describe("OrganizationBilling", () => {
       <BillingCockpit
         offers={[
           {
-            amount: 99_000,
+            amount: 2_900,
             currency: "eur",
-            interval: "year",
-            lookupKey: "premium_annual",
+            interval: "month",
+            lookupKey: "pro_monthly",
           },
         ]}
         onUpdateContact={mocks.updateContact}
         subscriptionDetails={{
-          amount: 49_000,
+          amount: 2_900,
           currency: "eur",
-          interval: "year",
+          interval: "month",
         }}
         overview={{
           availability: "available",
@@ -467,10 +420,10 @@ describe("OrganizationBilling", () => {
       dateStyle: "long",
     }).format(new Date(1_799_999_999_000));
     expect(screen.getByRole("status")).toHaveTextContent(
-      `Premium access remains available through ${exactDate}`,
+      `Pro access remains available through ${exactDate}`,
     );
-    expect(screen.getByText("Annual")).toBeVisible();
-    expect(screen.getByText(/€490.*year/i)).toBeVisible();
+    expect(screen.getByText("Monthly")).toBeVisible();
+    expect(screen.getByText(/€29.*month/i)).toBeVisible();
     expect(screen.getByText("accounts@acme.example")).toBeVisible();
     expect(screen.queryByRole("button")).toBeNull();
   });
@@ -482,10 +435,10 @@ describe("OrganizationBilling", () => {
         <BillingCockpit
           offers={[
             {
-              amount: 4_900,
+              amount: 2_900,
               currency: "eur",
               interval: "month",
-              lookupKey: "premium_monthly",
+              lookupKey: "pro_monthly",
             },
           ]}
           onOpenPortal={mocks.openPortal}
@@ -529,8 +482,8 @@ describe("OrganizationBilling", () => {
   });
 
   it.each([
-    ["active", "Premium is active"],
-    ["trialing", "Premium trial is active"],
+    ["active", "Pro is active"],
+    ["trialing", "Unsupported Stripe state"],
     ["past_due", "Payment needs attention"],
     ["cancellation_scheduled", "Cancellation scheduled"],
     ["unpaid", "Subscription is unpaid"],
@@ -544,7 +497,6 @@ describe("OrganizationBilling", () => {
         canManage: false,
         effectivePlan:
           state === "active" ||
-          state === "trialing" ||
           state === "past_due" ||
           state === "cancellation_scheduled"
             ? "premium"

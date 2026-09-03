@@ -42,23 +42,22 @@ describe("Stripe Billing provider port", () => {
     });
   });
 
-  it("sanitizes the exact synchronized Price instead of today's offer", () => {
+  it("accepts only the exact EUR 29 monthly Pro Price", () => {
     expect(
       subscriptionPriceDetails({
         currency: "eur",
-        interval: "year",
-        unitAmount: 41_000,
+        interval: "month",
+        unitAmount: 2_900,
       }),
-    ).toEqual({ amount: 41_000, currency: "eur", interval: "year" });
+    ).toEqual({ amount: 2_900, currency: "eur", interval: "month" });
   });
 
-  it("refuses a synchronized non-recurring Price", () => {
-    expect(() =>
-      subscriptionPriceDetails({
-        currency: "eur",
-        interval: null,
-        unitAmount: 100,
-      }),
-    ).toThrow();
+  it.each([
+    [{ currency: "usd", interval: "month", unitAmount: 2_900 }],
+    [{ currency: "eur", interval: "year", unitAmount: 2_900 }],
+    [{ currency: "eur", interval: "month", unitAmount: 4_900 }],
+    [{ currency: "eur", interval: null, unitAmount: 2_900 }],
+  ])("refuses a mismatched synchronized Pro Price", (price) => {
+    expect(() => subscriptionPriceDetails(price)).toThrow();
   });
 });

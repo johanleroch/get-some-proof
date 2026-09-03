@@ -12,20 +12,26 @@ import {
   createOrganizationCheckout,
   listPublicOffers,
   type BillingProvider,
-  type PremiumLookupKey,
-  premiumLookupKeyValidator,
+  type ProLookupKey,
+  proLookupKeyValidator,
 } from "./billingService";
 import { createStripeBillingProvider } from "./stripeBillingProvider";
+import { isStripeSandboxConfigured } from "./stripeConfiguration";
 
 const publicOfferValidator = v.object({
   amount: v.number(),
   currency: v.string(),
   interval: v.union(v.literal("month"), v.literal("year")),
-  lookupKey: premiumLookupKeyValidator,
+  lookupKey: proLookupKeyValidator,
 });
 
 function requireStripeConfiguration() {
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
+  if (
+    !isStripeSandboxConfigured({
+      secretKey: env.STRIPE_SECRET_KEY,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    })
+  ) {
     throw new ConvexError({
       code: "BILLING_UNAVAILABLE",
       message: "Stripe Billing is not configured.",
@@ -58,8 +64,9 @@ type CheckoutContext = {
 };
 
 type CheckoutReservation = {
+  expectedProPriceId: string | null;
   leaseId: string;
-  lookupKey: PremiumLookupKey;
+  lookupKey: ProLookupKey;
   reservationId: string;
   stripeCheckoutSessionId: string | null;
   stripeCustomerId: string | null;
@@ -93,7 +100,7 @@ type ManagementContext = {
 type SubscriptionDetails = {
   amount: number;
   currency: string;
-  interval: "month" | "year";
+  interval: "month";
 };
 
 export const getOffers = action({
@@ -110,7 +117,7 @@ export async function startCheckoutHandler(
   ctx: ActionCtx,
   args: {
     organizationId: Id<"organizations">;
-    lookupKey: PremiumLookupKey;
+    lookupKey: ProLookupKey;
   },
   dependencies: StartCheckoutDependencies = productionCheckoutDependencies,
 ): Promise<{ url: string }> {
@@ -143,6 +150,7 @@ export async function startCheckoutHandler(
       ...checkoutContext,
       cancelUrl: cancelUrl.toString(),
       existingCustomerId: reservation.stripeCustomerId,
+      expectedPriceId: reservation.expectedProPriceId,
       existingSessionId: reservation.stripeCheckoutSessionId,
       existingSubscriptions: checkoutContext.existingSubscriptions,
       lookupKey: reservation.lookupKey,
@@ -154,6 +162,15 @@ export async function startCheckoutHandler(
           organizationId: checkoutContext.organizationId,
           reservationId: reservation.reservationId,
         });
+      },
+      persistOffer: async (priceId) => {
+        await ctx.runMutation(internal.billing.saveCheckoutOffer, {
+          leaseId: reservation.leaseId,
+          organizationId: checkoutContext.organizationId,
+          priceId,
+          reservationId: reservation.reservationId,
+        });
+        reservation = { ...reservation, expectedProPriceId: priceId };
       },
       requestedLookupKey: args.lookupKey,
       reservationId: reservation.reservationId,
@@ -208,7 +225,7 @@ export async function startCheckoutHandler(
 export const startCheckout = action({
   args: {
     organizationId: v.id("organizations"),
-    lookupKey: premiumLookupKeyValidator,
+    lookupKey: proLookupKeyValidator,
   },
   returns: v.object({ url: v.string() }),
   handler: (ctx, args): Promise<{ url: string }> =>
@@ -297,7 +314,7 @@ export const getSubscriptionDetails = action({
     v.object({
       amount: v.number(),
       currency: v.string(),
-      interval: v.union(v.literal("month"), v.literal("year")),
+      interval: v.literal("month"),
     }),
   ),
   handler: (ctx, args): Promise<SubscriptionDetails | null> =>

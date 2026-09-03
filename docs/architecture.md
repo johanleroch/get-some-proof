@@ -41,7 +41,7 @@ All transactional email goes through `convex/email/provider.ts`. Callers and tem
 
 `auditEvents` is an append-only application table partitioned by Organization. Events copy stable actor and target labels so attribution survives Project deletion or Membership deactivation. Payloads expose no Invitation token, credential, provider secret, or delivery idempotency value. Owner and Admin can read the paginated application log. convex-authz keeps its own separate history of authorization changes.
 
-## Organization Billing and Premium Entitlement
+## Workspace Billing and Pro Entitlement
 
 One Platform Stripe Account belongs to the company operating the deployment. Every Organization is a Customer of that account and may have one non-terminal fixed-price subscription. Stripe Connect, Organization-owned merchant accounts, and browser-managed credentials are outside this architecture.
 
@@ -56,9 +56,9 @@ The Billing permission split is deliberate:
 | Editor | None            | None              |
 | Viewer | None            | None              |
 
-The server derives Premium Entitlement from synchronized Subscription state. `active`, `trialing`, and `past_due` grant Premium; cancellation scheduled on one of those states grants it through the synchronized period end. Terminal, unpaid, incomplete, missing, or unavailable states do not. Every public Project write checks both the existing role permission and this entitlement. Project reads use a minimal entitlement query and remain available on Free.
+The server derives Pro Entitlement from synchronized Subscription state only when the synchronized Customer and Price match the server-owned `billingProfiles` mapping created during Checkout. `active` and `past_due` grant Pro; cancellation scheduled on one of those states grants it through the synchronized period end. Trialing, terminal, unpaid, incomplete, missing, unavailable, or mismatched states do not. The product capability boundaries independently enforce unlimited Pro text collection, 25 stored Ready videos, MP4 download, and removable attribution.
 
-The browser can select only `premium_monthly` or `premium_annual`. The server resolves exactly one active recurring Stripe Price for that lookup key, creates or reuses the Organization Customer, attaches canonical Organization metadata, and uses serialized reservations plus Stripe idempotency keys. The Checkout success or cancellation query parameter controls explanatory UI copy only. Premium is granted only after the webhook-synchronized Subscription changes.
+The browser can request only `pro_monthly`. The server resolves exactly one active recurring EUR 29 monthly Stripe Price for that lookup key, persists the trusted Price mapping before Checkout, creates or reuses the Organization Customer, attaches canonical Organization metadata, and uses serialized reservations plus Stripe idempotency keys. The Checkout success or cancellation query parameter controls explanatory UI copy only. Pro is granted only after the signed webhook synchronization matches both mappings and the Subscription changes.
 
 Provider boundaries, supported lifecycle states, setup, and sandbox checks are documented in `docs/stripe-billing.md`. The accepted global-account decision is recorded in ADR 0031.
 

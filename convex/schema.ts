@@ -67,12 +67,69 @@ export default defineSchema({
     checkoutLeaseId: v.optional(v.string()),
     checkoutLeaseExpiresAt: v.optional(v.number()),
     checkoutLookupKey: v.optional(
-      v.union(v.literal("premium_monthly"), v.literal("premium_annual")),
+      v.union(
+        v.literal("pro_monthly"),
+        // Retained only so deployments with an abandoned starter Checkout
+        // reservation can load and rotate it to the single Pro plan.
+        v.literal("premium_monthly"),
+        v.literal("premium_annual"),
+      ),
     ),
+    expectedProPriceId: v.optional(v.string()),
     stripeCheckoutSessionId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_organization", ["organizationId"]),
+  billingSubscriptionStates: defineTable({
+    organizationId: v.id("organizations"),
+    stripeSubscriptionId: v.string(),
+    stripeCustomerId: v.string(),
+    priceId: v.string(),
+    status: v.string(),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    cancelAt: v.optional(v.number()),
+    statusChangedAt: v.optional(v.number()),
+    lastProviderGeneration: v.optional(v.number()),
+    lastProviderObservedAt: v.optional(v.number()),
+    lastStripeEventCreated: v.number(),
+    lastStripeEventId: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+  stripeWebhookEvents: defineTable({
+    stripeEventId: v.string(),
+    stripeEventCreated: v.number(),
+    eventType: v.string(),
+    outcome: v.union(
+      v.literal("applied"),
+      v.literal("stale"),
+      v.literal("ignored"),
+      v.literal("queued"),
+    ),
+    stripeSubscriptionId: v.optional(v.string()),
+    processedAt: v.number(),
+  }).index("by_stripe_event", ["stripeEventId"]),
+  stripeSubscriptionReconciliations: defineTable({
+    stripeSubscriptionId: v.string(),
+    generation: v.number(),
+    latestEventCreated: v.number(),
+    latestEventId: v.string(),
+    completedGeneration: v.optional(v.number()),
+    lastAttemptAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_stripe_subscription", ["stripeSubscriptionId"]),
+  stripeInvoicePaymentFailures: defineTable({
+    stripeInvoiceId: v.string(),
+    stripeSubscriptionId: v.string(),
+    firstFailedAt: v.number(),
+    lastFailureEventCreated: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_stripe_invoice", ["stripeInvoiceId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
   projects: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),

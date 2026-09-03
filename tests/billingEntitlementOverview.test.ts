@@ -19,7 +19,7 @@ describe("Billing overview Subscription normalization", () => {
 
   it.each([
     ["active", "active", "premium"],
-    ["trialing", "trialing", "premium"],
+    ["trialing", "trialing", "free"],
     ["past_due", "past_due", "premium"],
     ["unpaid", "unpaid", "free"],
     ["canceled", "canceled", "free"],
@@ -50,7 +50,7 @@ describe("Billing overview Subscription normalization", () => {
       });
       expect(overview.subscription?.priceRevision).toMatch(/^price-revision-/);
       expect(overview.subscription?.priceRevision).not.toContain(
-        "price_premium",
+        "price_pro_monthly",
       );
       expect(overview.subscription).not.toHaveProperty("priceId");
       expect(overview.subscription).not.toHaveProperty("stripeSubscriptionId");
@@ -70,7 +70,7 @@ describe("Billing overview Subscription normalization", () => {
     });
     const cancelingOrganization = await cancelingOwner.client.mutation(
       api.organizations.create,
-      { name: "Canceling Premium Company" },
+      { name: "Canceling Pro Company" },
     );
     await addStripeSubscription(t, cancelingOrganization.id, "active", {
       cancelAtPeriodEnd: true,

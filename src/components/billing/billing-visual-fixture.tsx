@@ -6,13 +6,11 @@ import { BillingCockpit } from "./organization-billing";
 
 export function BillingVisualFixture({
   availability,
-  cadence = "month",
   checkoutReturn = null,
   role,
   state = "missing",
 }: {
   availability: "available" | "unavailable";
-  cadence?: "month" | "year";
   checkoutReturn?: "success" | null;
   role: "admin" | "owner";
   state?: "missing" | "active" | "past_due" | "cancellation_scheduled";
@@ -31,14 +29,14 @@ export function BillingVisualFixture({
               {role === "owner" ? "Owner" : "Admin"} preview
             </p>
           </div>
-          <nav aria-label="Organization preview" className="space-y-1 text-sm">
+          <nav aria-label="Workspace preview" className="space-y-1 text-sm">
             <div className="text-muted-foreground flex items-center gap-2 rounded-lg px-3 py-2">
               <LayoutDashboard aria-hidden="true" className="size-4" />
               Overview
             </div>
             <div className="text-muted-foreground flex items-center gap-2 rounded-lg px-3 py-2">
               <Settings aria-hidden="true" className="size-4" />
-              Organization settings
+              Brand settings
             </div>
             <div className="bg-accent flex items-center gap-2 rounded-lg px-3 py-2 font-medium">
               <CreditCard aria-hidden="true" className="size-4" />
@@ -49,25 +47,16 @@ export function BillingVisualFixture({
         <main className="p-4 md:p-8">
           <BillingCockpit
             checkoutReturn={checkoutReturn}
-            initialLookupKey={
-              cadence === "month" ? "premium_monthly" : "premium_annual"
-            }
             navigateToCheckout={() => undefined}
             navigateToPortal={() => undefined}
             offers={
               availability === "available"
                 ? [
                     {
-                      amount: 4_900,
+                      amount: 2_900,
                       currency: "eur",
                       interval: "month",
-                      lookupKey: "premium_monthly",
-                    },
-                    {
-                      amount: 49_000,
-                      currency: "eur",
-                      interval: "year",
-                      lookupKey: "premium_annual",
+                      lookupKey: "pro_monthly",
                     },
                   ]
                 : undefined
@@ -82,9 +71,9 @@ export function BillingVisualFixture({
             subscriptionDetails={
               availability === "available" && state !== "missing"
                 ? {
-                    amount: cadence === "month" ? 4_900 : 49_000,
+                    amount: 2_900,
                     currency: "eur",
-                    interval: cadence,
+                    interval: "month",
                   }
                 : undefined
             }

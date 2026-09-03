@@ -83,6 +83,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "workspace-billing",
+      "title": "Workspace Billing",
+      "path": "/org/:organizationSlug/billing",
+      "fixturePath": "/visual-evidence/billing",
+      "heading": "Billing",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "collection-form-shell",
       "title": "Collection Form - choose type",
       "path": "/c/:publicSlug",

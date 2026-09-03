@@ -26,10 +26,10 @@ describe("startCheckout action orchestration", () => {
       expireCheckout: vi.fn(),
       findCheckout: vi.fn().mockResolvedValue(null),
       resolveOffer: vi.fn().mockResolvedValue({
-        amount: 4_900,
+        amount: 2_900,
         currency: "eur",
         interval: "month",
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         priceId: "price_server_resolved",
       }),
       retrieveCheckout: vi.fn(),
@@ -49,8 +49,9 @@ describe("startCheckout action orchestration", () => {
         const name = getFunctionName(reference);
         if (name === "billing:reserveCheckout") {
           return {
+            expectedProPriceId: null,
             leaseId: "lease_acme",
-            lookupKey: "premium_monthly" as const,
+            lookupKey: "pro_monthly" as const,
             reservationId: "reservation_acme",
             stripeCheckoutSessionId: null,
             stripeCustomerId: null,
@@ -69,7 +70,7 @@ describe("startCheckout action orchestration", () => {
     await expect(
       startCheckoutHandler(
         { runMutation, runQuery } as unknown as ActionCtx,
-        { organizationId, lookupKey: "premium_monthly" },
+        { organizationId, lookupKey: "pro_monthly" },
         dependencies,
       ),
     ).resolves.toEqual({
@@ -86,7 +87,7 @@ describe("startCheckout action orchestration", () => {
       idempotencyKey: "reservation_acme",
       metadata: {
         checkoutReservationId: "reservation_acme",
-        lookupKey: "premium_monthly",
+        lookupKey: "pro_monthly",
         orgId: organizationId,
       },
       priceId: "price_server_resolved",
@@ -102,7 +103,7 @@ describe("startCheckout action orchestration", () => {
     expect(runMutation).toHaveBeenLastCalledWith(expect.objectContaining({}), {
       customerId: "cus_acme",
       leaseId: "lease_acme",
-      lookupKey: "premium_monthly",
+      lookupKey: "pro_monthly",
       organizationId,
       reservationId: "reservation_acme",
       sessionId: "cs_server_created",
@@ -111,6 +112,7 @@ describe("startCheckout action orchestration", () => {
       runMutation.mock.calls.map(([reference]) => getFunctionName(reference)),
     ).toEqual([
       "billing:reserveCheckout",
+      "billing:saveCheckoutOffer",
       "billing:saveCheckoutCustomer",
       "billing:recordCheckoutStarted",
     ]);
@@ -130,7 +132,7 @@ function managementProvider(): BillingProvider {
     resolveOffer: vi.fn(),
     retrieveCheckout: vi.fn(),
     retrieveSubscriptionPrice: vi.fn().mockResolvedValue({
-      amount: 4_900,
+      amount: 2_900,
       currency: "eur",
       interval: "month",
     }),
@@ -262,7 +264,7 @@ describe("Billing management action orchestration", () => {
         setupResult.dependencies,
       ),
     ).resolves.toEqual({
-      amount: 4_900,
+      amount: 2_900,
       currency: "eur",
       interval: "month",
     });

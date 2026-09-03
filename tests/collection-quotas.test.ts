@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, components, internal } from "@convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 import {
   addStripeSubscription,
   authenticatedUser,
@@ -56,12 +56,9 @@ describe("collection quota transitions", () => {
         publicSlug: "acme-proof",
       }),
     ).resolves.toMatchObject({ textAvailable: true });
-    await t.mutation(components.stripe.private.handleSubscriptionUpdated, {
-      cancelAtPeriodEnd: false,
-      currentPeriodEnd: Math.floor(Date.now() / 1_000),
-      metadata: { lookupKey: "premium_monthly", orgId: String(brand.id) },
-      status: "canceled",
-      stripeSubscriptionId: `sub_${String(brand.id)}`,
+    await addStripeSubscription(t, brand.id, "canceled", {
+      eventCreated: Math.floor(Date.now() / 1_000) + 1,
+      eventId: "evt_collection_downgrade",
     });
     await expect(
       t.query(api.collectionQuotas.getPublicAvailability, {
@@ -226,11 +223,16 @@ describe("collection quota transitions", () => {
       "premium",
     );
     await Promise.all([
-      t.mutation(components.stripe.private.handleSubscriptionUpdated, {
+      t.mutation(internal.stripeWebhookSync.applySubscriptionEvent, {
         cancelAtPeriodEnd: false,
         currentPeriodEnd: Math.floor(Date.now() / 1_000),
-        metadata: { lookupKey: "premium_monthly", orgId: String(brand.id) },
+        eventCreated: Math.floor(Date.now() / 1_000) + 1,
+        eventId: "evt_concurrent_downgrade",
+        eventType: "customer.subscription.deleted",
+        organizationId: String(brand.id),
+        priceId: "price_pro_monthly",
         status: "canceled",
+        stripeCustomerId: `cus_${String(brand.id)}`,
         stripeSubscriptionId: `sub_${String(brand.id)}`,
       }),
       t.mutation(internal.video.completeFakeAsset, {

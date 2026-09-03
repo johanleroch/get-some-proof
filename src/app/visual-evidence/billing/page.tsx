@@ -7,18 +7,21 @@ export default async function BillingVisualEvidencePage({
 }: {
   searchParams: Promise<{
     availability?: string;
-    cadence?: string;
     checkout?: string;
     role?: string;
     state?: string;
   }>;
 }) {
-  if (process.env.VISUAL_EVIDENCE_MODE !== "true") notFound();
+  if (
+    process.env.NODE_ENV === "production" ||
+    process.env.VISUAL_EVIDENCE_FIXTURES !== "true"
+  ) {
+    notFound();
+  }
 
   const params = await searchParams;
   const availability =
     params.availability === "unavailable" ? "unavailable" : "available";
-  const cadence = params.cadence === "annual" ? "year" : "month";
   const checkoutReturn = params.checkout === "success" ? "success" : null;
   const role = params.role === "admin" ? "admin" : "owner";
   const state =
@@ -31,7 +34,6 @@ export default async function BillingVisualEvidencePage({
   return (
     <BillingVisualFixture
       availability={availability}
-      cadence={cadence}
       checkoutReturn={checkoutReturn}
       role={role}
       state={state}

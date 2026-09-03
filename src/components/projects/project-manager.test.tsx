@@ -51,7 +51,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => null }),
 }));
 
-describe("ProjectManager Premium controls", () => {
+describe("ProjectManager Pro controls", () => {
   beforeEach(() => {
     cleanup();
     mocks.plan = "free";
@@ -71,7 +71,7 @@ describe("ProjectManager Premium controls", () => {
     ["viewer", "premium", false, false],
   ] as const)(
     "renders %s on %s with write controls=%s",
-    (role, plan, canWrite, showsPremiumExplanation) => {
+    (role, plan, canWrite, showsProExplanation) => {
       mocks.role = role;
       mocks.plan = plan;
 
@@ -90,8 +90,8 @@ describe("ProjectManager Premium controls", () => {
         screen.queryByRole("button", { name: "Edit Alpha" }) !== null,
       ).toBe(canWrite);
       expect(
-        screen.queryByText("Premium required for Project changes") !== null,
-      ).toBe(showsPremiumExplanation);
+        screen.queryByText("Pro required for Project changes") !== null,
+      ).toBe(showsProExplanation);
     },
   );
 
@@ -104,7 +104,7 @@ describe("ProjectManager Premium controls", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "View Premium plans" }),
+      screen.getByRole("link", { name: "View Pro plans" }),
     ).toHaveAttribute("href", "/org/acme/billing");
     expect(screen.queryByRole("button", { name: "Delete Alpha" })).toBeNull();
   });

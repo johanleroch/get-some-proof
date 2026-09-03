@@ -8,7 +8,7 @@ import {
   createConvexTest,
 } from "./convex-test-helpers";
 
-describe("Project Premium Entitlement", () => {
+describe("Project Pro Entitlement", () => {
   beforeEach(() => {
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_entitlement");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_entitlement");
@@ -18,14 +18,14 @@ describe("Project Premium Entitlement", () => {
     vi.unstubAllEnvs();
   });
 
-  it.each(["active", "trialing", "past_due"])(
+  it.each(["active", "past_due"])(
     "grants Project writes for %s",
     async (status) => {
       const t = createConvexTest();
       const owner = await authenticatedUser(t);
       const organization = await owner.client.mutation(
         api.organizations.create,
-        { name: `${status} Premium Company` },
+        { name: `${status} Pro Company` },
       );
       await addStripeSubscription(t, organization.id, status);
 
@@ -38,6 +38,22 @@ describe("Project Premium Entitlement", () => {
       ).resolves.toMatchObject({ name: `${status} Project` });
     },
   );
+
+  it("refuses an unsupported trialing Subscription", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Unsupported Trial Company",
+    });
+    await addStripeSubscription(t, organization.id, "trialing");
+    await expect(
+      owner.client.mutation(api.projects.create, {
+        description: "Trials are outside the approved MVP.",
+        name: "Trial Project",
+        organizationId: organization.id,
+      }),
+    ).rejects.toMatchObject({ data: { code: "PREMIUM_REQUIRED" } });
+  });
 
   it.each(["missing", "unpaid", "canceled", "incomplete_expired"])(
     "refuses Project writes for %s while preserving reads",

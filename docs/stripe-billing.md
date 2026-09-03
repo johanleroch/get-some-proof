@@ -1,6 +1,6 @@
 # Stripe Billing adoption and sandbox rehearsal
 
-This guide enables the complete Organization Billing flow without reading implementation code or touching production. It uses one Platform Stripe Account owned by the company operating the SaaS. Every Organization is a Customer buying that company's Premium Plan. This is not Stripe Connect, merchant onboarding, or one Stripe account per Organization.
+This guide enables the complete Workspace Billing flow without reading implementation code or touching production. It uses one Platform Stripe Account owned by the company operating the SaaS. Every underlying Organization is a Customer buying the Get Some Proof Pro Plan. This is not Stripe Connect, merchant onboarding, or one Stripe account per Workspace.
 
 ## Safety boundary
 
@@ -8,7 +8,7 @@ Perform this procedure only in a disposable Convex development deployment and a 
 
 Production and Stripe live mode are not part of this rehearsal. They require a separate explicit approval for the exact account, deployment, webhook, Prices, and charge plan. See `docs/deployment.md` before any promotion.
 
-Stripe is optional. If either `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` is absent, Billing reports unavailable, every Organization remains on Free, Project reads continue to work, Project writes remain gated, and no payment action is offered. Leave both values unset when an adopter does not want Billing.
+Stripe is optional. If either `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` is absent, or if they do not have the expected `sk_test_...` and `whsec_...` test credential formats, Billing reports unavailable, every Workspace remains on Free, Free quotas and attribution remain enforced, and no payment action is offered. This keeps live-mode Billing disabled until a separately approved production change. Leave both values unset when an adopter does not want Billing.
 
 ## What stays server-only
 
@@ -20,15 +20,14 @@ Store these values only in the linked Convex deployment environment:
 
 Do not put those values in `.env.local`, Vercel public variables, browser code, screenshots, issue comments, or any `NEXT_PUBLIC_` variable. This hosted Checkout integration does not need a publishable key in the browser.
 
-## 1. Create the Premium catalog in Stripe test mode
+## 1. Create the Pro catalog in Stripe test mode
 
 In the Platform Stripe Account's sandbox or test mode:
 
-1. Create one recurring Product named for the paid plan, for example `Premium`.
-2. Create one active recurring monthly Price with lookup key `premium_monthly`.
-3. Create one active recurring annual Price with lookup key `premium_annual`.
-4. Keep one active Price per lookup key. The monthly Price must use the `month` interval and the annual Price the `year` interval. The server rejects missing, duplicate, inactive, non-recurring, negative, or mismatched offers.
-5. Set the desired amount and currency in Stripe. The Billing UI reads them from Stripe; do not copy them into application code.
+1. Create one recurring Product named `Get Some Proof Pro`.
+2. Create one active EUR 29 recurring monthly Price with lookup key `pro_monthly`.
+3. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, non-monthly, or non-EUR-29 offers.
+4. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
 
 Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>
 
@@ -40,7 +39,7 @@ In Stripe test mode:
 2. Activate the Customer Portal test configuration.
 3. Enable payment-method updates and invoice history.
 4. Enable subscription cancellation at the end of the current billing period. Do not configure immediate cancellation if the product promise is access through the paid period.
-5. If plan switching is enabled, expose only the supported Premium monthly and annual Prices and verify the desired proration behavior.
+5. Do not enable plan switching; the MVP has one monthly plan. Cancellation and reactivation stay in Portal.
 6. Set the Portal business profile and default return link. The application also supplies an Organization-specific `return_url` for every fresh Portal session.
 
 The application creates Stripe-hosted Checkout in subscription mode and creates a new short-lived Portal session for every Owner action. A past-due recovery action deep-links to Stripe's `payment_method_update` flow. The application builds no local card form or invoice-history interface and stores no Portal URL or payment credential. The isolated `@convex-dev/stripe` component does synchronize provider invoice snapshots from signed events for server-side billing state.
@@ -63,7 +62,7 @@ This is the `NEXT_PUBLIC_CONVEX_SITE_URL` host written by Convex, not the Next.j
 - `invoice.created`, `invoice.finalized`, `invoice.updated`, `invoice.paid`, `invoice.payment_succeeded`, `invoice.payment_failed`;
 - `payment_intent.succeeded`.
 
-Copy that endpoint's test signing secret into the development Convex environment. Signature verification happens before component synchronization. A secret from another endpoint or mode will fail verification.
+Copy that endpoint's test signing secret into the development Convex environment. Signature verification happens before component synchronization. Subscription and `invoice.payment_failed` events are durably debounced per Subscription, then the latest generation reloads the complete current Subscription and expanded latest Invoice from Stripe before updating application entitlements. Superseded generations cannot overwrite the final provider snapshot. A past-due grace starts only from the signed failure event whose Invoice is still the Subscription's current `latest_invoice`. Failed provider reads remain in the durable outbox with capped backoff until they succeed or a newer generation supersedes them. A secret from another endpoint or mode will fail verification.
 
 Stripe's current Billing testing guide may recommend additional notification events for adopter-specific dunning or trials. Add application handlers before depending on events not synchronized by the pinned component: <https://docs.stripe.com/billing/testing>.
 
@@ -88,6 +87,18 @@ pnpm dev:convex
 pnpm dev
 ```
 
+For a development deployment that already used the starter Stripe component,
+run the resumable compatibility import after deploying these functions. Pass
+each returned `continueCursor` back until `isDone` is true:
+
+```bash
+pnpm convex run billingMigrations:backfillSubscriptionStates '{"cursor":null}'
+```
+
+This command imports synchronized Subscription snapshots only. Pro still
+requires the server-owned Customer and Price mapping from an eligible Checkout;
+the import cannot manufacture an entitlement.
+
 Use distinct Stripe and Convex test deployments for independent preview environments. Never reuse a live signing secret, and update `SITE_URL` when the frontend origin changes.
 
 ## 5. Run the sandbox lifecycle rehearsal
@@ -97,22 +108,22 @@ Record the Organization slug, test Customer ID, Subscription ID, webhook event I
 ### A. Free and forged return
 
 1. Sign in as a verified Owner and create a new Organization.
-2. Open Organization Billing. Verify `Free`, the monthly and annual offers loaded from Stripe, and the expected currency and amounts.
+2. Open Workspace Billing. Verify `Free` and the single EUR 29 monthly offer loaded from Stripe.
 3. Before paying, manually open `/org/<slug>/billing?checkout=success`.
 4. Verify the page may explain that confirmation is pending but still shows Free.
-5. Verify Project write controls still show the Premium gate and existing Project reads still work. The automated `tests/projectsPremium.test.ts` check separately calls every public Project mutation and proves that the server refuses it while the synchronized entitlement remains Free.
+5. Verify Free limits and required attribution remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or attribution removal.
 
 This proves that a success query parameter is presentation state only. Never mark this step passed merely because the browser hides a control.
 
-### B. Checkout and webhook-confirmed Premium
+### B. Checkout and webhook-confirmed Pro
 
-1. Choose monthly or annual and continue to Stripe.
+1. Continue with the single monthly Pro offer.
 2. Verify the browser leaves the application for Stripe-hosted Checkout and that a double click cannot open two sessions.
 3. Complete Checkout with Stripe's successful test card `4242 4242 4242 4242`, any future expiry, and any valid CVC. Never use real card details in a sandbox.
 4. On return, verify the application remains pending or Free until the signed webhook synchronizes the Subscription.
 5. In Stripe, confirm one Customer and one non-terminal Subscription with canonical Organization metadata.
 6. In the webhook delivery log, confirm successful delivery to the Convex endpoint.
-7. Verify the Billing page becomes Premium reactively, shows the synchronized cadence, price, state, and period end, and allows the previously refused Project write.
+7. Verify the Billing page becomes Pro reactively, shows the synchronized cadence, price, state, and period end, and enables unlimited text, 25 stored Ready videos, MP4 download, and removable attribution.
 
 ### C. Customer Portal and Billing Contact
 
@@ -126,7 +137,7 @@ This proves that a success query parameter is presentation state only. Never mar
 
 Use a separate Stripe sandbox simulation or test clock so the successful baseline remains available. Attach Stripe's test card `4000 0000 0000 0341` as the Customer default payment method; it attaches successfully but fails when charged. Advance the simulation to a renewal and allow the invoice attempt and subscription update events to reach Convex.
 
-1. Verify the synchronized Subscription becomes `past_due` and the Organization retains Premium during Stripe retries.
+1. Verify the synchronized Subscription becomes `past_due` and the Organization retains Pro during Stripe retries.
 2. Verify an Owner sees a semantic `Payment needs attention` alert and `Update payment method`; Admin sees the state but no recovery action.
 3. Open recovery and verify Stripe uses its hosted payment-method-update flow.
 4. Replace the method with Stripe's successful test card and complete payment of the open invoice.
@@ -138,9 +149,9 @@ Stripe documents the failure card and test clocks at <https://docs.stripe.com/bi
 
 1. As Owner, use the Customer Portal to schedule cancellation at the end of the current period.
 2. Verify `customer.subscription.updated` reaches Convex with cancellation scheduled.
-3. Verify Billing shows the exact access end date, Premium remains effective, and Project writes still work before that date.
+3. Verify Billing shows the exact access end date and Pro capabilities remain effective before that date.
 4. Advance the sandbox simulation past the period end or wait for the test-mode lifecycle to emit `customer.subscription.deleted`.
-5. Verify the Organization returns to Free, Project reads remain available, and Project writes are refused.
+5. Verify the Workspace returns to Free and Free quotas plus attribution are enforced.
 
 ## 6. Automated proof before the provider rehearsal
 
@@ -168,21 +179,21 @@ pnpm check
 pnpm test:e2e
 ```
 
-Automated provider doubles prove authorization, idempotency, concurrency, state normalization, Project gating, UI semantics, and that temporary URLs or secrets are not persisted. They do not prove that an adopter configured the external Stripe Dashboard correctly. Keep the sandbox lifecycle record as the authoritative provider-dependent proof.
+Automated provider doubles prove authorization, idempotency, concurrency, state normalization, product capability gating, UI semantics, and that temporary URLs or secrets are not persisted. They do not prove that an adopter configured the external Stripe Dashboard correctly. Keep the sandbox lifecycle record as the authoritative provider-dependent proof.
 
 ## 7. Rehearsal record template
 
-| Check            | Evidence to record                                                                 | Result  |
-| ---------------- | ---------------------------------------------------------------------------------- | ------- |
-| Target isolation | Convex development deployment and Stripe test-mode account names                   | Pending |
-| Catalog          | Both lookup keys, intervals, amounts, and currency observed through the Billing UI | Pending |
-| Forged return    | Free remains effective and Project write is refused                                | Pending |
-| Checkout         | Hosted session, one Customer, one Subscription, successful signed webhook          | Pending |
-| Premium          | Reactive plan update and successful Project write                                  | Pending |
-| Portal           | Fresh Owner session, return to same Organization, Admin read-only                  | Pending |
-| Recovery         | `past_due`, Premium retained, hosted method update, active recovery                | Pending |
-| Cancellation     | Exact end date, Premium through period, Free after deletion event                  | Pending |
-| Data hygiene     | No secret, card data, Checkout URL, or Portal URL in evidence                      | Pending |
+| Check            | Evidence to record                                                        | Result  |
+| ---------------- | ------------------------------------------------------------------------- | ------- |
+| Target isolation | Convex development deployment and Stripe test-mode account names          | Pending |
+| Catalog          | One `pro_monthly` EUR 29 Price observed through the Billing UI            | Pending |
+| Forged return    | Free quotas and attribution remain effective                              | Pending |
+| Checkout         | Hosted session, one Customer, one Subscription, successful signed webhook | Pending |
+| Pro              | Reactive plan update and all four Pro capabilities                        | Pending |
+| Portal           | Fresh Owner session, return to same Organization, Admin read-only         | Pending |
+| Recovery         | `past_due`, Pro retained, hosted method update, active recovery           | Pending |
+| Cancellation     | Exact end date, Pro through period, Free after deletion event             | Pending |
+| Data hygiene     | No secret, card data, Checkout URL, or Portal URL in evidence             | Pending |
 
 Every row must be completed for the adopter's own sandbox before live-mode approval. A screenshot of a success page, a Stripe Dashboard object without webhook delivery, or an application URL containing `checkout=success` is not sufficient evidence.
 

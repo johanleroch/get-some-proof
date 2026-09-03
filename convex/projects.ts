@@ -8,7 +8,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
-import { requirePremiumEntitlement } from "./billingEntitlements";
+import { requireProEntitlement } from "./billingEntitlements";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
 const projectSummary = v.object({
@@ -139,7 +139,7 @@ export const create = mutation({
       { organizationId: args.organizationId },
       "projects:create",
     );
-    await requirePremiumEntitlement(ctx, access.organization._id);
+    await requireProEntitlement(ctx, access.organization._id);
     const now = Date.now();
     const projectId = await ctx.db.insert("projects", {
       organizationId: access.organization._id,
@@ -185,7 +185,7 @@ export const update = mutation({
       { organizationId: args.organizationId },
       "projects:update",
     );
-    await requirePremiumEntitlement(ctx, access.organization._id);
+    await requireProEntitlement(ctx, access.organization._id);
     const project = await findProjectInOrganization(
       ctx,
       access.organization._id,
@@ -233,7 +233,7 @@ export const archive = mutation({
       { organizationId: args.organizationId },
       "projects:archive",
     );
-    await requirePremiumEntitlement(ctx, access.organization._id);
+    await requireProEntitlement(ctx, access.organization._id);
     const project = await findProjectInOrganization(
       ctx,
       access.organization._id,
@@ -281,7 +281,7 @@ export const remove = mutation({
       { organizationId: args.organizationId },
       "projects:delete",
     );
-    await requirePremiumEntitlement(ctx, access.organization._id);
+    await requireProEntitlement(ctx, access.organization._id);
     const project = await findProjectInOrganization(
       ctx,
       access.organization._id,

@@ -27,19 +27,19 @@ function billingErrorMessage(error: unknown) {
   return error.message;
 }
 
-type PremiumLookupKey = "premium_monthly" | "premium_annual";
+type ProLookupKey = "pro_monthly";
 
 type PublicOffer = {
   amount: number;
   currency: string;
-  interval: "month" | "year";
-  lookupKey: PremiumLookupKey;
+  interval: "month";
+  lookupKey: ProLookupKey;
 };
 
 type SubscriptionDetails = {
   amount: number;
   currency: string;
-  interval: "month" | "year";
+  interval: "month";
 };
 
 function formatOfferAmount(offer: PublicOffer) {
@@ -104,82 +104,81 @@ export function billingLifecycleCopy(overview: BillingOverview) {
   switch (overview.state) {
     case "active":
       return {
-        description: `Premium is active and renews after ${accessEnd}.`,
-        title: "Premium is active",
+        description: `Pro is active and renews after ${accessEnd}.`,
+        title: "Pro is active",
         tone: "neutral" as const,
       };
     case "trialing":
       return {
-        description: `Premium trial access remains available through ${accessEnd}.`,
-        title: "Premium trial is active",
-        tone: "neutral" as const,
+        description:
+          "Stripe reported an unsupported trial state. This MVP does not offer trials.",
+        title: "Unsupported Stripe state",
+        tone: "warning" as const,
       };
     case "past_due":
       return {
         description:
-          "Premium remains available while Stripe retries payment. Update the payment method to prevent interruption.",
+          "Pro remains available while Stripe retries payment. Update the payment method to prevent interruption.",
         title: "Payment needs attention",
         tone: "warning" as const,
       };
     case "cancellation_scheduled":
       return {
-        description: `Premium access remains available through ${accessEnd}. The subscription will not renew after that date.`,
+        description: `Pro access remains available through ${accessEnd}. The subscription will not renew after that date.`,
         title: "Cancellation scheduled",
         tone: "warning" as const,
       };
     case "unpaid":
       return {
         description:
-          "Premium writes are paused because payment could not be collected. Existing data remains readable.",
+          "This Workspace is back on Free because payment could not be collected.",
         title: "Subscription is unpaid",
         tone: "danger" as const,
       };
     case "canceled":
       return {
-        description:
-          "The subscription has ended. This Organization is on Free and existing data remains readable.",
+        description: "The subscription has ended. This Workspace is on Free.",
         title: "Subscription canceled",
         tone: "neutral" as const,
       };
     case "incomplete_expired":
       return {
         description:
-          "The previous subscription setup expired before payment completed. No Premium access was granted.",
+          "The previous subscription setup expired before payment completed. No Pro access was granted.",
         title: "Subscription setup expired",
         tone: "neutral" as const,
       };
     case "incomplete":
       return {
         description:
-          "Stripe is waiting for the subscription payment to complete. Premium is not active yet.",
+          "Stripe is waiting for the subscription payment to complete. Pro is not active yet.",
         title: "Subscription setup incomplete",
         tone: "warning" as const,
       };
     case "paused":
       return {
-        description:
-          "Premium is paused. Existing Organization data remains readable on Free.",
+        description: "Pro is paused. This Workspace is on Free.",
         title: "Subscription paused",
         tone: "warning" as const,
       };
     case "inactive":
       return {
         description:
-          "Stripe reported a state that does not grant Premium. Existing data remains readable.",
+          "Stripe reported a state that does not grant Pro. Existing data remains readable.",
         title: "Subscription inactive",
         tone: "warning" as const,
       };
     case "missing":
       return {
         description:
-          "This Organization is on Free. Premium checkout will be handled securely by Stripe.",
+          "This Workspace is on Free. Pro checkout will be handled securely by Stripe.",
         title: "Billing is connected",
         tone: "neutral" as const,
       };
     case "unavailable":
       return {
         description:
-          "This Organization safely remains on Free. No payment action is available yet.",
+          "This Workspace safely remains on Free. No payment action is available yet.",
         title: "Billing is not connected",
         tone: "warning" as const,
       };
@@ -237,7 +236,7 @@ export function OrganizationBilling({ slug }: { slug: string }) {
       .catch(() => {
         if (!active) return;
         setOffersResult({
-          error: "Premium prices could not be loaded. Try again shortly.",
+          error: "Pro prices could not be loaded. Try again shortly.",
           key: offersKey,
         });
       });
@@ -335,7 +334,6 @@ export function OrganizationBilling({ slug }: { slug: string }) {
 
 export function BillingCockpit({
   checkoutReturn = null,
-  initialLookupKey = "premium_monthly",
   navigateToCheckout = (url) => window.location.assign(url),
   navigateToPortal = (url) => window.location.assign(url),
   offers,
@@ -348,14 +346,13 @@ export function BillingCockpit({
   overview,
 }: {
   checkoutReturn?: "success" | "canceled" | null;
-  initialLookupKey?: PremiumLookupKey;
   navigateToCheckout?: (url: string) => void;
   navigateToPortal?: (url: string) => void;
   offers?: PublicOffer[];
   offersError?: string | null;
   subscriptionDetails?: SubscriptionDetails | null;
   subscriptionDetailsError?: string | null;
-  onStartCheckout?: (lookupKey: PremiumLookupKey) => Promise<{ url: string }>;
+  onStartCheckout?: (lookupKey: ProLookupKey) => Promise<{ url: string }>;
   onOpenPortal?: (
     mode: "manage" | "payment_method_update",
   ) => Promise<{ url: string }>;
@@ -365,8 +362,6 @@ export function BillingCockpit({
   const [contactPending, setContactPending] = useState(false);
   const [checkoutPending, setCheckoutPending] = useState(false);
   const [portalPending, setPortalPending] = useState(false);
-  const [selectedLookupKey, setSelectedLookupKey] =
-    useState<PremiumLookupKey>(initialLookupKey);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -392,11 +387,13 @@ export function BillingCockpit({
 
   async function beginCheckout() {
     if (checkoutPending || !overview.canManage || !onStartCheckout) return;
+    const offer = offers?.[0];
+    if (!offer) return;
 
     setCheckoutPending(true);
     setCheckoutError(null);
     try {
-      const result = await onStartCheckout(selectedLookupKey);
+      const result = await onStartCheckout(offer.lookupKey);
       navigateToCheckout(result.url);
     } catch (caught) {
       setCheckoutError(
@@ -430,7 +427,7 @@ export function BillingCockpit({
       ? {
           title: "Payment received",
           description:
-            "We’re confirming your Premium subscription with Stripe. Your plan will update automatically after confirmation.",
+            "We’re confirming your Pro subscription with Stripe. Your plan will update automatically after confirmation.",
         }
       : checkoutReturn === "canceled"
         ? {
@@ -451,8 +448,8 @@ export function BillingCockpit({
           Billing
         </h1>
         <p className="dashboard-page-description mt-1 max-w-2xl">
-          Review this Organization&apos;s plan and manage where billing notices
-          are sent.
+          Review this Workspace&apos;s plan and manage where billing notices are
+          sent.
         </p>
       </div>
 
@@ -496,33 +493,33 @@ export function BillingCockpit({
                 <div>
                   <CardTitle>Current plan</CardTitle>
                   <CardDescription className="mt-1">
-                    Applied to the whole Organization
+                    Applied to the whole Workspace
                   </CardDescription>
                 </div>
               </div>
               <span className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-xs font-medium">
-                {overview.effectivePlan === "premium" ? "Premium" : "Free"}
+                {overview.effectivePlan === "premium" ? "Pro" : "Free"}
               </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-sm leading-6">
               {overview.effectivePlan === "premium"
-                ? "Premium unlocks Project management for every Member with the right role."
-                : "Free keeps existing Organization data available. Premium upgrades will unlock Project management for every Member with the right role."}
+                ? "Pro includes unlimited text collection, 25 stored Ready videos, MP4 downloads, and removable attribution."
+                : "Free includes 13 lifetime text credits, 2 lifetime video credits, and required attribution."}
             </p>
             <div className="bg-muted/40 rounded-lg border p-4">
               <p className="text-sm font-medium">
                 {overview.effectivePlan === "premium"
-                  ? "Premium access is active"
+                  ? "Pro access is active"
                   : "No active subscription"}
               </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {overview.effectivePlan === "premium"
-                  ? "Stripe has synchronized a subscription that grants Premium."
+                  ? "Stripe has synchronized a subscription that grants Pro."
                   : overview.availability === "unavailable"
                     ? "Stripe is unavailable, so no checkout or renewal can start."
-                    : "No Stripe subscription is active for this Organization."}
+                    : "No Stripe subscription is active for this Workspace."}
               </p>
             </div>
             {overview.subscription ? (
@@ -530,13 +527,11 @@ export function BillingCockpit({
                 <div>
                   <dt className="text-muted-foreground text-xs">Cadence</dt>
                   <dd className="mt-1 font-medium">
-                    {subscriptionDetails?.interval === "month"
+                    {subscriptionDetails
                       ? "Monthly"
-                      : subscriptionDetails?.interval === "year"
-                        ? "Annual"
-                        : subscriptionDetails === undefined
-                          ? "Loading…"
-                          : "Not available"}
+                      : subscriptionDetails === undefined
+                        ? "Loading…"
+                        : "Not available"}
                   </dd>
                 </div>
                 <div>
@@ -553,10 +548,7 @@ export function BillingCockpit({
                     <dd className="mt-1 font-medium">
                       {formatOfferAmount({
                         ...subscriptionDetails,
-                        lookupKey:
-                          subscriptionDetails.interval === "month"
-                            ? "premium_monthly"
-                            : "premium_annual",
+                        lookupKey: "pro_monthly",
                       })}{" "}
                       per {subscriptionDetails.interval}
                     </dd>
@@ -718,10 +710,10 @@ export function BillingCockpit({
         canStartNewCheckout(overview) ? (
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Upgrade to Premium</CardTitle>
+              <CardTitle>Upgrade to Pro</CardTitle>
               <CardDescription>
-                Choose the cadence for this Organization. Prices are loaded
-                directly from the active Stripe catalog.
+                One monthly plan. The price is loaded directly from the active
+                Stripe sandbox catalog.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -729,37 +721,27 @@ export function BillingCockpit({
                 <p aria-live="assertive" className="text-destructive text-sm">
                   {offersError}
                 </p>
-              ) : offers ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {offers.map((offer) => {
-                    const selected = selectedLookupKey === offer.lookupKey;
-                    const cadence =
-                      offer.interval === "month" ? "Monthly" : "Annual";
-                    return (
-                      <button
-                        aria-pressed={selected}
-                        className="aria-pressed:border-primary aria-pressed:bg-primary/5 rounded-xl border p-4 text-left transition-colors disabled:opacity-60"
-                        disabled={checkoutPending}
-                        key={offer.lookupKey}
-                        onClick={() => setSelectedLookupKey(offer.lookupKey)}
-                        type="button"
-                      >
-                        <span className="block text-sm font-medium">
-                          {cadence}
-                        </span>
-                        <span className="mt-2 block text-2xl font-semibold">
-                          {formatOfferAmount(offer)}
-                        </span>
-                        <span className="text-muted-foreground mt-1 block text-xs">
-                          per {offer.interval}
-                        </span>
-                      </button>
-                    );
-                  })}
+              ) : offers?.[0] ? (
+                <div className="border-primary bg-primary/5 rounded-xl border p-5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
+                    <span className="text-sm font-medium">Pro monthly</span>
+                    <span className="text-2xl font-semibold">
+                      {formatOfferAmount(offers[0]!)}
+                      <span className="text-muted-foreground ml-1 text-xs font-normal">
+                        / month
+                      </span>
+                    </span>
+                  </div>
+                  <ul className="text-muted-foreground mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                    <li>Unlimited text collection</li>
+                    <li>25 stored Ready videos</li>
+                    <li>MP4 downloads up to 1080p</li>
+                    <li>Removable attribution</li>
+                  </ul>
                 </div>
               ) : (
                 <p aria-live="polite" className="text-muted-foreground text-sm">
-                  Loading Premium prices…
+                  Loading Pro prices…
                 </p>
               )}
 

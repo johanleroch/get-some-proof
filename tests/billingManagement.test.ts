@@ -23,12 +23,12 @@ describe("Organization Billing management boundaries", () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const organization = await owner.client.mutation(api.organizations.create, {
-      name: "Annual Premium Company",
+      name: "Monthly Pro Company",
     });
     const currentPeriodEnd = 1_799_999_999;
     await addStripeSubscription(t, organization.id, "active", {
       currentPeriodEnd,
-      lookupKey: "premium_annual",
+      lookupKey: "pro_monthly",
     });
 
     await expect(
@@ -72,7 +72,7 @@ describe("Organization Billing management boundaries", () => {
       admin.client.query(internal.billing.getSubscriptionPriceContext, {
         organizationId: organization.id,
       }),
-    ).resolves.toEqual({ priceId: "price_premium_monthly" });
+    ).resolves.toEqual({ priceId: "price_pro_monthly" });
 
     await expect(
       admin.client.query(internal.billing.getManagementContext, {

@@ -1,6 +1,5 @@
 import { ConvexError, v } from "convex/values";
 
-import { components } from "./_generated/api";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
@@ -8,7 +7,7 @@ import {
   billingStateValidator,
   getOrganizationBillingEntitlement,
 } from "./billingEntitlements";
-import { premiumLookupKeyValidator } from "./billingService";
+import { proLookupKeyValidator } from "./billingService";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
 export const getOverview = query({
@@ -463,9 +462,12 @@ export const getCheckoutContext = internalQuery({
             .eq("userId", access.organization.createdByUserId),
         )
         .unique(),
-      ctx.runQuery(components.stripe.public.listSubscriptionsByOrgId, {
-        orgId: String(access.organization._id),
-      }),
+      ctx.db
+        .query("billingSubscriptionStates")
+        .withIndex("by_organization", (index) =>
+          index.eq("organizationId", access.organization._id),
+        )
+        .collect(),
     ]);
     const billingEmail = profile?.billingEmail ?? originalOwner?.email;
     if (!billingEmail) {
@@ -492,8 +494,9 @@ export const getCheckoutContext = internalQuery({
 });
 
 const checkoutReservationValidator = v.object({
+  expectedProPriceId: v.union(v.string(), v.null()),
   leaseId: v.string(),
-  lookupKey: premiumLookupKeyValidator,
+  lookupKey: proLookupKeyValidator,
   reservationId: v.string(),
   stripeCheckoutSessionId: v.union(v.string(), v.null()),
   stripeCustomerId: v.union(v.string(), v.null()),
@@ -502,7 +505,7 @@ const checkoutReservationValidator = v.object({
 export const reserveCheckout = internalMutation({
   args: {
     billingEmail: v.string(),
-    lookupKey: premiumLookupKeyValidator,
+    lookupKey: proLookupKeyValidator,
     organizationId: v.id("organizations"),
     requestedReservationId: v.string(),
   },
@@ -521,7 +524,10 @@ export const reserveCheckout = internalMutation({
       .unique();
 
     const now = Date.now();
-    if (profile?.checkoutReservationId && profile.checkoutLookupKey) {
+    if (
+      profile?.checkoutReservationId &&
+      profile.checkoutLookupKey === args.lookupKey
+    ) {
       if (
         profile.checkoutLeaseId &&
         profile.checkoutLeaseExpiresAt &&
@@ -539,6 +545,7 @@ export const reserveCheckout = internalMutation({
         updatedAt: now,
       });
       return {
+        expectedProPriceId: profile.expectedProPriceId ?? null,
         leaseId: args.requestedReservationId,
         lookupKey: profile.checkoutLookupKey,
         reservationId: profile.checkoutReservationId,
@@ -553,6 +560,7 @@ export const reserveCheckout = internalMutation({
         checkoutLeaseId: args.requestedReservationId,
         checkoutLookupKey: args.lookupKey,
         checkoutReservationId: args.requestedReservationId,
+        expectedProPriceId: undefined,
         stripeCheckoutSessionId: undefined,
         updatedAt: now,
       });
@@ -570,6 +578,7 @@ export const reserveCheckout = internalMutation({
     }
 
     return {
+      expectedProPriceId: null,
       leaseId: args.requestedReservationId,
       lookupKey: args.lookupKey,
       reservationId: args.requestedReservationId,
@@ -583,7 +592,7 @@ export const rotateExpiredCheckout = internalMutation({
   args: {
     expectedLeaseId: v.string(),
     expectedReservationId: v.string(),
-    lookupKey: premiumLookupKeyValidator,
+    lookupKey: proLookupKeyValidator,
     organizationId: v.id("organizations"),
     requestedReservationId: v.string(),
   },
@@ -616,16 +625,65 @@ export const rotateExpiredCheckout = internalMutation({
       checkoutLeaseId: args.requestedReservationId,
       checkoutLookupKey: args.lookupKey,
       checkoutReservationId: args.requestedReservationId,
+      expectedProPriceId: undefined,
       stripeCheckoutSessionId: undefined,
       updatedAt: Date.now(),
     });
     return {
+      expectedProPriceId: null,
       leaseId: args.requestedReservationId,
       lookupKey: args.lookupKey,
       reservationId: args.requestedReservationId,
       stripeCheckoutSessionId: null,
       stripeCustomerId: profile.stripeCustomerId ?? null,
     };
+  },
+});
+
+export const saveCheckoutOffer = internalMutation({
+  args: {
+    leaseId: v.string(),
+    organizationId: v.id("organizations"),
+    priceId: v.string(),
+    reservationId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "billing:manage",
+    );
+    const profile = await ctx.db
+      .query("billingProfiles")
+      .withIndex("by_organization", (index) =>
+        index.eq("organizationId", access.organization._id),
+      )
+      .unique();
+    if (
+      !profile ||
+      profile.checkoutReservationId !== args.reservationId ||
+      profile.checkoutLeaseId !== args.leaseId
+    ) {
+      throw new ConvexError({
+        code: "CHECKOUT_RESERVATION_CHANGED",
+        message: "Checkout changed while the Pro offer was being saved.",
+      });
+    }
+    if (
+      profile.expectedProPriceId &&
+      profile.expectedProPriceId !== args.priceId
+    ) {
+      throw new ConvexError({
+        code: "BILLING_PRICE_CONFLICT",
+        message: "The Pro Price changed during Checkout.",
+      });
+    }
+    await ctx.db.patch(profile._id, {
+      expectedProPriceId: args.priceId,
+      updatedAt: Date.now(),
+    });
+    return null;
   },
 });
 
@@ -680,7 +738,7 @@ export const recordCheckoutStarted = internalMutation({
   args: {
     customerId: v.string(),
     leaseId: v.string(),
-    lookupKey: premiumLookupKeyValidator,
+    lookupKey: proLookupKeyValidator,
     organizationId: v.id("organizations"),
     reservationId: v.string(),
     sessionId: v.string(),
@@ -712,6 +770,7 @@ export const recordCheckoutStarted = internalMutation({
     }
     if (
       profile.stripeCustomerId !== args.customerId ||
+      !profile.expectedProPriceId ||
       (profile.stripeCheckoutSessionId &&
         profile.stripeCheckoutSessionId !== args.sessionId)
     ) {
@@ -746,10 +805,7 @@ export const recordCheckoutStarted = internalMutation({
       targetId: String(access.organization._id),
       targetLabel: access.organization.name,
       previousValue: "Free",
-      newValue:
-        args.lookupKey === "premium_monthly"
-          ? "Premium monthly"
-          : "Premium annual",
+      newValue: "Pro monthly",
     });
 
     return null;
