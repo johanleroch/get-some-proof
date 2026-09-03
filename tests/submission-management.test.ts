@@ -1,0 +1,486 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { api, internal } from "@convex/_generated/api";
+import {
+  buildPublicationConsent,
+  hashSubmissionManagementToken,
+} from "@convex/domain/submission";
+import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+
+const originalToken = "a".repeat(64);
+
+async function createManagedText(
+  t: ReturnType<typeof createConvexTest>,
+  options: { published?: boolean } = {},
+) {
+  const owner = await authenticatedUser(t);
+  const brand = await owner.client.mutation(api.organizations.create, {
+    name: "Acme Studio",
+    publicSlug: "acme-proof",
+  });
+  const consent = buildPublicationConsent({
+    brandName: "Acme Studio",
+    privacyContact: "alice@example.com",
+    suppliedIdentity: {
+      avatarSupplied: false,
+      company: "North Star Co",
+      name: "Alice Martin",
+      rating: 5,
+      role: "Founder",
+    },
+  });
+  const testimonialId = await t.run(async (ctx) => {
+    const now = Date.now();
+    const id = await ctx.db.insert("testimonials", {
+      clientSubmissionId: "managed-text-001",
+      company: "North Star Co",
+      contentVersion: 1,
+      createdAt: now,
+      managementTokenHash: await hashSubmissionManagementToken(originalToken),
+      moderationStatus: options.published ? "published" : "pending",
+      organizationId: brand.id,
+      rating: 5,
+      role: "Founder",
+      submissionType: "text",
+      submitterEmail: "alice@example.com",
+      submitterName: "Alice Martin",
+      text: "The original testimonial remains stable until confirmation.",
+      updatedAt: now,
+    });
+    await ctx.db.insert("publicationConsents", {
+      acceptedAt: now,
+      brandName: "Acme Studio",
+      consentText: consent.text,
+      consentVersion: consent.version,
+      identityFields: consent.identityFields,
+      organizationId: brand.id,
+      testimonialId: id,
+    });
+    if (options.published) {
+      await ctx.db.insert("publicTestimonialProjections", {
+        company: "North Star Co",
+        name: "Alice Martin",
+        organizationId: brand.id,
+        publishedAt: now,
+        rating: 5,
+        role: "Founder",
+        testimonialId: id,
+        text: "The original testimonial remains stable until confirmation.",
+        type: "text",
+      });
+    }
+    return id;
+  });
+  return { brand, consent, testimonialId };
+}
+
+function revisedConsent() {
+  return buildPublicationConsent({
+    brandName: "Acme Studio",
+    privacyContact: "alice@example.com",
+    suppliedIdentity: {
+      avatarSupplied: false,
+      company: "North Star Labs",
+      name: "Alice Martin",
+      rating: 4,
+      role: "CEO",
+    },
+  });
+}
+
+function revisionArgs(consent = revisedConsent()) {
+  return {
+    company: "North Star Labs",
+    consentAccepted: true,
+    consentText: consent.text,
+    consentVersion: consent.version,
+    expectedContentVersion: 1,
+    rating: 4,
+    role: "CEO",
+    submitterName: "Alice Martin",
+    text: "The revised testimonial is specific, genuine, and ready for review.",
+    token: originalToken,
+  };
+}
+
+async function createManagedVideo(t: ReturnType<typeof createConvexTest>) {
+  const owner = await authenticatedUser(t);
+  const brand = await owner.client.mutation(api.organizations.create, {
+    name: "Acme Studio",
+    publicSlug: "acme-proof",
+  });
+  const consent = buildPublicationConsent({
+    brandName: "Acme Studio",
+    privacyContact: "alice@example.com",
+    suppliedIdentity: {
+      avatarSupplied: false,
+      company: "North Star Co",
+      name: "Alice Martin",
+      rating: 5,
+      role: "Founder",
+    },
+  });
+  const stored = await t.run(async (ctx) => {
+    const now = Date.now();
+    const testimonialId = await ctx.db.insert("testimonials", {
+      clientSubmissionId: "managed-video-001",
+      company: "North Star Co",
+      contentVersion: 1,
+      createdAt: now,
+      managementTokenHash: await hashSubmissionManagementToken(originalToken),
+      moderationStatus: "published",
+      organizationId: brand.id,
+      rating: 5,
+      role: "Founder",
+      submissionType: "video",
+      submitterEmail: "alice@example.com",
+      submitterName: "Alice Martin",
+      text: "",
+      updatedAt: now,
+    });
+    const reservationId = await ctx.db.insert("videoReservations", {
+      clientSubmissionId: "managed-video-001",
+      createdAt: now,
+      expiresAt: now + 60_000,
+      organizationId: brand.id,
+      plan: "premium",
+      status: "consumed",
+      updatedAt: now,
+    });
+    const videoAssetId = await ctx.db.insert("videoAssets", {
+      captionsStatus: "ready",
+      createdAt: now,
+      durationSeconds: 30,
+      fileSizeBytes: 1_000,
+      mimeType: "video/mp4",
+      organizationId: brand.id,
+      playbackId: "old-playback",
+      provider: "fake",
+      providerAssetId: "old-provider-asset",
+      providerUploadId: "old-provider-upload",
+      reservationId,
+      spokenLanguage: "en",
+      status: "ready",
+      testimonialId,
+      updatedAt: now,
+    });
+    await ctx.db.insert("publicationConsents", {
+      acceptedAt: now,
+      brandName: "Acme Studio",
+      consentText: consent.text,
+      consentVersion: consent.version,
+      identityFields: consent.identityFields,
+      organizationId: brand.id,
+      testimonialId,
+    });
+    await ctx.db.insert("publicTestimonialProjections", {
+      captionsAvailable: true,
+      company: "North Star Co",
+      name: "Alice Martin",
+      organizationId: brand.id,
+      playbackId: "old-playback",
+      posterTimeSeconds: 15,
+      publishedAt: now,
+      rating: 5,
+      role: "Founder",
+      testimonialId,
+      type: "video",
+    });
+    return { testimonialId, videoAssetId };
+  });
+  return { brand, owner, ...stored };
+}
+
+describe("Submission Management Links", () => {
+  beforeEach(() => {
+    vi.stubEnv("EMAIL_PROVIDER", "test");
+    vi.stubEnv("MUX_PROVIDER", "fake");
+    vi.stubEnv("SITE_URL", "http://localhost:3000");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("exposes only the Submission selected by a valid, unexpired token", async () => {
+    const t = createConvexTest();
+    const { testimonialId } = await createManagedText(t);
+
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toMatchObject({
+      contentVersion: 1,
+      submissionType: "text",
+      submitterEmail: "alice@example.com",
+    });
+    await expect(
+      t.query(api.submissionManagement.get, { token: "b".repeat(64) }),
+    ).resolves.toBeNull();
+
+    await t.run((ctx) =>
+      ctx.db.patch(testimonialId, { managementTokenExpiresAt: Date.now() - 1 }),
+    );
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toBeNull();
+  });
+
+  it("atomically confirms a text revision, unpublishes it, and preserves identity and email", async () => {
+    const t = createConvexTest();
+    const { testimonialId } = await createManagedText(t, { published: true });
+
+    await expect(
+      t.mutation(api.submissionManagement.confirmRevision, revisionArgs()),
+    ).resolves.toEqual({ contentVersion: 2, moderationStatus: "pending" });
+
+    const stored = await t.run(async (ctx) => ({
+      consent: await ctx.db.query("publicationConsents").unique(),
+      projection: await ctx.db.query("publicTestimonialProjections").unique(),
+      testimonial: await ctx.db.get(testimonialId),
+    }));
+    expect(stored.projection).toBeNull();
+    expect(stored.testimonial).toMatchObject({
+      _id: testimonialId,
+      company: "North Star Labs",
+      contentVersion: 2,
+      moderationStatus: "pending",
+      rating: 4,
+      role: "CEO",
+      submitterEmail: "alice@example.com",
+      text: revisionArgs().text,
+    });
+    expect(stored.consent?.acceptedAt).toBeGreaterThan(0);
+  });
+
+  it("allows only one simultaneous revision for the same content version", async () => {
+    const t = createConvexTest();
+    await createManagedText(t);
+
+    const results = await Promise.allSettled([
+      t.mutation(api.submissionManagement.confirmRevision, revisionArgs()),
+      t.mutation(api.submissionManagement.confirmRevision, {
+        ...revisionArgs(),
+        text: "A competing revision must not overwrite the first confirmed version.",
+      }),
+    ]);
+
+    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(
+      1,
+    );
+    expect(results.filter(({ status }) => status === "rejected")).toHaveLength(
+      1,
+    );
+  });
+
+  it("rotates the link and invalidates the prior token without enumerating unknown emails", async () => {
+    const t = createConvexTest();
+    await createManagedText(t);
+    const newToken = "c".repeat(64);
+
+    await t.mutation(internal.submissionManagement.rotateManagementLinks, {
+      email: "alice@example.com",
+      publicSlug: "acme-proof",
+      tokens: [newToken],
+    });
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toBeNull();
+    await expect(
+      t.query(api.submissionManagement.get, { token: newToken }),
+    ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
+    await expect(
+      t.action(api.submissionManagement.requestReplacementLink, {
+        email: "unknown@example.com",
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toEqual({ accepted: true });
+  });
+
+  it("keeps the old published video until a Ready replacement is confirmed", async () => {
+    const t = createConvexTest();
+    const { testimonialId, videoAssetId } = await createManagedVideo(t);
+    const upload = await t.action(
+      api.submissionManagement.createVideoReplacementUpload,
+      {
+        expectedContentVersion: 1,
+        fileSizeBytes: 2_000,
+        mimeType: "video/mp4",
+        spokenLanguage: "en",
+        token: originalToken,
+      },
+    );
+    const before = await t.run(async (ctx) => ({
+      current: await ctx.db.get(videoAssetId),
+      projection: await ctx.db.query("publicTestimonialProjections").unique(),
+    }));
+    expect(before.current?.playbackId).toBe("old-playback");
+    expect(before.projection?.type).toBe("video");
+
+    const consent = revisedConsent();
+    await t.mutation(api.submissionManagement.confirmRevision, {
+      ...revisionArgs(consent),
+      revisionId: upload.revisionId,
+      text: "",
+    });
+    const after = await t.run(async (ctx) => ({
+      assets: await ctx.db.query("videoAssets").collect(),
+      cleanup: await ctx.db.query("videoProviderCleanupJobs").collect(),
+      projection: await ctx.db.query("publicTestimonialProjections").unique(),
+      reservations: await ctx.db.query("videoReservations").collect(),
+      testimonial: await ctx.db.get(testimonialId),
+    }));
+    expect(after.testimonial).toMatchObject({
+      _id: testimonialId,
+      contentVersion: 2,
+      moderationStatus: "pending",
+    });
+    expect(after.projection).toBeNull();
+    expect(after.assets).toHaveLength(1);
+    expect(after.assets[0]).toMatchObject({ testimonialId, status: "ready" });
+    expect(after.reservations).toHaveLength(1);
+    expect(after.cleanup).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ providerAssetId: "old-provider-asset" }),
+      ]),
+    );
+  });
+
+  it("keeps the current video and publication when replacement processing fails", async () => {
+    const t = createConvexTest();
+    const { testimonialId, videoAssetId } = await createManagedVideo(t);
+    const tokenHash = await hashSubmissionManagementToken(originalToken);
+    const reserved = await t.mutation(
+      internal.submissionManagement.reserveVideoReplacement,
+      {
+        clientRevisionId: "revision-failed-video",
+        expectedContentVersion: 1,
+        tokenHash,
+      },
+    );
+    const replacementAssetId = await t.mutation(
+      internal.submissionManagement.attachVideoReplacement,
+      {
+        fileSizeBytes: 2_000,
+        mimeType: "video/mp4",
+        provider: "fake",
+        providerUploadId: "failed-replacement-upload",
+        reservationId: reserved.reservationId,
+        revisionId: reserved.revisionId,
+        spokenLanguage: "en",
+        tokenHash,
+      },
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(replacementAssetId, {
+        failureReason: "processing failed",
+        status: "failed",
+      }),
+    );
+
+    await expect(
+      t.mutation(api.submissionManagement.confirmRevision, {
+        ...revisionArgs(),
+        revisionId: reserved.revisionId,
+        text: "",
+      }),
+    ).rejects.toBeDefined();
+    const unchanged = await t.run(async (ctx) => ({
+      current: await ctx.db.get(videoAssetId),
+      projection: await ctx.db.query("publicTestimonialProjections").unique(),
+      testimonial: await ctx.db.get(testimonialId),
+    }));
+    expect(unchanged.current?.testimonialId).toBe(testimonialId);
+    expect(unchanged.projection).not.toBeNull();
+    expect(unchanged.testimonial).toMatchObject({
+      contentVersion: 1,
+      moderationStatus: "published",
+    });
+  });
+
+  it("lets Owner deletion remove an in-progress replacement without orphaning media", async () => {
+    const t = createConvexTest();
+    const { brand, owner, testimonialId } = await createManagedVideo(t);
+    await t.action(api.submissionManagement.createVideoReplacementUpload, {
+      expectedContentVersion: 1,
+      fileSizeBytes: 2_000,
+      mimeType: "video/mp4",
+      spokenLanguage: "en",
+      token: originalToken,
+    });
+
+    await expect(
+      owner.client.action(api.videoMedia.remove, {
+        organizationId: brand.id,
+        testimonialId,
+      }),
+    ).resolves.toEqual({ deleted: true });
+    await expect(
+      t.run(async (ctx) => ({
+        assets: await ctx.db.query("videoAssets").collect(),
+        revisions: await ctx.db.query("submissionVideoRevisions").collect(),
+        testimonials: await ctx.db.query("testimonials").collect(),
+      })),
+    ).resolves.toEqual({ assets: [], revisions: [], testimonials: [] });
+  });
+
+  it("withdraws consent idempotently, invalidates public content, and leaves only content-free audit", async () => {
+    const t = createConvexTest();
+    const { testimonialId } = await createManagedVideo(t);
+
+    await expect(
+      t.mutation(api.submissionManagement.withdrawConsent, {
+        token: originalToken,
+      }),
+    ).resolves.toEqual({ withdrawn: true });
+    await expect(
+      t.mutation(api.submissionManagement.withdrawConsent, {
+        token: originalToken,
+      }),
+    ).resolves.toEqual({ withdrawn: true });
+
+    const stored = await t.run(async (ctx) => ({
+      audit: await ctx.db.query("auditEvents").collect(),
+      consents: await ctx.db.query("publicationConsents").collect(),
+      projections: await ctx.db.query("publicTestimonialProjections").collect(),
+      testimonials: await ctx.db.query("testimonials").collect(),
+    }));
+    expect(stored.testimonials).toEqual([]);
+    expect(stored.consents).toEqual([]);
+    expect(stored.projections).toEqual([]);
+    const withdrawalAudit = stored.audit.filter(
+      ({ eventType }) => eventType === "testimonial.consent_withdrawn",
+    );
+    expect(withdrawalAudit).toEqual([
+      expect.objectContaining({
+        eventType: "testimonial.consent_withdrawn",
+        targetId: String(testimonialId),
+        targetLabel: "Withdrawn Testimonial",
+      }),
+    ]);
+    expect(JSON.stringify(withdrawalAudit)).not.toContain("Alice");
+    expect(JSON.stringify(withdrawalAudit)).not.toContain("old-playback");
+  });
+
+  it("keeps withdrawal authoritative when it races a revision confirmation", async () => {
+    const t = createConvexTest();
+    await createManagedText(t, { published: true });
+
+    const outcomes = await Promise.allSettled([
+      t.mutation(api.submissionManagement.confirmRevision, revisionArgs()),
+      t.mutation(api.submissionManagement.withdrawConsent, {
+        token: originalToken,
+      }),
+    ]);
+
+    expect(outcomes[1]).toMatchObject({
+      status: "fulfilled",
+      value: { withdrawn: true },
+    });
+    await expect(
+      t.run(async (ctx) => ({
+        projections: await ctx.db
+          .query("publicTestimonialProjections")
+          .collect(),
+        testimonials: await ctx.db.query("testimonials").collect(),
+      })),
+    ).resolves.toEqual({ projections: [], testimonials: [] });
+  });
+});

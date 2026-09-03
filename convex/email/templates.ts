@@ -153,6 +153,25 @@ export function buildVideoRetryEmail({
   });
 }
 
+export function buildReplacementManagementLinkEmail({
+  brandName,
+  email,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Manage your submission",
+    description: `Use this new private link to manage your submission to ${brandName}. Any previous management link is no longer active.`,
+    email,
+    subject: `Your new management link for ${brandName}`,
+    template: "management-link-replacement",
+    url,
+  });
+}
+
 export function buildNewPendingTestimonialEmail({
   brandName,
   email,

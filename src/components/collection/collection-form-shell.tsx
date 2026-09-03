@@ -81,6 +81,68 @@ type VideoSubmissionResult = SubmissionResult & {
 const fieldClassName =
   "h-4 w-4 shrink-0 accent-(--brand-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent)";
 
+function ReplacementLinkRequest({
+  publicSlug,
+  requestReplacementLink,
+}: {
+  publicSlug: string;
+  requestReplacementLink?: (input: {
+    email: string;
+    publicSlug: string;
+  }) => Promise<unknown>;
+}) {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+
+  async function requestLink() {
+    if (!email || submitting) return;
+    setSubmitting(true);
+    try {
+      if (requestReplacementLink) {
+        await requestReplacementLink({ email, publicSlug });
+      }
+      setAccepted(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 border-t pt-5">
+      <div>
+        <p className="text-sm font-medium">Already submitted?</p>
+        <p className="text-muted-foreground mt-1 text-xs leading-5">
+          Enter the original email to receive a new private management link.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          aria-label="Original submission email"
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          required
+          type="email"
+          value={email}
+        />
+        <Button
+          disabled={!email || submitting}
+          onClick={() => void requestLink()}
+          type="button"
+          variant="outline"
+        >
+          {submitting ? "Requesting…" : "Email new link"}
+        </Button>
+      </div>
+      {accepted ? (
+        <p className="text-muted-foreground text-xs" role="status">
+          If that email matches a submission, a new link is on its way.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function BrandHeader({ brand }: { brand: PublicBrand }) {
   return (
     <CardHeader className="items-center text-center">
@@ -896,6 +958,7 @@ export function CollectionFormShellView({
   initialStep = 1,
   initialProofType = "text",
   initialValues,
+  requestReplacementLink,
   submitText = async () => {
     throw new Error("Submission is unavailable in this preview.");
   },
@@ -917,6 +980,10 @@ export function CollectionFormShellView({
   initialStep?: 1 | 2 | 3 | 4;
   initialProofType?: "text" | "video";
   initialValues?: InitialCollectionValues;
+  requestReplacementLink?: (input: {
+    email: string;
+    publicSlug: string;
+  }) => Promise<unknown>;
   submitText?: (input: TextSubmissionInput) => Promise<SubmissionResult>;
   submitVideo?: (input: VideoSubmissionInput) => Promise<VideoSubmissionResult>;
   uploadAvatar?: (
@@ -1158,6 +1225,10 @@ export function CollectionFormShellView({
             </a>
             .
           </p>
+          <ReplacementLinkRequest
+            publicSlug={brand.publicSlug}
+            requestReplacementLink={requestReplacementLink}
+          />
         </CardContent>
       </Card>
     </main>
@@ -1175,6 +1246,9 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   );
   const registerAvatarUpload = useMutation(
     api.submissions.registerAvatarUpload,
+  );
+  const requestReplacementLink = useAction(
+    api.submissionManagement.requestReplacementLink,
   );
 
   if (brand === undefined) {
@@ -1205,6 +1279,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
       brand={brand}
       cancelVideo={cancelVideo}
       createDirectUpload={createDirectUpload}
+      requestReplacementLink={requestReplacementLink}
       submitText={submitText}
       submitVideo={submitVideo}
       uploadAvatar={async (file, clientSubmissionId) => {

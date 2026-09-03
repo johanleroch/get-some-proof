@@ -939,6 +939,7 @@ export const createVideoRecords = internalMutation({
       avatarStorageId: args.avatarStorageId,
       clientSubmissionId,
       company: args.company?.trim() || undefined,
+      contentVersion: 1,
       createdAt: now,
       managementTokenHash: args.managementTokenHash,
       moderationStatus: "pending",

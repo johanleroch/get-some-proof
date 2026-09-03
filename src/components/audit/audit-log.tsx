@@ -32,6 +32,8 @@ const eventLabels = {
   "billing.portal_opened": "opened the Stripe Customer Portal for",
   "testimonial.published": "published a Testimonial from",
   "testimonial.archived": "archived a Testimonial from",
+  "testimonial.revised": "received a revised Testimonial from",
+  "testimonial.consent_withdrawn": "recorded consent withdrawal for",
   "testimonial.deleted": "permanently deleted",
 } as const;
 

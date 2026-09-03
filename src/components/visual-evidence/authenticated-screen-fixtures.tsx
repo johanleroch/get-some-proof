@@ -189,10 +189,16 @@ export function ManagedSubmissionScreenFixture() {
     <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
       <ManagedSubmissionView
         submission={{
+          avatarUrl: null,
           brandName: collectionFormFixtureBrand.name,
           company: collectionFormFixtureValues.company,
+          consentAcceptedAt: Date.UTC(2026, 8, 3),
+          contentVersion: 1,
           moderationStatus: "pending",
+          privacyContact: collectionFormFixtureBrand.privacyContact,
+          publicSlug: collectionFormFixtureBrand.publicSlug,
           role: collectionFormFixtureValues.role,
+          submissionType: "text",
           submitterEmail: collectionFormFixtureValues.submitterEmail,
           submitterName: collectionFormFixtureValues.submitterName,
           text: collectionFormFixtureValues.text,
