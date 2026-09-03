@@ -115,20 +115,60 @@ export function buildSubmissionConfirmationEmail({
   });
 }
 
+export function buildVideoSubmissionConfirmationEmail({
+  brandName,
+  email,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Manage your submission",
+    description: `Thanks for sharing a video testimonial with ${brandName}. It is processing and will remain private until the Brand reviews it.`,
+    email,
+    subject: `Your video submission to ${brandName}`,
+    template: "video-submission-confirmation",
+    url,
+  });
+}
+
+export function buildVideoRetryEmail({
+  brandName,
+  email,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Replace your video",
+    description: `We could not process the video you shared with ${brandName}. Use this private one-time link within 24 hours to upload a replacement.`,
+    email,
+    subject: `Replace your video for ${brandName}`,
+    template: "video-retry",
+    url,
+  });
+}
+
 export function buildNewPendingTestimonialEmail({
   brandName,
   email,
+  submissionType,
   submitterName,
   url,
 }: {
   brandName: string;
   email: string;
+  submissionType: "text" | "video";
   submitterName: string;
   url: string;
 }) {
   return buildActionEmail({
     action: "Review testimonial",
-    description: `${submitterName} sent a new text testimonial to ${brandName}. It is Pending review in your private Workspace.`,
+    description: `${submitterName} sent a new ${submissionType} testimonial to ${brandName}. It is Pending review in your private Workspace.`,
     email,
     subject: `New testimonial for ${brandName}`,
     template: "new-pending-testimonial",

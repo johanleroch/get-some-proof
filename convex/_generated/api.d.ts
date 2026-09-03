@@ -21,6 +21,7 @@ import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
 import type * as domain_profileImage from "../domain/profileImage.js";
 import type * as domain_submission from "../domain/submission.js";
+import type * as domain_video from "../domain/video.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
@@ -40,6 +41,11 @@ import type * as stripeBillingProvider from "../stripeBillingProvider.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 import type * as testimonialModeration from "../testimonialModeration.js";
+import type * as video from "../video.js";
+import type * as videoProvider from "../videoProvider.js";
+import type * as videoRetryDelivery from "../videoRetryDelivery.js";
+import type * as videoRetryLinks from "../videoRetryLinks.js";
+import type * as videoWebhooks from "../videoWebhooks.js";
 
 import type {
   ApiFromModules,
@@ -61,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "domain/organizationSlug": typeof domain_organizationSlug;
   "domain/profileImage": typeof domain_profileImage;
   "domain/submission": typeof domain_submission;
+  "domain/video": typeof domain_video;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
   http: typeof http;
@@ -80,6 +87,11 @@ declare const fullApi: ApiFromModules<{
   submissions: typeof submissions;
   system: typeof system;
   testimonialModeration: typeof testimonialModeration;
+  video: typeof video;
+  videoProvider: typeof videoProvider;
+  videoRetryDelivery: typeof videoRetryDelivery;
+  videoRetryLinks: typeof videoRetryLinks;
+  videoWebhooks: typeof videoWebhooks;
 }>;
 
 /**

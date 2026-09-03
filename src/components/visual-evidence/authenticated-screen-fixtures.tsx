@@ -9,6 +9,7 @@ import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandMark } from "@/components/brand-mark";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
+import { VideoRetryFormView } from "@/components/collection/video-retry-form";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
@@ -122,6 +123,36 @@ export function CollectionFormWriteScreenFixture() {
       initialStep={2}
       initialValues={collectionFormFixtureValues}
     />
+  );
+}
+
+export function CollectionFormVideoScreenFixture() {
+  return (
+    <CollectionFormShellView
+      brand={collectionFormFixtureBrand}
+      initialProofType="video"
+      initialStep={2}
+    />
+  );
+}
+
+export function VideoRetryScreenFixture() {
+  return (
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
+      <VideoRetryFormView
+        context={{
+          brandName: collectionFormFixtureBrand.name,
+          publicSlug: collectionFormFixtureBrand.publicSlug,
+          spokenLanguage: "fr",
+        }}
+        createRetryUpload={async () => ({
+          provider: "fake",
+          reservationId: "visual-retry-reservation" as Id<"videoReservations">,
+          uploadUrl: "https://fake-mux.invalid/replacement",
+        })}
+        token="visual-evidence-token"
+      />
+    </main>
   );
 }
 
