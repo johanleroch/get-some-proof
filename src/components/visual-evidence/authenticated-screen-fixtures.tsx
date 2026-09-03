@@ -194,14 +194,18 @@ export function ManagedSubmissionScreenFixture() {
           company: collectionFormFixtureValues.company,
           consentAcceptedAt: Date.UTC(2026, 8, 3),
           contentVersion: 1,
-          moderationStatus: "pending",
+          currentVideo: {
+            playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
+            posterTimeSeconds: 30,
+          },
+          moderationStatus: "published",
           privacyContact: collectionFormFixtureBrand.privacyContact,
           publicSlug: collectionFormFixtureBrand.publicSlug,
           role: collectionFormFixtureValues.role,
-          submissionType: "text",
+          submissionType: "video",
           submitterEmail: collectionFormFixtureValues.submitterEmail,
           submitterName: collectionFormFixtureValues.submitterName,
-          text: collectionFormFixtureValues.text,
+          text: "",
         }}
       />
     </main>
