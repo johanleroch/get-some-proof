@@ -1,0 +1,237 @@
+"use client";
+
+import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
+import { IconMenu2 } from "@tabler/icons-react";
+
+import type { Id } from "@convex/_generated/dataModel";
+import { AccountProfileView } from "@/components/account/account-profile";
+import { BrandMark } from "@/components/brand-mark";
+import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
+import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
+import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+function useFixtureImage() {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  useEffect(
+    () => () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    },
+    [imageUrl],
+  );
+  return {
+    imageUrl,
+    remove: async () => setImageUrl(null),
+    upload: async (blob: Blob) => setImageUrl(URL.createObjectURL(blob)),
+  };
+}
+
+export function ProfileScreenFixture() {
+  const image = useFixtureImage();
+  return (
+    <AccountProfileView
+      currentImage={image.imageUrl}
+      email="visual-evidence@example.invalid"
+      initialName="Visual Evidence User"
+      onRemoveImage={image.remove}
+      onSaveName={async () => undefined}
+      onUploadImage={image.upload}
+    />
+  );
+}
+
+export function OnboardingScreenFixture() {
+  return (
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-5 py-16">
+      <div className="w-full max-w-2xl">
+        <div className="mb-8 flex justify-center">
+          <BrandMark />
+        </div>
+        <Card className="shadow-xs">
+          <CardHeader>
+            <p className="text-muted-foreground text-sm font-medium">
+              First step
+            </p>
+            <CardTitle className="text-2xl">Create your Brand</CardTitle>
+            <CardDescription>
+              Set the public identity and Collection Form your customers will
+              see.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrganizationOnboardingFormView
+              createOrganization={async () => ({
+                id: "fixture-organization" as Id<"organizations">,
+                publicSlug: "visual-studio",
+                slug: "visual-studio-l5pg",
+              })}
+              generateUploadUrl={async () => "fixture://upload"}
+              navigate={() => undefined}
+              setLogo={async () => null}
+              uploadImage={async () => "fixture-image" as Id<"_storage">}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+export function CollectionFormScreenFixture() {
+  return (
+    <CollectionFormShellView
+      brand={{
+        collectionFormDescription:
+          "Tell us how our work changed your business. A few honest sentences are perfect.",
+        collectionFormTitle: "Share your Visual Studio story",
+        logoUrl: null,
+        name: "Visual Studio",
+        primaryColor: "#6d5dfc",
+        privacyContact: "privacy@example.invalid",
+        publicSlug: "visual-studio",
+      }}
+    />
+  );
+}
+
+export function OrganizationSettingsScreenFixture() {
+  const image = useFixtureImage();
+  return (
+    <OrganizationSettingsView
+      canChangePublicSlug
+      canUpdate
+      logoUrl={image.imageUrl}
+      name="Visual Studio"
+      onChangePublicSlug={async () => undefined}
+      onRemoveLogo={image.remove}
+      onRename={async () => undefined}
+      onUploadLogo={image.upload}
+      publicSlug="visual-studio"
+      publicSlugCanChange
+    />
+  );
+}
+
+export function DashboardBackgroundScreenFixture() {
+  return (
+    <div
+      className="dashboard-frame flex h-svh overflow-hidden"
+      style={
+        {
+          "--sidebar-width": "18rem",
+        } as CSSProperties
+      }
+    >
+      <div aria-hidden="true" className="dashboard-frame-background" />
+      <aside className="relative z-10 hidden w-72 shrink-0 p-2 md:flex">
+        <div
+          className="bg-sidebar text-sidebar-foreground relative flex h-full w-full flex-col overflow-hidden"
+          data-slot="sidebar-inner"
+        >
+          <div aria-hidden="true" className="dashboard-sidebar-effects" />
+          <div className="flex flex-1 flex-col gap-6 p-3">
+            <div>
+              <p className="text-[13px] font-[510]">Visual Studio</p>
+              <p className="text-muted-foreground text-xs">/c/visual-studio</p>
+            </div>
+            <nav className="space-y-5">
+              <div>
+                <p className="mb-2 px-2" data-sidebar="group-label">
+                  Workspace
+                </p>
+                <div className="space-y-1">
+                  <button
+                    className="bg-sidebar-accent block rounded-lg p-2"
+                    data-active="true"
+                    data-sidebar="menu-button"
+                    type="button"
+                  >
+                    Overview
+                  </button>
+                  <button
+                    className="block rounded-lg p-2"
+                    data-sidebar="menu-button"
+                    type="button"
+                  >
+                    Brand settings
+                  </button>
+                </div>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </aside>
+      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border shadow-2xl shadow-black/30 md:m-2 md:ml-0 md:rounded-xl">
+        <div aria-hidden="true" className="dashboard-view-effects" />
+        <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
+            <button
+              aria-label="Open navigation"
+              className="grid size-8 place-items-center rounded-md md:hidden"
+              type="button"
+            >
+              <IconMenu2 aria-hidden="true" className="size-4" />
+            </button>
+            <p className="text-[13px] font-[510]">Overview</p>
+          </header>
+          <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="dashboard-page-title">Visual Studio</h1>
+                <p className="dashboard-page-description mt-1">
+                  Collect customer proof, review it privately, and publish only
+                  what you choose.
+                </p>
+              </div>
+              <Button>Copy collection link</Button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <section className="dashboard-panel p-5">
+                <p className="text-muted-foreground text-[13px] font-[510]">
+                  Pending Testimonials
+                </p>
+                <p className="mt-6 text-[30px] font-[590]">0</p>
+                <p className="text-muted-foreground text-xs">
+                  Ready for your first Submission
+                </p>
+              </section>
+              <section className="dashboard-panel p-5">
+                <p className="text-muted-foreground text-[13px] font-[510]">
+                  Your Collection Form
+                </p>
+                <p className="mt-6 text-lg font-[590]">/c/visual-studio</p>
+                <p className="text-muted-foreground text-xs">
+                  Share this address to start collecting proof
+                </p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </main>
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-frame dashboard-shine-sidebar"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-view dashboard-shine-sidebar"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-frame dashboard-shine-body"
+      />
+      <div
+        aria-hidden="true"
+        className="dashboard-shine dashboard-shine-view dashboard-shine-body"
+      />
+    </div>
+  );
+}

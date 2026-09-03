@@ -1,0 +1,3 @@
+# Record versioned publication consent
+
+Every Submission requires an unticked affirmative authorization naming the Brand, the publication purposes, the supplied identity fields that may be public, the absence of compensation, and a withdrawal route, while submitter email always remains private. Get Some Proof records the exact consent wording and version, timestamp, Brand, and Testimonial association. Consent Withdrawal immediately removes the Testimonial from the Public Projection and permanently deletes its content, photo, and media within 24 hours, leaving only a minimal content-free audit event; this preserves demonstrable lifecycle evidence without treating consent as a general marketing opt-in.

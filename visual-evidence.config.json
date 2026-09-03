@@ -1,0 +1,95 @@
+{
+  "project": "get-some-proof",
+  "bucket": "screenshots",
+  "endpoint": "https://c5766b3d8c072b152df6d2f818707089.r2.cloudflarestorage.com",
+  "publicBaseUrl": "https://screenshots.johancode.fr",
+  "screens": [
+    {
+      "slug": "sign-in",
+      "title": "Sign in",
+      "path": "/sign-in",
+      "heading": "Welcome back",
+      "theme": "light"
+    },
+    {
+      "slug": "forgot-password",
+      "title": "Forgot password",
+      "path": "/forgot-password",
+      "heading": "Reset your password",
+      "theme": "light"
+    },
+    {
+      "slug": "sign-up",
+      "title": "Sign up",
+      "path": "/sign-up",
+      "heading": "Create your account",
+      "theme": "light"
+    },
+    {
+      "slug": "two-factor",
+      "title": "Two-factor verification",
+      "path": "/two-factor",
+      "heading": "Two-factor verification",
+      "theme": "light"
+    },
+    {
+      "slug": "sign-in-dark",
+      "title": "Sign in - dark",
+      "path": "/sign-in",
+      "heading": "Welcome back",
+      "theme": "dark"
+    },
+    {
+      "slug": "sign-up-dark",
+      "title": "Sign up - dark",
+      "path": "/sign-up",
+      "heading": "Create your account",
+      "theme": "dark"
+    },
+    {
+      "slug": "profile-image",
+      "title": "Profile image",
+      "path": "/account/profile",
+      "fixturePath": "/visual-evidence/profile",
+      "heading": "Profile",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "brand-onboarding",
+      "title": "Brand onboarding",
+      "path": "/onboarding",
+      "fixturePath": "/visual-evidence/onboarding",
+      "heading": "Create your Brand",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "brand-settings",
+      "title": "Brand settings",
+      "path": "/org/:organizationSlug/settings",
+      "fixturePath": "/visual-evidence/organization-settings",
+      "heading": "Brand settings",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "brand-dashboard-dark",
+      "title": "Brand dashboard - dark",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/dashboard",
+      "heading": "Visual Studio",
+      "theme": "dark",
+      "requiresAuth": true
+    },
+    {
+      "slug": "collection-form-shell",
+      "title": "Collection Form shell",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form",
+      "heading": "Share your Visual Studio story",
+      "theme": "light",
+      "requiresBackend": true
+    }
+  ]
+}

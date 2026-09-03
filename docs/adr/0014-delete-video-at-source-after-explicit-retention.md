@@ -1,0 +1,3 @@
+# Delete video at its source after explicit retention
+
+Permanent Deletion removes the Mux source, renditions, captions, and thumbnails and leaves Get Some Proof with no retained media copy. The Owner receives an MP4 download opportunity before a separate destructive confirmation, a failed download never triggers deletion, and downgrade overflow is retained for 30 days with warnings before the same source deletion occurs. Pro downloads use the best available MP4 up to 1080p, and downgrade overflow remains exceptionally downloadable during its retention window; this trades indefinite recovery for a clear privacy promise and bounded storage liability.

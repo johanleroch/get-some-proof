@@ -43,12 +43,12 @@ npm view @djpanda/convex-authz version peerDependencies
 npm view convex version engines
 ```
 
-| Paquet | Version observée | Contrainte utile | Conclusion |
-|---|---:|---|---|
-| `@convex-dev/better-auth` | `0.12.5` | `better-auth >=1.6.11 <1.7.0`, `convex ^1.25.0`, React 18.3 ou 19 | Better Auth 1.7 est exclu. ([package publié](https://www.npmjs.com/package/@convex-dev/better-auth/v/0.12.5), [source exacte](https://github.com/get-convex/better-auth/blob/c628916b451a6b4cff0f5464f134475464b1a6da/package.json#L101-L106)) |
-| `better-auth` | `1.7.2` latest ; `1.6.30` dernier `1.6.x` observé | Le composant demande `<1.7.0` | Utiliser et verrouiller `1.6.30`, pas `latest`. ([1.6.30](https://www.npmjs.com/package/better-auth/v/1.6.30), [1.7.2](https://www.npmjs.com/package/better-auth/v/1.7.2), [régression 1.7](https://github.com/get-convex/better-auth/issues/433)) |
-| `@djpanda/convex-authz` | `2.4.1` | `convex ^1.29.3`, React 18.3 ou 19 | Compatible avec la même application. ([package publié](https://www.npmjs.com/package/@djpanda/convex-authz/v/2.4.1), [source exacte](https://github.com/dbjpanda/convex-authz/blob/0717b7fbc0c0a6760261f454ba8000124a670019/package.json#L72-L76)) |
-| `convex` | `1.45.0` | Node `>=20`, npm `>=7` | Appartient aux deux plages `^1.25.0` et `^1.29.3`. ([package](https://www.npmjs.com/package/convex/v/1.45.0)) |
+| Paquet                    |                                  Version observée | Contrainte utile                                                  | Conclusion                                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------: | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@convex-dev/better-auth` |                                          `0.12.5` | `better-auth >=1.6.11 <1.7.0`, `convex ^1.25.0`, React 18.3 ou 19 | Better Auth 1.7 est exclu. ([package publié](https://www.npmjs.com/package/@convex-dev/better-auth/v/0.12.5), [source exacte](https://github.com/get-convex/better-auth/blob/c628916b451a6b4cff0f5464f134475464b1a6da/package.json#L101-L106))     |
+| `better-auth`             | `1.7.2` latest ; `1.6.30` dernier `1.6.x` observé | Le composant demande `<1.7.0`                                     | Utiliser et verrouiller `1.6.30`, pas `latest`. ([1.6.30](https://www.npmjs.com/package/better-auth/v/1.6.30), [1.7.2](https://www.npmjs.com/package/better-auth/v/1.7.2), [régression 1.7](https://github.com/get-convex/better-auth/issues/433)) |
+| `@djpanda/convex-authz`   |                                           `2.4.1` | `convex ^1.29.3`, React 18.3 ou 19                                | Compatible avec la même application. ([package publié](https://www.npmjs.com/package/@djpanda/convex-authz/v/2.4.1), [source exacte](https://github.com/dbjpanda/convex-authz/blob/0717b7fbc0c0a6760261f454ba8000124a670019/package.json#L72-L76)) |
+| `convex`                  |                                          `1.45.0` | Node `>=20`, npm `>=7`                                            | Appartient aux deux plages `^1.25.0` et `^1.29.3`. ([package](https://www.npmjs.com/package/convex/v/1.45.0))                                                                                                                                      |
 
 **Fait.** L’intersection des contraintes Convex est `>=1.29.3 <2.0.0`; `1.45.0` satisfait cette intersection. Les deux packages partagent également les mêmes plages React.
 
@@ -108,15 +108,15 @@ invitations
 
 ## Organisations, memberships et tenants : choix recommandé
 
-| Concept | Propriétaire recommandé | Motif |
-|---|---|---|
-| Utilisateur, compte, session | Better Auth | C’est son domaine natif. |
-| Organisation | Tables applicatives Convex | Cycle de vie métier stable et indépendant du fournisseur d’auth. |
-| Membership | Tables applicatives Convex | Sert de preuve serveur d’appartenance et de jointure utilisateur/tenant. |
-| Invitation | Tables applicatives Convex, pour la v1 | Évite le chemin Organization non supporté par défaut et son bug ouvert. |
-| `tenantId` d’autorisation | `_id` canonique de l’organisation, dérivé serveur | Un seul identifiant de partition, jamais une valeur libre du client. |
-| Rôles et permissions effectifs | `convex-authz` | Évite deux moteurs RBAC concurrents. |
-| Tenant actuellement affiché | État UX côté client ou préférence serveur | Ce n’est qu’un sélecteur ; chaque requête revalide le membership. |
+| Concept                        | Propriétaire recommandé                           | Motif                                                                    |
+| ------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| Utilisateur, compte, session   | Better Auth                                       | C’est son domaine natif.                                                 |
+| Organisation                   | Tables applicatives Convex                        | Cycle de vie métier stable et indépendant du fournisseur d’auth.         |
+| Membership                     | Tables applicatives Convex                        | Sert de preuve serveur d’appartenance et de jointure utilisateur/tenant. |
+| Invitation                     | Tables applicatives Convex, pour la v1            | Évite le chemin Organization non supporté par défaut et son bug ouvert.  |
+| `tenantId` d’autorisation      | `_id` canonique de l’organisation, dérivé serveur | Un seul identifiant de partition, jamais une valeur libre du client.     |
+| Rôles et permissions effectifs | `convex-authz`                                    | Évite deux moteurs RBAC concurrents.                                     |
+| Tenant actuellement affiché    | État UX côté client ou préférence serveur         | Ce n’est qu’un sélecteur ; chaque requête revalide le membership.        |
 
 ### Pourquoi ne pas faire de Better Auth Organization la valeur par défaut ?
 
@@ -189,17 +189,17 @@ scope    = { type: "organization", id: organizationId }
 
 `scope` restera utile plus tard pour des rôles propres à un projet ou une ressource. Le code publié supporte l’héritage de rôles et les permissions scopées. ([rôles et héritage](https://github.com/dbjpanda/convex-authz/blob/0717b7fbc0c0a6760261f454ba8000124a670019/README.md#L66-L133), [checks scopés](https://github.com/dbjpanda/convex-authz/blob/0717b7fbc0c0a6760261f454ba8000124a670019/src/client/index.ts#L630-L752))
 
-| Permission métier indicative | Viewer | Editor | Admin | Owner |
-|---|:---:|:---:|:---:|:---:|
-| `dashboard:view`, `records:read` | ✓ | ✓ | ✓ | ✓ |
-| `records:create`, `records:update` |  | ✓ | ✓ | ✓ |
-| `records:delete` |  | à décider | ✓ | ✓ |
-| `members:view` | à décider | à décider | ✓ | ✓ |
-| `members:invite`, `members:remove` |  |  | ✓ | ✓ |
-| `members:change_role` hors owner |  |  | ✓ | ✓ |
-| `audit:view`, `settings:update` |  |  | ✓ | ✓ |
-| `billing:view`, `billing:manage` |  |  | à décider | ✓ |
-| `organization:transfer_ownership`, `organization:delete` |  |  |  | ✓ |
+| Permission métier indicative                             |  Viewer   |  Editor   |   Admin   | Owner |
+| -------------------------------------------------------- | :-------: | :-------: | :-------: | :---: |
+| `dashboard:view`, `records:read`                         |     ✓     |     ✓     |     ✓     |   ✓   |
+| `records:create`, `records:update`                       |           |     ✓     |     ✓     |   ✓   |
+| `records:delete`                                         |           | à décider |     ✓     |   ✓   |
+| `members:view`                                           | à décider | à décider |     ✓     |   ✓   |
+| `members:invite`, `members:remove`                       |           |           |     ✓     |   ✓   |
+| `members:change_role` hors owner                         |           |           |     ✓     |   ✓   |
+| `audit:view`, `settings:update`                          |           |           |     ✓     |   ✓   |
+| `billing:view`, `billing:manage`                         |           |           | à décider |   ✓   |
+| `organization:transfer_ownership`, `organization:delete` |           |           |           |   ✓   |
 
 Hiérarchie suggérée : `editor` hérite de `viewer`, `admin` hérite de `editor`, `owner` hérite de `admin`. Les capacités irréversibles restent des permissions explicites d’owner ; ne pas utiliser un wildcard `*` dans les rôles de base.
 
