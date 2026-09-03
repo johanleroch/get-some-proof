@@ -13,6 +13,31 @@ const context = {
   params: Promise.resolve({ publicSlug: "acme-proof" }),
 };
 
+function mockProjection() {
+  fetchQuery
+    .mockResolvedValueOnce({
+      accentColor: "#123abc",
+      attributionRequired: true,
+      brandName: "Acme Studio",
+      hasPublishedTestimonials: true,
+      publicSlug: "acme-proof",
+    })
+    .mockResolvedValueOnce({
+      continueCursor: "next-page",
+      isDone: false,
+      page: [
+        {
+          avatarUrl: null,
+          id: "projection-1",
+          name: "Camille Test",
+          publishedAt: 1,
+          text: "A public-safe customer outcome.",
+          type: "text",
+        },
+      ],
+    });
+}
+
 describe("GET /api/public-wall/:publicSlug", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,28 +49,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
     vi.stubEnv("NEXT_PUBLIC_CONVEX_SITE_URL", "https://example.convex.site");
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://proof.example");
     fetchMutation.mockResolvedValue({ remaining: 119, resetAt: 60_000 });
-    fetchQuery
-      .mockResolvedValueOnce({
-        accentColor: "#123abc",
-        attributionRequired: true,
-        brandName: "Acme Studio",
-        hasPublishedTestimonials: true,
-        publicSlug: "acme-proof",
-      })
-      .mockResolvedValueOnce({
-        continueCursor: "next-page",
-        isDone: false,
-        page: [
-          {
-            avatarUrl: null,
-            id: "projection-1",
-            name: "Camille Test",
-            publishedAt: 1,
-            text: "A public-safe customer outcome.",
-            type: "text",
-          },
-        ],
-      });
+    mockProjection();
   });
 
   it("returns only the cacheable versioned Public Projection contract", async () => {
@@ -56,7 +60,10 @@ describe("GET /api/public-wall/:publicSlug", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
-    expect(response.headers.get("cache-control")).toContain("s-maxage=30");
+    expect(response.headers.get("cache-control")).toBe(
+      "public, max-age=0, must-revalidate",
+    );
+    expect(response.headers.get("etag")).toMatch(/^"[a-f0-9]{64}"$/);
     await expect(response.json()).resolves.toEqual({
       brand: {
         accentColor: "#123abc",
@@ -64,7 +71,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
         name: "Acme Studio",
         publicSlug: "acme-proof",
       },
-      pagination: { cursor: "next-page" },
+      pagination: { cursor: expect.any(String) },
       schemaVersion: 1,
       testimonials: [
         {
@@ -78,6 +85,63 @@ describe("GET /api/public-wall/:publicSlug", () => {
       ],
     });
     expect(fetchMutation).toHaveBeenCalledOnce();
+  });
+
+  it("revalidates cached reads without replaying unchanged content", async () => {
+    const first = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof"),
+      context,
+    );
+    const etag = first.headers.get("etag");
+    mockProjection();
+
+    const response = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof", {
+        headers: { "If-None-Match": etag! },
+      }),
+      context,
+    );
+
+    expect(response.status).toBe(304);
+    expect(response.headers.get("etag")).toBe(etag);
+    expect(await response.text()).toBe("");
+  });
+
+  it("accepts only a server-signed pagination cursor", async () => {
+    const first = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof"),
+      context,
+    );
+    const firstPage = await first.json();
+    const cursor = firstPage.pagination.cursor as string;
+    fetchQuery.mockClear();
+    mockProjection();
+
+    const response = await GET(
+      new Request(
+        `https://proof.example/api/public-wall/acme-proof?cursor=${encodeURIComponent(cursor)}`,
+      ),
+      context,
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchQuery).toHaveBeenNthCalledWith(2, expect.anything(), {
+      paginationOpts: { cursor: "next-page", numItems: 50 },
+      publicSlug: "acme-proof",
+    });
+  });
+
+  it("rejects unsigned cursors and cache-busting parameters before reading", async () => {
+    for (const url of [
+      "https://proof.example/api/public-wall/acme-proof?cursor=forged",
+      "https://proof.example/api/public-wall/acme-proof?cache-bust=1",
+    ]) {
+      const response = await GET(new Request(url), context);
+      expect(response.status).toBe(400);
+    }
+
+    expect(fetchMutation).not.toHaveBeenCalled();
+    expect(fetchQuery).not.toHaveBeenCalled();
   });
 
   it("returns an explicit non-cacheable configuration failure", async () => {

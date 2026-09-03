@@ -1,24 +1,65 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 
 import { api } from "@convex/_generated/api";
 import { getPublicEnvironment } from "@/lib/env/public-env";
 
-const publicCacheControl =
-  "public, max-age=0, s-maxage=30, stale-while-revalidate=30";
+const publicCacheControl = "public, max-age=0, must-revalidate";
 const noStoreHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8",
 };
 
-function json(body: unknown, status: number, cacheable = false) {
+function json(body: unknown, status: number, cacheable = false, etag?: string) {
   return new Response(JSON.stringify(body), {
     headers: {
       ...noStoreHeaders,
       ...(cacheable ? { "Cache-Control": publicCacheControl } : {}),
+      ...(etag ? { ETag: etag } : {}),
     },
     status,
   });
+}
+
+function signCursor(cursor: string, publicSlug: string, secret: string) {
+  const encoded = Buffer.from(cursor, "utf8").toString("base64url");
+  const signature = createHmac("sha256", secret)
+    .update(`${publicSlug}\0${encoded}`)
+    .digest("base64url");
+  return `${encoded}.${signature}`;
+}
+
+function verifyCursor(token: string, publicSlug: string, secret: string) {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [encoded, signature] = parts;
+  if (!encoded || !signature) return null;
+  const expected = createHmac("sha256", secret)
+    .update(`${publicSlug}\0${encoded}`)
+    .digest("base64url");
+  const receivedBytes = Buffer.from(signature);
+  const expectedBytes = Buffer.from(expected);
+  if (
+    receivedBytes.length !== expectedBytes.length ||
+    !timingSafeEqual(receivedBytes, expectedBytes)
+  ) {
+    return null;
+  }
+  const cursor = Buffer.from(encoded, "base64url").toString("utf8");
+  if (
+    !cursor ||
+    cursor.length > 1_024 ||
+    Buffer.from(cursor, "utf8").toString("base64url") !== encoded
+  ) {
+    return null;
+  }
+  return cursor;
+}
+
+function projectionEtag(body: unknown) {
+  return `"${createHash("sha256").update(JSON.stringify(body)).digest("hex")}"`;
 }
 
 function isPublicSlug(value: string) {
@@ -50,8 +91,21 @@ export async function GET(
   }
 
   const { publicSlug } = await params;
-  const cursor = new URL(request.url).searchParams.get("cursor");
-  if (!isPublicSlug(publicSlug) || (cursor && cursor.length > 1_024)) {
+  const searchParams = new URL(request.url).searchParams;
+  const cursorTokens = searchParams.getAll("cursor");
+  const hasUnknownParameter = [...searchParams.keys()].some(
+    (key) => key !== "cursor",
+  );
+  const cursorToken = cursorTokens[0] ?? null;
+  const cursor = cursorToken
+    ? verifyCursor(cursorToken, publicSlug, secret)
+    : null;
+  if (
+    !isPublicSlug(publicSlug) ||
+    hasUnknownParameter ||
+    cursorTokens.length > 1 ||
+    (cursorTokens.length === 1 && !cursor)
+  ) {
     return json(
       {
         code: "INVALID_EMBED_REQUEST",
@@ -110,21 +164,33 @@ export async function GET(
     );
   }
 
-  const response = json(
-    {
-      brand: {
-        accentColor: brand.accentColor,
-        attributionRequired: brand.attributionRequired,
-        name: brand.brandName,
-        publicSlug: brand.publicSlug,
-      },
-      pagination: { cursor: page.isDone ? null : page.continueCursor },
-      schemaVersion: 1,
-      testimonials: page.page,
+  const projection = {
+    brand: {
+      accentColor: brand.accentColor,
+      attributionRequired: brand.attributionRequired,
+      name: brand.brandName,
+      publicSlug: brand.publicSlug,
     },
-    200,
-    true,
-  );
+    pagination: {
+      cursor: page.isDone
+        ? null
+        : signCursor(page.continueCursor, publicSlug, secret),
+    },
+    schemaVersion: 1,
+    testimonials: page.page,
+  };
+  const etag = projectionEtag(projection);
+  const response =
+    request.headers.get("if-none-match") === etag
+      ? new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": publicCacheControl,
+            ETag: etag,
+          },
+          status: 304,
+        })
+      : json(projection, 200, true, etag);
   response.headers.set("X-RateLimit-Remaining", String(rateLimit.remaining));
   response.headers.set("X-RateLimit-Reset", String(rateLimit.resetAt));
   return response;
