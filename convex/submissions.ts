@@ -677,6 +677,7 @@ async function deliverEmails(
           : buildNewPendingTestimonialEmail({
               brandName: created.brandName,
               email: delivery.recipientEmail,
+              submissionType: "text",
               submitterName: created.submitterName,
               url: `${siteUrl}${created.dashboardPath}`,
             });
@@ -766,7 +767,7 @@ export const getPrivate = query({
     ),
     rating: v.optional(v.number()),
     role: v.optional(v.string()),
-    submissionType: v.literal("text"),
+    submissionType: v.union(v.literal("text"), v.literal("video")),
     submitterEmail: v.string(),
     submitterName: v.string(),
     testimonialId: v.id("testimonials"),

@@ -6,6 +6,8 @@ export type TransactionalEmailTemplate =
   | "magic-link"
   | "organization-invitation"
   | "submission-confirmation"
+  | "video-submission-confirmation"
+  | "video-retry"
   | "new-pending-testimonial";
 
 export type TransactionalEmailMessage = {

@@ -30,6 +30,7 @@
     "@convex-dev/better-auth": "0.12.5",
     "@convex-dev/stripe": "0.1.6",
     "@djpanda/convex-authz": "2.4.1",
+    "@mux/upchunk": "^3.5.0",
     "@number-flow/react": "0.6.2",
     "@tabler/icons-react": "3.46.0",
     "@visx/event": "4.0.1-alpha.0",

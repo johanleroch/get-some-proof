@@ -5,6 +5,7 @@ import {
   CollectionFormDetailsScreenFixture,
   CollectionFormScreenFixture,
   CollectionFormSuccessScreenFixture,
+  CollectionFormVideoScreenFixture,
   CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
   EmptyPublicWallScreenFixture,
@@ -14,18 +15,21 @@ import {
   ProfileScreenFixture,
   PublicWallScreenFixture,
   TestimonialInboxScreenFixture,
+  VideoRetryScreenFixture,
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
   "collection-form": CollectionFormScreenFixture,
   "collection-form-details": CollectionFormDetailsScreenFixture,
   "collection-form-success": CollectionFormSuccessScreenFixture,
+  "collection-form-video": CollectionFormVideoScreenFixture,
   "collection-form-write": CollectionFormWriteScreenFixture,
   "managed-submission": ManagedSubmissionScreenFixture,
   "privacy-notice": BrandPrivacyNoticeScreenFixture,
   "public-wall": PublicWallScreenFixture,
   "public-wall-empty": EmptyPublicWallScreenFixture,
   "testimonial-inbox": TestimonialInboxScreenFixture,
+  "video-retry": VideoRetryScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
@@ -52,6 +56,7 @@ export default async function VisualEvidenceFixturePage({
     screen === "dashboard" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
+    screen === "video-retry" ||
     screen === "privacy-notice" ||
     screen.startsWith("public-wall") ? (
     <Screen />

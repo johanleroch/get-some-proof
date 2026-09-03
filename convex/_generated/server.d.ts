@@ -32,10 +32,14 @@ type Env = {
   readonly CONVEX_SITE_URL: string;
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
+  readonly MUX_PROVIDER: "fake" | "mux" | undefined;
+  readonly MUX_TOKEN_ID: string | undefined;
+  readonly MUX_TOKEN_SECRET: string | undefined;
   readonly RESEND_API_KEY: string | undefined;
   readonly SITE_URL: string;
   readonly STRIPE_SECRET_KEY: string | undefined;
   readonly STRIPE_WEBHOOK_SECRET: string | undefined;
+  readonly VIDEO_WEBHOOK_INGEST_SECRET: string | undefined;
 };
 
 /**

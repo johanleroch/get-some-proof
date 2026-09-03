@@ -89,12 +89,10 @@ export const listInbox = query({
           );
     const visibleQuery = indexedQuery.filter((filter) => {
       const isNotSpam = filter.neq(filter.field("moderationStatus"), "spam");
-      return args.submissionType
-        ? filter.and(
-            isNotSpam,
-            filter.eq(filter.field("submissionType"), args.submissionType),
-          )
-        : isNotSpam;
+      return filter.and(
+        isNotSpam,
+        filter.eq(filter.field("submissionType"), "text"),
+      );
     });
     const page = await visibleQuery
       .order(args.sort === "newest" ? "desc" : "asc")
@@ -103,6 +101,7 @@ export const listInbox = query({
     const inboxItems = await Promise.all(
       page.page.map(async (testimonial) => {
         if (testimonial.moderationStatus === "spam") testimonialUnavailable();
+        if (testimonial.submissionType !== "text") testimonialUnavailable();
         const [avatarUrl, consent] = await Promise.all([
           testimonial.avatarStorageId
             ? ctx.storage.getUrl(testimonial.avatarStorageId)

@@ -101,6 +101,15 @@
       "requiresBackend": true
     },
     {
+      "slug": "collection-form-video",
+      "title": "Collection Form - add video",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form-video",
+      "heading": "Add your video",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
       "slug": "collection-form-details",
       "title": "Collection Form - identity and consent",
       "path": "/c/:publicSlug",
@@ -133,6 +142,15 @@
       "path": "/s/:token",
       "fixturePath": "/visual-evidence/managed-submission",
       "heading": "Your testimonial",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
+      "slug": "video-retry",
+      "title": "Private video retry link",
+      "path": "/retry-video/:token",
+      "fixturePath": "/visual-evidence/video-retry",
+      "heading": "Replace your video",
       "theme": "light",
       "requiresBackend": true
     },

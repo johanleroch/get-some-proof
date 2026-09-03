@@ -152,7 +152,7 @@ export default defineSchema({
   testimonials: defineTable({
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
-    submissionType: v.literal("text"),
+    submissionType: v.union(v.literal("text"), v.literal("video")),
     moderationStatus: v.union(
       v.literal("pending"),
       v.literal("published"),
@@ -257,6 +257,87 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_storage_id", ["storageId"])
     .index("by_expiry", ["expiresAt"]),
+  videoReservations: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    status: v.union(
+      v.literal("reserved"),
+      v.literal("consumed"),
+      v.literal("released"),
+    ),
+    expiresAt: v.number(),
+    providerUploadId: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization_client_submission", [
+      "organizationId",
+      "clientSubmissionId",
+    ])
+    .index("by_organization_status", ["organizationId", "status"])
+    .index("by_provider_upload_id", ["providerUploadId"])
+    .index("by_expiry", ["expiresAt"]),
+  videoAssets: defineTable({
+    organizationId: v.id("organizations"),
+    reservationId: v.id("videoReservations"),
+    testimonialId: v.optional(v.id("testimonials")),
+    provider: v.union(v.literal("fake"), v.literal("mux")),
+    providerUploadId: v.string(),
+    providerAssetId: v.optional(v.string()),
+    playbackId: v.optional(v.string()),
+    spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
+    mimeType: v.string(),
+    fileSizeBytes: v.number(),
+    durationSeconds: v.optional(v.number()),
+    status: v.union(
+      v.literal("awaiting_upload"),
+      v.literal("processing"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    captionsStatus: v.union(
+      v.literal("requested"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_reservation", ["reservationId"])
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_provider_upload_id", ["providerUploadId"])
+    .index("by_provider_asset_id", ["providerAssetId"])
+    .index("by_organization_status", ["organizationId", "status"]),
+  videoWebhookEvents: defineTable({
+    providerEventId: v.string(),
+    eventType: v.string(),
+    outcome: v.string(),
+    processedAt: v.number(),
+  }).index("by_provider_event_id", ["providerEventId"]),
+  videoRetryLinks: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    videoAssetId: v.id("videoAssets"),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    replacementReservationId: v.optional(v.id("videoReservations")),
+    tokenSeed: v.optional(v.string()),
+    deliveryAttempts: v.optional(v.number()),
+    deliveryStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+    ),
+    deliveryLeaseId: v.optional(v.string()),
+    deliveryLeaseExpiresAt: v.optional(v.number()),
+    deliveryError: v.optional(v.string()),
+    deliveredAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_token_hash", ["tokenHash"])
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_video_asset", ["videoAssetId"]),
   storageCleanupJobs: defineTable({
     attemptId: v.string(),
     key: v.literal("submission-avatar-orphans"),
