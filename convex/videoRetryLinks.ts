@@ -8,6 +8,13 @@ export async function createVideoRetryLink(
   token: { hash: string; seed: string },
 ) {
   if (!asset.testimonialId) return undefined;
+  const deletion = await ctx.db
+    .query("videoMediaDeletions")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", asset.testimonialId!),
+    )
+    .unique();
+  if (deletion) return undefined;
   const testimonial = await ctx.db.get(asset.testimonialId);
   const brand = testimonial
     ? await ctx.db.get(testimonial.organizationId)

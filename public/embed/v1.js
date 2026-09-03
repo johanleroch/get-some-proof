@@ -62,6 +62,44 @@
       text-align: left;
       text-transform: none;
     }
+    .card.video-card { padding: 0; }
+    .content { padding: 20px; }
+    .video-shell {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      overflow: hidden;
+      background: #000;
+    }
+    .video-shell mux-player { display: block; width: 100%; height: 100%; }
+    .play {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      cursor: pointer;
+      border: 0;
+      background: #000;
+    }
+    .poster { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .play-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: grid;
+      width: 56px;
+      height: 56px;
+      translate: -50% -50%;
+      place-items: center;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--gsp-surface) 90%, transparent);
+      color: var(--gsp-text);
+      font-size: 24px;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+    }
+    .play:focus-visible { outline: 3px solid var(--gsp-accent); outline-offset: -3px; }
     .identity { display: flex; min-width: 0; align-items: center; gap: 12px; }
     .avatar {
       display: grid;
@@ -177,8 +215,110 @@
     return stars;
   }
 
+  let muxPlayerPromise;
+  let videoPlayerPolicyPromise;
+  function loadMuxPlayer() {
+    if (customElements.get("mux-player")) return Promise.resolve();
+    if (!muxPlayerPromise) {
+      muxPlayerPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = new URL("/embed/mux-player.js", apiOrigin).toString();
+        script.onload = () =>
+          customElements.whenDefined("mux-player").then(resolve);
+        script.onerror = () => reject(new Error("PLAYER_UNAVAILABLE"));
+        document.head.append(script);
+      });
+    }
+    return muxPlayerPromise;
+  }
+
+  function loadVideoPlayerPolicy() {
+    if (window.__GSP_VIDEO_PLAYER_POLICY__) {
+      return Promise.resolve(window.__GSP_VIDEO_PLAYER_POLICY__);
+    }
+    if (!videoPlayerPolicyPromise) {
+      videoPlayerPolicyPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = new URL(
+          "/embed/video-player-policy.js",
+          apiOrigin,
+        ).toString();
+        script.onload = () => {
+          if (!window.__GSP_VIDEO_PLAYER_POLICY__) {
+            reject(new Error("PLAYER_POLICY_UNAVAILABLE"));
+            return;
+          }
+          resolve(window.__GSP_VIDEO_PLAYER_POLICY__);
+        };
+        script.onerror = () => reject(new Error("PLAYER_POLICY_UNAVAILABLE"));
+        document.head.append(script);
+      });
+    }
+    return videoPlayerPolicyPromise;
+  }
+
+  function renderVideo(testimonial, brand) {
+    const shell = element("div", "video-shell");
+    const button = element("button", "play");
+    button.type = "button";
+    button.setAttribute("aria-label", `Play ${testimonial.name}'s testimonial`);
+    const poster = element("img", "poster");
+    poster.alt = `Video from ${testimonial.name}`;
+    poster.loading = "lazy";
+    poster.referrerPolicy = "no-referrer";
+    poster.src = `https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=720&height=1280&fit_mode=smartcrop&time=${testimonial.posterTimeSeconds || 0.5}`;
+    const icon = element("span", "play-icon", "▶");
+    icon.setAttribute("aria-hidden", "true");
+    button.append(poster, icon);
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const [, videoPlayerPolicy] = await Promise.all([
+          loadMuxPlayer(),
+          loadVideoPlayerPolicy(),
+        ]);
+        const player = element("mux-player");
+        player.setAttribute("accent-color", brand.accentColor);
+        if (videoPlayerPolicy.disableCookies) {
+          player.setAttribute("disable-cookies", "");
+        }
+        player.setAttribute("metadata-video-id", testimonial.id);
+        player.setAttribute(
+          "metadata-video-title",
+          `${testimonial.name}${videoPlayerPolicy.metadataTitleSuffix}`,
+        );
+        player.setAttribute("playback-id", testimonial.playbackId);
+        if (videoPlayerPolicy.playsInline) {
+          player.setAttribute("playsinline", "");
+        }
+        player.setAttribute("poster", poster.src);
+        player.setAttribute("preload", videoPlayerPolicy.preload);
+        if (videoPlayerPolicy.autoplay) {
+          player.setAttribute("autoplay", "");
+        }
+        if (
+          videoPlayerPolicy.hideCaptionsWhenUnavailable &&
+          !testimonial.captionsAvailable
+        ) {
+          player.setAttribute("default-hidden-captions", "");
+        }
+        shell.replaceChildren(player);
+        await player.play().catch(() => undefined);
+      } catch {
+        button.disabled = false;
+      }
+    });
+    shell.append(button);
+    return shell;
+  }
+
   function renderCard(testimonial, brand, origin) {
     const card = element("article", "card");
+    const content = element("div", "content");
+    if (testimonial.type === "video") {
+      card.classList.add("video-card");
+      card.append(renderVideo(testimonial, brand));
+    }
     const identity = element("div", "identity");
     const person = element("div", "person");
     person.append(element("p", "name", testimonial.name));
@@ -187,9 +327,11 @@
       .join(" · ");
     if (meta) person.append(element("p", "meta", meta));
     identity.append(renderAvatar(testimonial), person);
-    card.append(identity);
-    if (testimonial.rating) card.append(renderStars(testimonial.rating));
-    card.append(element("blockquote", "", testimonial.text));
+    content.append(identity);
+    if (testimonial.rating) content.append(renderStars(testimonial.rating));
+    if (testimonial.type === "text") {
+      content.append(element("blockquote", "", testimonial.text));
+    }
     if (brand.attributionRequired) {
       const attribution = element(
         "a",
@@ -201,8 +343,9 @@
         origin,
       ).toString();
       attribution.rel = "sponsored nofollow";
-      card.append(attribution);
+      content.append(attribution);
     }
+    card.append(content);
     return card;
   }
 

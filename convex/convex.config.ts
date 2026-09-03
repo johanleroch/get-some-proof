@@ -17,6 +17,8 @@ const app = defineApp({
     MUX_PROVIDER: v.optional(v.union(v.literal("fake"), v.literal("mux"))),
     MUX_TOKEN_ID: v.optional(v.string()),
     MUX_TOKEN_SECRET: v.optional(v.string()),
+    MUX_SIGNING_KEY_ID: v.optional(v.string()),
+    MUX_SIGNING_PRIVATE_KEY: v.optional(v.string()),
     VIDEO_WEBHOOK_INGEST_SECRET: v.optional(v.string()),
     STRIPE_SECRET_KEY: v.optional(v.string()),
     STRIPE_WEBHOOK_SECRET: v.optional(v.string()),

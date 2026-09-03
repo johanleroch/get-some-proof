@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, ExternalLink, Send, Trash2 } from "lucide-react";
+import { Archive, Download, ExternalLink, Send, Trash2 } from "lucide-react";
 import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -23,7 +29,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import { formatShortDate } from "@/lib/format-date";
 
-type InboxTestimonial = {
+type InboxTestimonialIdentity = {
   avatarUrl: string | null;
   company?: string;
   consentAcceptedAt: number;
@@ -31,23 +37,48 @@ type InboxTestimonial = {
   moderationStatus: "pending" | "published" | "archived";
   rating?: number;
   role?: string;
-  submissionType: "text";
   submitterEmail: string;
   submitterName: string;
   testimonialId: Id<"testimonials"> | string;
-  text: string;
 };
+
+type InboxTestimonial =
+  | (InboxTestimonialIdentity & {
+      submissionType: "text";
+      text: string;
+    })
+  | (InboxTestimonialIdentity & {
+      captionsStatus: "requested" | "ready" | "failed";
+      durationSeconds?: number;
+      playbackId?: string;
+      submissionType: "video";
+      videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
+    });
+
+type ModerationFilter = "all" | "pending" | "published" | "archived";
+type SubmissionTypeFilter = "all" | "text" | "video";
+type InboxSort = "newest" | "oldest";
+
+function videoStatusLabel(
+  status: Extract<InboxTestimonial, { submissionType: "video" }>["videoStatus"],
+) {
+  return status === "awaiting_upload"
+    ? "Awaiting upload"
+    : `${status[0].toUpperCase()}${status.slice(1)}`;
+}
 
 export function TestimonialInboxView({
   actionsDisabled = false,
   onArchive,
   onDeleteRequest,
+  onDownload,
   onPublish,
   testimonials,
 }: {
   actionsDisabled?: boolean;
   onArchive: (testimonial: InboxTestimonial) => void;
   onDeleteRequest: (testimonial: InboxTestimonial) => void;
+  onDownload?: (testimonial: InboxTestimonial) => void;
   onPublish: (testimonial: InboxTestimonial) => void;
   testimonials: InboxTestimonial[];
 }) {
@@ -79,15 +110,49 @@ export function TestimonialInboxView({
               </span>
             </div>
             <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              <span>{testimonial.submissionType}</span>
+              <span className="capitalize">{testimonial.submissionType}</span>
               <span>{formatShortDate(testimonial.createdAt)}</span>
               <span>Consent recorded</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
-            <blockquote className="bg-muted/30 rounded-xl border p-4 text-sm leading-6">
-              “{testimonial.text}”
-            </blockquote>
+            {testimonial.submissionType === "text" ? (
+              <blockquote className="bg-muted/30 rounded-xl border p-4 text-sm leading-6">
+                “{testimonial.text}”
+              </blockquote>
+            ) : (
+              <div className="flex items-start gap-4 rounded-xl border p-3">
+                <div className="bg-muted relative aspect-[9/16] w-20 shrink-0 overflow-hidden rounded-lg">
+                  {testimonial.playbackId ? (
+                    <Image
+                      alt=""
+                      className="object-cover"
+                      fill
+                      sizes="80px"
+                      src={`https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=160&height=284&fit_mode=smartcrop&time=${testimonial.durationSeconds ? testimonial.durationSeconds / 2 : 0.5}`}
+                      unoptimized
+                    />
+                  ) : null}
+                </div>
+                <div className="space-y-1.5 pt-1 text-sm">
+                  <p className="font-medium">
+                    {videoStatusLabel(testimonial.videoStatus)}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {testimonial.captionsStatus === "failed"
+                      ? "Captions unavailable"
+                      : testimonial.captionsStatus === "ready"
+                        ? "Captions ready"
+                        : "Captions requested"}
+                  </p>
+                  {testimonial.durationSeconds ? (
+                    <p className="text-muted-foreground text-xs">
+                      {Math.round(testimonial.durationSeconds)} seconds
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            )}
             {testimonial.role || testimonial.company || testimonial.rating ? (
               <p className="text-muted-foreground text-sm">
                 {[testimonial.role, testimonial.company]
@@ -99,7 +164,11 @@ export function TestimonialInboxView({
             <div className="flex flex-wrap gap-2">
               {testimonial.moderationStatus !== "published" ? (
                 <Button
-                  disabled={actionsDisabled}
+                  disabled={
+                    actionsDisabled ||
+                    (testimonial.submissionType === "video" &&
+                      testimonial.videoStatus !== "ready")
+                  }
                   onClick={() => onPublish(testimonial)}
                   size="sm"
                 >
@@ -116,6 +185,19 @@ export function TestimonialInboxView({
                 >
                   <Archive aria-hidden="true" />
                   Archive
+                </Button>
+              ) : null}
+              {testimonial.submissionType === "video" &&
+              testimonial.videoStatus === "ready" &&
+              onDownload ? (
+                <Button
+                  disabled={actionsDisabled}
+                  onClick={() => onDownload(testimonial)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download aria-hidden="true" />
+                  Download MP4 (Pro)
                 </Button>
               ) : null}
               <Button
@@ -135,19 +217,215 @@ export function TestimonialInboxView({
   );
 }
 
+function TestimonialDeleteDialog({
+  onDelete,
+  onDownload,
+  onOpenChange,
+  pending,
+  target,
+}: {
+  onDelete: () => void;
+  onDownload: (testimonial: InboxTestimonial) => void;
+  onOpenChange: (open: boolean) => void;
+  pending: boolean;
+  target: InboxTestimonial | null;
+}) {
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Permanently delete Testimonial?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {target?.submissionType === "video"
+              ? "This immediately removes the video from the Public Wall, then deletes its Mux source, renditions, captions, thumbnails, private record, consent, and email history. This cannot be undone."
+              : "This immediately removes it from the Public Wall and deletes its private content, consent record, email history, and avatar. This cannot be undone."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          {target?.submissionType === "video" &&
+          target.videoStatus === "ready" ? (
+            <Button
+              disabled={pending}
+              onClick={() => onDownload(target)}
+              variant="outline"
+            >
+              <Download aria-hidden="true" />
+              Download MP4 (Pro)
+            </Button>
+          ) : null}
+          <AlertDialogCancel asChild>
+            <Button disabled={pending} variant="outline">
+              Cancel
+            </Button>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button disabled={pending} onClick={onDelete} variant="destructive">
+              {pending ? "Deleting…" : "Delete permanently"}
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function InboxFilters({
+  moderationStatus,
+  onModerationStatusChange,
+  onSortChange,
+  onSubmissionTypeChange,
+  sort,
+  submissionType,
+}: {
+  moderationStatus: ModerationFilter;
+  onModerationStatusChange: (value: ModerationFilter) => void;
+  onSortChange: (value: InboxSort) => void;
+  onSubmissionTypeChange: (value: SubmissionTypeFilter) => void;
+  sort: InboxSort;
+  submissionType: SubmissionTypeFilter;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3" aria-label="Inbox filters">
+      <label className="space-y-1 text-sm">
+        <span className="text-muted-foreground block text-xs">Status</span>
+        <select
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+          onChange={(event) =>
+            onModerationStatusChange(event.target.value as ModerationFilter)
+          }
+          value={moderationStatus}
+        >
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="published">Published</option>
+          <option value="archived">Archived</option>
+        </select>
+      </label>
+      <label className="space-y-1 text-sm">
+        <span className="text-muted-foreground block text-xs">Type</span>
+        <select
+          aria-label="Type"
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+          onChange={(event) =>
+            onSubmissionTypeChange(event.target.value as SubmissionTypeFilter)
+          }
+          value={submissionType}
+        >
+          <option value="all">All types</option>
+          <option value="text">Text</option>
+          <option value="video">Video</option>
+        </select>
+      </label>
+      <label className="space-y-1 text-sm">
+        <span className="text-muted-foreground block text-xs">Sort</span>
+        <select
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+          onChange={(event) => onSortChange(event.target.value as InboxSort)}
+          value={sort}
+        >
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function InboxFeedback({
+  error,
+  message,
+}: {
+  error: string | null;
+  message: string | null;
+}) {
+  return (
+    <>
+      {message ? (
+        <p
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+          role="status"
+        >
+          {message}
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          className="text-destructive rounded-xl border p-3 text-sm"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function InboxLoadMore({
+  onLoadMore,
+  paginationStatus,
+  pending,
+}: {
+  onLoadMore: () => void;
+  paginationStatus: string;
+  pending: boolean;
+}) {
+  if (
+    paginationStatus !== "CanLoadMore" &&
+    paginationStatus !== "LoadingMore"
+  ) {
+    return null;
+  }
+  return (
+    <Button
+      disabled={paginationStatus === "LoadingMore" || pending}
+      onClick={onLoadMore}
+      type="button"
+      variant="outline"
+    >
+      {paginationStatus === "LoadingMore"
+        ? "Loading…"
+        : "Load more Testimonials"}
+    </Button>
+  );
+}
+
 function actionError(error: unknown) {
   return error instanceof Error
     ? error.message
     : "The Testimonial action could not be completed.";
 }
 
+async function runInboxAction({
+  onError,
+  onFinish,
+  onStart,
+  onSuccess,
+  run,
+}: {
+  onError: (message: string) => void;
+  onFinish: () => void;
+  onStart: () => void;
+  onSuccess: () => void;
+  run: () => Promise<unknown>;
+}) {
+  onStart();
+  try {
+    await run();
+    onSuccess();
+  } catch (error) {
+    onError(actionError(error));
+  } finally {
+    onFinish();
+  }
+}
+
 export function TestimonialInbox({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const [moderationStatus, setModerationStatusFilter] = useState<
-    "all" | "pending" | "published" | "archived"
-  >("all");
-  const [submissionType, setSubmissionType] = useState<"all" | "text">("all");
-  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [moderationStatus, setModerationStatusFilter] =
+    useState<ModerationFilter>("all");
+  const [submissionType, setSubmissionType] =
+    useState<SubmissionTypeFilter>("all");
+  const [sort, setSort] = useState<InboxSort>("newest");
   const {
     loadMore,
     results: testimonials,
@@ -165,7 +443,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     { initialNumItems: 20 },
   );
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
-  const remove = useMutation(api.testimonialModeration.remove);
+  const removeText = useMutation(api.testimonialModeration.remove);
+  const removeVideo = useAction(api.videoMedia.remove);
+  const requestDownload = useAction(api.videoMedia.requestDownload);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
   );
@@ -185,42 +465,73 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     testimonial: InboxTestimonial,
     nextStatus: "published" | "archived",
   ) {
-    setPending(true);
-    setError(null);
-    setMessage(null);
-    try {
-      await setModerationStatus({
-        organizationId: activeOrganization.id,
-        status: nextStatus,
-        testimonialId: testimonial.testimonialId as Id<"testimonials">,
-      });
-      setMessage(
-        `${testimonial.submitterName}'s Testimonial is now ${nextStatus}.`,
-      );
-    } catch (caught) {
-      setError(actionError(caught));
-    } finally {
-      setPending(false);
-    }
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPending(false),
+      onStart: () => {
+        setPending(true);
+        setError(null);
+        setMessage(null);
+      },
+      onSuccess: () =>
+        setMessage(
+          `${testimonial.submitterName}'s Testimonial is now ${nextStatus}.`,
+        ),
+      run: () =>
+        setModerationStatus({
+          organizationId: activeOrganization.id,
+          status: nextStatus,
+          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+        }),
+    });
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    setPending(true);
-    setError(null);
-    setMessage(null);
-    try {
-      await remove({
-        organizationId: activeOrganization.id,
-        testimonialId: deleteTarget.testimonialId as Id<"testimonials">,
-      });
-      setMessage("Testimonial permanently deleted.");
-      setDeleteTarget(null);
-    } catch (caught) {
-      setError(actionError(caught));
-    } finally {
-      setPending(false);
-    }
+    const args = {
+      organizationId: activeOrganization.id,
+      testimonialId: deleteTarget.testimonialId as Id<"testimonials">,
+    };
+    const remove =
+      deleteTarget.submissionType === "video" ? removeVideo : removeText;
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPending(false),
+      onStart: () => {
+        setPending(true);
+        setError(null);
+        setMessage(null);
+      },
+      onSuccess: () => {
+        setMessage("Testimonial permanently deleted.");
+        setDeleteTarget(null);
+      },
+      run: () => remove(args),
+    });
+  }
+
+  async function downloadVideo(testimonial: InboxTestimonial) {
+    if (testimonial.submissionType !== "video") return;
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPending(false),
+      onStart: () => {
+        setPending(true);
+        setError(null);
+        setMessage(null);
+      },
+      onSuccess: () => setMessage("Your MP4 download is ready."),
+      run: async () => {
+        const result = await requestDownload({
+          organizationId: activeOrganization.id,
+          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+        });
+        const link = document.createElement("a");
+        link.href = result.url;
+        link.rel = "noopener noreferrer";
+        link.click();
+      },
+    });
   }
 
   return (
@@ -240,67 +551,16 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3" aria-label="Inbox filters">
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground block text-xs">Status</span>
-          <select
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-            onChange={(event) =>
-              setModerationStatusFilter(
-                event.target.value as typeof moderationStatus,
-              )
-            }
-            value={moderationStatus}
-          >
-            <option value="all">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground block text-xs">Type</span>
-          <select
-            aria-label="Type"
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-            onChange={(event) =>
-              setSubmissionType(event.target.value as typeof submissionType)
-            }
-            value={submissionType}
-          >
-            <option value="all">All types</option>
-            <option value="text">Text</option>
-          </select>
-        </label>
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground block text-xs">Sort</span>
-          <select
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-            onChange={(event) => setSort(event.target.value as typeof sort)}
-            value={sort}
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-        </label>
-      </div>
+      <InboxFilters
+        moderationStatus={moderationStatus}
+        onModerationStatusChange={setModerationStatusFilter}
+        onSortChange={setSort}
+        onSubmissionTypeChange={setSubmissionType}
+        sort={sort}
+        submissionType={submissionType}
+      />
 
-      {message ? (
-        <p
-          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p
-          className="text-destructive rounded-xl border p-3 text-sm"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
+      <InboxFeedback error={error} message={message} />
 
       <div aria-busy={pending} className={pending ? "opacity-70" : undefined}>
         <TestimonialInboxView
@@ -309,6 +569,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
             void changeStatus(testimonial, "archived")
           }
           onDeleteRequest={setDeleteTarget}
+          onDownload={(testimonial) => void downloadVideo(testimonial)}
           onPublish={(testimonial) =>
             void changeStatus(testimonial, "published")
           }
@@ -316,51 +577,19 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         />
       </div>
 
-      {paginationStatus === "CanLoadMore" ||
-      paginationStatus === "LoadingMore" ? (
-        <Button
-          disabled={paginationStatus === "LoadingMore" || pending}
-          onClick={() => loadMore(20)}
-          type="button"
-          variant="outline"
-        >
-          {paginationStatus === "LoadingMore"
-            ? "Loading…"
-            : "Load more Testimonials"}
-        </Button>
-      ) : null}
+      <InboxLoadMore
+        onLoadMore={() => loadMore(20)}
+        paginationStatus={paginationStatus}
+        pending={pending}
+      />
 
-      <AlertDialog
+      <TestimonialDeleteDialog
+        onDelete={() => void confirmDelete()}
+        onDownload={(testimonial) => void downloadVideo(testimonial)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        open={deleteTarget !== null}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Permanently delete Testimonial?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This immediately removes it from the Public Wall and deletes its
-              private content, consent record, email history, and avatar. This
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button disabled={pending} variant="outline">
-                Cancel
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                disabled={pending}
-                onClick={() => void confirmDelete()}
-                variant="destructive"
-              >
-                {pending ? "Deleting…" : "Delete permanently"}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        pending={pending}
+        target={deleteTarget}
+      />
     </>
   );
 }

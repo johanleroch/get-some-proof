@@ -250,15 +250,24 @@ export const applyEvent = internalMutation({
         event.type === "video.asset.track.ready" ||
         event.type === "video.asset.track.errored"
       ) {
+        const captionsAvailable = event.type === "video.asset.track.ready";
         await ctx.db.patch(asset._id, {
-          captionsStatus:
-            event.type === "video.asset.track.ready" ? "ready" : "failed",
+          captionsStatus: captionsAvailable ? "ready" : "failed",
           updatedAt: Date.now(),
         });
-        outcome =
-          event.type === "video.asset.track.ready"
-            ? "captions_ready"
-            : "captions_failed";
+        if (asset.testimonialId) {
+          const testimonialId = asset.testimonialId;
+          const projection = await ctx.db
+            .query("publicTestimonialProjections")
+            .withIndex("by_testimonial", (index) =>
+              index.eq("testimonialId", testimonialId),
+            )
+            .unique();
+          if (projection?.type === "video") {
+            await ctx.db.patch(projection._id, { captionsAvailable });
+          }
+        }
+        outcome = captionsAvailable ? "captions_ready" : "captions_failed";
       }
     }
     await ctx.db.insert("videoWebhookEvents", {

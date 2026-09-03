@@ -178,18 +178,36 @@ export default defineSchema({
     .index("by_organization_created_at", ["organizationId", "createdAt"])
     .index("by_management_token_hash", ["managementTokenHash"])
     .index("by_avatar_storage_id", ["avatarStorageId"]),
-  publicTestimonialProjections: defineTable({
-    organizationId: v.id("organizations"),
-    testimonialId: v.id("testimonials"),
-    type: v.literal("text"),
-    text: v.string(),
-    name: v.string(),
-    avatarStorageId: v.optional(v.id("_storage")),
-    role: v.optional(v.string()),
-    company: v.optional(v.string()),
-    rating: v.optional(v.number()),
-    publishedAt: v.number(),
-  })
+  publicTestimonialProjections: defineTable(
+    v.union(
+      v.object({
+        organizationId: v.id("organizations"),
+        testimonialId: v.id("testimonials"),
+        type: v.literal("text"),
+        text: v.string(),
+        name: v.string(),
+        avatarStorageId: v.optional(v.id("_storage")),
+        role: v.optional(v.string()),
+        company: v.optional(v.string()),
+        rating: v.optional(v.number()),
+        publishedAt: v.number(),
+      }),
+      v.object({
+        organizationId: v.id("organizations"),
+        testimonialId: v.id("testimonials"),
+        type: v.literal("video"),
+        playbackId: v.string(),
+        captionsAvailable: v.boolean(),
+        posterTimeSeconds: v.optional(v.number()),
+        name: v.string(),
+        avatarStorageId: v.optional(v.id("_storage")),
+        role: v.optional(v.string()),
+        company: v.optional(v.string()),
+        rating: v.optional(v.number()),
+        publishedAt: v.number(),
+      }),
+    ),
+  )
     .index("by_organization_published_at", ["organizationId", "publishedAt"])
     .index("by_testimonial", ["testimonialId"]),
   publicReadRateLimitBuckets: defineTable({
@@ -286,6 +304,8 @@ export default defineSchema({
     providerUploadId: v.string(),
     providerAssetId: v.optional(v.string()),
     playbackId: v.optional(v.string()),
+    downloadProviderAssetId: v.optional(v.string()),
+    downloadPlaybackId: v.optional(v.string()),
     spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
     mimeType: v.string(),
     fileSizeBytes: v.number(),
@@ -338,6 +358,45 @@ export default defineSchema({
     .index("by_token_hash", ["tokenHash"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_video_asset", ["videoAssetId"]),
+  videoMediaDeletions: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    providerAssets: v.array(
+      v.object({
+        provider: v.union(v.literal("fake"), v.literal("mux")),
+        providerAssetId: v.string(),
+      }),
+    ),
+    providerUploads: v.optional(
+      v.array(
+        v.object({
+          provider: v.union(v.literal("fake"), v.literal("mux")),
+          providerUploadId: v.string(),
+        }),
+      ),
+    ),
+    status: v.union(
+      v.literal("requested"),
+      v.literal("failed"),
+      v.literal("deleted"),
+    ),
+    attempts: v.number(),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"]),
+  videoProviderCleanupJobs: defineTable({
+    attempts: v.number(),
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    provider: v.union(v.literal("fake"), v.literal("mux")),
+    providerAssetId: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_provider_asset", ["provider", "providerAssetId"]),
   storageCleanupJobs: defineTable({
     attemptId: v.string(),
     key: v.literal("submission-avatar-orphans"),

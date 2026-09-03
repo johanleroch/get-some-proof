@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TestimonialCard } from "./testimonial-card";
@@ -33,5 +33,46 @@ describe("TestimonialCard", () => {
       screen.getByRole("link", { name: "Powered by Get Some Proof" }),
     ).toHaveAttribute("rel", "sponsored nofollow");
     expect(screen.queryByTestId("testimonial-banner")).not.toBeInTheDocument();
+  });
+
+  it("loads a vertical video player only after visitor intent", async () => {
+    render(
+      <TestimonialCard
+        accentColor="#123abc"
+        attributionRequired={false}
+        testimonial={{
+          avatarUrl: null,
+          captionsAvailable: true,
+          company: "Example Studio",
+          id: "projection-video",
+          name: "Camille Test",
+          playbackId: "public-playback-id",
+          publishedAt: 1,
+          rating: 5,
+          role: "Founder",
+          type: "video",
+        }}
+      />,
+    );
+
+    const play = screen.getByRole("button", {
+      name: "Play Camille Test's testimonial",
+    });
+    expect(screen.queryByTestId("mux-video-player")).toBeNull();
+    expect(
+      screen.getByRole("img", { name: "Video from Camille Test" }),
+    ).toHaveAttribute(
+      "src",
+      expect.stringContaining("image.mux.com/public-playback-id/thumbnail"),
+    );
+
+    fireEvent.click(play);
+    const player = await screen.findByTestId("mux-video-player");
+    expect(player).toHaveAttribute("data-playback-id", "public-playback-id");
+    expect(player).toHaveAttribute("data-autoplay", "false");
+    expect(player).toHaveAttribute("data-captions", "visible");
+    expect(player).toHaveAttribute("data-disable-cookies", "true");
+    expect(player).toHaveAttribute("data-preload", "none");
+    expect(screen.queryByTestId("testimonial-banner")).toBeNull();
   });
 });

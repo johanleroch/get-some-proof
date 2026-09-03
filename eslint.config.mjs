@@ -10,6 +10,7 @@ export default defineConfig([
     "convex/_generated/**",
     "coverage/**",
     "playwright-report/**",
+    "public/embed/mux-player.js",
     "test-results/**",
   ]),
   {

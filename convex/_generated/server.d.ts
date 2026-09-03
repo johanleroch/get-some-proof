@@ -33,6 +33,8 @@ type Env = {
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
   readonly MUX_PROVIDER: "fake" | "mux" | undefined;
+  readonly MUX_SIGNING_KEY_ID: string | undefined;
+  readonly MUX_SIGNING_PRIVATE_KEY: string | undefined;
   readonly MUX_TOKEN_ID: string | undefined;
   readonly MUX_TOKEN_SECRET: string | undefined;
   readonly RESEND_API_KEY: string | undefined;

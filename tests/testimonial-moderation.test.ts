@@ -47,8 +47,150 @@ async function createPendingTestimonial(
 
 describe("Testimonial moderation and Public Projection", () => {
   beforeEach(() => {
+    vi.stubEnv("EMAIL_PROVIDER", "test");
+    vi.stubEnv("MUX_PROVIDER", "fake");
+    vi.stubEnv("SITE_URL", "http://localhost:3000");
     vi.stubEnv("STRIPE_SECRET_KEY", "");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
+    vi.stubEnv(
+      "VIDEO_WEBHOOK_INGEST_SECRET",
+      "test-ingest-secret-with-at-least-32-characters",
+    );
+  });
+
+  it("publishes only Ready video proof through a public-safe projection", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "moderated-video-proof",
+      fileSizeBytes: 2_048,
+      mimeType: "video/mp4",
+      publicSlug: "acme-proof",
+      spokenLanguage: "fr",
+    });
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    const consent = buildPublicationConsent({
+      brandName: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      suppliedIdentity: {
+        avatarSupplied: false,
+        company: "Example Studio",
+        name: "Camille Test",
+        rating: 5,
+        role: "Founder",
+      },
+    });
+    const submitted = await t.action(api.video.submit, {
+      ageConfirmed: true,
+      clientSubmissionId: "moderated-video-proof",
+      company: "Example Studio",
+      consentAccepted: true,
+      consentText: consent.text,
+      consentVersion: consent.version,
+      durationSeconds: 42,
+      rating: 5,
+      reservationId: upload.reservationId,
+      role: "Founder",
+      submitterEmail: "private@example.invalid",
+      submitterName: "Camille Test",
+    });
+
+    const processingInbox = await owner.client.query(
+      api.testimonialModeration.listInbox,
+      {
+        organizationId: brand.id,
+        paginationOpts: { cursor: null, numItems: 20 },
+        sort: "newest",
+        submissionType: "video",
+      },
+    );
+    expect(processingInbox.page).toEqual([
+      expect.objectContaining({
+        captionsStatus: "requested",
+        moderationStatus: "pending",
+        submissionType: "video",
+        videoStatus: "awaiting_upload",
+      }),
+    ]);
+    await expect(
+      owner.client.mutation(api.testimonialModeration.setStatus, {
+        organizationId: brand.id,
+        status: "published",
+        testimonialId: submitted.testimonialId,
+      }),
+    ).rejects.toMatchObject({ data: { code: "VIDEO_NOT_READY" } });
+
+    await t.action(api.videoWebhooks.ingest, {
+      event: {
+        data: {
+          duration: 42,
+          id: "ready-video-asset",
+          passthrough: upload.reservationId,
+          playback_ids: [{ id: "public-playback-id", policy: "public" }],
+        },
+        id: "ready-video-event",
+        type: "video.asset.ready",
+      },
+      ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+    });
+    await t.action(api.videoWebhooks.ingest, {
+      event: {
+        data: { asset_id: "ready-video-asset" },
+        id: "caption-failed-event",
+        type: "video.asset.track.errored",
+      },
+      ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+    });
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      status: "published",
+      testimonialId: submitted.testimonialId,
+    });
+
+    const wall = await t.query(api.publicWall.list, {
+      paginationOpts: { cursor: null, numItems: 20 },
+      publicSlug: "acme-proof",
+    });
+    expect(wall.page).toEqual([
+      {
+        avatarUrl: null,
+        captionsAvailable: false,
+        company: "Example Studio",
+        id: expect.any(String),
+        name: "Camille Test",
+        playbackId: "public-playback-id",
+        posterTimeSeconds: 21,
+        publishedAt: expect.any(Number),
+        rating: 5,
+        role: "Founder",
+        type: "video",
+      },
+    ]);
+    expect(JSON.stringify(wall)).not.toContain("private@example.invalid");
+    expect(JSON.stringify(wall)).not.toContain("organizationId");
+    expect(JSON.stringify(wall)).not.toContain("viewer");
+
+    await t.action(api.videoWebhooks.ingest, {
+      event: {
+        data: { asset_id: "ready-video-asset", id: "late-caption-track" },
+        id: "late-caption-ready-event",
+        type: "video.asset.track.ready",
+      },
+      ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+    });
+    await expect(
+      t.query(api.publicWall.list, {
+        paginationOpts: { cursor: null, numItems: 20 },
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toMatchObject({
+      page: [expect.objectContaining({ captionsAvailable: true })],
+    });
   });
 
   it("lists private Inbox data only for the active Brand and supports filters and sort", async () => {

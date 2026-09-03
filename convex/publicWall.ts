@@ -69,19 +69,28 @@ export const list = query({
       .order("desc")
       .paginate(args.paginationOpts);
     const testimonials = await Promise.all(
-      page.page.map(async (projection) => ({
-        avatarUrl: projection.avatarStorageId
-          ? await ctx.storage.getUrl(projection.avatarStorageId)
-          : null,
-        company: projection.company,
-        id: projection._id,
-        name: projection.name,
-        publishedAt: projection.publishedAt,
-        rating: projection.rating,
-        role: projection.role,
-        text: projection.text,
-        type: projection.type,
-      })),
+      page.page.map(async (projection) => {
+        const identity = {
+          avatarUrl: projection.avatarStorageId
+            ? await ctx.storage.getUrl(projection.avatarStorageId)
+            : null,
+          company: projection.company,
+          id: projection._id,
+          name: projection.name,
+          publishedAt: projection.publishedAt,
+          rating: projection.rating,
+          role: projection.role,
+        };
+        return projection.type === "video"
+          ? {
+              ...identity,
+              captionsAvailable: projection.captionsAvailable,
+              playbackId: projection.playbackId,
+              posterTimeSeconds: projection.posterTimeSeconds,
+              type: "video" as const,
+            }
+          : { ...identity, text: projection.text, type: "text" as const };
+      }),
     );
     return { ...page, page: testimonials };
   },

@@ -38,7 +38,11 @@ import {
 } from "./email/templates";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
 import { requireOrganizationPermission } from "./security/organizationAccess";
-import { createVideoDirectUpload } from "./videoProvider";
+import {
+  cancelVideoDirectUpload,
+  createVideoDirectUpload,
+  type DirectUpload,
+} from "./videoProvider";
 import { createVideoRetryLink } from "./videoRetryLinks";
 
 const reservationTtlMs = 2 * 60 * 60 * 1_000;
@@ -267,14 +271,21 @@ export const reserveRetryCapacity = internalMutation({
         "This replacement link is invalid, expired or already used.",
       );
     }
-    const [failedAsset, testimonial] = await Promise.all([
+    const [failedAsset, testimonial, deletion] = await Promise.all([
       ctx.db.get(retry.videoAssetId),
       ctx.db.get(retry.testimonialId),
+      ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", retry.testimonialId),
+        )
+        .unique(),
     ]);
     if (
       !failedAsset ||
       failedAsset.status !== "failed" ||
       !testimonial ||
+      deletion ||
       failedAsset.testimonialId !== testimonial._id ||
       testimonial.organizationId !== retry.organizationId
     ) {
@@ -314,17 +325,24 @@ export const attachRetryProviderUpload = internalMutation({
   },
   returns: v.id("videoAssets"),
   handler: async (ctx, args) => {
-    const [retry, reservation, failedAsset, testimonial] = await Promise.all([
-      ctx.db
-        .query("videoRetryLinks")
-        .withIndex("by_token_hash", (index) =>
-          index.eq("tokenHash", args.tokenHash),
-        )
-        .unique(),
-      ctx.db.get(args.reservationId),
-      ctx.db.get(args.failedVideoAssetId),
-      ctx.db.get(args.testimonialId),
-    ]);
+    const [retry, reservation, failedAsset, testimonial, deletion] =
+      await Promise.all([
+        ctx.db
+          .query("videoRetryLinks")
+          .withIndex("by_token_hash", (index) =>
+            index.eq("tokenHash", args.tokenHash),
+          )
+          .unique(),
+        ctx.db.get(args.reservationId),
+        ctx.db.get(args.failedVideoAssetId),
+        ctx.db.get(args.testimonialId),
+        ctx.db
+          .query("videoMediaDeletions")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", args.testimonialId),
+          )
+          .unique(),
+      ]);
     if (
       !retry?.usedAt ||
       retry.replacementReservationId !== args.reservationId ||
@@ -338,6 +356,7 @@ export const attachRetryProviderUpload = internalMutation({
       failedAsset.status !== "failed" ||
       failedAsset.testimonialId !== args.testimonialId ||
       !testimonial ||
+      deletion ||
       testimonial.organizationId !== reservation.organizationId
     ) {
       unavailable(
@@ -606,9 +625,10 @@ export const createDirectUpload = action({
       clientSubmissionId: args.clientSubmissionId,
       publicSlug: args.publicSlug,
     });
+    let directUpload: DirectUpload | undefined;
     try {
       const siteUrl = new URL(process.env.SITE_URL ?? "http://localhost:3000");
-      const directUpload = await createVideoDirectUpload({
+      directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
         spokenLanguage: args.spokenLanguage,
@@ -628,9 +648,18 @@ export const createDirectUpload = action({
         uploadUrl: directUpload.uploadUrl,
       };
     } catch (error) {
-      await ctx.runMutation(internal.video.releaseCapacity, {
-        reservationId: reserved.reservationId,
-      });
+      try {
+        if (directUpload) {
+          await cancelVideoDirectUpload(
+            directUpload.uploadId,
+            directUpload.provider,
+          );
+        }
+      } finally {
+        await ctx.runMutation(internal.video.releaseCapacity, {
+          reservationId: reserved.reservationId,
+        });
+      }
       throw error;
     }
   },
@@ -1205,9 +1234,10 @@ export const createRetryDirectUpload = action({
       clientSubmissionId: args.clientSubmissionId,
       tokenHash,
     });
+    let directUpload: DirectUpload | undefined;
     try {
       const siteUrl = new URL(process.env.SITE_URL ?? "http://localhost:3000");
-      const directUpload = await createVideoDirectUpload({
+      directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
         spokenLanguage: args.spokenLanguage,
@@ -1235,10 +1265,19 @@ export const createRetryDirectUpload = action({
         uploadUrl: directUpload.uploadUrl,
       };
     } catch (error) {
-      await ctx.runMutation(internal.video.releaseRetryCapacity, {
-        reservationId: reserved.reservationId,
-        tokenHash,
-      });
+      try {
+        if (directUpload) {
+          await cancelVideoDirectUpload(
+            directUpload.uploadId,
+            directUpload.provider,
+          );
+        }
+      } finally {
+        await ctx.runMutation(internal.video.releaseRetryCapacity, {
+          reservationId: reserved.reservationId,
+          tokenHash,
+        });
+      }
       throw error;
     }
   },

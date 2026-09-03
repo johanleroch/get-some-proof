@@ -42,6 +42,7 @@ import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 import type * as testimonialModeration from "../testimonialModeration.js";
 import type * as video from "../video.js";
+import type * as videoMedia from "../videoMedia.js";
 import type * as videoProvider from "../videoProvider.js";
 import type * as videoRetryDelivery from "../videoRetryDelivery.js";
 import type * as videoRetryLinks from "../videoRetryLinks.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   system: typeof system;
   testimonialModeration: typeof testimonialModeration;
   video: typeof video;
+  videoMedia: typeof videoMedia;
   videoProvider: typeof videoProvider;
   videoRetryDelivery: typeof videoRetryDelivery;
   videoRetryLinks: typeof videoRetryLinks;
