@@ -32,6 +32,7 @@ type Env = {
   readonly CONVEX_SITE_URL: string;
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
+  readonly MANAGEMENT_LINK_TOKEN_SECRET: string | undefined;
   readonly MUX_PROVIDER: "fake" | "mux" | undefined;
   readonly MUX_SIGNING_KEY_ID: string | undefined;
   readonly MUX_SIGNING_PRIVATE_KEY: string | undefined;
