@@ -9,7 +9,9 @@ export type TransactionalEmailTemplate =
   | "video-submission-confirmation"
   | "management-link-replacement"
   | "video-retry"
-  | "new-pending-testimonial";
+  | "new-pending-testimonial"
+  | "downgrade-reminder"
+  | "video-retention-warning";
 
 export type TransactionalEmailMessage = {
   to: string;

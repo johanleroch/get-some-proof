@@ -2,10 +2,16 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { CircleAlert, CreditCard, ExternalLink, Mail } from "lucide-react";
-import { useAction, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -79,6 +85,32 @@ type BillingOverview = {
   } | null;
 };
 
+type DowngradePlan = {
+  canManage: boolean;
+  scheduledFor: number;
+  selectedTextIds: Id<"testimonials">[];
+  selectedVideoIds: Id<"testimonials">[];
+  textLimit: number;
+  trigger: "scheduled_cancellation" | "payment_grace" | "terminal_status";
+  videoLimit: number;
+};
+
+type DowngradeCandidate = {
+  id: Id<"testimonials">;
+  name: string;
+  publishedAt: number;
+  type: "text" | "video";
+};
+
+const longDateFormatter = new Intl.DateTimeFormat("en", {
+  dateStyle: "long",
+  timeZone: "UTC",
+});
+const mediumDateFormatter = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeZone: "UTC",
+});
+
 const terminalCheckoutStates = new Set<BillingState>([
   "unpaid",
   "canceled",
@@ -92,9 +124,7 @@ export function canStartNewCheckout(overview: BillingOverview) {
 }
 
 function formatBillingDate(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(
-    new Date(timestamp * 1_000),
-  );
+  return longDateFormatter.format(new Date(timestamp * 1_000));
 }
 
 export function billingLifecycleCopy(overview: BillingOverview) {
@@ -190,6 +220,20 @@ export function OrganizationBilling({ slug }: { slug: string }) {
   const overview = useQuery(
     api.billing.getOverview,
     organization ? { organizationId: organization.id } : "skip",
+  );
+  const downgradePlan = useQuery(
+    api.billingDowngrade.getPlan,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  const updateDowngradeSelection = useMutation(
+    api.billingDowngrade.updateSelection,
+  );
+  const downgradeCandidates = usePaginatedQuery(
+    api.billingDowngrade.listCandidates,
+    organization && downgradePlan
+      ? { organizationId: organization.id }
+      : "skip",
+    { initialNumItems: 50 },
   );
   const updateContact = useAction(api.billingActions.updateContact);
   const getOffers = useAction(api.billingActions.getOffers);
@@ -328,7 +372,188 @@ export function OrganizationBilling({ slug }: { slug: string }) {
         openPortal({ organizationId: organization.id, mode })
       }
       overview={overview}
+      downgradePlan={downgradePlan ?? null}
+      downgradeCandidates={downgradeCandidates.results}
+      downgradeCandidatesStatus={downgradeCandidates.status}
+      onLoadMoreDowngradeCandidates={() => downgradeCandidates.loadMore(50)}
+      onUpdateDowngradeSelection={(textIds, videoIds) =>
+        updateDowngradeSelection({
+          organizationId: organization.id,
+          textIds,
+          videoIds,
+        })
+      }
     />
+  );
+}
+
+function DowngradeSelectionCard({
+  candidates,
+  candidatesStatus,
+  onLoadMore,
+  onSave,
+  plan,
+}: {
+  candidates: DowngradeCandidate[];
+  candidatesStatus:
+    "CanLoadMore" | "Exhausted" | "LoadingFirstPage" | "LoadingMore";
+  onLoadMore: () => void;
+  onSave: (
+    textIds: Id<"testimonials">[],
+    videoIds: Id<"testimonials">[],
+  ) => Promise<unknown>;
+  plan: DowngradePlan;
+}) {
+  const [selectedTextIds, setSelectedTextIds] = useState(plan.selectedTextIds);
+  const [selectedVideoIds, setSelectedVideoIds] = useState(
+    plan.selectedVideoIds,
+  );
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(id: Id<"testimonials">, type: "text" | "video") {
+    const selected = type === "text" ? selectedTextIds : selectedVideoIds;
+    const limit = type === "text" ? plan.textLimit : plan.videoLimit;
+    const next = selected.includes(id)
+      ? selected.filter((candidate) => candidate !== id)
+      : selected.length < limit
+        ? [...selected, id]
+        : selected;
+    if (type === "text") setSelectedTextIds(next);
+    else setSelectedVideoIds(next);
+    setMessage(null);
+  }
+
+  async function save() {
+    setPending(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await onSave(selectedTextIds, selectedVideoIds);
+      setMessage("Downgrade selection saved.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "The downgrade selection could not be saved.",
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle>Choose what stays Published</CardTitle>
+        <CardDescription>
+          Free starts on {longDateFormatter.format(new Date(plan.scheduledFor))}
+          . Choose up to {plan.videoLimit} videos and {plan.textLimit} text
+          Testimonials. Empty places are filled with the most recently Published
+          proof.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(["video", "text"] as const).map((type) => {
+            const selected =
+              type === "video" ? selectedVideoIds : selectedTextIds;
+            const selectedSet = new Set(selected);
+            const limit = type === "video" ? plan.videoLimit : plan.textLimit;
+            const testimonials = candidates.filter(
+              (testimonial) => testimonial.type === type,
+            );
+            return (
+              <fieldset className="rounded-lg border p-4" key={type}>
+                <legend className="px-1 text-sm font-medium">
+                  {type === "video" ? "Videos" : "Text Testimonials"} ·{" "}
+                  {selected.length}/{limit} chosen
+                </legend>
+                <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
+                  {testimonials.length ? (
+                    testimonials.map((testimonial) => {
+                      const checked = selectedSet.has(testimonial.id);
+                      return (
+                        <label
+                          className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm"
+                          key={testimonial.id}
+                        >
+                          <input
+                            checked={checked}
+                            className="accent-primary size-4"
+                            disabled={
+                              !plan.canManage ||
+                              (!checked && selected.length >= limit)
+                            }
+                            onChange={() => toggle(testimonial.id, type)}
+                            type="checkbox"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {testimonial.name}
+                          </span>
+                          <span className="text-muted-foreground text-xs">
+                            {mediumDateFormatter.format(
+                              new Date(testimonial.publishedAt),
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      No Published{" "}
+                      {type === "video" ? "videos" : "text Testimonials"}.
+                    </p>
+                  )}
+                </div>
+              </fieldset>
+            );
+          })}
+        </div>
+        {candidatesStatus !== "Exhausted" ? (
+          <Button
+            disabled={
+              candidatesStatus === "LoadingFirstPage" ||
+              candidatesStatus === "LoadingMore"
+            }
+            onClick={onLoadMore}
+            type="button"
+            variant="outline"
+          >
+            {candidatesStatus === "CanLoadMore"
+              ? "Load more Published Testimonials"
+              : "Loading Published Testimonials…"}
+          </Button>
+        ) : null}
+        <p className="text-muted-foreground text-sm leading-6">
+          Extra text is archived. Extra video is unpublished and remains
+          downloadable for 30 days before its Mux media is permanently deleted.
+        </p>
+        {message ? (
+          <p
+            aria-live="polite"
+            className="text-sm text-emerald-700 dark:text-emerald-300"
+          >
+            {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p aria-live="assertive" className="text-destructive text-sm">
+            {error}
+          </p>
+        ) : null}
+        {plan.canManage ? (
+          <Button disabled={pending} onClick={() => void save()} type="button">
+            {pending ? "Saving…" : "Save selection"}
+          </Button>
+        ) : (
+          <p className="text-muted-foreground text-xs">
+            An Owner chooses what remains Published.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -344,6 +569,11 @@ export function BillingCockpit({
   onOpenPortal,
   onUpdateContact,
   overview,
+  downgradePlan = null,
+  downgradeCandidates = [],
+  downgradeCandidatesStatus = "Exhausted",
+  onLoadMoreDowngradeCandidates = () => undefined,
+  onUpdateDowngradeSelection = async () => undefined,
 }: {
   checkoutReturn?: "success" | "canceled" | null;
   navigateToCheckout?: (url: string) => void;
@@ -358,6 +588,15 @@ export function BillingCockpit({
   ) => Promise<{ url: string }>;
   onUpdateContact: (email: string) => Promise<unknown>;
   overview: BillingOverview;
+  downgradePlan?: DowngradePlan | null;
+  downgradeCandidates?: DowngradeCandidate[];
+  downgradeCandidatesStatus?:
+    "CanLoadMore" | "Exhausted" | "LoadingFirstPage" | "LoadingMore";
+  onLoadMoreDowngradeCandidates?: () => void;
+  onUpdateDowngradeSelection?: (
+    textIds: Id<"testimonials">[],
+    videoIds: Id<"testimonials">[],
+  ) => Promise<unknown>;
 }) {
   const [contactPending, setContactPending] = useState(false);
   const [checkoutPending, setCheckoutPending] = useState(false);
@@ -483,6 +722,16 @@ export function BillingCockpit({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        {downgradePlan ? (
+          <DowngradeSelectionCard
+            candidates={downgradeCandidates}
+            candidatesStatus={downgradeCandidatesStatus}
+            key={`${downgradePlan.scheduledFor}:${downgradePlan.selectedTextIds.join(",")}:${downgradePlan.selectedVideoIds.join(",")}`}
+            onLoadMore={onLoadMoreDowngradeCandidates}
+            onSave={onUpdateDowngradeSelection}
+            plan={downgradePlan}
+          />
+        ) : null}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4">

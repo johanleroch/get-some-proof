@@ -6,7 +6,11 @@ import {
   deriveSubmissionManagementToken,
   hashSubmissionManagementToken,
 } from "@convex/domain/submission";
-import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+import {
+  addStripeSubscription,
+  authenticatedUser,
+  createConvexTest,
+} from "./convex-test-helpers";
 
 const originalToken = "a".repeat(64);
 
@@ -200,6 +204,8 @@ describe("Submission Management Links", () => {
     vi.stubEnv("MANAGEMENT_LINK_TOKEN_SECRET", "m".repeat(64));
     vi.stubEnv("MUX_PROVIDER", "fake");
     vi.stubEnv("SITE_URL", "http://localhost:3000");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_submission_management");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_submission_management");
   });
 
   afterEach(() => vi.unstubAllEnvs());
@@ -583,6 +589,25 @@ describe("Submission Management Links", () => {
       contentVersion: 1,
       moderationStatus: "published",
     });
+  });
+
+  it("blocks replacement video storage during payment grace", async () => {
+    const t = createConvexTest();
+    const { brand } = await createManagedVideo(t);
+    await addStripeSubscription(t, brand.id, "past_due");
+
+    await expect(
+      t.mutation(internal.submissionManagement.reserveVideoReplacement, {
+        clientRevisionId: "payment-grace-replacement",
+        expectedContentVersion: 1,
+        tokenHash: await hashSubmissionManagementToken(originalToken),
+      }),
+    ).rejects.toMatchObject({
+      data: { code: "PAYMENT_GRACE_VIDEO_BLOCKED" },
+    });
+    await expect(
+      t.run((ctx) => ctx.db.query("submissionVideoRevisions").collect()),
+    ).resolves.toEqual([]);
   });
 
   it("lets Owner deletion remove an in-progress replacement without orphaning media", async () => {

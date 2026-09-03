@@ -68,6 +68,32 @@ export function BillingVisualFixture({
               url: "https://billing.stripe.example/session",
             })}
             onUpdateContact={async () => undefined}
+            onUpdateDowngradeSelection={async () => undefined}
+            downgradePlan={
+              state === "cancellation_scheduled"
+                ? {
+                    canManage: role === "owner",
+                    scheduledFor: 1_799_999_999_000,
+                    selectedTextIds: [],
+                    selectedVideoIds: [],
+                    textLimit: 13,
+                    trigger: "scheduled_cancellation",
+                    videoLimit: 2,
+                  }
+                : null
+            }
+            downgradeCandidates={[
+              ["video-1", "Alex Morgan", "video"],
+              ["video-2", "Sam Rivera", "video"],
+              ["video-3", "Taylor Chen", "video"],
+              ["text-1", "Morgan Lee", "text"],
+              ["text-2", "Jamie Smith", "text"],
+            ].map(([id, name, type], index) => ({
+              id: id as never,
+              name,
+              publishedAt: 1_799_000_000_000 - index * 86_400_000,
+              type: type as "text" | "video",
+            }))}
             subscriptionDetails={
               availability === "available" && state !== "missing"
                 ? {

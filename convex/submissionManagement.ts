@@ -49,6 +49,13 @@ function staleRevision(): never {
   });
 }
 
+function paymentGraceVideoBlocked(): never {
+  throw new ConvexError({
+    code: "PAYMENT_GRACE_VIDEO_BLOCKED",
+    message: "New video storage is paused until the payment method is updated.",
+  });
+}
+
 function currentContentVersion(testimonial: Doc<"testimonials">) {
   return testimonial.contentVersion ?? 1;
 }
@@ -532,6 +539,7 @@ export const reserveVideoReplacement = internalMutation({
       ctx,
       testimonial.organizationId,
     );
+    if (entitlement.state === "past_due") paymentGraceVideoBlocked();
     const now = Date.now();
     const expiresAt = now + replacementReservationTtlMs;
     const reservationId = await ctx.db.insert("videoReservations", {

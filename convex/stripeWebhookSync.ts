@@ -7,6 +7,7 @@ import {
   internalQuery,
   type MutationCtx,
 } from "./_generated/server";
+import { syncBillingDowngradeLifecycle } from "./billingDowngrade";
 
 const maximumScheduleHopSeconds = 20 * 24 * 60 * 60;
 const maximumReconciliationRetryMs = 15 * 60_000;
@@ -416,6 +417,7 @@ export const applySubscriptionEvent = internalMutation({
       };
       if (existing) await ctx.db.replace(existing._id, snapshot);
       else await ctx.db.insert("billingSubscriptionStates", snapshot);
+      await syncBillingDowngradeLifecycle(ctx, snapshot);
       snapshotForDeadline = snapshot;
     } else if (
       outcome === "stale" &&
@@ -427,10 +429,12 @@ export const applySubscriptionEvent = internalMutation({
         statusChangedAt: args.statusChangedAt,
         updatedAt: Date.now(),
       });
-      snapshotForDeadline = {
+      const completedSnapshot = {
         ...existing,
         statusChangedAt: args.statusChangedAt,
       };
+      await syncBillingDowngradeLifecycle(ctx, completedSnapshot);
+      snapshotForDeadline = completedSnapshot;
     }
 
     await ctx.db.insert("stripeWebhookEvents", {

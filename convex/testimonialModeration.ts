@@ -11,6 +11,8 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
+import { cancelVideoRetentionForReactivation } from "./billingDowngrade";
+import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { nextPublicOrderKey, upsertPublicProjection } from "./publicProjection";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
@@ -274,6 +276,56 @@ export const setStatus = mutation({
       .unique();
     const now = Date.now();
     if (args.status === "published") {
+      const entitlement = await getOrganizationBillingEntitlement(
+        ctx,
+        access.organization._id,
+      );
+      const retainedVideo =
+        testimonial.submissionType === "video"
+          ? await ctx.db
+              .query("videoDowngradeRetentions")
+              .withIndex("by_testimonial", (index) =>
+                index.eq("testimonialId", testimonial._id),
+              )
+              .unique()
+          : null;
+      if (retainedVideo) {
+        if (
+          retainedVideo.status !== "retained" ||
+          retainedVideo.expiresAt <= now
+        ) {
+          throw new ConvexError({
+            code: "VIDEO_RETENTION_DELETION_IN_PROGRESS",
+            message: "This retained video is being permanently deleted.",
+          });
+        }
+        if (entitlement.effectivePlan !== "premium") {
+          throw new ConvexError({
+            code: "PRO_REQUIRED_FOR_VIDEO_REACTIVATION",
+            message: "Reactivate Pro before republishing this retained video.",
+          });
+        }
+        await cancelVideoRetentionForReactivation(ctx, testimonial._id);
+      }
+      if (entitlement.effectivePlan === "free") {
+        const published = await ctx.db
+          .query("publicTestimonialProjections")
+          .withIndex("by_organization_published_at", (index) =>
+            index.eq("organizationId", access.organization._id),
+          )
+          .collect();
+        const limit = testimonial.submissionType === "video" ? 2 : 13;
+        if (
+          published.filter(
+            (projection) => projection.type === testimonial.submissionType,
+          ).length >= limit
+        ) {
+          throw new ConvexError({
+            code: "FREE_PUBLICATION_LIMIT_REACHED",
+            message: `Free can publish up to ${limit} ${testimonial.submissionType} Testimonials.`,
+          });
+        }
+      }
       const publicOrderKey = await nextPublicOrderKey(
         ctx,
         access.organization._id,
