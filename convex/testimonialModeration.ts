@@ -561,6 +561,15 @@ export const undoSpam = mutation({
     ) {
       testimonialUnavailable();
     }
+    if (testimonial.submissionType === "video") {
+      const deletion = await ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (deletion) testimonialUnavailable();
+    }
     const credit = quarantine.creditRestored
       ? await ctx.db
           .query("collectionCredits")
@@ -739,6 +748,14 @@ export const expireSpamQuarantine = internalMutation({
         )
         .unique(),
     ]);
+    if (deletion) {
+      await ctx.scheduler.runAfter(
+        60_000,
+        internal.testimonialModeration.expireSpamQuarantine,
+        args,
+      );
+      return { expired: false };
+    }
     const [revisionAssets, retryAssets] = await Promise.all([
       Promise.all(
         revisions.map((revision) =>
@@ -790,14 +807,17 @@ export const expireSpamQuarantine = internalMutation({
     );
     if (projection) await ctx.db.delete(projection._id);
     if (consent) await ctx.db.delete(consent._id);
-    if (deletion) await ctx.db.delete(deletion._id);
+    await Promise.all(
+      priorAuditEvents.map((event) =>
+        ctx.db.patch(event._id, { targetLabel: "Deleted Testimonial" }),
+      ),
+    );
     await Promise.all([
       ...deliveries.map((delivery) => ctx.db.delete(delivery._id)),
       ...retryLinks.map((retryLink) => ctx.db.delete(retryLink._id)),
       ...revisions.map((revision) => ctx.db.delete(revision._id)),
       ...replacementItems.map((item) => ctx.db.delete(item._id)),
       ...allAssets.map((asset) => ctx.db.delete(asset._id)),
-      ...priorAuditEvents.map((event) => ctx.db.delete(event._id)),
     ]);
     const replacementRequestIds = [
       ...new Set(replacementItems.map((item) => item.requestId)),

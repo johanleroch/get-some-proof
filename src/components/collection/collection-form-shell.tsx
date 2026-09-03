@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, MessageSquareText, Star, Video } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   supportedVideoMimeTypes,
 } from "@convex/domain/video";
 import { BrandMark } from "@/components/brand-mark";
+import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
 import { uploadDirectVideo } from "@/lib/video-upload";
+import { browserTurnstile } from "@/lib/turnstile-browser";
 
 type PublicBrand = {
   collectionFormDescription: string;
@@ -47,6 +49,7 @@ type TextSubmissionInput = {
   submitterEmail: string;
   submitterName: string;
   text: string;
+  turnstileToken?: string;
 };
 
 type SubmissionResult = {
@@ -60,6 +63,7 @@ type VideoDirectUploadInput = {
   mimeType: string;
   publicSlug: string;
   spokenLanguage: "en" | "fr";
+  turnstileToken?: string;
 };
 
 type VideoDirectUploadResult = {
@@ -492,6 +496,8 @@ function IdentityStep({
   company,
   submitting,
   videoSelectionLocked,
+  botChallenge,
+  botVerificationReady,
 }: {
   ageConfirmed: boolean;
   avatar: File | undefined;
@@ -516,6 +522,8 @@ function IdentityStep({
   role: string;
   submitting: boolean;
   videoSelectionLocked: boolean;
+  botChallenge?: ReactNode;
+  botVerificationReady: boolean;
 }) {
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
@@ -630,6 +638,7 @@ function IdentityStep({
         </label>
         <p className="text-muted-foreground text-xs leading-5">{consentText}</p>
       </div>
+      {botChallenge}
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -652,7 +661,11 @@ function IdentityStep({
         <Button
           className="flex-1 bg-(--brand-accent) text-white hover:opacity-90"
           disabled={
-            !identityValid || !ageConfirmed || !consentAccepted || submitting
+            !identityValid ||
+            !ageConfirmed ||
+            !consentAccepted ||
+            !botVerificationReady ||
+            submitting
           }
           type="submit"
         >
@@ -675,6 +688,7 @@ async function submitCollectionForm(input: {
   ageConfirmed: boolean;
   avatar: File | undefined;
   brand: PublicBrand;
+  botToken?: string;
   cancelVideo: (input: {
     clientSubmissionId: string;
     reservationId: Id<"videoReservations">;
@@ -696,6 +710,7 @@ async function submitCollectionForm(input: {
   setSubmitting: (value: boolean) => void;
   setVideoProgress: (value: number) => void;
   setVideoReservationId: (value: Id<"videoReservations"> | undefined) => void;
+  resetBotVerification?: () => void;
   spokenLanguage: "en" | "fr";
   submitText: (input: TextSubmissionInput) => Promise<SubmissionResult>;
   submitVideo: (input: VideoSubmissionInput) => Promise<VideoSubmissionResult>;
@@ -758,7 +773,11 @@ async function submitCollectionForm(input: {
       submitterName: input.submitterName.trim(),
     };
     if (input.proofType === "text") {
-      await input.submitText({ ...identity, text: input.text.trim() });
+      await input.submitText({
+        ...identity,
+        text: input.text.trim(),
+        ...(input.botToken ? { turnstileToken: input.botToken } : {}),
+      });
     } else if (input.videoFile && input.videoDurationSeconds) {
       if (!videoReservationId) {
         const directUpload = await input.createDirectUpload({
@@ -767,6 +786,7 @@ async function submitCollectionForm(input: {
           mimeType: input.videoFile.type,
           publicSlug: input.brand.publicSlug,
           spokenLanguage: input.spokenLanguage,
+          ...(input.botToken ? { turnstileToken: input.botToken } : {}),
         });
         videoReservationId = directUpload.reservationId;
         input.setVideoReservationId(videoReservationId);
@@ -804,6 +824,7 @@ async function submitCollectionForm(input: {
         : "Your testimonial could not be submitted. Please try again.",
     );
   } finally {
+    input.resetBotVerification?.();
     input.setSubmitting(false);
   }
 }
@@ -993,6 +1014,9 @@ export function CollectionFormShellView({
   uploadAvatar,
   uploadVideo = uploadDirectVideo,
   inspectVideo = inspectVideoFile,
+  botChallenge,
+  botToken,
+  resetBotVerification,
 }: {
   availability?: { textAvailable: boolean; videoAvailable: boolean };
   brand: PublicBrand;
@@ -1028,6 +1052,9 @@ export function CollectionFormShellView({
     },
   ) => Promise<void>;
   inspectVideo?: (file: File) => Promise<{ durationSeconds: number }>;
+  botChallenge?: ReactNode;
+  botToken?: string;
+  resetBotVerification?: () => void;
 }) {
   const normalizedInitialValues = normalizeInitialValues(initialValues);
   const [step, setStep] = useState(initialStep);
@@ -1173,6 +1200,10 @@ export function CollectionFormShellView({
           {step === 3 ? (
             <IdentityStep
               ageConfirmed={ageConfirmed}
+              botChallenge={botChallenge}
+              botVerificationReady={
+                botChallenge === undefined || Boolean(botToken)
+              }
               avatar={avatar}
               company={company}
               consentAccepted={consentAccepted}
@@ -1195,6 +1226,7 @@ export function CollectionFormShellView({
                   ageConfirmed,
                   avatar,
                   brand,
+                  botToken,
                   cancelVideo,
                   clientSubmissionId,
                   company,
@@ -1211,6 +1243,7 @@ export function CollectionFormShellView({
                   setSubmitting,
                   setVideoProgress,
                   setVideoReservationId,
+                  resetBotVerification,
                   spokenLanguage,
                   submitText,
                   submitVideo,
@@ -1281,6 +1314,8 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   const requestReplacementLink = useAction(
     api.submissionManagement.requestReplacementLink,
   );
+  const [turnstileToken, setTurnstileToken] = useState<string>();
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>();
 
   if (brand === undefined || availability === undefined) {
     return (
@@ -1309,9 +1344,20 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
     <CollectionFormShellView
       availability={availability}
       brand={brand}
+      botChallenge={
+        <TurnstileChallenge
+          onToken={setTurnstileToken}
+          onWidget={setTurnstileWidgetId}
+        />
+      }
+      botToken={turnstileToken}
       cancelVideo={cancelVideo}
       createDirectUpload={createDirectUpload}
       requestReplacementLink={requestReplacementLink}
+      resetBotVerification={() => {
+        if (turnstileWidgetId) browserTurnstile()?.reset(turnstileWidgetId);
+        setTurnstileToken(undefined);
+      }}
       submitText={submitText}
       submitVideo={submitVideo}
       uploadAvatar={async (file, clientSubmissionId) => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, components } from "@convex/_generated/api";
+import { api, components, internal } from "@convex/_generated/api";
 import {
   addStripeSubscription,
   authenticatedUser,
@@ -9,6 +9,7 @@ import {
 
 describe("collection quota transitions", () => {
   beforeEach(() => {
+    vi.stubEnv("MUX_PROVIDER", "fake");
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_collection_quotas");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_collection_quotas");
   });
@@ -160,5 +161,94 @@ describe("collection quota transitions", () => {
         publicSlug: "acme-proof",
       }),
     ).resolves.toMatchObject({ videoAvailable: true });
+  });
+
+  it("uses the reservation plan when Ready races upgrade and downgrade", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      publicSlug: "acme-proof",
+    });
+    const insertProcessingVideo = async (
+      suffix: string,
+      plan: "free" | "premium",
+    ) =>
+      await t.run(async (ctx) => {
+        const now = Date.now();
+        const testimonialId = await ctx.db.insert("testimonials", {
+          clientSubmissionId: `plan-race-${suffix}`,
+          createdAt: now,
+          managementTokenHash: suffix.padEnd(64, "c").slice(0, 64),
+          moderationStatus: "pending",
+          organizationId: brand.id,
+          submissionType: "video",
+          submitterEmail: `${suffix}@example.invalid`,
+          submitterName: `Plan ${suffix}`,
+          text: "",
+          updatedAt: now,
+        });
+        const reservationId = await ctx.db.insert("videoReservations", {
+          clientSubmissionId: `plan-race-${suffix}`,
+          createdAt: now,
+          expiresAt: now + 60_000,
+          organizationId: brand.id,
+          plan,
+          status: "reserved",
+          updatedAt: now,
+        });
+        await ctx.db.insert("videoAssets", {
+          captionsStatus: "requested",
+          createdAt: now,
+          fileSizeBytes: 2_048,
+          mimeType: "video/mp4",
+          organizationId: brand.id,
+          provider: "fake",
+          providerUploadId: `upload-${suffix}`,
+          reservationId,
+          spokenLanguage: "en",
+          status: "processing",
+          testimonialId,
+          updatedAt: now,
+        });
+        return testimonialId;
+      });
+
+    const freeTestimonialId = await insertProcessingVideo("upgrade", "free");
+    await Promise.all([
+      addStripeSubscription(t, String(brand.id), "active"),
+      t.mutation(internal.video.completeFakeAsset, {
+        testimonialId: freeTestimonialId,
+      }),
+    ]);
+    const premiumTestimonialId = await insertProcessingVideo(
+      "downgrade",
+      "premium",
+    );
+    await Promise.all([
+      t.mutation(components.stripe.private.handleSubscriptionUpdated, {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: Math.floor(Date.now() / 1_000),
+        metadata: { lookupKey: "premium_monthly", orgId: String(brand.id) },
+        status: "canceled",
+        stripeSubscriptionId: `sub_${String(brand.id)}`,
+      }),
+      t.mutation(internal.video.completeFakeAsset, {
+        testimonialId: premiumTestimonialId,
+      }),
+    ]);
+
+    const state = await t.run(async (ctx) => ({
+      credits: await ctx.db.query("collectionCredits").collect(),
+      readyAssets: await ctx.db
+        .query("videoAssets")
+        .withIndex("by_organization_status", (index) =>
+          index.eq("organizationId", brand.id).eq("status", "ready"),
+        )
+        .collect(),
+    }));
+    expect(state.readyAssets).toHaveLength(2);
+    expect(state.credits).toHaveLength(1);
+    expect(state.credits[0]?.testimonialId).toBe(freeTestimonialId);
   });
 });

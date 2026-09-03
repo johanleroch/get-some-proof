@@ -31,6 +31,7 @@ import {
   buildSubmissionConfirmationEmail,
 } from "./email/templates";
 import { requireOrganizationPermission } from "./security/organizationAccess";
+import { verifyTurnstileToken } from "./turnstile";
 
 const textSubmissionArgs = {
   ageConfirmed: v.boolean(),
@@ -47,6 +48,7 @@ const textSubmissionArgs = {
   submitterEmail: v.string(),
   submitterName: v.string(),
   text: v.string(),
+  turnstileToken: v.optional(v.string()),
 };
 
 const submissionResult = v.object({
@@ -739,10 +741,10 @@ export const submitText = action({
   args: textSubmissionArgs,
   returns: submissionResult,
   handler: async (ctx, args): Promise<SubmissionActionResult> => {
+    await verifyTurnstileToken(args.turnstileToken, "collect_proof");
     await ctx.runMutation(
       internal.collectionRateLimit.recordPublicCollectionRequest,
       {
-        clientSubmissionId: args.clientSubmissionId,
         publicSlug: args.publicSlug,
         submissionType: "text",
       },

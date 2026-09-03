@@ -204,7 +204,7 @@ describe("text Submission collection", () => {
       publicSlug: "acme-proof",
     });
     const invalid = { ...validSubmission, text: "Too short" };
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
       await expect(
         t.action(api.submissions.submitText, invalid),
       ).rejects.toMatchObject({

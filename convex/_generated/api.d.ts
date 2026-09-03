@@ -44,6 +44,7 @@ import type * as submissionManagement from "../submissionManagement.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 import type * as testimonialModeration from "../testimonialModeration.js";
+import type * as turnstile from "../turnstile.js";
 import type * as video from "../video.js";
 import type * as videoMedia from "../videoMedia.js";
 import type * as videoProvider from "../videoProvider.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   submissions: typeof submissions;
   system: typeof system;
   testimonialModeration: typeof testimonialModeration;
+  turnstile: typeof turnstile;
   video: typeof video;
   videoMedia: typeof videoMedia;
   videoProvider: typeof videoProvider;

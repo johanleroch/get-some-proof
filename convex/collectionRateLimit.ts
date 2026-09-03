@@ -3,10 +3,8 @@ import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
-import { hashSubmissionManagementToken } from "./domain/submission";
 
 const collectionWindowMs = 60 * 60 * 1_000;
-const perBrowserWindow = 5;
 const perBrandWindow = 100;
 const emergencyGlobalWindow = 1_000;
 
@@ -45,28 +43,23 @@ async function consumeBucket(
 export async function consumeCollectionRequest(
   ctx: MutationCtx,
   input: {
-    clientSubmissionId: string;
     organizationId: Id<"organizations">;
     submissionType: "text" | "video";
   },
 ) {
   const windowStartedAt =
     Math.floor(Date.now() / collectionWindowMs) * collectionWindowMs;
-  const browserKey = await hashSubmissionManagementToken(
-    `${String(input.organizationId)}:${input.clientSubmissionId}`,
-  );
-  await consumeBucket(
-    ctx,
-    `collection:browser:${browserKey}`,
-    perBrowserWindow,
-    windowStartedAt,
-  );
   await consumeBucket(
     ctx,
     `collection:brand:${String(input.organizationId)}:${input.submissionType}`,
     perBrandWindow,
     windowStartedAt,
   );
+  const expired = await ctx.db
+    .query("publicReadRateLimitBuckets")
+    .withIndex("by_expires_at", (index) => index.lt("expiresAt", Date.now()))
+    .take(20);
+  await Promise.all(expired.map((bucket) => ctx.db.delete(bucket._id)));
   await consumeBucket(
     ctx,
     `collection:global:${input.submissionType}`,
@@ -77,7 +70,6 @@ export async function consumeCollectionRequest(
 
 export const recordPublicCollectionRequest = internalMutation({
   args: {
-    clientSubmissionId: v.string(),
     publicSlug: v.string(),
     submissionType: v.union(v.literal("text"), v.literal("video")),
   },
@@ -91,7 +83,6 @@ export const recordPublicCollectionRequest = internalMutation({
       .unique();
     if (!organization) return null;
     await consumeCollectionRequest(ctx, {
-      clientSubmissionId: args.clientSubmissionId,
       organizationId: organization._id,
       submissionType: args.submissionType,
     });

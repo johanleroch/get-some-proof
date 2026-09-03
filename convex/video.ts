@@ -14,7 +14,7 @@ import {
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { authzForOrganization } from "./authorization";
 import {
-  consumeFreeCollectionCredit,
+  consumeReadyVideoCredit,
   getCollectionAvailability,
 } from "./collectionQuotas";
 import {
@@ -47,6 +47,7 @@ import {
   type DirectUpload,
 } from "./videoProvider";
 import { createVideoRetryLink } from "./videoRetryLinks";
+import { verifyTurnstileToken } from "./turnstile";
 
 const reservationTtlMs = 2 * 60 * 60 * 1_000;
 const maximumVideoFileBytes = 512 * 1024 * 1024;
@@ -598,6 +599,7 @@ export const createDirectUpload = action({
     mimeType: v.string(),
     publicSlug: v.string(),
     spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
+    turnstileToken: v.optional(v.string()),
   },
   returns: v.object({
     expiresAt: v.number(),
@@ -606,10 +608,10 @@ export const createDirectUpload = action({
     uploadUrl: v.string(),
   }),
   handler: async (ctx: ActionCtx, args) => {
+    await verifyTurnstileToken(args.turnstileToken, "collect_proof");
     await ctx.runMutation(
       internal.collectionRateLimit.recordPublicCollectionRequest,
       {
-        clientSubmissionId: args.clientSubmissionId,
         publicSlug: args.publicSlug,
         submissionType: "video",
       },
@@ -967,10 +969,9 @@ export const createVideoRecords = internalMutation({
       updatedAt: now,
     });
     if (asset.status === "ready") {
-      await consumeFreeCollectionCredit(ctx, {
+      await consumeReadyVideoCredit(ctx, {
         organizationId: brand._id,
         plan: reservation.plan,
-        submissionType: "video",
         testimonialId,
       });
     }
@@ -1133,10 +1134,9 @@ export const completeFakeAsset = internalMutation({
       status: "consumed",
       updatedAt: now,
     });
-    await consumeFreeCollectionCredit(ctx, {
+    await consumeReadyVideoCredit(ctx, {
       organizationId: reservation.organizationId,
       plan: reservation.plan,
-      submissionType: "video",
       testimonialId: args.testimonialId,
     });
     return null;

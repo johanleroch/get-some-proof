@@ -7,6 +7,8 @@ import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 export const freeTextCreditLimit = 13;
 export const freeVideoCreditLimit = 2;
 export const premiumReadyVideoLimit = 25;
+const automaticSpamRestorationWindowMs = 30 * 24 * 60 * 60 * 1_000;
+const automaticSpamRestorationLimit = 3;
 
 type DatabaseCtx = QueryCtx | MutationCtx;
 type SubmissionType = "text" | "video";
@@ -107,23 +109,6 @@ export async function getCollectionAvailability(
   };
 }
 
-export async function requireCollectionAvailable(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  submissionType: SubmissionType,
-) {
-  const availability = await getCollectionAvailability(ctx, organizationId);
-  if (
-    (submissionType === "text" && !availability.textAvailable) ||
-    (submissionType === "video" && !availability.videoAvailable)
-  ) {
-    throw new ConvexError({
-      code: "COLLECTION_TYPE_UNAVAILABLE",
-      message: "This testimonial format is temporarily unavailable.",
-    });
-  }
-}
-
 export async function consumeFreeCollectionCredit(
   ctx: MutationCtx,
   input: {
@@ -162,6 +147,56 @@ export async function consumeFreeCollectionCredit(
     submissionType: input.submissionType,
     testimonialId: input.testimonialId,
   });
+}
+
+export async function consumeReadyVideoCredit(
+  ctx: MutationCtx,
+  input: {
+    organizationId: Id<"organizations">;
+    plan: "free" | "premium";
+    testimonialId: Id<"testimonials">;
+  },
+) {
+  const creditId = await consumeFreeCollectionCredit(ctx, {
+    ...input,
+    submissionType: "video",
+  });
+  if (!creditId) return null;
+  const testimonial = await ctx.db.get(input.testimonialId);
+  if (testimonial?.moderationStatus !== "spam") return creditId;
+  const quarantine = await ctx.db
+    .query("spamQuarantines")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", input.testimonialId),
+    )
+    .order("desc")
+    .first();
+  if (!quarantine || quarantine.status !== "active") return creditId;
+  if (quarantine.creditRestored) return creditId;
+  const now = Date.now();
+  const recentReports = await ctx.db
+    .query("spamQuarantines")
+    .withIndex("by_organization_reported_at", (index) =>
+      index
+        .eq("organizationId", input.organizationId)
+        .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+    )
+    .collect();
+  const automaticRestorations = recentReports.filter(
+    (report) =>
+      report._id !== quarantine._id && report.restorationMode === "automatic",
+  ).length;
+  if (automaticRestorations >= automaticSpamRestorationLimit) return creditId;
+  await ctx.db.patch(creditId, {
+    restorationMode: "automatic",
+    restoredAt: now,
+  });
+  await ctx.db.patch(quarantine._id, {
+    creditRestored: true,
+    restorationMode: "automatic",
+    updatedAt: now,
+  });
+  return creditId;
 }
 
 export const getPublicAvailability = query({
