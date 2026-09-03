@@ -277,6 +277,7 @@ export function OrganizationSettingsScreenFixture() {
     <OrganizationSettingsView
       canChangePublicSlug
       canUpdate
+      embedOrigin="https://proof.example"
       logoUrl={image.imageUrl}
       name="Visual Studio"
       onChangePublicSlug={async () => undefined}

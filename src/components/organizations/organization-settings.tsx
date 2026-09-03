@@ -9,6 +9,7 @@ import { ProfileImageControl } from "@/components/profile-image/profile-image-co
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 
 function initials(name: string) {
@@ -20,7 +21,65 @@ function initials(name: string) {
     .join("");
 }
 
-export function OrganizationSettings({ slug }: { slug: string }) {
+function EmbeddedWallSnippet({
+  embedOrigin,
+  publicSlug,
+}: {
+  embedOrigin: string;
+  publicSlug: string;
+}) {
+  const [message, setMessage] = useState<string | null>(null);
+  const snippet = embedOrigin
+    ? `<div data-gsp-wall data-public-slug="${publicSlug}" data-theme="system"></div>\n<script async src="${embedOrigin}/embed/v1.js" data-api-origin="${embedOrigin}"></script>`
+    : "";
+
+  async function copy() {
+    await navigator.clipboard.writeText(snippet);
+    setMessage("Embed snippet copied.");
+  }
+
+  return (
+    <div className="bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs">
+      <div>
+        <h2 className="font-semibold">Embedded Wall</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Paste this snippet where your website accepts custom HTML. It inherits
+          the host font and never uses an iframe.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="embed-snippet">Embed snippet</Label>
+        <Textarea
+          className="min-h-28 font-mono text-xs"
+          id="embed-snippet"
+          readOnly
+          value={snippet}
+        />
+      </div>
+      {message ? (
+        <p className="text-sm" role="status">
+          {message}
+        </p>
+      ) : null}
+      <Button
+        disabled={!snippet}
+        onClick={() => void copy()}
+        type="button"
+        variant="outline"
+      >
+        Copy embed snippet
+      </Button>
+    </div>
+  );
+}
+
+export function OrganizationSettings({
+  embedOrigin,
+  slug,
+}: {
+  embedOrigin: string;
+  slug: string;
+}) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const access = useQuery(
     api.organizationAuthorization.getMine,
@@ -71,6 +130,7 @@ export function OrganizationSettings({ slug }: { slug: string }) {
     <OrganizationSettingsView
       canChangePublicSlug={access?.can.manageOwnership ?? false}
       canUpdate={access?.can.updateOrganization ?? false}
+      embedOrigin={embedOrigin}
       logoUrl={organization.logoUrl}
       name={organization.name}
       onChangePublicSlug={async (publicSlug) => {
@@ -90,6 +150,7 @@ export function OrganizationSettings({ slug }: { slug: string }) {
 export function OrganizationSettingsView({
   canChangePublicSlug,
   canUpdate,
+  embedOrigin,
   logoUrl,
   name,
   onChangePublicSlug,
@@ -101,6 +162,7 @@ export function OrganizationSettingsView({
 }: {
   canChangePublicSlug: boolean;
   canUpdate: boolean;
+  embedOrigin: string;
   logoUrl: string | null;
   name: string;
   onChangePublicSlug: (publicSlug: string) => Promise<void>;
@@ -242,6 +304,13 @@ export function OrganizationSettingsView({
             </Button>
           ) : null}
         </form>
+      ) : null}
+
+      {canUpdate ? (
+        <EmbeddedWallSnippet
+          embedOrigin={embedOrigin}
+          publicSlug={publicSlug}
+        />
       ) : null}
     </section>
   );

@@ -192,6 +192,14 @@ export default defineSchema({
   })
     .index("by_organization_published_at", ["organizationId", "publishedAt"])
     .index("by_testimonial", ["testimonialId"]),
+  publicReadRateLimitBuckets: defineTable({
+    resourceKey: v.string(),
+    windowStartedAt: v.number(),
+    count: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_resource_window", ["resourceKey", "windowStartedAt"])
+    .index("by_expires_at", ["expiresAt"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
