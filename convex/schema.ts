@@ -12,6 +12,21 @@ export default defineSchema({
     collectionFormTitle: v.string(),
     collectionFormDescription: v.string(),
     privacyContact: v.string(),
+    publicWallTheme: v.optional(
+      v.union(v.literal("light"), v.literal("dark"), v.literal("system")),
+    ),
+    publicWallAccentColor: v.optional(v.string()),
+    publicWallTransparentEmbed: v.optional(v.boolean()),
+    publicWallHideAttribution: v.optional(v.boolean()),
+    publicWallOrderVersion: v.optional(v.number()),
+    publicWallVisibility: v.optional(
+      v.object({
+        avatar: v.boolean(),
+        company: v.boolean(),
+        rating: v.boolean(),
+        role: v.boolean(),
+      }),
+    ),
     newSubmissionEmailNotificationsEnabled: v.optional(v.boolean()),
     createdByUserId: v.string(),
     createdAt: v.number(),
@@ -181,6 +196,14 @@ export default defineSchema({
     managementTokenHash: v.string(),
     managementTokenExpiresAt: v.optional(v.number()),
     contentVersion: v.optional(v.number()),
+    publicVisibilityOverrides: v.optional(
+      v.object({
+        avatar: v.optional(v.boolean()),
+        company: v.optional(v.boolean()),
+        rating: v.optional(v.boolean()),
+        role: v.optional(v.boolean()),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -217,6 +240,7 @@ export default defineSchema({
       v.literal("archived"),
     ),
     previousPublishedAt: v.optional(v.number()),
+    previousPublicOrderKey: v.optional(v.string()),
     reportedAt: v.number(),
     expiresAt: v.number(),
     status: v.union(
@@ -247,6 +271,18 @@ export default defineSchema({
         company: v.optional(v.string()),
         rating: v.optional(v.number()),
         publishedAt: v.number(),
+        // Optional during the two-phase public-order migration. Remove the
+        // wrapper only after migrations:backfillPublicOrderKeys is complete on
+        // every deployment.
+        publicOrderKey: v.optional(v.string()),
+        visibilityOverrides: v.optional(
+          v.object({
+            avatar: v.optional(v.boolean()),
+            company: v.optional(v.boolean()),
+            rating: v.optional(v.boolean()),
+            role: v.optional(v.boolean()),
+          }),
+        ),
       }),
       v.object({
         organizationId: v.id("organizations"),
@@ -261,10 +297,23 @@ export default defineSchema({
         company: v.optional(v.string()),
         rating: v.optional(v.number()),
         publishedAt: v.number(),
+        // Optional during the two-phase public-order migration. Remove the
+        // wrapper only after migrations:backfillPublicOrderKeys is complete on
+        // every deployment.
+        publicOrderKey: v.optional(v.string()),
+        visibilityOverrides: v.optional(
+          v.object({
+            avatar: v.optional(v.boolean()),
+            company: v.optional(v.boolean()),
+            rating: v.optional(v.boolean()),
+            role: v.optional(v.boolean()),
+          }),
+        ),
       }),
     ),
   )
     .index("by_organization_published_at", ["organizationId", "publishedAt"])
+    .index("by_organization_order_key", ["organizationId", "publicOrderKey"])
     .index("by_testimonial", ["testimonialId"]),
   publicReadRateLimitBuckets: defineTable({
     resourceKey: v.string(),

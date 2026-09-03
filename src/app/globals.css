@@ -166,6 +166,42 @@
   --chart-scale-pattern-color: oklch(0.145 0 0);
 }
 
+.public-wall-theme[data-wall-theme="light"],
+.public-wall-theme[data-wall-theme="system"] {
+  color-scheme: light;
+  --background: oklch(0.985 0.002 286);
+  --foreground: rgb(31 32 35);
+  --card: oklch(0.997 0.001 286);
+  --card-foreground: rgb(31 32 35);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: rgb(98 102 109);
+  --border: oklch(0.89 0.004 286);
+}
+
+.public-wall-theme[data-wall-theme="dark"] {
+  color-scheme: dark;
+  --background: rgb(9 10 11);
+  --foreground: rgb(208 214 224);
+  --card: rgb(12 13 14);
+  --card-foreground: rgb(208 214 224);
+  --muted: rgb(255 255 255 / 5%);
+  --muted-foreground: rgb(138 143 152);
+  --border: rgb(255 255 255 / 8%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .public-wall-theme[data-wall-theme="system"] {
+    color-scheme: dark;
+    --background: rgb(9 10 11);
+    --foreground: rgb(208 214 224);
+    --card: rgb(12 13 14);
+    --card-foreground: rgb(208 214 224);
+    --muted: rgb(255 255 255 / 5%);
+    --muted-foreground: rgb(138 143 152);
+    --border: rgb(255 255 255 / 8%);
+  }
+}
+
 * {
   border-color: var(--border);
   outline-color: color-mix(in oklab, var(--ring) 50%, transparent);

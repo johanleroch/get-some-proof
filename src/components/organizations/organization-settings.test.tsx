@@ -11,6 +11,7 @@ import { OrganizationSettingsView } from "./organization-settings";
 
 const baseProps = {
   canChangePublicSlug: true,
+  canManageWall: true,
   canUpdate: true,
   embedOrigin: "https://proof.example",
   logoUrl: null,
@@ -86,6 +87,31 @@ describe("OrganizationSettingsView", () => {
     );
 
     expect(screen.queryByLabelText("Public slug")).toBeNull();
+  });
+
+  it("does not offer Owner-only Public Wall controls to an Admin", () => {
+    render(
+      <OrganizationSettingsView
+        {...baseProps}
+        canManageWall={false}
+        onUpdateWallSettings={vi.fn()}
+        wallSettings={{
+          accentColor: "#123abc",
+          canHideAttribution: false,
+          hideAttribution: false,
+          theme: "system",
+          transparentEmbed: false,
+          visibility: {
+            avatar: true,
+            company: true,
+            rating: true,
+            role: true,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Public Wall appearance")).toBeNull();
   });
 
   it("provides the Owner a copyable versioned Embedded Wall snippet", () => {

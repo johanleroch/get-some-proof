@@ -6,6 +6,10 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { publicSlugFromBrandName } from "@convex/domain/brand";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
+import {
+  PublicWallSettings,
+  type PublicWallSettingsValue,
+} from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,8 +96,16 @@ export function OrganizationSettings({
   );
   const setLogo = useMutation(api.organizations.setLogo);
   const removeLogo = useMutation(api.organizations.removeLogo);
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  const updateWallSettings = useMutation(api.wallCustomization.updateSettings);
 
-  if (organization === undefined || (organization && access === undefined)) {
+  if (
+    organization === undefined ||
+    (organization && (access === undefined || wallSettings === undefined))
+  ) {
     return (
       <div className="grid min-h-[50vh] place-items-center">
         <p className="text-muted-foreground text-sm">Loading settings…</p>
@@ -129,6 +141,7 @@ export function OrganizationSettings({
   return (
     <OrganizationSettingsView
       canChangePublicSlug={access?.can.manageOwnership ?? false}
+      canManageWall={access?.can.manageOwnership ?? false}
       canUpdate={access?.can.updateOrganization ?? false}
       embedOrigin={embedOrigin}
       logoUrl={organization.logoUrl}
@@ -141,14 +154,19 @@ export function OrganizationSettings({
       }}
       onRename={renameOrganization}
       onUploadLogo={uploadLogo}
+      onUpdateWallSettings={async (settings) => {
+        await updateWallSettings({ organizationId, ...settings });
+      }}
       publicSlug={organization.publicSlug}
       publicSlugCanChange={organization.publicSlugCanChange}
+      wallSettings={wallSettings}
     />
   );
 }
 
 export function OrganizationSettingsView({
   canChangePublicSlug,
+  canManageWall,
   canUpdate,
   embedOrigin,
   logoUrl,
@@ -157,10 +175,13 @@ export function OrganizationSettingsView({
   onRemoveLogo,
   onRename,
   onUploadLogo,
+  onUpdateWallSettings,
   publicSlug,
   publicSlugCanChange,
+  wallSettings,
 }: {
   canChangePublicSlug: boolean;
+  canManageWall: boolean;
   canUpdate: boolean;
   embedOrigin: string;
   logoUrl: string | null;
@@ -169,8 +190,12 @@ export function OrganizationSettingsView({
   onRemoveLogo: () => Promise<void>;
   onRename: (name: string) => Promise<void>;
   onUploadLogo: (blob: Blob) => Promise<void>;
+  onUpdateWallSettings?: (
+    settings: Omit<PublicWallSettingsValue, "canHideAttribution">,
+  ) => Promise<void>;
   publicSlug: string;
   publicSlugCanChange: boolean;
+  wallSettings?: PublicWallSettingsValue;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -306,6 +331,12 @@ export function OrganizationSettingsView({
         </form>
       ) : null}
 
+      <PublicWallSettingsSection
+        canUpdate={canManageWall}
+        onSave={onUpdateWallSettings}
+        settings={wallSettings}
+      />
+
       {canUpdate ? (
         <EmbeddedWallSnippet
           embedOrigin={embedOrigin}
@@ -314,4 +345,20 @@ export function OrganizationSettingsView({
       ) : null}
     </section>
   );
+}
+
+function PublicWallSettingsSection({
+  canUpdate,
+  onSave,
+  settings,
+}: {
+  canUpdate: boolean;
+  onSave?: (
+    settings: Omit<PublicWallSettingsValue, "canHideAttribution">,
+  ) => Promise<void>;
+  settings?: PublicWallSettingsValue;
+}) {
+  if (!canUpdate || !onSave || !settings) return null;
+
+  return <PublicWallSettings onSave={onSave} settings={settings} />;
 }

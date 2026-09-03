@@ -4,6 +4,7 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 
 import { api } from "@convex/_generated/api";
 import { getPublicEnvironment } from "@/lib/env/public-env";
+import { testimonialCardHtml } from "@/components/testimonials/testimonial-card-markup";
 
 const publicCacheControl = "public, max-age=0, must-revalidate";
 const noStoreHeaders = {
@@ -214,6 +215,8 @@ export async function GET(
       attributionRequired: brand.attributionRequired,
       name: brand.brandName,
       publicSlug: brand.publicSlug,
+      theme: brand.theme,
+      transparentEmbed: brand.transparentEmbed,
     },
     pagination: {
       cursor: page.isDone
@@ -221,7 +224,18 @@ export async function GET(
         : signCursor(page.continueCursor, publicSlug, secret),
     },
     schemaVersion: 1,
-    testimonials: page.page,
+    testimonials: page.page.map((testimonial) => ({
+      ...testimonial,
+      html: testimonialCardHtml({
+        accentColor: brand.accentColor,
+        attributionHref: new URL(
+          "/?utm_source=embedded_wall&utm_medium=referral&utm_campaign=powered_by",
+          request.url,
+        ).toString(),
+        attributionRequired: brand.attributionRequired,
+        testimonial,
+      }),
+    })),
   };
   const etag = projectionEtag(projection);
   const response =

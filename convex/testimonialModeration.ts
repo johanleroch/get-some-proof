@@ -11,6 +11,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
+import { nextPublicOrderKey, upsertPublicProjection } from "./publicProjection";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
 const inboxStatusValidator = v.union(
@@ -34,6 +35,14 @@ const inboxIdentityValidator = {
   submitterEmail: v.string(),
   submitterName: v.string(),
   testimonialId: v.id("testimonials"),
+  publicVisibilityOverrides: v.optional(
+    v.object({
+      avatar: v.optional(v.boolean()),
+      company: v.optional(v.boolean()),
+      rating: v.optional(v.boolean()),
+      role: v.optional(v.boolean()),
+    }),
+  ),
 };
 
 const inboxItemValidator = v.union(
@@ -173,6 +182,7 @@ export const listInbox = query({
           submitterName: testimonial.submitterName,
           spamCreditRestored: quarantine?.creditRestored,
           testimonialId: testimonial._id,
+          publicVisibilityOverrides: testimonial.publicVisibilityOverrides,
         };
         if (testimonial.submissionType === "text") {
           return {
@@ -208,65 +218,7 @@ async function restorePublishedProjection(
   testimonial: Doc<"testimonials">,
   publishedAt: number,
 ) {
-  const [consent, videoAsset, existingProjection] = await Promise.all([
-    ctx.db
-      .query("publicationConsents")
-      .withIndex("by_testimonial", (index) =>
-        index.eq("testimonialId", testimonial._id),
-      )
-      .unique(),
-    testimonial.submissionType === "video"
-      ? ctx.db
-          .query("videoAssets")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique()
-      : null,
-    ctx.db
-      .query("publicTestimonialProjections")
-      .withIndex("by_testimonial", (index) =>
-        index.eq("testimonialId", testimonial._id),
-      )
-      .unique(),
-  ]);
-  if (!consent) testimonialUnavailable();
-  if (
-    testimonial.submissionType === "video" &&
-    (!videoAsset || videoAsset.status !== "ready" || !videoAsset.playbackId)
-  ) {
-    testimonialUnavailable();
-  }
-  const fields = new Set(consent.identityFields);
-  const identity = {
-    avatarStorageId: fields.has("avatar")
-      ? testimonial.avatarStorageId
-      : undefined,
-    company: fields.has("company") ? testimonial.company : undefined,
-    name: testimonial.submitterName,
-    organizationId: testimonial.organizationId,
-    publishedAt,
-    rating: fields.has("rating") ? testimonial.rating : undefined,
-    role: fields.has("role") ? testimonial.role : undefined,
-    testimonialId: testimonial._id,
-  };
-  const projection =
-    testimonial.submissionType === "video" && videoAsset
-      ? {
-          ...identity,
-          captionsAvailable: videoAsset.captionsStatus === "ready",
-          playbackId: videoAsset.playbackId!,
-          posterTimeSeconds: videoAsset.durationSeconds
-            ? videoAsset.durationSeconds / 2
-            : undefined,
-          type: "video" as const,
-        }
-      : { ...identity, text: testimonial.text, type: "text" as const };
-  if (existingProjection) {
-    await ctx.db.replace(existingProjection._id, projection);
-  } else {
-    await ctx.db.insert("publicTestimonialProjections", projection);
-  }
+  await upsertPublicProjection(ctx, testimonial, publishedAt);
 }
 
 export const setStatus = mutation({
@@ -322,66 +274,11 @@ export const setStatus = mutation({
       .unique();
     const now = Date.now();
     if (args.status === "published") {
-      const [consent, videoAsset] = await Promise.all([
-        ctx.db
-          .query("publicationConsents")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        testimonial.submissionType === "video"
-          ? ctx.db
-              .query("videoAssets")
-              .withIndex("by_testimonial", (index) =>
-                index.eq("testimonialId", testimonial._id),
-              )
-              .unique()
-          : null,
-      ]);
-      if (!consent) testimonialUnavailable();
-      if (
-        testimonial.submissionType === "video" &&
-        (!videoAsset || videoAsset.status !== "ready" || !videoAsset.playbackId)
-      ) {
-        throw new ConvexError({
-          code: "VIDEO_NOT_READY",
-          message: "Only a Ready video Testimonial can be Published.",
-        });
-      }
-      const fields = new Set(consent.identityFields);
-      const identity = {
-        avatarStorageId: fields.has("avatar")
-          ? testimonial.avatarStorageId
-          : undefined,
-        company: fields.has("company") ? testimonial.company : undefined,
-        name: testimonial.submitterName,
-        organizationId: testimonial.organizationId,
-        publishedAt: now,
-        rating: fields.has("rating") ? testimonial.rating : undefined,
-        role: fields.has("role") ? testimonial.role : undefined,
-        testimonialId: testimonial._id,
-      };
-      const projection =
-        testimonial.submissionType === "video" && videoAsset
-          ? {
-              ...identity,
-              captionsAvailable: videoAsset.captionsStatus === "ready",
-              playbackId: videoAsset.playbackId!,
-              posterTimeSeconds: videoAsset.durationSeconds
-                ? videoAsset.durationSeconds / 2
-                : undefined,
-              type: "video" as const,
-            }
-          : {
-              ...identity,
-              text: testimonial.text,
-              type: "text" as const,
-            };
-      if (existingProjection) {
-        await ctx.db.replace(existingProjection._id, projection);
-      } else {
-        await ctx.db.insert("publicTestimonialProjections", projection);
-      }
+      const publicOrderKey = await nextPublicOrderKey(
+        ctx,
+        access.organization._id,
+      );
+      await upsertPublicProjection(ctx, testimonial, now, publicOrderKey);
     } else if (existingProjection) {
       await ctx.db.delete(existingProjection._id);
     }
@@ -498,6 +395,7 @@ export const markSpam = mutation({
       organizationId: access.organization._id,
       previousModerationStatus: testimonial.moderationStatus,
       previousPublishedAt: projection?.publishedAt,
+      previousPublicOrderKey: projection?.publicOrderKey,
       reportedAt: now,
       restorationMode: creditRestored ? "automatic" : undefined,
       status: "active",

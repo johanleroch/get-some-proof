@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import { formatShortDate } from "@/lib/format-date";
+import { PublishedCuration } from "@/components/testimonials/published-curation";
 
 type InboxTestimonialIdentity = {
   avatarUrl: string | null;
@@ -642,6 +643,8 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         sort={sort}
         submissionType={submissionType}
       />
+
+      <PublishedCuration organizationId={activeOrganization.id} />
 
       <InboxFeedback error={error} message={message} />
 

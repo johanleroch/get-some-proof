@@ -21,6 +21,8 @@ function mockProjection() {
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,
       publicSlug: "acme-proof",
+      theme: "system",
+      transparentEmbed: false,
     })
     .mockResolvedValueOnce({
       continueCursor: "next-page",
@@ -70,12 +72,15 @@ describe("GET /api/public-wall/:publicSlug", () => {
         attributionRequired: true,
         name: "Acme Studio",
         publicSlug: "acme-proof",
+        theme: "system",
+        transparentEmbed: false,
       },
       pagination: { cursor: expect.any(String) },
       schemaVersion: 1,
       testimonials: [
         {
           avatarUrl: null,
+          html: expect.stringContaining('data-gsp-card=""'),
           id: "projection-1",
           name: "Camille Test",
           publishedAt: 1,
@@ -96,6 +101,8 @@ describe("GET /api/public-wall/:publicSlug", () => {
         brandName: "Acme Studio",
         hasPublishedTestimonials: true,
         publicSlug: "acme-proof",
+        theme: "dark",
+        transparentEmbed: true,
       })
       .mockResolvedValueOnce({
         continueCursor: "",
@@ -123,6 +130,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
       {
         avatarUrl: null,
         captionsAvailable: true,
+        html: expect.stringContaining('data-gsp-play=""'),
         id: "video-projection",
         name: "Camille Test",
         playbackId: "public-playback-id",
@@ -167,6 +175,8 @@ describe("GET /api/public-wall/:publicSlug", () => {
         brandName: "Acme Studio",
         hasPublishedTestimonials: false,
         publicSlug: "acme-proof",
+        theme: "system",
+        transparentEmbed: false,
       })
       .mockResolvedValueOnce({
         continueCursor: "",

@@ -73,6 +73,7 @@ async function createReadyVideo(
       name: "Camille Test",
       organizationId,
       playbackId: `playback-${suffix}`,
+      publicOrderKey: "V",
       publishedAt: now,
       testimonialId,
       type: "video",
