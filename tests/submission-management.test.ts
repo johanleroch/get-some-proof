@@ -280,6 +280,7 @@ describe("Submission Management Links", () => {
       {
         email: "alice@example.com",
         publicSlug: "acme-proof",
+        scheduleDelivery: false,
       },
     );
     const request = await t.run((ctx) =>
@@ -331,7 +332,11 @@ describe("Submission Management Links", () => {
     await createManagedText(t);
     await t.mutation(
       internal.submissionManagement.queueReplacementLinkRequest,
-      { email: "alice@example.com", publicSlug: "acme-proof" },
+      {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+        scheduleDelivery: false,
+      },
     );
     const request = await t.run((ctx) =>
       ctx.db.query("managementLinkReplacementRequests").unique(),
@@ -360,7 +365,11 @@ describe("Submission Management Links", () => {
     await createManagedText(t);
     const requestId = await t.mutation(
       internal.submissionManagement.queueReplacementLinkRequest,
-      { email: "alice@example.com", publicSlug: "acme-proof" },
+      {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+        scheduleDelivery: false,
+      },
     );
     await t.run((ctx) =>
       ctx.db.patch(requestId!, {
@@ -424,10 +433,12 @@ describe("Submission Management Links", () => {
       t.mutation(internal.submissionManagement.queueReplacementLinkRequest, {
         email: "alice@example.com",
         publicSlug: "acme-proof",
+        scheduleDelivery: false,
       }),
       t.mutation(internal.submissionManagement.queueReplacementLinkRequest, {
         email: "alice@example.com",
         publicSlug: "acme-proof",
+        scheduleDelivery: false,
       }),
     ]);
     const requests = await t.run((ctx) =>
@@ -640,6 +651,7 @@ describe("Submission Management Links", () => {
     await t.mutation(
       internal.submissionManagement.recordDetachedReplacementUpload,
       {
+        organizationId: brand.id,
         provider: "fake",
         providerUploadId: "late-upload",
         reservationId: reserved.reservationId,
@@ -656,6 +668,52 @@ describe("Submission Management Links", () => {
           .unique(),
       ),
     ).resolves.toMatchObject({ providerUploadId: "late-upload" });
+  });
+
+  it("records detached provider cleanup after withdrawal removed the reservation", async () => {
+    const t = createConvexTest();
+    const { brand, testimonialId } = await createManagedVideo(t);
+    const reserved = await t.mutation(
+      internal.submissionManagement.reserveVideoReplacement,
+      {
+        clientRevisionId: "withdrawal-race-revision",
+        expectedContentVersion: 1,
+        tokenHash: await hashSubmissionManagementToken(originalToken),
+      },
+    );
+
+    await t.mutation(api.submissionManagement.withdrawConsent, {
+      token: originalToken,
+    });
+    await expect(
+      t.run((ctx) => ctx.db.get(reserved.reservationId)),
+    ).resolves.toBeNull();
+    await t.mutation(
+      internal.submissionManagement.recordDetachedReplacementUpload,
+      {
+        organizationId: brand.id,
+        provider: "fake",
+        providerUploadId: "withdrawn-late-upload",
+        reservationId: reserved.reservationId,
+        testimonialId,
+      },
+    );
+
+    await expect(
+      t.run((ctx) =>
+        ctx.db
+          .query("videoProviderCleanupJobs")
+          .withIndex("by_provider_upload", (index) =>
+            index
+              .eq("provider", "fake")
+              .eq("providerUploadId", "withdrawn-late-upload"),
+          )
+          .unique(),
+      ),
+    ).resolves.toMatchObject({
+      organizationId: brand.id,
+      providerUploadId: "withdrawn-late-upload",
+    });
   });
 
   it("refuses to confirm a Ready video replacement after permanent deletion was prepared", async () => {
@@ -717,7 +775,11 @@ describe("Submission Management Links", () => {
     });
     await t.mutation(
       internal.submissionManagement.queueReplacementLinkRequest,
-      { email: "alice@example.com", publicSlug: "acme-proof" },
+      {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+        scheduleDelivery: false,
+      },
     );
     const request = await t.run((ctx) =>
       ctx.db.query("managementLinkReplacementRequests").unique(),

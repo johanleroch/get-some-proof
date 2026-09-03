@@ -484,6 +484,7 @@ export const reserveVideoReplacement = internalMutation({
   },
   returns: v.object({
     expiresAt: v.number(),
+    organizationId: v.id("organizations"),
     reservationId: v.id("videoReservations"),
     revisionId: v.id("submissionVideoRevisions"),
     testimonialId: v.id("testimonials"),
@@ -557,6 +558,7 @@ export const reserveVideoReplacement = internalMutation({
     );
     return {
       expiresAt,
+      organizationId: testimonial.organizationId,
       reservationId,
       revisionId,
       testimonialId: testimonial._id,
@@ -674,6 +676,7 @@ export const releaseVideoReplacement = internalMutation({
 
 export const recordDetachedReplacementUpload = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     provider: v.union(v.literal("fake"), v.literal("mux")),
     providerUploadId: v.string(),
     reservationId: v.id("videoReservations"),
@@ -682,9 +685,11 @@ export const recordDetachedReplacementUpload = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const reservation = await ctx.db.get(args.reservationId);
-    if (!reservation) return null;
+    if (reservation && reservation.organizationId !== args.organizationId) {
+      unavailable("This replacement upload does not match its reservation.");
+    }
     await enqueueAssetCleanup(ctx, {
-      organizationId: reservation.organizationId,
+      organizationId: args.organizationId,
       provider: args.provider,
       providerUploadId: args.providerUploadId,
       testimonialId: args.testimonialId,
@@ -721,6 +726,7 @@ export const createVideoReplacementUpload = action({
     const tokenHash = await hashSubmissionManagementToken(args.token);
     const reserved: {
       expiresAt: number;
+      organizationId: Id<"organizations">;
       reservationId: Id<"videoReservations">;
       revisionId: Id<"submissionVideoRevisions">;
       testimonialId: Id<"testimonials">;
@@ -769,15 +775,20 @@ export const createVideoReplacementUpload = action({
     } catch (error) {
       try {
         if (directUpload) {
-          await ctx.runMutation(
-            internal.submissionManagement.recordDetachedReplacementUpload,
-            {
-              provider: directUpload.provider,
-              providerUploadId: directUpload.uploadId,
-              reservationId: reserved.reservationId,
-              testimonialId: reserved.testimonialId,
-            },
-          );
+          try {
+            await ctx.runMutation(
+              internal.submissionManagement.recordDetachedReplacementUpload,
+              {
+                organizationId: reserved.organizationId,
+                provider: directUpload.provider,
+                providerUploadId: directUpload.uploadId,
+                reservationId: reserved.reservationId,
+                testimonialId: reserved.testimonialId,
+              },
+            );
+          } catch {
+            // Still attempt immediate cancellation if durable recording failed.
+          }
           try {
             await cancelVideoDirectUpload(
               directUpload.uploadId,
@@ -993,7 +1004,11 @@ function managementLinkTokenSecret() {
 }
 
 export const queueReplacementLinkRequest = internalMutation({
-  args: { email: v.string(), publicSlug: v.string() },
+  args: {
+    email: v.string(),
+    publicSlug: v.string(),
+    scheduleDelivery: v.optional(v.boolean()),
+  },
   returns: v.union(v.null(), v.id("managementLinkReplacementRequests")),
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
@@ -1112,6 +1127,13 @@ export const queueReplacementLinkRequest = internalMutation({
             createdAt: now,
           }),
         ),
+      );
+    }
+    if (args.scheduleDelivery !== false) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.submissionManagement.processReplacementLinkRequest,
+        { requestId },
       );
     }
     return requestId;
@@ -1316,17 +1338,10 @@ export const requestReplacementLink = action({
   args: { email: v.string(), publicSlug: v.string() },
   returns: v.object({ accepted: v.literal(true) }),
   handler: async (ctx, args) => {
-    const requestId = await ctx.runMutation(
+    await ctx.runMutation(
       internal.submissionManagement.queueReplacementLinkRequest,
       args,
     );
-    if (requestId) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.submissionManagement.processReplacementLinkRequest,
-        { requestId },
-      );
-    }
     return { accepted: true as const };
   },
 });
