@@ -52,25 +52,42 @@ describe("OrganizationOnboardingForm", () => {
     );
     mocks.create.mockResolvedValue({
       id: "organization-1",
+      publicSlug: "visual-studio",
       slug: "visual-studio-ab12",
     });
     mocks.uploadProfileImage.mockResolvedValue("storage-1");
     mocks.setLogo.mockResolvedValue(null);
   });
 
-  it("uploads an optional staged logo after Organization creation", async () => {
+  it("creates a configured Brand and uploads its optional logo", async () => {
     mocks.generateUploadUrl.mockResolvedValue("https://upload.example");
     render(<OrganizationOnboardingForm />);
 
-    fireEvent.change(screen.getByLabelText("Organization name"), {
+    fireEvent.change(screen.getByLabelText("Brand name"), {
       target: { value: "Visual Studio" },
     });
+    expect(screen.getByLabelText("Public slug")).toHaveValue("visual-studio");
+    fireEvent.change(screen.getByLabelText("Collection Form title"), {
+      target: { value: "Share your Visual Studio story" },
+    });
+    fireEvent.change(screen.getByLabelText("Collection Form description"), {
+      target: { value: "A short description" },
+    });
+    fireEvent.change(screen.getByLabelText("Privacy contact"), {
+      target: { value: "privacy@visual.example" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create Organization" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() => {
+      expect(mocks.create).toHaveBeenCalledWith({
+        collectionFormDescription: "A short description",
+        collectionFormTitle: "Share your Visual Studio story",
+        name: "Visual Studio",
+        primaryColor: "#6d5dfc",
+        privacyContact: "privacy@visual.example",
+        publicSlug: "visual-studio",
+      });
       expect(mocks.setLogo).toHaveBeenCalledWith({
         organizationId: "organization-1",
         storageId: "storage-1",
@@ -81,23 +98,24 @@ describe("OrganizationOnboardingForm", () => {
     );
   });
 
-  it("does not create a duplicate Organization when a logo retry is needed", async () => {
+  it("does not create a duplicate Brand when a logo retry is needed", async () => {
     mocks.generateUploadUrl
       .mockRejectedValueOnce(new Error("Upload unavailable"))
       .mockResolvedValueOnce("https://upload.example");
     render(<OrganizationOnboardingForm />);
 
-    fireEvent.change(screen.getByLabelText("Organization name"), {
+    fireEvent.change(screen.getByLabelText("Brand name"), {
       target: { value: "Visual Studio" },
     });
+    fireEvent.change(screen.getByLabelText("Privacy contact"), {
+      target: { value: "privacy@visual.example" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create Organization" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     expect(
       await screen.findByText(
-        "Your Organization was created, but the logo upload failed. Retry or continue without it.",
+        "Your Brand was created, but the logo upload failed. Retry or continue without it.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(

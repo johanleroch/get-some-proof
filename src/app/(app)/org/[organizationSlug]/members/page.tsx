@@ -1,4 +1,4 @@
-import { OrganizationMembers } from "@/components/members/organization-members";
+import { redirect } from "next/navigation";
 
 export default async function OrganizationMembersPage({
   params,
@@ -6,6 +6,5 @@ export default async function OrganizationMembersPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-
-  return <OrganizationMembers slug={organizationSlug} />;
+  redirect(`/org/${organizationSlug}/dashboard`);
 }

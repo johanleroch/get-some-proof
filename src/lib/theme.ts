@@ -1,4 +1,4 @@
-export const themeStorageKey = "convex-admin-theme";
+export const themeStorageKey = "get-some-proof-theme";
 
 export type ThemePreference = "light" | "dark" | "system";
 

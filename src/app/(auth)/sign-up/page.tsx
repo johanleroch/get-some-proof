@@ -20,7 +20,7 @@ export default async function SignUpPage({
       <CardHeader>
         <CardTitle className="text-2xl">Create your account</CardTitle>
         <CardDescription>
-          Verify your email before creating or joining an Organization.
+          Verify your email before creating your Brand.
         </CardDescription>
       </CardHeader>
       <CardContent>

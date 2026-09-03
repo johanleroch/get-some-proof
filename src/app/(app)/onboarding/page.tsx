@@ -15,7 +15,7 @@ export default function OrganizationOnboardingPage() {
       <div className="absolute top-5 right-5">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-center">
           <BrandMark />
         </div>
@@ -24,10 +24,10 @@ export default function OrganizationOnboardingPage() {
             <p className="text-muted-foreground text-sm font-medium">
               First step
             </p>
-            <CardTitle className="text-2xl">Create your Organization</CardTitle>
+            <CardTitle className="text-2xl">Create your Brand</CardTitle>
             <CardDescription>
-              This becomes the secure boundary for your Members, Projects, and
-              administration data.
+              Set the public identity and Collection Form your customers will
+              see.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -5,12 +5,19 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
+    publicSlug: v.string(),
+    publicSlugChangedAt: v.optional(v.number()),
     logoStorageId: v.optional(v.id("_storage")),
+    primaryColor: v.string(),
+    collectionFormTitle: v.string(),
+    collectionFormDescription: v.string(),
+    privacyContact: v.string(),
     createdByUserId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
+    .index("by_public_slug", ["publicSlug"])
     .index("by_logo_storage_id", ["logoStorageId"]),
   userProfiles: defineTable({
     userId: v.string(),
@@ -102,6 +109,7 @@ export default defineSchema({
     eventType: v.union(
       v.literal("organization.created"),
       v.literal("organization.renamed"),
+      v.literal("brand.public_slug_changed"),
       v.literal("organization.logo_updated"),
       v.literal("organization.logo_removed"),
       v.literal("invitation.created"),

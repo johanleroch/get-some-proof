@@ -4,8 +4,16 @@ import { mutation, query } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
 import {
+  normalizeBrandName,
+  normalizeCollectionFormDescription,
+  normalizeCollectionFormTitle,
+  normalizePrimaryColor,
+  normalizePrivacyContact,
+  normalizePublicSlug,
+  publicSlugFromBrandName,
+} from "./domain/brand";
+import {
   buildOrganizationSlug,
-  normalizeOrganizationName,
   randomSlugSuffix,
 } from "./domain/organizationSlug";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
@@ -18,6 +26,8 @@ import { requireVerifiedPrincipal } from "./security/principal";
 const organizationSummary = v.object({
   id: v.id("organizations"),
   name: v.string(),
+  publicSlug: v.string(),
+  publicSlugCanChange: v.boolean(),
   slug: v.string(),
 });
 
@@ -27,25 +37,77 @@ const organizationSummaryWithLogo = organizationSummary.extend({
 
 export const create = mutation({
   args: {
+    collectionFormDescription: v.optional(v.string()),
+    collectionFormTitle: v.optional(v.string()),
     name: v.string(),
+    primaryColor: v.optional(v.string()),
+    privacyContact: v.optional(v.string()),
+    publicSlug: v.optional(v.string()),
   },
   returns: v.object({
     id: v.id("organizations"),
     name: v.string(),
+    publicSlug: v.string(),
     slug: v.string(),
     actorId: v.string(),
   }),
   handler: async (ctx, args) => {
     const principal = await requireVerifiedPrincipal(ctx);
+    const existingMembership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_status", (index) =>
+        index.eq("userId", principal.actorId).eq("status", "active"),
+      )
+      .first();
+    if (existingMembership) {
+      throw new ConvexError({
+        code: "BRAND_ALREADY_EXISTS",
+        message: "This Owner already has a Brand.",
+      });
+    }
+
     let name: string;
+    let publicSlug: string;
+    let primaryColor: string;
+    let collectionFormTitle: string;
+    let collectionFormDescription: string;
+    let privacyContact: string;
 
     try {
-      name = normalizeOrganizationName(args.name);
+      name = normalizeBrandName(args.name);
+      publicSlug = normalizePublicSlug(
+        args.publicSlug ?? publicSlugFromBrandName(name),
+      );
+      primaryColor = normalizePrimaryColor(args.primaryColor);
+      collectionFormTitle = normalizeCollectionFormTitle(
+        args.collectionFormTitle,
+        name,
+      );
+      collectionFormDescription = normalizeCollectionFormDescription(
+        args.collectionFormDescription,
+      );
+      privacyContact = normalizePrivacyContact(
+        args.privacyContact,
+        principal.email,
+      );
     } catch (error) {
       throw new ConvexError({
-        code: "INVALID_ORGANIZATION_NAME",
+        code: "INVALID_BRAND_SETTINGS",
         message:
-          error instanceof Error ? error.message : "Invalid Organization name.",
+          error instanceof Error ? error.message : "Invalid Brand settings.",
+      });
+    }
+
+    const existingPublicSlug = await ctx.db
+      .query("organizations")
+      .withIndex("by_public_slug", (index) =>
+        index.eq("publicSlug", publicSlug),
+      )
+      .unique();
+    if (existingPublicSlug) {
+      throw new ConvexError({
+        code: "PUBLIC_SLUG_UNAVAILABLE",
+        message: "That Public Slug is already taken. Choose another one.",
       });
     }
 
@@ -73,7 +135,12 @@ export const create = mutation({
 
     const now = Date.now();
     const organizationId = await ctx.db.insert("organizations", {
+      collectionFormDescription,
+      collectionFormTitle,
       name,
+      primaryColor,
+      privacyContact,
+      publicSlug,
       slug,
       createdByUserId: principal.actorId,
       createdAt: now,
@@ -117,6 +184,7 @@ export const create = mutation({
     return {
       id: organizationId,
       name,
+      publicSlug,
       slug,
       actorId: principal.actorId,
     };
@@ -146,6 +214,8 @@ export const listMine = query({
           .map(async (organization) => ({
             id: organization._id,
             name: organization.name,
+            publicSlug: organization.publicSlug,
+            publicSlugCanChange: organization.publicSlugChangedAt === undefined,
             slug: organization.slug,
             logoUrl: organization.logoStorageId
               ? await ctx.storage.getUrl(organization.logoStorageId)
@@ -173,6 +243,9 @@ export const getBySlug = query({
     return {
       id: access.organization._id,
       name: access.organization.name,
+      publicSlug: access.organization.publicSlug,
+      publicSlugCanChange:
+        access.organization.publicSlugChangedAt === undefined,
       slug: access.organization.slug,
       logoUrl: access.organization.logoStorageId
         ? await ctx.storage.getUrl(access.organization.logoStorageId)
@@ -279,7 +352,7 @@ export const rename = mutation({
 
     let name: string;
     try {
-      name = normalizeOrganizationName(args.name);
+      name = normalizeBrandName(args.name);
     } catch (error) {
       throw new ConvexError({
         code: "INVALID_ORGANIZATION_NAME",
@@ -309,7 +382,135 @@ export const rename = mutation({
     return {
       id: access.organization._id,
       name,
+      publicSlug: access.organization.publicSlug,
+      publicSlugCanChange:
+        access.organization.publicSlugChangedAt === undefined,
       slug: access.organization.slug,
+    };
+  },
+});
+
+export const changePublicSlug = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    publicSlug: v.string(),
+  },
+  returns: organizationSummary,
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    let publicSlug: string;
+    try {
+      publicSlug = normalizePublicSlug(args.publicSlug);
+    } catch (error) {
+      throw new ConvexError({
+        code: "INVALID_PUBLIC_SLUG",
+        message:
+          error instanceof Error ? error.message : "Invalid Public Slug.",
+      });
+    }
+
+    if (publicSlug === access.organization.publicSlug) {
+      return {
+        id: access.organization._id,
+        name: access.organization.name,
+        publicSlug,
+        publicSlugCanChange:
+          access.organization.publicSlugChangedAt === undefined,
+        slug: access.organization.slug,
+      };
+    }
+    if (access.organization.publicSlugChangedAt !== undefined) {
+      throw new ConvexError({
+        code: "PUBLIC_SLUG_CHANGE_ALREADY_USED",
+        message: "The Public Slug has already been changed once.",
+      });
+    }
+
+    const existing = await ctx.db
+      .query("organizations")
+      .withIndex("by_public_slug", (index) =>
+        index.eq("publicSlug", publicSlug),
+      )
+      .unique();
+    if (existing) {
+      throw new ConvexError({
+        code: "PUBLIC_SLUG_UNAVAILABLE",
+        message: "That Public Slug is already taken. Choose another one.",
+      });
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(access.organization._id, {
+      publicSlug,
+      publicSlugChangedAt: now,
+      updatedAt: now,
+    });
+    await recordOrganizationAuditEvent(ctx, {
+      organizationId: access.organization._id,
+      eventType: "brand.public_slug_changed",
+      actorUserId: access.principal.actorId,
+      actorDisplayName: access.principal.name,
+      targetType: "organization",
+      targetId: String(access.organization._id),
+      targetLabel: access.organization.name,
+      previousValue: access.organization.publicSlug,
+      newValue: publicSlug,
+      occurredAt: now,
+    });
+
+    return {
+      id: access.organization._id,
+      name: access.organization.name,
+      publicSlug,
+      publicSlugCanChange: false,
+      slug: access.organization.slug,
+    };
+  },
+});
+
+export const getByPublicSlug = query({
+  args: { publicSlug: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      collectionFormDescription: v.string(),
+      collectionFormTitle: v.string(),
+      logoUrl: v.union(v.null(), v.string()),
+      name: v.string(),
+      primaryColor: v.string(),
+      privacyContact: v.string(),
+      publicSlug: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    let publicSlug: string;
+    try {
+      publicSlug = normalizePublicSlug(args.publicSlug);
+    } catch {
+      return null;
+    }
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_public_slug", (index) =>
+        index.eq("publicSlug", publicSlug),
+      )
+      .unique();
+    if (!organization) return null;
+
+    return {
+      collectionFormDescription: organization.collectionFormDescription,
+      collectionFormTitle: organization.collectionFormTitle,
+      logoUrl: organization.logoStorageId
+        ? await ctx.storage.getUrl(organization.logoStorageId)
+        : null,
+      name: organization.name,
+      primaryColor: organization.primaryColor,
+      privacyContact: organization.privacyContact,
+      publicSlug: organization.publicSlug,
     };
   },
 });

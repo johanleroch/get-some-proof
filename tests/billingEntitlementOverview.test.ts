@@ -64,7 +64,11 @@ describe("Billing overview Subscription normalization", () => {
       api.organizations.create,
       { name: "Missing Subscription Company" },
     );
-    const cancelingOrganization = await owner.client.mutation(
+    const cancelingOwner = await authenticatedUser(t, {
+      email: "canceling-owner@example.com",
+      name: "Canceling Owner",
+    });
+    const cancelingOrganization = await cancelingOwner.client.mutation(
       api.organizations.create,
       { name: "Canceling Premium Company" },
     );
@@ -82,7 +86,7 @@ describe("Billing overview Subscription normalization", () => {
       subscription: null,
     });
     await expect(
-      owner.client.query(api.billing.getOverview, {
+      cancelingOwner.client.query(api.billing.getOverview, {
         organizationId: cancelingOrganization.id,
       }),
     ).resolves.toMatchObject({

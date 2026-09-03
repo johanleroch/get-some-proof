@@ -2,27 +2,22 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   type Icon,
-  IconArrowLeft,
-  IconCreditCard,
   IconDashboard,
-  IconFolder,
   IconLock,
-  IconPlus,
   IconSettings,
-  IconShieldCheck,
   IconUserCircle,
-  IconUsers,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
-import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
+import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -52,6 +47,21 @@ type NavigationSection = {
   label: string;
   items: NavigationItem[];
 };
+
+const accountNavigation: NavigationItem[] = [
+  {
+    label: "Profile",
+    icon: IconUserCircle,
+    href: "/account/profile" as Route,
+    visible: true,
+  },
+  {
+    label: "Security",
+    icon: IconLock,
+    href: "/account/security" as Route,
+    visible: true,
+  },
+];
 
 function Navigation({
   className,
@@ -118,12 +128,14 @@ export function AppShell({
   organizationId,
   organizationLogoUrl,
   organizationName,
+  organizationPublicSlug,
   organizationSlug,
 }: {
   children: ReactNode;
   organizationId: Id<"organizations">;
   organizationLogoUrl?: string | null;
   organizationName: string;
+  organizationPublicSlug: string;
   organizationSlug: string;
 }) {
   const pathname = usePathname();
@@ -132,11 +144,6 @@ export function AppShell({
   });
   const health = useQuery(api.system.health);
   const accountContext = pathname.startsWith("/account");
-  const organizationContext =
-    pathname === `/org/${organizationSlug}/settings` ||
-    pathname === `/org/${organizationSlug}/audit` ||
-    pathname === `/org/${organizationSlug}/billing`;
-
   const productNavigation: NavigationItem[] = [
     {
       label: "Overview",
@@ -145,63 +152,16 @@ export function AppShell({
       visible: true,
     },
     {
-      label: "Projects",
-      icon: IconFolder,
-      href: `/org/${organizationSlug}/projects` as Route,
-      visible: true,
-    },
-    {
-      label: "Members",
-      icon: IconUsers,
-      href: `/org/${organizationSlug}/members` as Route,
-      visible: true,
-    },
-  ];
-
-  const organizationNavigation: NavigationItem[] = [
-    {
-      label: "Organization settings",
+      label: "Brand settings",
       icon: IconSettings,
       href: `/org/${organizationSlug}/settings` as Route,
       visible: authorization?.can.updateOrganization ?? false,
-    },
-    {
-      label: "Audit Log",
-      icon: IconShieldCheck,
-      href: `/org/${organizationSlug}/audit` as Route,
-      visible: authorization?.can.readAudit ?? false,
-    },
-    {
-      label: "Billing",
-      icon: IconCreditCard,
-      href: `/org/${organizationSlug}/billing` as Route,
-      visible: authorization?.can.readBilling ?? false,
-    },
-  ];
-
-  const accountNavigation: NavigationItem[] = [
-    {
-      label: "Profile",
-      icon: IconUserCircle,
-      href: "/account/profile" as Route,
-      visible: true,
-    },
-    {
-      label: "Security",
-      icon: IconLock,
-      href: "/account/security" as Route,
-      visible: true,
     },
   ];
 
   const navigationSections: NavigationSection[] = accountContext
     ? [{ label: "Account", items: accountNavigation }]
-    : organizationContext
-      ? [{ label: "Organization", items: organizationNavigation }]
-      : [
-          { label: "Workspace", items: productNavigation.slice(0, 2) },
-          { label: "Collaboration", items: productNavigation.slice(2) },
-        ];
+    : [{ label: "Workspace", items: productNavigation }];
   const navigation = navigationSections.flatMap(({ items }) => items);
   const title = pageTitle(pathname, navigation);
 
@@ -219,51 +179,34 @@ export function AppShell({
       <Sidebar collapsible="offcanvas" variant="inset">
         <div aria-hidden="true" className="dashboard-sidebar-effects" />
         <SidebarHeader>
-          <OrganizationSwitcher
-            canReadAudit={authorization?.can.readAudit ?? false}
-            canReadBilling={authorization?.can.readBilling ?? false}
-            canUpdateOrganization={
-              authorization?.can.updateOrganization ?? false
-            }
-            currentName={organizationName}
-            currentLogoUrl={organizationLogoUrl}
-            currentSlug={organizationSlug}
-          />
+          <Link
+            aria-label={organizationName}
+            className="hover:bg-sidebar-accent flex min-w-0 items-center gap-3 rounded-lg p-2 transition-colors"
+            href={`/org/${organizationSlug}/dashboard` as Route}
+          >
+            {organizationLogoUrl ? (
+              <Image
+                alt=""
+                className="size-8 rounded-lg object-cover"
+                height={32}
+                src={organizationLogoUrl}
+                unoptimized
+                width={32}
+              />
+            ) : (
+              <BrandMark />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">
+                {organizationName}
+              </span>
+              <span className="text-muted-foreground block truncate text-xs">
+                /c/{organizationPublicSlug}
+              </span>
+            </span>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent className="flex flex-col gap-2">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  {accountContext || organizationContext ? (
-                    <SidebarMenuButton asChild tooltip="Back to Overview">
-                      <Link
-                        href={`/org/${organizationSlug}/dashboard` as Route}
-                      >
-                        <IconArrowLeft />
-                        <span>Back to Overview</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  ) : (
-                    <SidebarMenuButton
-                      asChild
-                      className="dashboard-primary-sidebar-action bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-                      tooltip="Create a project"
-                    >
-                      <Link
-                        href={
-                          `/org/${organizationSlug}/projects?new=1` as Route
-                        }
-                      >
-                        <IconPlus />
-                        <span>New project</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
           <Navigation pathname={pathname} sections={navigationSections} />
         </SidebarContent>
         <SidebarFooter>

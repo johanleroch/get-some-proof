@@ -1,3 +1,3 @@
-export const productName = "Convex Admin";
+export const productName = "Get Some Proof";
 export const productDescription =
-  "A production-oriented multi-tenant administration starter built with Next.js and Convex.";
+  "Collect customer testimonials and publish proof your website can use.";

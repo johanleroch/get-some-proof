@@ -137,7 +137,12 @@ export const demo = internalMutation({
 
     if (!organization) {
       const organizationId = await ctx.db.insert("organizations", {
+        collectionFormDescription: "Tell us what changed for you.",
+        collectionFormTitle: "Share your experience with Demo Company",
         name: "Demo Company",
+        primaryColor: "#6d5dfc",
+        privacyContact: "privacy@example.com",
+        publicSlug: "demo-company",
         slug: demoSlug,
         createdByUserId: seedActorId,
         createdAt: now,

@@ -18,7 +18,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </div>
         <Card className="gap-5 shadow-xs">{children}</Card>
         <p className="text-muted-foreground mt-6 text-center text-xs leading-5">
-          Secure authentication and Organization-scoped access.
+          Secure Owner access to your Brand.
         </p>
       </section>
     </main>

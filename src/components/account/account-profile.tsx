@@ -144,7 +144,7 @@ export function AccountProfileView({
       <div>
         <h2 className="dashboard-page-title">Profile</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Update the information shown across your Organizations.
+          Update the identity used for your Owner account.
         </p>
       </div>
 
@@ -152,7 +152,7 @@ export function AccountProfileView({
         <CardHeader>
           <CardTitle>Profile picture</CardTitle>
           <CardDescription>
-            This picture is shared with every Organization you join.
+            This picture identifies you inside your private Workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,7 +172,7 @@ export function AccountProfileView({
         <CardHeader>
           <CardTitle>Personal information</CardTitle>
           <CardDescription>
-            Your name and verified email are visible to your teams.
+            Your name and verified email stay private to your Owner account.
           </CardDescription>
         </CardHeader>
         <CardContent>

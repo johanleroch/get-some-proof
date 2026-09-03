@@ -1,4 +1,4 @@
-import { OrganizationAudit } from "@/components/audit/organization-audit";
+import { redirect } from "next/navigation";
 
 export default async function OrganizationAuditPage({
   params,
@@ -6,6 +6,5 @@ export default async function OrganizationAuditPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-
-  return <OrganizationAudit slug={organizationSlug} />;
+  redirect(`/org/${organizationSlug}/dashboard`);
 }

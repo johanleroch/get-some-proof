@@ -1,4 +1,4 @@
-import { OrganizationProjects } from "@/components/projects/organization-projects";
+import { redirect } from "next/navigation";
 
 export default async function OrganizationProjectsPage({
   params,
@@ -6,6 +6,5 @@ export default async function OrganizationProjectsPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-
-  return <OrganizationProjects slug={organizationSlug} />;
+  redirect(`/org/${organizationSlug}/dashboard`);
 }

@@ -6,6 +6,7 @@
 /out
 
 # Convex and local environment
+/.env
 /.env.local
 /.env.*.local
 

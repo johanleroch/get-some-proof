@@ -42,7 +42,7 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   return betterAuth({
-    appName: "Convex Admin Starter",
+    appName: "Get Some Proof",
     baseURL: siteUrl,
     database: authComponent.adapter(ctx),
     trustedOrigins: [siteUrl],
@@ -72,7 +72,7 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
           }
         : undefined,
     plugins: [
-      twoFactor({ issuer: "Convex Admin Starter" }),
+      twoFactor({ issuer: "Get Some Proof" }),
       magicLink({
         expiresIn: invitationLifetimeMs / 1_000,
         storeToken: "hashed",

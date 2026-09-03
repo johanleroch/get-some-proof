@@ -1,5 +1,5 @@
 {
-  "project": "convex-admin-starter",
+  "project": "get-some-proof",
   "bucket": "screenshots",
   "endpoint": "https://c5766b3d8c072b152df6d2f818707089.r2.cloudflarestorage.com",
   "publicBaseUrl": "https://screenshots.johancode.fr",
@@ -56,94 +56,40 @@
       "requiresAuth": true
     },
     {
-      "slug": "organization-onboarding-logo",
-      "title": "Organization onboarding logo",
+      "slug": "brand-onboarding",
+      "title": "Brand onboarding",
       "path": "/onboarding",
       "fixturePath": "/visual-evidence/onboarding",
-      "heading": "Create your Organization",
+      "heading": "Create your Brand",
       "theme": "light",
       "requiresAuth": true
     },
     {
-      "slug": "organization-logo-settings",
-      "title": "Organization logo settings",
+      "slug": "brand-settings",
+      "title": "Brand settings",
       "path": "/org/:organizationSlug/settings",
       "fixturePath": "/visual-evidence/organization-settings",
-      "heading": "Organization settings",
+      "heading": "Brand settings",
       "theme": "light",
       "requiresAuth": true
     },
     {
-      "slug": "dashboard-background-dark",
-      "title": "Dashboard background - dark",
+      "slug": "brand-dashboard-dark",
+      "title": "Brand dashboard - dark",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Overview",
+      "heading": "Visual Studio",
       "theme": "dark",
       "requiresAuth": true
     },
     {
-      "slug": "billing-free-owner-monthly",
-      "title": "Billing - Free Owner monthly",
-      "path": "/visual-evidence/billing?availability=available&role=owner&cadence=monthly",
-      "heading": "Billing",
-      "theme": "light"
-    },
-    {
-      "slug": "billing-free-owner-annual",
-      "title": "Billing - Free Owner annual",
-      "path": "/visual-evidence/billing?availability=available&role=owner&cadence=annual",
-      "heading": "Billing",
-      "theme": "dark"
-    },
-    {
-      "slug": "billing-free-admin",
-      "title": "Billing - Free Admin",
-      "path": "/visual-evidence/billing?availability=available&role=admin",
-      "heading": "Billing",
-      "theme": "light"
-    },
-    {
-      "slug": "billing-premium-owner",
-      "title": "Billing - Premium Owner",
-      "path": "/visual-evidence/billing?availability=available&role=owner&state=active&cadence=annual",
-      "heading": "Billing",
-      "theme": "dark"
-    },
-    {
-      "slug": "billing-past-due-owner",
-      "title": "Billing - past due Owner",
-      "path": "/visual-evidence/billing?availability=available&role=owner&state=past_due",
-      "heading": "Billing",
-      "theme": "light"
-    },
-    {
-      "slug": "billing-canceling-admin",
-      "title": "Billing - canceling Admin",
-      "path": "/visual-evidence/billing?availability=available&role=admin&state=cancellation_scheduled&cadence=annual",
-      "heading": "Billing",
-      "theme": "dark"
-    },
-    {
-      "slug": "billing-unavailable-admin",
-      "title": "Billing - unavailable Admin",
-      "path": "/visual-evidence/billing?availability=unavailable&role=admin",
-      "heading": "Billing",
-      "theme": "light"
-    },
-    {
-      "slug": "billing-checkout-pending-owner",
-      "title": "Billing - Checkout confirmation pending Owner",
-      "path": "/visual-evidence/billing?availability=available&role=owner&checkout=success",
-      "heading": "Billing",
-      "theme": "dark"
-    },
-    {
-      "slug": "projects-free-owner",
-      "title": "Projects - Free Owner",
-      "path": "/visual-evidence/projects",
-      "heading": "Projects",
-      "theme": "light"
+      "slug": "collection-form-shell",
+      "title": "Collection Form shell",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/collection-form",
+      "heading": "Share your Visual Studio story",
+      "theme": "light",
+      "requiresBackend": true
     }
   ]
 }

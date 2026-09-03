@@ -122,7 +122,7 @@ export function SignInForm({
         Continue with Google
       </Button>
       <p className="text-muted-foreground text-center text-sm">
-        New to the starter?{" "}
+        New to Get Some Proof?{" "}
         <Link
           className="text-primary font-medium hover:underline"
           href={`/sign-up?callbackURL=${encodeURIComponent(callbackURL)}`}

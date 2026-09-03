@@ -91,7 +91,7 @@ describe("AccountSecurity", () => {
     expect(screen.getByText("code-two")).toBeInTheDocument();
     expect(mocks.enable).toHaveBeenCalledWith({
       password: "correct horse battery staple",
-      issuer: "Convex Admin Starter",
+      issuer: "Get Some Proof",
     });
     fireEvent.click(
       screen.getByRole("button", { name: "I saved these codes" }),

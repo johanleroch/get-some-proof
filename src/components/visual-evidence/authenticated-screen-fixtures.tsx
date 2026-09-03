@@ -1,11 +1,13 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { IconMenu2 } from "@tabler/icons-react";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandMark } from "@/components/brand-mark";
+import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,12 @@ import {
 
 function useFixtureImage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  useEffect(
+    () => () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    },
+    [imageUrl],
+  );
   return {
     imageUrl,
     remove: async () => setImageUrl(null),
@@ -43,7 +51,7 @@ export function ProfileScreenFixture() {
 export function OnboardingScreenFixture() {
   return (
     <main className="bg-muted/30 grid min-h-svh place-items-center px-5 py-16">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-center">
           <BrandMark />
         </div>
@@ -52,16 +60,17 @@ export function OnboardingScreenFixture() {
             <p className="text-muted-foreground text-sm font-medium">
               First step
             </p>
-            <CardTitle className="text-2xl">Create your Organization</CardTitle>
+            <CardTitle className="text-2xl">Create your Brand</CardTitle>
             <CardDescription>
-              This becomes the secure boundary for your Members, Projects, and
-              administration data.
+              Set the public identity and Collection Form your customers will
+              see.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <OrganizationOnboardingFormView
               createOrganization={async () => ({
                 id: "fixture-organization" as Id<"organizations">,
+                publicSlug: "visual-studio",
                 slug: "visual-studio-l5pg",
               })}
               generateUploadUrl={async () => "fixture://upload"}
@@ -76,17 +85,37 @@ export function OnboardingScreenFixture() {
   );
 }
 
+export function CollectionFormScreenFixture() {
+  return (
+    <CollectionFormShellView
+      brand={{
+        collectionFormDescription:
+          "Tell us how our work changed your business. A few honest sentences are perfect.",
+        collectionFormTitle: "Share your Visual Studio story",
+        logoUrl: null,
+        name: "Visual Studio",
+        primaryColor: "#6d5dfc",
+        privacyContact: "privacy@example.invalid",
+        publicSlug: "visual-studio",
+      }}
+    />
+  );
+}
+
 export function OrganizationSettingsScreenFixture() {
   const image = useFixtureImage();
   return (
     <OrganizationSettingsView
+      canChangePublicSlug
       canUpdate
       logoUrl={image.imageUrl}
       name="Visual Studio"
+      onChangePublicSlug={async () => undefined}
       onRemoveLogo={image.remove}
       onRename={async () => undefined}
       onUploadLogo={image.upload}
-      slug="visual-studio-l5pg"
+      publicSlug="visual-studio"
+      publicSlugCanChange
     />
   );
 }
@@ -111,96 +140,79 @@ export function DashboardBackgroundScreenFixture() {
           <div className="flex flex-1 flex-col gap-6 p-3">
             <div>
               <p className="text-[13px] font-[510]">Visual Studio</p>
-              <p className="text-muted-foreground text-xs">Convex Admin</p>
+              <p className="text-muted-foreground text-xs">/c/visual-studio</p>
             </div>
-            <button
-              className="dashboard-primary-sidebar-action bg-primary text-primary-foreground h-8 rounded-lg px-3 text-left text-[13px] font-[510]"
-              data-sidebar="menu-button"
-              type="button"
-            >
-              New project
-            </button>
             <nav className="space-y-5">
               <div>
                 <p className="mb-2 px-2" data-sidebar="group-label">
                   Workspace
                 </p>
                 <div className="space-y-1">
-                  <a
+                  <button
                     className="bg-sidebar-accent block rounded-lg p-2"
                     data-active="true"
                     data-sidebar="menu-button"
-                    href="#overview"
+                    type="button"
                   >
                     Overview
-                  </a>
-                  <a
+                  </button>
+                  <button
                     className="block rounded-lg p-2"
                     data-sidebar="menu-button"
-                    href="#projects"
+                    type="button"
                   >
-                    Projects
-                  </a>
+                    Brand settings
+                  </button>
                 </div>
-              </div>
-              <div>
-                <p className="mb-2 px-2" data-sidebar="group-label">
-                  Collaboration
-                </p>
-                <a
-                  className="block rounded-lg p-2"
-                  data-sidebar="menu-button"
-                  href="#members"
-                >
-                  Members
-                </a>
               </div>
             </nav>
           </div>
         </div>
       </aside>
-      <main className="dashboard-view m-2 ml-0 min-h-0 overflow-hidden border shadow-2xl shadow-black/30">
+      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border shadow-2xl shadow-black/30 md:m-2 md:ml-0 md:rounded-xl">
         <div aria-hidden="true" className="dashboard-view-effects" />
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
-          <header className="flex h-12 shrink-0 items-center border-b px-6">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
+            <button
+              aria-label="Open navigation"
+              className="grid size-8 place-items-center rounded-md md:hidden"
+              type="button"
+            >
+              <IconMenu2 aria-hidden="true" className="size-4" />
+            </button>
             <p className="text-[13px] font-[510]">Overview</p>
           </header>
-          <div className="flex flex-1 flex-col gap-6 p-8">
+          <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h1 className="dashboard-page-title">Overview</h1>
+                <h1 className="dashboard-page-title">Visual Studio</h1>
                 <p className="dashboard-page-description mt-1">
-                  Live Organization activity and project health.
+                  Collect customer proof, review it privately, and publish only
+                  what you choose.
                 </p>
               </div>
-              <Button>View Projects</Button>
+              <Button>Copy collection link</Button>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                "Total Projects",
-                "Archived Projects",
-                "Active Members",
-                "Pending Invitations",
-              ].map((label, index) => (
-                <section className="dashboard-panel p-5" key={label}>
-                  <p className="text-muted-foreground text-[13px] font-[510]">
-                    {label}
-                  </p>
-                  <p className="mt-6 text-[30px] font-[590]">
-                    {[3, 1, 4, 0][index]}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    Current Organization
-                  </p>
-                </section>
-              ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <section className="dashboard-panel p-5">
+                <p className="text-muted-foreground text-[13px] font-[510]">
+                  Pending Testimonials
+                </p>
+                <p className="mt-6 text-[30px] font-[590]">0</p>
+                <p className="text-muted-foreground text-xs">
+                  Ready for your first Submission
+                </p>
+              </section>
+              <section className="dashboard-panel p-5">
+                <p className="text-muted-foreground text-[13px] font-[510]">
+                  Your Collection Form
+                </p>
+                <p className="mt-6 text-lg font-[590]">/c/visual-studio</p>
+                <p className="text-muted-foreground text-xs">
+                  Share this address to start collecting proof
+                </p>
+              </section>
             </div>
-            <section className="dashboard-panel min-h-72 p-6">
-              <h2 className="text-base font-[590]">Projects by status</h2>
-              <p className="dashboard-page-description mt-1">
-                Background effects remain behind this content.
-              </p>
-            </section>
           </div>
         </div>
       </main>

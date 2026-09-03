@@ -8,7 +8,7 @@
 
 ## Colors and themes
 
-The semantic light and dark tokens live in `src/app/globals.css`. Change `--primary`, `--background`, `--card`, `--muted`, `--border`, and the matching `.dark` values instead of adding one-off colors to components. The `ThemeToggle` supports light, dark, and system preferences and stores the choice under `convex-admin-theme`.
+The semantic light and dark tokens live in `src/app/globals.css`. Change `--primary`, `--background`, `--card`, `--muted`, `--border`, and the matching `.dark` values instead of adding one-off colors to components. The `ThemeToggle` supports light, dark, and system preferences and stores the choice under `get-some-proof-theme`.
 
 ## Charts
 

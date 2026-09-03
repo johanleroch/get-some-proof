@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import {
+  CollectionFormScreenFixture,
   DashboardBackgroundScreenFixture,
   OnboardingScreenFixture,
   OrganizationSettingsScreenFixture,
@@ -8,6 +9,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "collection-form": CollectionFormScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
@@ -30,7 +32,9 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "onboarding" || screen === "dashboard" ? (
+  return screen === "onboarding" ||
+    screen === "dashboard" ||
+    screen === "collection-form" ? (
     <Screen />
   ) : (
     <main className="bg-muted/30 min-h-svh px-5 py-10 sm:px-8">

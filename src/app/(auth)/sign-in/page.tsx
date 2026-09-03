@@ -20,7 +20,7 @@ export default async function SignInPage({
       <CardHeader>
         <CardTitle className="text-2xl">Welcome back</CardTitle>
         <CardDescription>
-          Sign in to continue to your Organization dashboard.
+          Sign in to continue to your proof dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent>

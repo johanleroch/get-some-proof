@@ -24,10 +24,6 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
 }));
 
-vi.mock("@/components/organizations/organization-switcher", () => ({
-  OrganizationSwitcher: () => <div>Organization switcher</div>,
-}));
-
 vi.mock("@/components/account/nav-user", () => ({
   NavUser: () => <div>User menu</div>,
 }));
@@ -50,11 +46,12 @@ describe("AppShell", () => {
     mocks.updateOrganization = true;
   });
 
-  it("shows product navigation without duplicating Organization administration", () => {
+  it("shows one Brand without multi-Organization or collaboration navigation", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Dashboard content
@@ -64,21 +61,26 @@ describe("AppShell", () => {
     expect(
       screen.getAllByRole("link", { name: "Overview" })[0],
     ).toHaveAttribute("aria-current", "page");
-    expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Acme" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Organization settings" }),
-    ).toBeNull();
+      screen.getByRole("link", { name: "Brand settings" }),
+    ).toHaveAttribute("href", "/org/acme-1234/settings");
+    expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Members" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
     expect(screen.getByText("Workspace")).toBeInTheDocument();
-    expect(screen.getByText("Collaboration")).toBeInTheDocument();
+    expect(screen.queryByText("Collaboration")).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
-  it("switches to Organization administration navigation on settings pages", () => {
+  it("keeps Brand navigation on settings pages", () => {
     mocks.pathname = "/org/acme-1234/settings";
     render(
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Settings content
@@ -86,18 +88,12 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "Organization settings" }),
+      screen.getByRole("link", { name: "Brand settings" }),
     ).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Audit Log" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Billing" })).toHaveAttribute(
-      "href",
-      "/org/acme-1234/billing",
-    );
-    expect(
-      screen.getByRole("link", { name: "Back to Overview" }),
-    ).toHaveAttribute("href", "/org/acme-1234/dashboard");
+    expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
-    expect(screen.getByText("Organization")).toBeInTheDocument();
+    expect(screen.getByText("Workspace")).toBeInTheDocument();
   });
 
   it("switches to personal Account navigation without changing the shell", () => {
@@ -106,6 +102,7 @@ describe("AppShell", () => {
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Profile content
@@ -117,9 +114,6 @@ describe("AppShell", () => {
       "page",
     );
     expect(screen.getByRole("link", { name: "Security" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Back to Overview" }),
-    ).toHaveAttribute("href", "/org/acme-1234/dashboard");
     expect(screen.queryByRole("link", { name: "Overview" })).toBeNull();
     expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
     expect(screen.getByText("Account")).toBeInTheDocument();
@@ -134,6 +128,7 @@ describe("AppShell", () => {
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Dashboard content
@@ -142,9 +137,7 @@ describe("AppShell", () => {
 
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
-    expect(
-      screen.queryByRole("link", { name: "Organization settings" }),
-    ).toBeNull();
+    expect(screen.queryByRole("link", { name: "Brand settings" })).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
@@ -153,6 +146,7 @@ describe("AppShell", () => {
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Dashboard content
@@ -167,7 +161,7 @@ describe("AppShell", () => {
     expect(triggers).toHaveLength(1);
     fireEvent.click(triggers[0]);
     expect(sidebar).toHaveAttribute("data-state", "collapsed");
-    expect(screen.getAllByRole("link", { name: "Projects" })).not.toHaveLength(
+    expect(screen.getAllByRole("link", { name: "Overview" })).not.toHaveLength(
       0,
     );
   });
@@ -177,6 +171,7 @@ describe("AppShell", () => {
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Dashboard content
@@ -220,6 +215,7 @@ describe("AppShell", () => {
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
+        organizationPublicSlug="acme"
         organizationSlug="acme-1234"
       >
         Dashboard content

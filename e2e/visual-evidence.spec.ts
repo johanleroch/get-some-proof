@@ -13,6 +13,7 @@ type VisualEvidenceConfig = {
     heading: string;
     theme?: "light" | "dark";
     requiresAuth?: boolean;
+    requiresBackend?: boolean;
   }>;
 };
 
@@ -26,6 +27,14 @@ const config = JSON.parse(
 for (const screen of config.screens) {
   test(`captures ${screen.title}`, async ({ page }, testInfo) => {
     const fixtureMode = process.env.VISUAL_EVIDENCE_FIXTURES === "true";
+    test.skip(
+      Boolean(
+        screen.requiresBackend &&
+        !fixtureMode &&
+        !process.env.NEXT_PUBLIC_CONVEX_URL,
+      ),
+      "A local Convex backend is required for this visual evidence screen.",
+    );
     const configuredOrganizationSlug =
       process.env.VISUAL_EVIDENCE_ORGANIZATION_SLUG;
     const organizationSlug = fixtureMode
@@ -53,7 +62,7 @@ for (const screen of config.screens) {
 
     if (screen.theme) {
       await page.addInitScript((theme) => {
-        localStorage.setItem("convex-admin-theme", theme);
+        localStorage.setItem("get-some-proof-theme", theme);
       }, screen.theme);
     }
     const destination =

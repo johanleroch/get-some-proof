@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { publicSlugFromBrandName } from "@convex/domain/brand";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export function OrganizationSettings({ slug }: { slug: string }) {
     organization ? { organizationId: organization.id } : "skip",
   );
   const rename = useMutation(api.organizations.rename);
+  const changePublicSlug = useMutation(api.organizations.changePublicSlug);
   const generateUploadUrl = useMutation(
     api.organizations.generateLogoUploadUrl,
   );
@@ -44,9 +46,9 @@ export function OrganizationSettings({ slug }: { slug: string }) {
     return (
       <section className="grid min-h-[50vh] place-items-center px-6 text-center">
         <div>
-          <h1 className="text-2xl font-semibold">Organization unavailable</h1>
+          <h1 className="text-2xl font-semibold">Brand unavailable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            This Organization does not exist or your Membership is inactive.
+            This Brand does not exist or you no longer have access to it.
           </p>
         </div>
       </section>
@@ -67,38 +69,53 @@ export function OrganizationSettings({ slug }: { slug: string }) {
 
   return (
     <OrganizationSettingsView
+      canChangePublicSlug={access?.can.manageOwnership ?? false}
       canUpdate={access?.can.updateOrganization ?? false}
       logoUrl={organization.logoUrl}
       name={organization.name}
+      onChangePublicSlug={async (publicSlug) => {
+        await changePublicSlug({ organizationId, publicSlug });
+      }}
       onRemoveLogo={async () => {
         await removeLogo({ organizationId });
       }}
       onRename={renameOrganization}
       onUploadLogo={uploadLogo}
-      slug={organization.slug}
+      publicSlug={organization.publicSlug}
+      publicSlugCanChange={organization.publicSlugCanChange}
     />
   );
 }
 
 export function OrganizationSettingsView({
+  canChangePublicSlug,
   canUpdate,
   logoUrl,
   name,
+  onChangePublicSlug,
   onRemoveLogo,
   onRename,
   onUploadLogo,
-  slug,
+  publicSlug,
+  publicSlugCanChange,
 }: {
+  canChangePublicSlug: boolean;
   canUpdate: boolean;
   logoUrl: string | null;
   name: string;
+  onChangePublicSlug: (publicSlug: string) => Promise<void>;
   onRemoveLogo: () => Promise<void>;
   onRename: (name: string) => Promise<void>;
   onUploadLogo: (blob: Blob) => Promise<void>;
-  slug: string;
+  publicSlug: string;
+  publicSlugCanChange: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [slugPending, setSlugPending] = useState(false);
+  const [slugMessage, setSlugMessage] = useState<string | null>(null);
+  const [nextPublicSlug, setNextPublicSlug] = useState(publicSlug);
+  const displayedPublicSlug = publicSlugCanChange ? nextPublicSlug : publicSlug;
 
   async function updateName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,7 +124,7 @@ export function OrganizationSettingsView({
     setMessage(null);
     try {
       await onRename(String(new FormData(form).get("name")));
-      setMessage("Organization name updated.");
+      setMessage("Brand name updated.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Update failed.");
     } finally {
@@ -115,14 +132,28 @@ export function OrganizationSettingsView({
     }
   }
 
+  async function updatePublicSlug(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSlugPending(true);
+    setSlugMessage(null);
+    try {
+      await onChangePublicSlug(nextPublicSlug);
+      setSlugMessage("Public slug changed permanently.");
+    } catch (error) {
+      setSlugMessage(error instanceof Error ? error.message : "Update failed.");
+    } finally {
+      setSlugPending(false);
+    }
+  }
+
   return (
     <section aria-labelledby="settings-heading" className="space-y-6">
       <div>
         <h1 className="dashboard-page-title" id="settings-heading">
-          Organization settings
+          Brand settings
         </h1>
         <p className="dashboard-page-description mt-1">
-          Update the identity shared across your Organization.
+          Update the identity shared across your public proof surfaces.
         </p>
       </div>
 
@@ -132,7 +163,7 @@ export function OrganizationSettingsView({
           cropShape="rect"
           fallback={initials(name) || "OR"}
           imageUrl={logoUrl}
-          label="Organization logo"
+          label="Brand logo"
           onRemove={onRemoveLogo}
           onUpload={onUploadLogo}
           readOnly={!canUpdate}
@@ -145,28 +176,13 @@ export function OrganizationSettingsView({
           onSubmit={updateName}
         >
           <div className="space-y-2">
-            <Label htmlFor="organization-name">Organization name</Label>
+            <Label htmlFor="organization-name">Brand name</Label>
             <Input
               defaultValue={name}
               id="organization-name"
               name="name"
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="organization-slug">Stable URL identifier</Label>
-            <Input
-              aria-describedby="organization-slug-help"
-              disabled
-              id="organization-slug"
-              value={slug}
-            />
-            <p
-              className="text-muted-foreground text-xs"
-              id="organization-slug-help"
-            >
-              The slug stays unchanged when the Organization is renamed.
-            </p>
           </div>
           {message ? (
             <p aria-live="polite" className="text-sm">
@@ -181,10 +197,52 @@ export function OrganizationSettingsView({
         <div className="bg-card max-w-2xl rounded-xl border p-6 shadow-xs">
           <p className="font-medium">Settings are read-only</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Only an Owner or Admin can update Organization settings.
+            Only the Owner can update Brand settings.
           </p>
         </div>
       )}
+
+      {canChangePublicSlug ? (
+        <form
+          className="bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs"
+          onSubmit={updatePublicSlug}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="public-slug">Public slug</Label>
+            <Input
+              aria-describedby="public-slug-help"
+              disabled={!publicSlugCanChange}
+              id="public-slug"
+              maxLength={48}
+              minLength={2}
+              onChange={(event) =>
+                setNextPublicSlug(publicSlugFromBrandName(event.target.value))
+              }
+              required
+              value={displayedPublicSlug}
+            />
+            <p className="text-muted-foreground text-xs" id="public-slug-help">
+              {publicSlugCanChange
+                ? "You can change this once. Old collection, wall, and embed links will stop working immediately."
+                : "Your one Public Slug change has been used."}
+            </p>
+          </div>
+          {slugMessage ? (
+            <p aria-live="polite" className="text-sm">
+              {slugMessage}
+            </p>
+          ) : null}
+          {publicSlugCanChange ? (
+            <Button
+              disabled={slugPending || nextPublicSlug === publicSlug}
+              type="submit"
+              variant="destructive"
+            >
+              {slugPending ? "Changing…" : "Change public slug permanently"}
+            </Button>
+          ) : null}
+        </form>
+      ) : null}
     </section>
   );
 }

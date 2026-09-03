@@ -11,6 +11,16 @@ function organizationSlugFromPathname(pathname: string) {
   return pathname.match(/^\/org\/([^/]+)/)?.[1] ?? null;
 }
 
+function WorkspaceLoading() {
+  return (
+    <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
+      <p className="text-muted-foreground text-sm" role="status">
+        Loading your workspace…
+      </p>
+    </main>
+  );
+}
+
 export function AuthenticatedApplicationShell({
   children,
 }: {
@@ -32,6 +42,10 @@ export function AuthenticatedApplicationShell({
   }, [routeOrganizationSlug]);
 
   useEffect(() => {
+    if (organizations && pathname === "/onboarding" && organizations[0]) {
+      router.replace(`/org/${organizations[0].slug}/dashboard`);
+      return;
+    }
     if (
       organizations?.length === 0 &&
       pathname !== "/onboarding" &&
@@ -42,17 +56,11 @@ export function AuthenticatedApplicationShell({
   }, [organizations, pathname, router]);
 
   if (pathname === "/onboarding") {
-    return children;
+    return organizations?.length === 0 ? children : <WorkspaceLoading />;
   }
 
   if (!organizations) {
-    return (
-      <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
-        <p className="text-muted-foreground text-sm" role="status">
-          Loading your workspace…
-        </p>
-      </main>
-    );
+    return <WorkspaceLoading />;
   }
 
   const preferredSlug =
@@ -68,6 +76,7 @@ export function AuthenticatedApplicationShell({
       organizationId={organization.id}
       organizationLogoUrl={organization.logoUrl}
       organizationName={organization.name}
+      organizationPublicSlug={organization.publicSlug}
       organizationSlug={organization.slug}
     >
       {children}

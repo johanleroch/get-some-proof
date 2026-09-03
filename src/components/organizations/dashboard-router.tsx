@@ -29,7 +29,7 @@ export function DashboardRouter() {
       <div aria-live="polite" className="text-center">
         <div className="bg-primary/20 mx-auto size-8 animate-pulse rounded-full" />
         <p className="text-muted-foreground mt-4 text-sm">
-          Finding your Organization…
+          Finding your Brand…
         </p>
       </div>
     </main>

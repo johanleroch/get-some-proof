@@ -78,7 +78,7 @@ export function AccountSecurity() {
     const password = String(new FormData(form).get("password"));
     const result = await authClient.twoFactor.enable({
       password,
-      issuer: "Convex Admin Starter",
+      issuer: "Get Some Proof",
     });
     setPending(false);
     form.reset();
@@ -164,7 +164,7 @@ export function AccountSecurity() {
       <div>
         <h2 className="dashboard-page-title">Security</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          These controls protect your User account across every Organization.
+          These controls protect your Owner account and private Workspace.
         </p>
       </div>
 

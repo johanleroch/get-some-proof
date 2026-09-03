@@ -46,8 +46,8 @@ export function SignUpForm({
       <div className="space-y-4 text-center">
         <h2 className="text-xl font-semibold">Check your email</h2>
         <p className="text-muted-foreground text-sm leading-6">
-          We sent a verification link. Verify your address before creating or
-          joining an Organization.
+          We sent a verification link. Verify your address before creating your
+          Brand.
         </p>
         <Link
           className="text-primary text-sm font-medium hover:underline"

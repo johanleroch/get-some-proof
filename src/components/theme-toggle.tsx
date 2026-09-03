@@ -17,7 +17,7 @@ import {
   type ThemePreference,
 } from "@/lib/theme";
 
-const themeChangeEvent = "convex-admin-theme-change";
+const themeChangeEvent = "get-some-proof-theme-change";
 
 function storedTheme(): ThemePreference {
   const stored = localStorage.getItem(themeStorageKey);

@@ -72,11 +72,22 @@ describe("AuthenticatedApplicationShell", () => {
 
   it("leaves onboarding outside the application shell", () => {
     mocks.pathname = "/onboarding";
+    mocks.organizations = [];
     render(
       <AuthenticatedApplicationShell>Onboarding</AuthenticatedApplicationShell>,
     );
 
     expect(screen.queryByTestId("app-shell")).toBeNull();
     expect(screen.getByText("Onboarding")).toBeInTheDocument();
+  });
+
+  it("redirects an existing Owner away from second-Brand onboarding", () => {
+    mocks.pathname = "/onboarding";
+    render(
+      <AuthenticatedApplicationShell>Onboarding</AuthenticatedApplicationShell>,
+    );
+
+    expect(mocks.replace).toHaveBeenCalledWith("/org/acme-1234/dashboard");
+    expect(screen.queryByText("Onboarding")).toBeNull();
   });
 });
