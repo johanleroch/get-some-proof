@@ -12,6 +12,7 @@ export default defineSchema({
     collectionFormTitle: v.string(),
     collectionFormDescription: v.string(),
     privacyContact: v.string(),
+    newSubmissionEmailNotificationsEnabled: v.optional(v.boolean()),
     createdByUserId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -144,4 +145,95 @@ export default defineSchema({
     newValue: v.optional(v.string()),
     occurredAt: v.number(),
   }).index("by_organization_occurred_at", ["organizationId", "occurredAt"]),
+  testimonials: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    submissionType: v.literal("text"),
+    moderationStatus: v.union(
+      v.literal("pending"),
+      v.literal("published"),
+      v.literal("archived"),
+      v.literal("spam"),
+    ),
+    text: v.string(),
+    submitterName: v.string(),
+    submitterEmail: v.string(),
+    avatarStorageId: v.optional(v.id("_storage")),
+    role: v.optional(v.string()),
+    company: v.optional(v.string()),
+    rating: v.optional(v.number()),
+    managementTokenHash: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization_client_submission", [
+      "organizationId",
+      "clientSubmissionId",
+    ])
+    .index("by_organization_status", ["organizationId", "moderationStatus"])
+    .index("by_management_token_hash", ["managementTokenHash"])
+    .index("by_avatar_storage_id", ["avatarStorageId"]),
+  publicationConsents: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    brandName: v.string(),
+    consentText: v.string(),
+    consentVersion: v.string(),
+    identityFields: v.array(
+      v.union(
+        v.literal("name"),
+        v.literal("avatar"),
+        v.literal("role"),
+        v.literal("company"),
+        v.literal("rating"),
+      ),
+    ),
+    acceptedAt: v.number(),
+  })
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"]),
+  submissionEmailDeliveries: defineTable({
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    recipientKind: v.union(v.literal("submitter"), v.literal("owner")),
+    recipientEmail: v.string(),
+    attemptId: v.string(),
+    attemptLeaseExpiresAt: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("uncertain"),
+    ),
+    provider: v.optional(v.string()),
+    providerMessageId: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_testimonial_recipient", ["testimonialId", "recipientKind"])
+    .index("by_organization", ["organizationId"]),
+  submissionAvatarUploads: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    storageId: v.optional(v.id("_storage")),
+    uploadAttempts: v.number(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization_client_submission", [
+      "organizationId",
+      "clientSubmissionId",
+    ])
+    .index("by_organization", ["organizationId"])
+    .index("by_storage_id", ["storageId"])
+    .index("by_expiry", ["expiresAt"]),
+  storageCleanupJobs: defineTable({
+    attemptId: v.string(),
+    key: v.literal("submission-avatar-orphans"),
+    leaseExpiresAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
 });

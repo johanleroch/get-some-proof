@@ -93,3 +93,45 @@ export function buildOrganizationInvitationEmail({
     url,
   });
 }
+
+export function buildSubmissionConfirmationEmail({
+  brandName,
+  email,
+  testimonialText,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  testimonialText: string;
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Manage your submission",
+    description: `Thanks for sharing this testimonial with ${brandName}. It is private and Pending review. Your submitted text: “${testimonialText}”`,
+    email,
+    subject: `Your submission to ${brandName}`,
+    template: "submission-confirmation",
+    url,
+  });
+}
+
+export function buildNewPendingTestimonialEmail({
+  brandName,
+  email,
+  submitterName,
+  url,
+}: {
+  brandName: string;
+  email: string;
+  submitterName: string;
+  url: string;
+}) {
+  return buildActionEmail({
+    action: "Review testimonial",
+    description: `${submitterName} sent a new text testimonial to ${brandName}. It is Pending review in your private Workspace.`,
+    email,
+    subject: `New testimonial for ${brandName}`,
+    template: "new-pending-testimonial",
+    url,
+  });
+}

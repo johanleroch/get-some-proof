@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   sendTransactionalEmail,
   type TransactionalEmailMessage,
+  UncertainEmailDeliveryError,
 } from "./provider";
 import { buildVerificationEmail } from "./templates";
 
@@ -45,7 +46,68 @@ const messages: TransactionalEmailMessage[] = [
 describe("transactional email console provider", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+  });
+
+  it("sends a stable idempotency key to Resend", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "resend");
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    vi.stubEnv("EMAIL_FROM", "proof@example.com");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "email-123" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendTransactionalEmail({
+      ...messages[0],
+      idempotencyKey: "submission-testimonial-attempt-1",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.resend.com/emails",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "Idempotency-Key": "submission-testimonial-attempt-1",
+        }),
+      }),
+    );
+  });
+
+  it("classifies network and provider 5xx outcomes as uncertain", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "resend");
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    vi.stubEnv("EMAIL_FROM", "proof@example.com");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 503 })),
+    );
+
+    await expect(sendTransactionalEmail(messages[0])).rejects.toBeInstanceOf(
+      UncertainEmailDeliveryError,
+    );
+  });
+
+  it("classifies an accepted response without a valid receipt as uncertain", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "resend");
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    vi.stubEnv("EMAIL_FROM", "proof@example.com");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("not-json", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+
+    await expect(sendTransactionalEmail(messages[0])).rejects.toBeInstanceOf(
+      UncertainEmailDeliveryError,
+    );
   });
 
   it.each(messages)(

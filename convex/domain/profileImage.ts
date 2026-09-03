@@ -7,7 +7,8 @@ export const maximumStoredImageBytes = 5 * 1024 * 1024;
 
 type ImageOwner =
   | { kind: "user"; userId: string }
-  | { kind: "organization"; organizationId: Id<"organizations"> };
+  | { kind: "organization"; organizationId: Id<"organizations"> }
+  | { kind: "testimonial"; testimonialId?: Id<"testimonials"> };
 
 export async function validateExclusiveStoredImage(
   ctx: MutationCtx,
@@ -26,7 +27,7 @@ export async function validateExclusiveStoredImage(
     });
   }
 
-  const [profile, organization] = await Promise.all([
+  const [profile, organization, testimonial] = await Promise.all([
     ctx.db
       .query("userProfiles")
       .withIndex("by_avatar_storage_id", (index) =>
@@ -39,16 +40,28 @@ export async function validateExclusiveStoredImage(
         index.eq("logoStorageId", storageId),
       )
       .unique(),
+    ctx.db
+      .query("testimonials")
+      .withIndex("by_avatar_storage_id", (index) =>
+        index.eq("avatarStorageId", storageId),
+      )
+      .unique(),
   ]);
 
   const belongsToOwner =
     (owner.kind === "user" &&
       profile?.userId === owner.userId &&
-      organization === null) ||
+      organization === null &&
+      testimonial === null) ||
     (owner.kind === "organization" &&
       organization?._id === owner.organizationId &&
-      profile === null) ||
-    (profile === null && organization === null);
+      profile === null &&
+      testimonial === null) ||
+    (owner.kind === "testimonial" &&
+      testimonial?._id === owner.testimonialId &&
+      profile === null &&
+      organization === null) ||
+    (profile === null && organization === null && testimonial === null);
 
   if (!belongsToOwner) {
     throw new ConvexError({
