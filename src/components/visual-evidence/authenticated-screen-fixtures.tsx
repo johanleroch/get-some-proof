@@ -116,6 +116,15 @@ export function CollectionFormScreenFixture() {
   return <CollectionFormShellView brand={collectionFormFixtureBrand} />;
 }
 
+export function CollectionFormClosedScreenFixture() {
+  return (
+    <CollectionFormShellView
+      availability={{ textAvailable: false, videoAvailable: false }}
+      brand={collectionFormFixtureBrand}
+    />
+  );
+}
+
 export function CollectionFormWriteScreenFixture() {
   return (
     <CollectionFormShellView
@@ -244,6 +253,16 @@ const videoTestimonialFixture = {
   videoStatus: "ready" as const,
 };
 
+const spamTestimonialFixture = {
+  ...testimonialFixture,
+  moderationStatus: "spam" as const,
+  quarantineExpiresAt: Date.UTC(2026, 8, 10),
+  spamCreditRestored: true,
+  submitterEmail: "spam@example.invalid",
+  submitterName: "Suspicious Submission",
+  testimonialId: "fixture-spam-testimonial",
+};
+
 export function TestimonialInboxScreenFixture() {
   return (
     <section className="space-y-6">
@@ -278,7 +297,13 @@ export function TestimonialInboxScreenFixture() {
         onDeleteRequest={() => undefined}
         onDownload={() => undefined}
         onPublish={() => undefined}
-        testimonials={[videoTestimonialFixture, testimonialFixture]}
+        onSpam={() => undefined}
+        onUndoSpam={() => undefined}
+        testimonials={[
+          spamTestimonialFixture,
+          videoTestimonialFixture,
+          testimonialFixture,
+        ]}
       />
     </section>
   );

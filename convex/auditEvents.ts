@@ -30,6 +30,10 @@ export const auditEventTypeValidator = v.union(
   v.literal("testimonial.published"),
   v.literal("testimonial.archived"),
   v.literal("testimonial.revised"),
+  v.literal("testimonial.spam_marked"),
+  v.literal("testimonial.spam_undone"),
+  v.literal("testimonial.spam_credit_restored"),
+  v.literal("testimonial.spam_expired"),
   v.literal("testimonial.consent_withdrawn"),
   v.literal("testimonial.deleted"),
 );
@@ -59,6 +63,10 @@ export type AuditEventType =
   | "testimonial.published"
   | "testimonial.archived"
   | "testimonial.revised"
+  | "testimonial.spam_marked"
+  | "testimonial.spam_undone"
+  | "testimonial.spam_credit_restored"
+  | "testimonial.spam_expired"
   | "testimonial.consent_withdrawn"
   | "testimonial.deleted";
 

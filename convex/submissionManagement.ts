@@ -62,6 +62,7 @@ async function findManagedTestimonial(ctx: MutationCtx, tokenHash: string) {
     .unique();
   if (
     !testimonial ||
+    testimonial.moderationStatus === "spam" ||
     (testimonial.managementTokenExpiresAt !== undefined &&
       testimonial.managementTokenExpiresAt <= Date.now())
   ) {

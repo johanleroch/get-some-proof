@@ -126,6 +126,48 @@ describe("text Submission collection", () => {
     expect(counts).toEqual({ consents: 1, deliveries: 2, testimonials: 1 });
   });
 
+  it("enforces 13 lifetime Free text credits across races and genuine deletion", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      publicSlug: "acme-proof",
+    });
+    const create = (index: number) =>
+      t.mutation(internal.submissions.createTextRecords, {
+        ...validSubmission,
+        clientSubmissionId: `credit-submission-${index}`,
+        deliveryAttemptId: `credit-delivery-${index}`,
+        managementTokenHash: String(index).padStart(64, "c"),
+      });
+    for (let index = 0; index < 12; index += 1) await create(index);
+
+    const race = await Promise.allSettled([create(12), create(13)]);
+    expect(race.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(race.filter(({ status }) => status === "rejected")).toHaveLength(1);
+    const first = await t.run((ctx) =>
+      ctx.db
+        .query("testimonials")
+        .withIndex("by_organization_created_at", (index) =>
+          index.eq("organizationId", brand.id),
+        )
+        .first(),
+    );
+    await owner.client.mutation(api.testimonialModeration.remove, {
+      organizationId: brand.id,
+      testimonialId: first!._id,
+    });
+
+    await expect(create(14)).rejects.toMatchObject({
+      data: { code: "COLLECTION_TYPE_UNAVAILABLE" },
+    });
+    await expect(
+      t.query(api.collectionQuotas.getPublicAvailability, {
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toMatchObject({ textAvailable: false, videoAvailable: true });
+  });
+
   it.each([
     ["invalid slug", { publicSlug: "missing-brand" }],
     ["short text", { text: "Too short" }],
@@ -153,6 +195,31 @@ describe("text Submission collection", () => {
       ).resolves.toEqual([]);
     },
   );
+
+  it("rate limits repeated form attempts separately from product credits", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      publicSlug: "acme-proof",
+    });
+    const invalid = { ...validSubmission, text: "Too short" };
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      await expect(
+        t.action(api.submissions.submitText, invalid),
+      ).rejects.toMatchObject({
+        data: { code: "INVALID_SUBMISSION" },
+      });
+    }
+    await expect(
+      t.action(api.submissions.submitText, invalid),
+    ).rejects.toMatchObject({
+      data: { code: "COLLECTION_RATE_LIMITED" },
+    });
+    await expect(
+      t.run((ctx) => ctx.db.query("collectionCredits").collect()),
+    ).resolves.toEqual([]);
+  });
 
   it("keeps a valid Submission when both transactional emails fail", async () => {
     vi.stubEnv("EMAIL_PROVIDER", "resend");

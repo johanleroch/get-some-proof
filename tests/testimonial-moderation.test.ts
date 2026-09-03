@@ -526,6 +526,396 @@ describe("Testimonial moderation and Public Projection", () => {
     });
   });
 
+  it("restores only the first three rolling Spam credits and consumes one again on undo", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const testimonials = [];
+    for (let index = 0; index < 4; index += 1) {
+      testimonials.push(
+        await createPendingTestimonial(
+          t,
+          "acme-proof",
+          `spam-submission-${index}`,
+        ),
+      );
+    }
+
+    const reports = [];
+    for (const testimonial of testimonials) {
+      reports.push(
+        await owner.client.mutation(api.testimonialModeration.markSpam, {
+          organizationId: brand.id,
+          testimonialId: testimonial.testimonialId,
+        }),
+      );
+    }
+    expect(reports.map(({ creditRestored }) => creditRestored)).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+
+    await owner.client.mutation(api.testimonialModeration.undoSpam, {
+      organizationId: brand.id,
+      testimonialId: testimonials[0]!.testimonialId,
+    });
+    const credits = await t.run((ctx) =>
+      ctx.db
+        .query("collectionCredits")
+        .withIndex("by_organization_type", (index) =>
+          index.eq("organizationId", brand.id).eq("submissionType", "text"),
+        )
+        .collect(),
+    );
+    expect(
+      credits.filter((credit) => credit.restoredAt === undefined),
+    ).toHaveLength(2);
+    expect(
+      credits.filter((credit) => credit.restoredAt !== undefined),
+    ).toHaveLength(2);
+
+    const fourthQuarantine = await t.run((ctx) =>
+      ctx.db
+        .query("spamQuarantines")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonials[3]!.testimonialId),
+        )
+        .unique(),
+    );
+    await expect(
+      t.mutation(internal.testimonialModeration.approveSpamCreditRestoration, {
+        actorDisplayName: "Johan Support",
+        quarantineId: fourthQuarantine!._id,
+      }),
+    ).resolves.toEqual({ restored: true });
+    await expect(
+      t.run((ctx) => ctx.db.get(fourthQuarantine!._id)),
+    ).resolves.toMatchObject({
+      creditRestored: true,
+      restorationMode: "support",
+      supportActor: "Johan Support",
+    });
+  });
+
+  it("keeps collection closed when Spam undo races use of the restored credit", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const testimonials = await Promise.all(
+      Array.from({ length: 13 }, (_, index) =>
+        createPendingTestimonial(t, "acme-proof", `undo-race-${index}`),
+      ),
+    );
+    await owner.client.mutation(api.testimonialModeration.markSpam, {
+      organizationId: brand.id,
+      testimonialId: testimonials[0]!.testimonialId,
+    });
+
+    const [newCollection, undo] = await Promise.allSettled([
+      createPendingTestimonial(t, "acme-proof", "undo-race-new-credit"),
+      owner.client.mutation(api.testimonialModeration.undoSpam, {
+        organizationId: brand.id,
+        testimonialId: testimonials[0]!.testimonialId,
+      }),
+    ]);
+    expect(undo.status).toBe("fulfilled");
+    expect(["fulfilled", "rejected"]).toContain(newCollection.status);
+    const activeCredits = await t.run(async (ctx) => {
+      const credits = await ctx.db
+        .query("collectionCredits")
+        .withIndex("by_organization_type", (index) =>
+          index.eq("organizationId", brand.id).eq("submissionType", "text"),
+        )
+        .collect();
+      return credits.filter((credit) => credit.restoredAt === undefined).length;
+    });
+    expect(activeCredits).toBeGreaterThanOrEqual(13);
+    await expect(
+      t.query(api.collectionQuotas.getPublicAvailability, {
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toMatchObject({ textAvailable: false });
+  });
+
+  it("removes quarantined Spam from public surfaces and restores its prior order on undo", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const created = await createPendingTestimonial(
+      t,
+      "acme-proof",
+      "published-spam-submission",
+    );
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      status: "published",
+      testimonialId: created.testimonialId,
+    });
+    const originalProjection = await t.run((ctx) =>
+      ctx.db.query("publicTestimonialProjections").unique(),
+    );
+
+    await owner.client.mutation(api.testimonialModeration.markSpam, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+    await expect(
+      t.query(api.publicWall.list, {
+        paginationOpts: { cursor: null, numItems: 20 },
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toMatchObject({ page: [] });
+    await owner.client.mutation(api.testimonialModeration.undoSpam, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+
+    await expect(
+      t.run((ctx) => ctx.db.query("publicTestimonialProjections").unique()),
+    ).resolves.toMatchObject({ publishedAt: originalProjection!.publishedAt });
+  });
+
+  it("permanently removes expired Spam while preserving its restored lifetime credit", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const created = await createPendingTestimonial(
+      t,
+      "acme-proof",
+      "expired-spam-submission",
+    );
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      status: "published",
+      testimonialId: created.testimonialId,
+    });
+    await owner.client.mutation(api.testimonialModeration.markSpam, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+    const quarantine = await t.run((ctx) =>
+      ctx.db.query("spamQuarantines").unique(),
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(quarantine!._id, { expiresAt: Date.now() - 1 }),
+    );
+
+    await t.mutation(internal.testimonialModeration.expireSpamQuarantine, {
+      quarantineId: quarantine!._id,
+    });
+    await expect(
+      t.mutation(internal.testimonialModeration.expireSpamQuarantine, {
+        quarantineId: quarantine!._id,
+      }),
+    ).resolves.toEqual({ expired: false });
+
+    const stored = await t.run(async (ctx) => ({
+      credit: await ctx.db.query("collectionCredits").unique(),
+      audits: await ctx.db.query("auditEvents").collect(),
+      quarantine: await ctx.db.get(quarantine!._id),
+      testimonial: await ctx.db.get(created.testimonialId),
+    }));
+    expect(stored.testimonial).toBeNull();
+    expect(stored.credit?.restoredAt).toBeGreaterThan(0);
+    expect(stored.quarantine?.status).toBe("expired");
+    expect(stored.audits.map((event) => event.targetLabel)).not.toContain(
+      "Camille Test",
+    );
+    expect(stored.audits).toContainEqual(
+      expect.objectContaining({
+        eventType: "testimonial.spam_expired",
+        targetLabel: "Expired Spam",
+      }),
+    );
+  });
+
+  it("deletes video application media when Spam quarantine expires", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "spam-video-submission",
+      fileSizeBytes: 2_048,
+      mimeType: "video/mp4",
+      publicSlug: "acme-proof",
+      spokenLanguage: "en",
+    });
+    const consent = buildPublicationConsent({
+      brandName: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      suppliedIdentity: { avatarSupplied: false, name: "Camille Test" },
+    });
+    const submitted = await t.action(api.video.submit, {
+      ageConfirmed: true,
+      clientSubmissionId: "spam-video-submission",
+      consentAccepted: true,
+      consentText: consent.text,
+      consentVersion: consent.version,
+      durationSeconds: 30,
+      reservationId: upload.reservationId,
+      submitterEmail: "camille@example.invalid",
+      submitterName: "Camille Test",
+    });
+    await owner.client.mutation(api.testimonialModeration.markSpam, {
+      organizationId: brand.id,
+      testimonialId: submitted.testimonialId,
+    });
+    const quarantine = await t.run((ctx) =>
+      ctx.db.query("spamQuarantines").unique(),
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(quarantine!._id, { expiresAt: Date.now() - 1 }),
+    );
+
+    await t.mutation(internal.testimonialModeration.expireSpamQuarantine, {
+      quarantineId: quarantine!._id,
+    });
+
+    await expect(
+      t.run(async (ctx) => ({
+        assets: await ctx.db.query("videoAssets").collect(),
+        reservations: await ctx.db.query("videoReservations").collect(),
+        testimonials: await ctx.db.query("testimonials").collect(),
+      })),
+    ).resolves.toEqual({ assets: [], reservations: [], testimonials: [] });
+  });
+
+  it("keeps the Free credit restored when Ready and Spam race", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "ready-spam-race",
+      fileSizeBytes: 2_048,
+      mimeType: "video/mp4",
+      publicSlug: "acme-proof",
+      spokenLanguage: "en",
+    });
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    const consent = buildPublicationConsent({
+      brandName: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      suppliedIdentity: { avatarSupplied: false, name: "Camille Test" },
+    });
+    const submitted = await t.action(api.video.submit, {
+      ageConfirmed: true,
+      clientSubmissionId: "ready-spam-race",
+      consentAccepted: true,
+      consentText: consent.text,
+      consentVersion: consent.version,
+      durationSeconds: 30,
+      reservationId: upload.reservationId,
+      submitterEmail: "camille@example.invalid",
+      submitterName: "Camille Test",
+    });
+    vi.stubEnv("MUX_PROVIDER", "fake");
+
+    await Promise.allSettled([
+      t.mutation(internal.video.completeFakeAsset, {
+        testimonialId: submitted.testimonialId,
+      }),
+      owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: brand.id,
+        testimonialId: submitted.testimonialId,
+      }),
+    ]);
+
+    const state = await t.run(async (ctx) => ({
+      credit: await ctx.db.query("collectionCredits").unique(),
+      quarantine: await ctx.db.query("spamQuarantines").unique(),
+      testimonial: await ctx.db.get(submitted.testimonialId),
+    }));
+    expect(state.testimonial?.moderationStatus).toBe("spam");
+    expect(state.quarantine).toMatchObject({
+      creditRestored: true,
+      restorationMode: "automatic",
+      status: "active",
+    });
+    expect(state.credit).toMatchObject({ restorationMode: "automatic" });
+    expect(state.credit?.restoredAt).toBeGreaterThan(0);
+  });
+
+  it("serializes video deletion and Spam without leaving both workflows active", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "delete-spam-race",
+      fileSizeBytes: 2_048,
+      mimeType: "video/mp4",
+      publicSlug: "acme-proof",
+      spokenLanguage: "en",
+    });
+    const consent = buildPublicationConsent({
+      brandName: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      suppliedIdentity: { avatarSupplied: false, name: "Camille Test" },
+    });
+    const submitted = await t.action(api.video.submit, {
+      ageConfirmed: true,
+      clientSubmissionId: "delete-spam-race",
+      consentAccepted: true,
+      consentText: consent.text,
+      consentVersion: consent.version,
+      durationSeconds: 30,
+      reservationId: upload.reservationId,
+      submitterEmail: "camille@example.invalid",
+      submitterName: "Camille Test",
+    });
+
+    await Promise.allSettled([
+      owner.client.mutation(internal.videoMedia.prepareRemoval, {
+        organizationId: brand.id,
+        testimonialId: submitted.testimonialId,
+      }),
+      owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: brand.id,
+        testimonialId: submitted.testimonialId,
+      }),
+    ]);
+    const state = await t.run(async (ctx) => ({
+      deletion: await ctx.db.query("videoMediaDeletions").unique(),
+      quarantine: await ctx.db.query("spamQuarantines").unique(),
+      testimonial: await ctx.db.get(submitted.testimonialId),
+    }));
+    expect(Boolean(state.deletion) && Boolean(state.quarantine)).toBe(false);
+    expect(
+      state.deletion !== null ||
+        (state.quarantine?.status === "active" &&
+          state.testimonial?.moderationStatus === "spam"),
+    ).toBe(true);
+  });
+
   it("returns null for an unknown wall without leaking Brand existence details", async () => {
     const t = createConvexTest();
     await expect(

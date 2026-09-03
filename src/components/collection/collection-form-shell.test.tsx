@@ -38,6 +38,55 @@ describe("CollectionFormShellView", () => {
     expect(screen.queryByText(/organization/i)).toBeNull();
   });
 
+  it("disables only an exhausted format and hides plan details", () => {
+    render(
+      <CollectionFormShellView
+        availability={{ textAvailable: false, videoAvailable: true }}
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Acme story",
+          logoUrl: null,
+          name: "Acme Studio",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-studio",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Send a text testimonial" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Record or upload a video" }),
+    ).toBeEnabled();
+    expect(screen.queryByText(/free|pro|credit|plan/i)).toBeNull();
+  });
+
+  it("shows a neutral closed state when both formats are exhausted", () => {
+    render(
+      <CollectionFormShellView
+        availability={{ textAvailable: false, videoAvailable: false }}
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Acme story",
+          logoUrl: null,
+          name: "Acme Studio",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-studio",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Collection is temporarily closed",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText(/free|pro|credit|plan/i)).toBeNull();
+  });
+
   it("completes the responsive four-stage text Submission journey", async () => {
     const submitText = vi.fn().mockResolvedValue({
       moderationStatus: "pending",

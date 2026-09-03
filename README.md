@@ -37,6 +37,13 @@ pnpm convex env set EMAIL_PROVIDER console
 
 The console email provider refuses non-localhost origins and prints verification and reset links to the Convex development logs. Automated tests use the silent test adapter.
 
+Public collection requests are verified with Cloudflare Turnstile before quota
+or persistence logic runs. Localhost uses Cloudflare's official visible test
+widget and matching test secret automatically. Any deployed environment must
+set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in Next.js plus `TURNSTILE_SECRET` and a
+comma-separated, deployment-specific `TURNSTILE_HOSTNAMES` in Convex; missing
+deployment configuration fails closed.
+
 Run Convex and Next.js in separate terminals:
 
 ```bash
