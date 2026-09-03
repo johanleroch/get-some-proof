@@ -12,6 +12,7 @@ import { OrganizationSettingsView } from "./organization-settings";
 const baseProps = {
   canChangePublicSlug: true,
   canUpdate: true,
+  embedOrigin: "https://proof.example",
   logoUrl: null,
   name: "Acme Studio",
   onChangePublicSlug: vi.fn().mockResolvedValue(undefined),
@@ -85,5 +86,36 @@ describe("OrganizationSettingsView", () => {
     );
 
     expect(screen.queryByLabelText("Public slug")).toBeNull();
+  });
+
+  it("provides the Owner a copyable versioned Embedded Wall snippet", () => {
+    render(<OrganizationSettingsView {...baseProps} />);
+
+    expect(screen.getByLabelText("Embed snippet")).toHaveValue(
+      '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://proof.example/embed/v1.js" data-api-origin="https://proof.example"></script>',
+    );
+    expect(
+      screen.getByRole("button", { name: "Copy embed snippet" }),
+    ).toBeEnabled();
+  });
+
+  it("copies the exact Embedded Wall snippet", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    render(<OrganizationSettingsView {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy embed snippet" }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://proof.example/embed/v1.js" data-api-origin="https://proof.example"></script>',
+      );
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Embed snippet copied.",
+    );
   });
 });

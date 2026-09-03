@@ -31,6 +31,7 @@ import type * as organizationAuthorization from "../organizationAuthorization.js
 import type * as organizations from "../organizations.js";
 import type * as profileImages from "../profileImages.js";
 import type * as projects from "../projects.js";
+import type * as publicReadRateLimit from "../publicReadRateLimit.js";
 import type * as publicWall from "../publicWall.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
 import type * as security_principal from "../security/principal.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   profileImages: typeof profileImages;
   projects: typeof projects;
+  publicReadRateLimit: typeof publicReadRateLimit;
   publicWall: typeof publicWall;
   "security/organizationAccess": typeof security_organizationAccess;
   "security/principal": typeof security_principal;
