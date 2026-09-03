@@ -188,6 +188,40 @@ describe("GET /api/public-wall/:publicSlug", () => {
     await expect(response.json()).resolves.toMatchObject({
       code: "PUBLIC_READ_RATE_LIMITED",
     });
-    expect(fetchQuery).not.toHaveBeenCalled();
+    expect(fetchQuery).toHaveBeenCalledOnce();
+  });
+
+  it("does not create a rate-limit bucket for an unknown Brand", async () => {
+    fetchQuery.mockReset().mockResolvedValue(null);
+
+    const response = await GET(
+      new Request("https://proof.example/api/public-wall/missing-brand"),
+      { params: Promise.resolve({ publicSlug: "missing-brand" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(fetchMutation).not.toHaveBeenCalled();
+  });
+
+  it("isolates requester keys without storing a public IP", async () => {
+    const firstRequest = new Request(
+      "https://proof.example/api/public-wall/acme-proof",
+      { headers: { "x-vercel-forwarded-for": "203.0.113.10" } },
+    );
+    await GET(firstRequest, context);
+    mockProjection();
+    const secondRequest = new Request(
+      "https://proof.example/api/public-wall/acme-proof",
+      { headers: { "x-vercel-forwarded-for": "203.0.113.11" } },
+    );
+    await GET(secondRequest, context);
+
+    const firstArgs = fetchMutation.mock.calls[0]?.[1];
+    const secondArgs = fetchMutation.mock.calls[1]?.[1];
+    expect(firstArgs).toMatchObject({ publicSlug: "acme-proof" });
+    expect(firstArgs.requesterKey).toMatch(/^[a-f0-9]{32}$/);
+    expect(secondArgs.requesterKey).toMatch(/^[a-f0-9]{32}$/);
+    expect(firstArgs.requesterKey).not.toBe(secondArgs.requesterKey);
+    expect(JSON.stringify(fetchMutation.mock.calls)).not.toContain("203.0.113");
   });
 });

@@ -62,6 +62,19 @@ function projectionEtag(body: unknown) {
   return `"${createHash("sha256").update(JSON.stringify(body)).digest("hex")}"`;
 }
 
+function requesterKey(request: Request, secret: string) {
+  const forwardedFor =
+    request.headers.get("x-vercel-forwarded-for") ??
+    request.headers.get("x-forwarded-for") ??
+    "unknown";
+  const networkKey = forwardedFor.split(",", 1)[0]?.trim().slice(0, 128);
+  const windowStartedAt = Math.floor(Date.now() / 60_000) * 60_000;
+  return createHmac("sha256", secret)
+    .update(`${windowStartedAt}\0${networkKey || "unknown"}`)
+    .digest("hex")
+    .slice(0, 32);
+}
+
 function isPublicSlug(value: string) {
   return (
     value.length >= 2 &&
@@ -115,10 +128,31 @@ export async function GET(
     );
   }
 
+  let brand;
+  try {
+    brand = await fetchQuery(api.publicWall.getBrand, { publicSlug });
+  } catch {
+    return json(
+      {
+        code: "PUBLIC_WALL_UNAVAILABLE",
+        message: "Embedded Wall unavailable.",
+      },
+      503,
+    );
+  }
+  if (!brand) {
+    return json(
+      { code: "PUBLIC_WALL_NOT_FOUND", message: "Public Wall not found." },
+      404,
+      true,
+    );
+  }
+
   let rateLimit: { remaining: number; resetAt: number };
   try {
     rateLimit = await fetchMutation(api.publicReadRateLimit.consume, {
-      resourceKey: `embed:${publicSlug}`,
+      publicSlug,
+      requesterKey: requesterKey(request, secret),
       secret,
     });
   } catch (error) {
@@ -137,16 +171,12 @@ export async function GET(
     );
   }
 
-  let brand;
   let page;
   try {
-    [brand, page] = await Promise.all([
-      fetchQuery(api.publicWall.getBrand, { publicSlug }),
-      fetchQuery(api.publicWall.list, {
-        paginationOpts: { cursor, numItems: 50 },
-        publicSlug,
-      }),
-    ]);
+    page = await fetchQuery(api.publicWall.list, {
+      paginationOpts: { cursor, numItems: 50 },
+      publicSlug,
+    });
   } catch {
     return json(
       {
@@ -156,14 +186,6 @@ export async function GET(
       503,
     );
   }
-  if (!brand) {
-    return json(
-      { code: "PUBLIC_WALL_NOT_FOUND", message: "Public Wall not found." },
-      404,
-      true,
-    );
-  }
-
   const projection = {
     brand: {
       accentColor: brand.accentColor,
