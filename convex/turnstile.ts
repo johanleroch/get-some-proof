@@ -47,6 +47,20 @@ export function isValidTurnstileResult(
   );
 }
 
+function isOfficialLocalTestResult(
+  result: TurnstileResult,
+  automaticLocalConfiguration: boolean,
+  configuredSecret: string | undefined,
+) {
+  return (
+    automaticLocalConfiguration &&
+    !configuredSecret &&
+    result.success === true &&
+    result.hostname === "example.com" &&
+    result.action === undefined
+  );
+}
+
 export async function verifyTurnstileToken(
   token: string | undefined,
   expectedAction: "collect_proof",
@@ -60,13 +74,12 @@ export async function verifyTurnstileToken(
   if (!token || token.length > 2_048) forbidden();
 
   const expectedHostnames = configuredHostnames();
+  const hasExplicitHostnames = Boolean(process.env.TURNSTILE_HOSTNAMES?.trim());
   const configuredSecret = process.env.TURNSTILE_SECRET;
   const localOnly = [...expectedHostnames].every(
     (hostname) => hostname === "localhost" || hostname === "127.0.0.1",
   );
-  const usingLocalTestSecret = !configuredSecret && localOnly;
-  const secret =
-    configuredSecret || (usingLocalTestSecret ? localTestSecret : undefined);
+  const secret = configuredSecret || (localOnly ? localTestSecret : undefined);
   if (!secret || expectedHostnames.size === 0) forbidden();
 
   try {
@@ -79,9 +92,12 @@ export async function verifyTurnstileToken(
     if (!response.ok) throw new Error(`siteverify ${response.status}`);
     const result = (await response.json()) as TurnstileResult;
     if (
-      result.success !== true ||
-      (!usingLocalTestSecret &&
-        !isValidTurnstileResult(result, expectedAction, expectedHostnames))
+      !isValidTurnstileResult(result, expectedAction, expectedHostnames) &&
+      !isOfficialLocalTestResult(
+        result,
+        localOnly && !hasExplicitHostnames,
+        configuredSecret,
+      )
     ) {
       forbidden();
     }
