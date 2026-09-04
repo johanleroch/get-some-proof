@@ -209,7 +209,7 @@ describe("CollectionFormShellView", () => {
       screen.getByRole("button", { name: "Record or upload a video" }),
     );
 
-    expect(screen.getByLabelText("Import video")).toBeVisible();
+    expect(screen.getByLabelText("Upload a video")).toBeVisible();
     expect(screen.getByText(/recording isn't supported/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(
@@ -253,7 +253,7 @@ describe("CollectionFormShellView", () => {
     const file = new File(["video"], "customer-story.mp4", {
       type: "video/mp4",
     });
-    fireEvent.change(screen.getByLabelText("Import video"), {
+    fireEvent.change(screen.getByLabelText("Upload a video"), {
       target: { files: [file] },
     });
     fireEvent.change(screen.getByLabelText("Spoken language"), {
@@ -294,6 +294,82 @@ describe("CollectionFormShellView", () => {
         submitterEmail: "alice@example.com",
       }),
     );
+  });
+
+  it("resets failed bot verification and submits a retry with a fresh token", async () => {
+    const resetBotVerification = vi.fn();
+    const createDirectUpload = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error("Verification failed. Refresh and try again."),
+      )
+      .mockResolvedValueOnce({
+        expiresAt: Date.now() + 60_000,
+        provider: "fake",
+        reservationId: "reservation-fresh-token",
+        uploadUrl: "https://fake-mux.invalid/upload-fresh-token",
+      });
+    const submitVideo = vi.fn().mockResolvedValue({
+      moderationStatus: "pending",
+      processingStatus: "processing",
+      testimonialId: "testimonial-fresh-token",
+    });
+    const baseProps = {
+      brand: {
+        collectionFormDescription: "Tell us what changed.",
+        collectionFormTitle: "Share your Acme story",
+        logoUrl: null,
+        name: "Acme Studio",
+        primaryColor: "#123abc",
+        privacyContact: "privacy@acme.example",
+        publicSlug: "acme-studio",
+      },
+      createDirectUpload,
+      inspectVideo: vi.fn().mockResolvedValue({ durationSeconds: 72 }),
+      resetBotVerification,
+      submitVideo,
+      uploadVideo: vi.fn().mockResolvedValue(undefined),
+    };
+    const { rerender } = render(
+      <CollectionFormShellView {...baseProps} botToken="consumed-token" />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Record or upload a video" }),
+    );
+    fireEvent.change(screen.getByLabelText("Upload a video"), {
+      target: {
+        files: [new File(["video"], "story.mp4", { type: "video/mp4" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("About you")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Your name"), {
+      target: { value: "Alice Martin" },
+    });
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.click(screen.getByLabelText(/at least 18 years old/i));
+    fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
+    fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Verification failed",
+    );
+    expect(resetBotVerification).toHaveBeenCalledTimes(1);
+    rerender(<CollectionFormShellView {...baseProps} botToken="fresh-token" />);
+    fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
+
+    expect(await screen.findByText("Thank you for your proof")).toBeVisible();
+    expect(createDirectUpload).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ turnstileToken: "consumed-token" }),
+    );
+    expect(createDirectUpload).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ turnstileToken: "fresh-token" }),
+    );
+    expect(resetBotVerification).toHaveBeenCalledTimes(2);
   });
 
   it("reuses uncertain uploads but restarts after a definitive expiry", async () => {
@@ -337,7 +413,7 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Record or upload a video" }),
     );
-    fireEvent.change(screen.getByLabelText("Import video"), {
+    fireEvent.change(screen.getByLabelText("Upload a video"), {
       target: {
         files: [new File(["video"], "story.mp4", { type: "video/mp4" })],
       },
@@ -399,12 +475,12 @@ describe("CollectionFormShellView", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Record or upload a video" }),
       );
-      fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+      fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent(
-        /still import a video or send text/i,
+        /still upload a video/i,
       );
-      expect(screen.getByLabelText("Import video")).toBeVisible();
+      expect(screen.getByLabelText("Upload a video")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: "Back" }));
       expect(
         screen.getByRole("button", { name: "Send a text testimonial" }),
@@ -423,6 +499,10 @@ describe("CollectionFormShellView", () => {
     const stopTrack = vi.fn();
     const stream = {
       getTracks: () => [{ stop: stopTrack }],
+      getVideoTracks: () => [{ getSettings: () => ({ deviceId: "camera-1" }) }],
+      getAudioTracks: () => [
+        { getSettings: () => ({ deviceId: "microphone-1" }) },
+      ],
     } as unknown as MediaStream;
     const originalMediaDevices = Object.getOwnPropertyDescriptor(
       navigator,
@@ -430,7 +510,10 @@ describe("CollectionFormShellView", () => {
     );
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
-      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+      value: {
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+        getUserMedia: vi.fn().mockResolvedValue(stream),
+      },
     });
     class Recorder {
       mimeType = "video/webm;codecs=vp8,opus";
@@ -447,6 +530,10 @@ describe("CollectionFormShellView", () => {
       }
     }
     vi.stubGlobal("MediaRecorder", Recorder);
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:recording"),
+      revokeObjectURL: vi.fn(),
+    });
     try {
       render(
         <CollectionFormShellView
@@ -465,13 +552,29 @@ describe("CollectionFormShellView", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Record or upload a video" }),
       );
-      fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+      fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Start recording" }),
+      );
       fireEvent.click(
         await screen.findByRole("button", { name: "Stop recording" }),
       );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Use this recording" }),
+      );
 
-      expect(screen.getByText("recorded-testimonial.webm")).toBeVisible();
+      expect(screen.getByText(/recorded-testimonial\.webm/)).toBeVisible();
       expect(stopTrack).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole("button", { name: "Record again" }));
+      await screen.findByRole("button", { name: "Start recording" });
+      expect(screen.queryByText(/recorded-testimonial\.webm/)).toBeNull();
+      expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+      fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+      fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Use this recording" }),
+      );
+      expect(stopTrack).toHaveBeenCalledTimes(2);
       fireEvent.click(screen.getByRole("button", { name: "Continue" }));
       expect(await screen.findByText("About you")).toBeVisible();
     } finally {
@@ -488,6 +591,10 @@ describe("CollectionFormShellView", () => {
     const stopTrack = vi.fn();
     const stream = {
       getTracks: () => [{ stop: stopTrack }],
+      getVideoTracks: () => [{ getSettings: () => ({ deviceId: "camera-1" }) }],
+      getAudioTracks: () => [
+        { getSettings: () => ({ deviceId: "microphone-1" }) },
+      ],
     } as unknown as MediaStream;
     const originalMediaDevices = Object.getOwnPropertyDescriptor(
       navigator,
@@ -495,7 +602,10 @@ describe("CollectionFormShellView", () => {
     );
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
-      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+      value: {
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+        getUserMedia: vi.fn().mockResolvedValue(stream),
+      },
     });
     class Recorder {
       mimeType = "video/webm";
@@ -528,8 +638,8 @@ describe("CollectionFormShellView", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Record or upload a video" }),
       );
-      fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
-      await screen.findByRole("button", { name: "Stop recording" });
+      fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
+      await screen.findByLabelText("Camera preview");
       fireEvent.click(screen.getByRole("button", { name: "Back" }));
 
       expect(stopTrack).toHaveBeenCalledTimes(1);

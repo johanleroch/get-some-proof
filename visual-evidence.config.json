@@ -132,7 +132,7 @@
       "title": "Collection Form - add video",
       "path": "/c/:publicSlug",
       "fixturePath": "/visual-evidence/collection-form-video",
-      "heading": "Add your video",
+      "heading": "Record your story",
       "theme": "light",
       "requiresBackend": true
     },

@@ -14,6 +14,7 @@ import {
   supportedVideoMimeTypes,
 } from "@convex/domain/video";
 import { BrandMark } from "@/components/brand-mark";
+import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -199,8 +200,8 @@ function VideoStep({
   onContinue,
   onFileChange,
   onLanguageChange,
-  onStartRecording,
-  onStopRecording,
+  onRecordingChange,
+  recorderVisualFixture,
   recording,
   recordingSupported,
   spokenLanguage,
@@ -212,8 +213,8 @@ function VideoStep({
   onContinue: () => void;
   onFileChange: (file: File | undefined) => void;
   onLanguageChange: (language: "en" | "fr") => void;
-  onStartRecording: () => void;
-  onStopRecording: () => void;
+  onRecordingChange: (recording: boolean) => void;
+  recorderVisualFixture?: boolean;
   recording: boolean;
   recordingSupported: boolean;
   spokenLanguage: "en" | "fr";
@@ -224,15 +225,41 @@ function VideoStep({
     <section className="space-y-5" aria-labelledby="add-video">
       <div>
         <h2 id="add-video" className="text-lg font-semibold">
-          Add your video
+          Record your story
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Import an MP4, MOV or WebM file up to 2 minutes. It uploads directly
-          to our video processor after you confirm.
+          Take up to 2 minutes. You can check your camera and microphone, review
+          the result, and record again before continuing.
         </p>
       </div>
+      <div className="bg-muted/45 rounded-xl border p-4 text-sm">
+        <p className="font-medium">A simple story works best</p>
+        <ul className="text-muted-foreground mt-2 space-y-1 text-xs leading-5">
+          <li>What was happening before?</li>
+          <li>What changed after working with us?</li>
+          <li>What would you tell someone considering it?</li>
+        </ul>
+      </div>
+      {recordingSupported ? (
+        <BrowserVideoRecorder
+          onFileChange={onFileChange}
+          onRecordingChange={onRecordingChange}
+          visualFixture={recorderVisualFixture}
+        />
+      ) : (
+        <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
+          Recording isn&apos;t supported here. You can still upload a video or
+          go back and send text.
+        </p>
+      )}
+      <div className="relative py-1" aria-hidden="true">
+        <div className="border-t" />
+        <span className="bg-card text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 text-xs font-medium uppercase">
+          or
+        </span>
+      </div>
       <div className="space-y-2">
-        <Label htmlFor="testimonial-video">Import video</Label>
+        <Label htmlFor="testimonial-video">Upload a video</Label>
         <Input
           accept="video/mp4,video/quicktime,video/webm"
           data-step-focus
@@ -240,8 +267,12 @@ function VideoStep({
           onChange={(event) => onFileChange(event.target.files?.[0])}
           type="file"
         />
+        <p className="text-muted-foreground text-xs">
+          MP4, MOV or WebM, up to 2 minutes. Your file uploads only after you
+          confirm.
+        </p>
         {videoFile ? (
-          <p className="text-muted-foreground text-xs">{videoFile.name}</p>
+          <p className="text-xs font-medium">Selected: {videoFile.name}</p>
         ) : null}
       </div>
       <div className="space-y-2">
@@ -261,27 +292,6 @@ function VideoStep({
           Used to generate captions. Caption failure will not block your video.
         </p>
       </div>
-      {recordingSupported ? (
-        <div className="rounded-xl border p-4">
-          <p className="text-sm font-medium">Record in this browser</p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Camera and microphone permission are requested only after you start.
-          </p>
-          <Button
-            className="mt-3"
-            onClick={recording ? onStopRecording : onStartRecording}
-            type="button"
-            variant="outline"
-          >
-            {recording ? "Stop recording" : "Start recording"}
-          </Button>
-        </div>
-      ) : (
-        <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-          Recording isn&apos;t supported here. You can still import a video or
-          go back and send text.
-        </p>
-      )}
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -872,79 +882,6 @@ async function continueWithSelectedVideo(input: {
   }
 }
 
-async function startBrowserRecording(input: {
-  recorderRef: { current: MediaRecorder | null };
-  recordingSupported: boolean;
-  setError: (error: string | null) => void;
-  setFile: (file: File) => void;
-  setRecording: (recording: boolean) => void;
-  streamRef: { current: MediaStream | null };
-}) {
-  if (!input.recordingSupported) return;
-  input.setError(null);
-  let stream: MediaStream | null = null;
-  try {
-    const acquiredStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-    stream = acquiredStream;
-    const recorder = new MediaRecorder(acquiredStream);
-    const chunks: BlobPart[] = [];
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) chunks.push(event.data);
-    };
-    recorder.onstop = () => {
-      const type = normalizeVideoMimeType(recorder.mimeType || "video/webm");
-      input.setFile(
-        new File(
-          chunks,
-          `recorded-testimonial.${type.includes("mp4") ? "mp4" : "webm"}`,
-          { type },
-        ),
-      );
-      acquiredStream.getTracks().forEach((track) => track.stop());
-      input.streamRef.current = null;
-      input.recorderRef.current = null;
-      input.setRecording(false);
-    };
-    input.streamRef.current = acquiredStream;
-    input.recorderRef.current = recorder;
-    recorder.start();
-    input.setRecording(true);
-  } catch {
-    stream?.getTracks().forEach((track) => track.stop());
-    input.streamRef.current?.getTracks().forEach((track) => track.stop());
-    input.streamRef.current = null;
-    input.recorderRef.current = null;
-    input.setRecording(false);
-    input.setError(
-      "Camera or microphone access was refused. You can still import a video or send text.",
-    );
-  }
-}
-
-function stopBrowserRecording(recorder: MediaRecorder | null) {
-  if (recorder?.state === "recording") recorder.stop();
-}
-
-function discardBrowserRecording(input: {
-  recorderRef: { current: MediaRecorder | null };
-  setRecording?: (recording: boolean) => void;
-  streamRef: { current: MediaStream | null };
-}) {
-  const recorder = input.recorderRef.current;
-  if (recorder) {
-    recorder.ondataavailable = null;
-    recorder.onstop = null;
-    if (recorder.state === "recording") recorder.stop();
-  }
-  input.streamRef.current?.getTracks().forEach((track) => track.stop());
-  input.recorderRef.current = null;
-  input.streamRef.current = null;
-  input.setRecording?.(false);
-}
-
 type InitialCollectionValues = Partial<{
   ageConfirmed: boolean;
   company: string;
@@ -1027,6 +964,7 @@ export function CollectionFormShellView({
   botChallenge,
   botToken,
   resetBotVerification,
+  recorderVisualFixture = false,
 }: {
   availability?: { textAvailable: boolean; videoAvailable: boolean };
   brand: PublicBrand;
@@ -1065,6 +1003,7 @@ export function CollectionFormShellView({
   botChallenge?: ReactNode;
   botToken?: string;
   resetBotVerification?: () => void;
+  recorderVisualFixture?: boolean;
 }) {
   const normalizedInitialValues = normalizeInitialValues(initialValues);
   const [step, setStep] = useState(initialStep);
@@ -1094,15 +1033,8 @@ export function CollectionFormShellView({
   const [videoProgress, setVideoProgress] = useState(0);
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const recordingStreamRef = useRef<MediaStream | null>(null);
   const flowRef = useRef<HTMLElement | null>(null);
   const previousStepRef = useRef(step);
-  useEffect(
-    () => () =>
-      discardBrowserRecording({ recorderRef, streamRef: recordingStreamRef }),
-    [],
-  );
   const [ageConfirmed, setAgeConfirmed] = useState(
     normalizedInitialValues.ageConfirmed,
   );
@@ -1174,14 +1106,7 @@ export function CollectionFormShellView({
           {step === 2 && proofType === "video" ? (
             <VideoStep
               error={error}
-              onBack={() => {
-                discardBrowserRecording({
-                  recorderRef,
-                  setRecording,
-                  streamRef: recordingStreamRef,
-                });
-                setStep(1);
-              }}
+              onBack={() => setStep(1)}
               onContinue={() =>
                 void continueWithSelectedVideo({
                   file: videoFile,
@@ -1200,17 +1125,8 @@ export function CollectionFormShellView({
                 setError(null);
               }}
               onLanguageChange={setSpokenLanguage}
-              onStartRecording={() =>
-                void startBrowserRecording({
-                  recorderRef,
-                  recordingSupported,
-                  setError,
-                  setFile: setVideoFile,
-                  setRecording,
-                  streamRef: recordingStreamRef,
-                })
-              }
-              onStopRecording={() => stopBrowserRecording(recorderRef.current)}
+              onRecordingChange={setRecording}
+              recorderVisualFixture={recorderVisualFixture}
               recording={recording}
               recordingSupported={recordingSupported}
               spokenLanguage={spokenLanguage}
