@@ -64,7 +64,9 @@ export async function verifyTurnstileToken(
   const localOnly = [...expectedHostnames].every(
     (hostname) => hostname === "localhost" || hostname === "127.0.0.1",
   );
-  const secret = configuredSecret || (localOnly ? localTestSecret : undefined);
+  const usingLocalTestSecret = !configuredSecret && localOnly;
+  const secret =
+    configuredSecret || (usingLocalTestSecret ? localTestSecret : undefined);
   if (!secret || expectedHostnames.size === 0) forbidden();
 
   try {
@@ -76,7 +78,11 @@ export async function verifyTurnstileToken(
     });
     if (!response.ok) throw new Error(`siteverify ${response.status}`);
     const result = (await response.json()) as TurnstileResult;
-    if (!isValidTurnstileResult(result, expectedAction, expectedHostnames)) {
+    if (
+      result.success !== true ||
+      (!usingLocalTestSecret &&
+        !isValidTurnstileResult(result, expectedAction, expectedHostnames))
+    ) {
       forbidden();
     }
   } catch (error) {

@@ -149,6 +149,7 @@ export function CollectionFormVideoScreenFixture() {
       brand={collectionFormFixtureBrand}
       initialProofType="video"
       initialStep={2}
+      recorderVisualFixture
     />
   );
 }

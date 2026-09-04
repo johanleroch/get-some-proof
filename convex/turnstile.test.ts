@@ -102,4 +102,48 @@ describe("Turnstile result validation", () => {
     expect(String(request.body)).toContain("secret=test-secret");
     expect(String(request.body)).toContain("response=fresh-token");
   });
+
+  it("accepts Cloudflare's always-pass test response for local development", async () => {
+    vi.stubEnv("SITE_URL", "http://localhost:3000");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            "error-codes": [],
+            hostname: "example.com",
+            success: true,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(
+      verifyTurnstileToken("XXXX.DUMMY.TOKEN.XXXX", "collect_proof"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("keeps strict metadata validation when localhost uses a configured secret", async () => {
+    vi.stubEnv("SITE_URL", "http://localhost:3000");
+    vi.stubEnv("TURNSTILE_SECRET", "configured-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            hostname: "example.com",
+            success: true,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(
+      verifyTurnstileToken("dummy-shaped-token", "collect_proof"),
+    ).rejects.toMatchObject({
+      data: { code: "COLLECTION_BOT_VERIFICATION_FAILED" },
+    });
+  });
 });
