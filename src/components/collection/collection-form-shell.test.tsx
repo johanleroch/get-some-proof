@@ -294,6 +294,7 @@ describe("CollectionFormShellView", () => {
         submitterEmail: "alice@example.com",
       }),
     );
+    expect(submitVideo.mock.calls[0]?.[0]).not.toHaveProperty("publicSlug");
   });
 
   it("resets failed bot verification and submits a retry with a fresh token", async () => {

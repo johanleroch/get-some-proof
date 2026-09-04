@@ -35,7 +35,7 @@ type PublicBrand = {
   publicSlug: string;
 };
 
-type TextSubmissionInput = {
+type SubmissionIdentityInput = {
   ageConfirmed: boolean;
   avatarReservationId?: Id<"submissionAvatarUploads">;
   avatarStorageId?: Id<"_storage">;
@@ -44,11 +44,14 @@ type TextSubmissionInput = {
   consentAccepted: boolean;
   consentText: string;
   consentVersion: string;
-  publicSlug: string;
   rating?: number;
   role?: string;
   submitterEmail: string;
   submitterName: string;
+};
+
+type TextSubmissionInput = SubmissionIdentityInput & {
+  publicSlug: string;
   text: string;
   turnstileToken?: string;
 };
@@ -74,7 +77,7 @@ type VideoDirectUploadResult = {
   uploadUrl: string;
 };
 
-type VideoSubmissionInput = Omit<TextSubmissionInput, "text"> & {
+type VideoSubmissionInput = SubmissionIdentityInput & {
   durationSeconds: number;
   reservationId: Id<"videoReservations">;
 };
@@ -786,7 +789,6 @@ async function submitCollectionForm(input: {
       consentAccepted: input.consentAccepted,
       consentText: input.consent.text,
       consentVersion: input.consent.version,
-      publicSlug: input.brand.publicSlug,
       rating: input.rating,
       role: input.role.trim() || undefined,
       submitterEmail: input.submitterEmail.trim(),
@@ -795,6 +797,7 @@ async function submitCollectionForm(input: {
     if (input.proofType === "text") {
       await input.submitText({
         ...identity,
+        publicSlug: input.brand.publicSlug,
         text: input.text.trim(),
         ...(input.botToken ? { turnstileToken: input.botToken } : {}),
       });
