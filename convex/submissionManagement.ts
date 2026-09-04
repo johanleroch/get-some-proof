@@ -687,6 +687,52 @@ export const releaseVideoReplacement = internalMutation({
   },
 });
 
+export const cancelVideoReplacement = mutation({
+  args: {
+    reservationId: v.id("videoReservations"),
+    revisionId: v.id("submissionVideoRevisions"),
+    token: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const tokenHash = await hashSubmissionManagementToken(args.token);
+    const testimonial = await findManagedTestimonial(ctx, tokenHash);
+    const [revision, reservation] = await Promise.all([
+      ctx.db.get(args.revisionId),
+      ctx.db.get(args.reservationId),
+    ]);
+    if (
+      !revision ||
+      revision.status !== "active" ||
+      revision.testimonialId !== testimonial._id ||
+      revision.reservationId !== args.reservationId ||
+      !reservation ||
+      reservation.status !== "reserved" ||
+      reservation.organizationId !== testimonial.organizationId
+    ) {
+      return null;
+    }
+    const asset = revision.videoAssetId
+      ? await ctx.db.get(revision.videoAssetId)
+      : null;
+    if (asset?.status === "ready") return null;
+    const now = Date.now();
+    if (asset) {
+      await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
+      await ctx.db.delete(asset._id);
+    }
+    await ctx.db.patch(revision._id, {
+      status: "superseded",
+      updatedAt: now,
+    });
+    await ctx.db.patch(reservation._id, {
+      status: "released",
+      updatedAt: now,
+    });
+    return null;
+  },
+});
+
 export const recordDetachedReplacementUpload = internalMutation({
   args: {
     organizationId: v.id("organizations"),

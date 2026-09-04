@@ -18,6 +18,7 @@ import {
   TestimonialDeleteScreenFixture,
   TestimonialInboxScreenFixture,
   VideoRetryScreenFixture,
+  VideoUploadProgressScreenFixture,
   WorkspaceDeletionScreenFixture,
   WorkspaceDeletionProgressScreenFixture,
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
@@ -36,6 +37,7 @@ const screens = {
   "testimonial-inbox": TestimonialInboxScreenFixture,
   "testimonial-delete": TestimonialDeleteScreenFixture,
   "video-retry": VideoRetryScreenFixture,
+  "video-upload-progress": VideoUploadProgressScreenFixture,
   "workspace-delete": WorkspaceDeletionScreenFixture,
   "workspace-delete-progress": WorkspaceDeletionProgressScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
@@ -65,6 +67,7 @@ export default async function VisualEvidenceFixturePage({
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
     screen === "video-retry" ||
+    screen === "video-upload-progress" ||
     screen === "privacy-notice" ||
     screen.startsWith("public-wall") ? (
     <Screen />

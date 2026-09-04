@@ -10,6 +10,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { VideoRetryFormView } from "@/components/collection/video-retry-form";
+import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import {
   OrganizationSettingsView,
@@ -151,6 +152,35 @@ export function CollectionFormVideoScreenFixture() {
       initialStep={2}
       recorderVisualFixture
     />
+  );
+}
+
+export function VideoUploadProgressScreenFixture() {
+  return (
+    <main
+      className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12"
+      style={
+        {
+          "--brand-accent": collectionFormFixtureBrand.primaryColor,
+        } as CSSProperties
+      }
+    >
+      <Card className="w-full max-w-xl shadow-xl shadow-black/5">
+        <CardHeader>
+          <CardTitle className="text-2xl">Video upload progress</CardTitle>
+          <CardDescription>
+            Your testimonial is being sent securely.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <VideoUploadProgress
+            onCancel={() => undefined}
+            phase="uploading"
+            progress={62}
+          />
+        </CardContent>
+      </Card>
+    </main>
   );
 }
 

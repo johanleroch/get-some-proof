@@ -68,6 +68,125 @@ describe("BrowserVideoRecorder", () => {
     await waitFor(() => expect(enumerateDevices).toHaveBeenCalledTimes(1));
   });
 
+  it("shows live microphone activity without announcing every level change", async () => {
+    const stream = {
+      getTracks: () => [],
+      getVideoTracks: () => [{ getSettings: () => ({ deviceId: "camera-1" }) }],
+      getAudioTracks: () => [
+        { getSettings: () => ({ deviceId: "microphone-1" }) },
+      ],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+        getUserMedia: vi.fn().mockResolvedValue(stream),
+      },
+    });
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        close = vi.fn();
+        createAnalyser() {
+          return {
+            disconnect,
+            fftSize: 32,
+            getFloatTimeDomainData(samples: Float32Array) {
+              samples.fill(0.16);
+            },
+          };
+        }
+        createMediaStreamSource() {
+          return { connect: vi.fn(), disconnect };
+        }
+      },
+    );
+    vi.useFakeTimers();
+
+    render(
+      <BrowserVideoRecorder
+        onFileChange={vi.fn()}
+        onRecordingChange={vi.fn()}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => vi.advanceTimersByTime(100));
+
+    expect(
+      (
+        screen.getByLabelText(
+          "Microphone level: sound detected",
+        ) as HTMLMeterElement
+      ).value,
+    ).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByTestId("microphone-level-bar")
+        .some((bar) => bar.getAttribute("data-active") === "true"),
+    ).toBe(true);
+  });
+
+  it("warns without blocking when the microphone stays silent", async () => {
+    const stream = {
+      getTracks: () => [],
+      getVideoTracks: () => [{ getSettings: () => ({ deviceId: "camera-1" }) }],
+      getAudioTracks: () => [
+        { getSettings: () => ({ deviceId: "microphone-1" }) },
+      ],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+        getUserMedia: vi.fn().mockResolvedValue(stream),
+      },
+    });
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        close = vi.fn();
+        createAnalyser() {
+          return {
+            disconnect: vi.fn(),
+            fftSize: 32,
+            getFloatTimeDomainData(samples: Float32Array) {
+              samples.fill(0);
+            },
+          };
+        }
+        createMediaStreamSource() {
+          return { connect: vi.fn(), disconnect: vi.fn() };
+        }
+      },
+    );
+    vi.useFakeTimers();
+
+    render(
+      <BrowserVideoRecorder
+        onFileChange={vi.fn()}
+        onRecordingChange={vi.fn()}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => vi.advanceTimersByTime(5_100));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No sound detected. Check your microphone.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Start recording" }),
+    ).toBeEnabled();
+  });
+
   it("reopens the preview with the selected devices and releases replaced tracks", async () => {
     const stopOldTracks = vi.fn();
     const makeStream = (

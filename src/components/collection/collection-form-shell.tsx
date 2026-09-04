@@ -16,6 +16,10 @@ import {
 import { BrandMark } from "@/components/brand-mark";
 import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
+import {
+  VideoUploadProgress,
+  type VideoUploadPhase,
+} from "@/components/collection/video-upload-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +39,7 @@ type PublicBrand = {
   publicSlug: string;
 };
 
-type TextSubmissionInput = {
+type SubmissionIdentityInput = {
   ageConfirmed: boolean;
   avatarReservationId?: Id<"submissionAvatarUploads">;
   avatarStorageId?: Id<"_storage">;
@@ -44,11 +48,14 @@ type TextSubmissionInput = {
   consentAccepted: boolean;
   consentText: string;
   consentVersion: string;
-  publicSlug: string;
   rating?: number;
   role?: string;
   submitterEmail: string;
   submitterName: string;
+};
+
+type TextSubmissionInput = SubmissionIdentityInput & {
+  publicSlug: string;
   text: string;
   turnstileToken?: string;
 };
@@ -74,7 +81,7 @@ type VideoDirectUploadResult = {
   uploadUrl: string;
 };
 
-type VideoSubmissionInput = Omit<TextSubmissionInput, "text"> & {
+type VideoSubmissionInput = SubmissionIdentityInput & {
   durationSeconds: number;
   reservationId: Id<"videoReservations">;
 };
@@ -507,6 +514,7 @@ function IdentityStep({
   onConsentAcceptedChange,
   onEmailChange,
   onNameChange,
+  onCancelVideoUpload,
   onRatingChange,
   onRoleChange,
   onSubmit,
@@ -515,6 +523,8 @@ function IdentityStep({
   company,
   submitting,
   videoSelectionLocked,
+  videoProgress,
+  videoUploadPhase,
   botChallenge,
   botVerificationReady,
 }: {
@@ -534,6 +544,7 @@ function IdentityStep({
   onConsentAcceptedChange: (value: boolean) => void;
   onEmailChange: (value: string) => void;
   onNameChange: (value: string) => void;
+  onCancelVideoUpload: () => void;
   onRatingChange: (value: number) => void;
   onRoleChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -541,6 +552,8 @@ function IdentityStep({
   role: string;
   submitting: boolean;
   videoSelectionLocked: boolean;
+  videoProgress: number;
+  videoUploadPhase: VideoUploadPhase;
   botChallenge?: ReactNode;
   botVerificationReady: boolean;
 }) {
@@ -659,6 +672,15 @@ function IdentityStep({
         <p className="text-muted-foreground text-xs leading-5">{consentText}</p>
       </div>
       {botChallenge}
+      {videoUploadPhase !== "idle" ? (
+        <VideoUploadProgress
+          onCancel={
+            videoUploadPhase === "uploading" ? onCancelVideoUpload : undefined
+          }
+          phase={videoUploadPhase}
+          progress={videoProgress}
+        />
+      ) : null}
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -729,7 +751,9 @@ async function submitCollectionForm(input: {
   setStep: (value: 1 | 2 | 3 | 4) => void;
   setSubmitting: (value: boolean) => void;
   setVideoProgress: (value: number) => void;
+  setVideoUploadPhase: (value: VideoUploadPhase) => void;
   setVideoReservationId: (value: Id<"videoReservations"> | undefined) => void;
+  uploadAbortControllerRef: { current: AbortController | null };
   resetBotVerification?: () => void;
   spokenLanguage: "en" | "fr";
   submitText: (input: TextSubmissionInput) => Promise<SubmissionResult>;
@@ -750,6 +774,7 @@ async function submitCollectionForm(input: {
     input: {
       onProgress: (progress: number) => void;
       provider: "fake" | "mux";
+      signal?: AbortSignal;
       uploadUrl: string;
     },
   ) => Promise<void>;
@@ -786,7 +811,6 @@ async function submitCollectionForm(input: {
       consentAccepted: input.consentAccepted,
       consentText: input.consent.text,
       consentVersion: input.consent.version,
-      publicSlug: input.brand.publicSlug,
       rating: input.rating,
       role: input.role.trim() || undefined,
       submitterEmail: input.submitterEmail.trim(),
@@ -795,11 +819,16 @@ async function submitCollectionForm(input: {
     if (input.proofType === "text") {
       await input.submitText({
         ...identity,
+        publicSlug: input.brand.publicSlug,
         text: input.text.trim(),
         ...(input.botToken ? { turnstileToken: input.botToken } : {}),
       });
     } else if (input.videoFile && input.videoDurationSeconds) {
       if (!videoReservationId) {
+        input.setVideoProgress(0);
+        input.setVideoUploadPhase("uploading");
+        const uploadController = new AbortController();
+        input.uploadAbortControllerRef.current = uploadController;
         const directUpload = await input.createDirectUpload({
           clientSubmissionId: input.clientSubmissionId,
           fileSizeBytes: input.videoFile.size,
@@ -813,9 +842,12 @@ async function submitCollectionForm(input: {
         await input.uploadVideo(input.videoFile, {
           onProgress: input.setVideoProgress,
           provider: directUpload.provider,
+          signal: uploadController.signal,
           uploadUrl: directUpload.uploadUrl,
         });
+        input.setVideoProgress(100);
       }
+      input.setVideoUploadPhase("processing");
       videoSubmissionAttempted = true;
       await input.submitVideo({
         ...identity,
@@ -825,25 +857,35 @@ async function submitCollectionForm(input: {
     }
     input.setStep(4);
   } catch (submissionError) {
+    let cancellationCleanupFailed = false;
     if (
       videoReservationId &&
       (!videoSubmissionAttempted ||
         isDefinitiveVideoUploadFailure(submissionError))
     ) {
-      await input
-        .cancelVideo({
+      try {
+        await input.cancelVideo({
           clientSubmissionId: input.clientSubmissionId,
           reservationId: videoReservationId,
-        })
-        .catch(() => undefined);
+        });
+      } catch {
+        cancellationCleanupFailed = true;
+      }
       input.setVideoReservationId(undefined);
     }
     input.setError(
-      submissionError instanceof Error
-        ? submissionError.message
-        : "Your testimonial could not be submitted. Please try again.",
+      cancellationCleanupFailed
+        ? "The upload stopped, but its reservation could not be released. Refresh before trying again."
+        : submissionError instanceof Error &&
+            submissionError.message === "Video upload cancelled."
+          ? null
+          : submissionError instanceof Error
+            ? submissionError.message
+            : "Your testimonial could not be submitted. Please try again.",
     );
   } finally {
+    input.uploadAbortControllerRef.current = null;
+    input.setVideoUploadPhase("idle");
     input.resetBotVerification?.();
     input.setSubmitting(false);
   }
@@ -996,6 +1038,7 @@ export function CollectionFormShellView({
     input: {
       onProgress: (progress: number) => void;
       provider: "fake" | "mux";
+      signal?: AbortSignal;
       uploadUrl: string;
     },
   ) => Promise<void>;
@@ -1031,6 +1074,9 @@ export function CollectionFormShellView({
   const videoDurationSecondsRef = useRef<number | undefined>(undefined);
   const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
   const [videoProgress, setVideoProgress] = useState(0);
+  const [videoUploadPhase, setVideoUploadPhase] =
+    useState<VideoUploadPhase>("idle");
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
   const flowRef = useRef<HTMLElement | null>(null);
@@ -1048,6 +1094,15 @@ export function CollectionFormShellView({
     supportsBrowserRecording,
     () => false,
   );
+  useEffect(() => {
+    if (videoUploadPhase === "idle") return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [videoUploadPhase]);
   useEffect(() => {
     if (previousStepRef.current === step) return;
     previousStepRef.current = step;
@@ -1157,6 +1212,9 @@ export function CollectionFormShellView({
               onConsentAcceptedChange={setConsentAccepted}
               onEmailChange={setSubmitterEmail}
               onNameChange={setSubmitterName}
+              onCancelVideoUpload={() =>
+                uploadAbortControllerRef.current?.abort()
+              }
               onRatingChange={setRating}
               onRoleChange={setRole}
               onSubmit={(event) =>
@@ -1180,6 +1238,7 @@ export function CollectionFormShellView({
                   setStep,
                   setSubmitting,
                   setVideoProgress,
+                  setVideoUploadPhase,
                   setVideoReservationId,
                   resetBotVerification,
                   spokenLanguage,
@@ -1190,6 +1249,7 @@ export function CollectionFormShellView({
                   text,
                   textValid,
                   uploadAvatar,
+                  uploadAbortControllerRef,
                   uploadVideo,
                   videoDurationSeconds: videoDurationSecondsRef.current,
                   videoFile,
@@ -1202,6 +1262,8 @@ export function CollectionFormShellView({
               videoSelectionLocked={
                 proofType === "video" && videoReservationId !== undefined
               }
+              videoProgress={videoProgress}
+              videoUploadPhase={videoUploadPhase}
             />
           ) : null}
 

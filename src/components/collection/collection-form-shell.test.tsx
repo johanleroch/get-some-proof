@@ -294,6 +294,90 @@ describe("CollectionFormShellView", () => {
         submitterEmail: "alice@example.com",
       }),
     );
+    expect(submitVideo.mock.calls[0]?.[0]).not.toHaveProperty("publicSlug");
+  });
+
+  it("shows real upload progress and lets the Submitter cancel", async () => {
+    const cancelVideo = vi.fn().mockResolvedValue(null);
+    const uploadVideo = vi.fn(
+      (
+        _file: File,
+        input: { onProgress: (value: number) => void; signal?: AbortSignal },
+      ) =>
+        new Promise<void>((_resolve, reject) => {
+          input.onProgress(46);
+          input.signal?.addEventListener("abort", () =>
+            reject(new Error("Video upload cancelled.")),
+          );
+        }),
+    );
+    render(
+      <CollectionFormShellView
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Acme story",
+          logoUrl: null,
+          name: "Acme Studio",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-studio",
+        }}
+        cancelVideo={cancelVideo}
+        createDirectUpload={vi.fn().mockResolvedValue({
+          expiresAt: Date.now() + 60_000,
+          provider: "mux",
+          reservationId: "reservation-progress",
+          uploadUrl: "https://mux.example/upload",
+        })}
+        inspectVideo={vi.fn().mockResolvedValue({ durationSeconds: 42 })}
+        submitVideo={vi.fn()}
+        uploadVideo={uploadVideo}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Record or upload a video" }),
+    );
+    fireEvent.change(screen.getByLabelText("Upload a video"), {
+      target: {
+        files: [new File(["video"], "story.mp4", { type: "video/mp4" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("About you")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Your name"), {
+      target: { value: "Alice Martin" },
+    });
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.click(screen.getByLabelText(/at least 18 years old/i));
+    fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
+    fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
+
+    expect(await screen.findByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "46",
+    );
+    expect(screen.getByText("Uploading video — 46%")).toBeVisible();
+    const guardedNavigation = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(guardedNavigation);
+    expect(guardedNavigation.defaultPrevented).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel upload" }));
+
+    await waitFor(() =>
+      expect(cancelVideo).toHaveBeenCalledWith({
+        clientSubmissionId: expect.any(String),
+        reservationId: "reservation-progress",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Submit testimonial" }),
+    ).toBeEnabled();
+    const navigationAfterCancel = new Event("beforeunload", {
+      cancelable: true,
+    });
+    window.dispatchEvent(navigationAfterCancel);
+    expect(navigationAfterCancel.defaultPrevented).toBe(false);
   });
 
   it("resets failed bot verification and submits a retry with a fresh token", async () => {

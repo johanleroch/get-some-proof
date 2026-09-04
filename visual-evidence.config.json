@@ -137,6 +137,15 @@
       "requiresBackend": true
     },
     {
+      "slug": "video-upload-progress",
+      "title": "Video upload progress",
+      "path": "/c/:publicSlug",
+      "fixturePath": "/visual-evidence/video-upload-progress",
+      "heading": "Video upload progress",
+      "theme": "light",
+      "requiresBackend": true
+    },
+    {
       "slug": "collection-form-details",
       "title": "Collection Form - identity and consent",
       "path": "/c/:publicSlug",
@@ -184,6 +193,15 @@
     {
       "slug": "testimonial-inbox",
       "title": "Testimonial Inbox",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-player",
+      "title": "Testimonial Inbox - video player",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-inbox",
       "heading": "Inbox",
