@@ -208,7 +208,6 @@ export const prepare = internalMutation({
     subscriptionIds: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
-    await requireRecentAuthentication(ctx);
     const principal = await requireVerifiedPrincipal(ctx);
     const existing = await ctx.db
       .query("workspaceDeletions")
@@ -238,6 +237,7 @@ export const prepare = internalMutation({
         subscriptionIds: existing.subscriptionIds ?? [],
       };
     }
+    await requireRecentAuthentication(ctx);
     const access = await requireOrganizationPermission(
       ctx,
       { organizationId: args.organizationId },
@@ -280,6 +280,11 @@ export const prepare = internalMutation({
       deletionStartedAt: now,
       updatedAt: now,
     });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.workspaceDeletion.processDeletion,
+      { deletionId },
+    );
     const projections = await ctx.db
       .query("publicTestimonialProjections")
       .withIndex("by_organization", (index) =>
@@ -681,13 +686,12 @@ export const readPendingSubscription = internalQuery({
   ),
   handler: async (ctx, args) => {
     await requireDeletionAccess(ctx, args.deletionId);
-    const markers = await ctx.db
+    const marker = await ctx.db
       .query("workspaceDeletionSubscriptions")
-      .withIndex("by_deletion", (index) =>
-        index.eq("deletionId", args.deletionId),
+      .withIndex("by_deletion_canceled_at", (index) =>
+        index.eq("deletionId", args.deletionId).eq("canceledAt", undefined),
       )
-      .collect();
-    const marker = markers.find((candidate) => !candidate.canceledAt);
+      .first();
     return marker
       ? {
           markerId: marker._id,
@@ -724,8 +728,9 @@ export const claimDeletion = internalMutation({
     if (!deletion) return null;
     const pendingSubscription = await ctx.db
       .query("workspaceDeletionSubscriptions")
-      .withIndex("by_deletion", (index) => index.eq("deletionId", deletion._id))
-      .filter((filter) => filter.eq(filter.field("canceledAt"), undefined))
+      .withIndex("by_deletion_canceled_at", (index) =>
+        index.eq("deletionId", deletion._id).eq("canceledAt", undefined),
+      )
       .first();
     if (deletion.status === "deleted" && !pendingSubscription) return null;
     if (
@@ -782,8 +787,9 @@ export const releaseDeletion = internalMutation({
     if (!deletion || deletion.leaseId !== args.leaseId) return null;
     const pendingSubscription = await ctx.db
       .query("workspaceDeletionSubscriptions")
-      .withIndex("by_deletion", (index) => index.eq("deletionId", deletion._id))
-      .filter((filter) => filter.eq(filter.field("canceledAt"), undefined))
+      .withIndex("by_deletion_canceled_at", (index) =>
+        index.eq("deletionId", deletion._id).eq("canceledAt", undefined),
+      )
       .first();
     const completed = deletion.phase === "complete" && !pendingSubscription;
     await ctx.db.patch(deletion._id, {

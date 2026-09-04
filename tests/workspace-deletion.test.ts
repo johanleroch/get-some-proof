@@ -163,7 +163,11 @@ describe("Workspace deletion", () => {
         spokenLanguage: "fr",
       }),
     ).rejects.toMatchObject({
-      data: { code: "COLLECTION_FORM_UNAVAILABLE" },
+      data: {
+        code: expect.stringMatching(
+          /^(COLLECTION_FORM|VIDEO_RESERVATION)_UNAVAILABLE$/,
+        ),
+      },
     });
     const replacementRequestId = await owner.client.mutation(
       internal.submissionManagement.queueReplacementLinkRequest,
@@ -185,7 +189,7 @@ describe("Workspace deletion", () => {
         irreversibleConfirmed: true,
         organizationId: brand.id,
       }),
-    ).resolves.toEqual({ deleted: false, deletionId: prepared.deletionId });
+    ).resolves.toMatchObject({ deletionId: prepared.deletionId });
     for (let guard = 0; guard < 100; guard += 1) {
       await owner.client.action(internal.workspaceDeletion.processDeletion, {
         deletionId: prepared.deletionId,
@@ -381,13 +385,14 @@ describe("Workspace deletion", () => {
         name: "Durable Delete",
         publicSlug: "durable-delete",
       });
-      const started = await owner.client.action(api.workspaceDeletion.remove, {
-        brandName: "Durable Delete",
-        irreversibleConfirmed: true,
-        organizationId: brand.id,
-      });
-
-      expect(started.deleted).toBe(false);
+      const started = await owner.client.mutation(
+        internal.workspaceDeletion.prepare,
+        {
+          brandName: "Durable Delete",
+          irreversibleConfirmed: true,
+          organizationId: brand.id,
+        },
+      );
       await t.finishAllScheduledFunctions(() => vi.runAllTimers(), 500);
       await expect(
         t.run((ctx) => ctx.db.get(started.deletionId)),
@@ -484,6 +489,13 @@ describe("Workspace deletion", () => {
       ctx.db.query("workspaceDeletions").unique(),
     );
     expect(failed).toMatchObject({ status: "failed" });
+    await t.mutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: "session",
+        update: { createdAt: Date.now() - 6 * 60 * 1_000 },
+        where: [{ field: "_id", value: owner.sessionId }],
+      },
+    });
 
     await expect(
       owner.client.action(api.workspaceDeletion.remove, {

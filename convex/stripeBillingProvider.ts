@@ -118,7 +118,17 @@ export async function cancelStripeSubscription(
     });
   }
   const stripe = new Stripe(secretKey);
-  await stripe.subscriptions.cancel(subscriptionId, {}, { idempotencyKey });
+  try {
+    await stripe.subscriptions.cancel(subscriptionId, {}, { idempotencyKey });
+  } catch (error) {
+    if (
+      error instanceof Stripe.errors.StripeInvalidRequestError &&
+      error.code === "resource_missing"
+    ) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {

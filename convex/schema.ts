@@ -746,5 +746,6 @@ export default defineSchema({
     canceledAt: v.optional(v.number()),
   })
     .index("by_deletion", ["deletionId"])
+    .index("by_deletion_canceled_at", ["deletionId", "canceledAt"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"]),
 });
