@@ -169,6 +169,37 @@ describe("Workspace deletion", () => {
         ),
       },
     });
+    await expect(
+      owner.client.mutation(internal.videoMedia.attachDownloadAsset, {
+        organizationId: brand.id,
+        playbackId: "download-playback-after-workspace-delete",
+        provider: "fake",
+        providerAssetId: "download-asset-after-workspace-delete",
+        testimonialId,
+      }),
+    ).resolves.toMatchObject({
+      accepted: false,
+      cleanupJobId: expect.any(String),
+      providerAssetId: "download-asset-after-workspace-delete",
+    });
+    const lateDownloadCleanup = await t.run((ctx) =>
+      ctx.db
+        .query("videoProviderCleanupJobs")
+        .withIndex("by_organization", (index) =>
+          index.eq("organizationId", brand.id),
+        )
+        .filter((query) =>
+          query.eq(
+            query.field("providerAssetId"),
+            "download-asset-after-workspace-delete",
+          ),
+        )
+        .unique(),
+    );
+    expect(lateDownloadCleanup).toMatchObject({
+      organizationId: brand.id,
+      providerAssetId: "download-asset-after-workspace-delete",
+    });
     const replacementRequestId = await owner.client.mutation(
       internal.submissionManagement.queueReplacementLinkRequest,
       {

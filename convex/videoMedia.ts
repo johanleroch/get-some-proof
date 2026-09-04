@@ -115,15 +115,10 @@ export const attachDownloadAsset = internalMutation({
     providerAssetId: v.string(),
   }),
   handler: async (ctx, args) => {
-    const access = await requireOrganizationPermission(
-      ctx,
-      { organizationId: args.organizationId },
-      "ownership:manage",
-    );
     const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
       attempts: 0,
       createdAt: Date.now(),
-      organizationId: access.organization._id,
+      organizationId: args.organizationId,
       provider: args.provider,
       providerAssetId: args.providerAssetId,
       testimonialId: args.testimonialId,
@@ -139,6 +134,15 @@ export const attachDownloadAsset = internalMutation({
       playbackId: args.playbackId,
       providerAssetId: args.providerAssetId,
     };
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization || organization.deletionStartedAt !== undefined) {
+      return candidateCleanup;
+    }
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
     const testimonial = await ctx.db.get(args.testimonialId);
     if (
       !testimonial ||
