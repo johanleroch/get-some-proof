@@ -141,7 +141,8 @@ export const generateAvatarUploadUrl = mutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand) collectionUnavailable();
+    if (!brand || brand.deletionStartedAt !== undefined)
+      collectionUnavailable();
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,
     );
@@ -381,7 +382,8 @@ export const createTextRecords = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand) collectionUnavailable();
+    if (!brand || brand.deletionStartedAt !== undefined)
+      collectionUnavailable();
 
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,

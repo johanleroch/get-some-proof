@@ -1,9 +1,11 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { redirect } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { publicSlugFromBrandName } from "@convex/domain/brand";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import {
@@ -11,6 +13,16 @@ import {
   type PublicWallSettingsValue,
 } from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +97,18 @@ export function OrganizationSettings({
   slug: string;
 }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
+  const deletionBySlug = useQuery(api.workspaceDeletion.getByOrganizationSlug, {
+    slug,
+  });
+  const [startedDeletion, setStartedDeletion] = useState<{
+    brandName: string;
+    deletionId: Id<"workspaceDeletions">;
+    organizationId: Id<"organizations">;
+  } | null>(null);
+  const deletionStatus = useQuery(
+    api.workspaceDeletion.getStatus,
+    startedDeletion ? { deletionId: startedDeletion.deletionId } : "skip",
+  );
   const access = useQuery(
     api.organizationAuthorization.getMine,
     organization ? { organizationId: organization.id } : "skip",
@@ -101,9 +125,49 @@ export function OrganizationSettings({
     organization ? { organizationId: organization.id } : "skip",
   );
   const updateWallSettings = useMutation(api.wallCustomization.updateSettings);
+  const exportWorkspace = useAction(api.workspaceDeletion.exportData);
+  const deleteWorkspace = useAction(api.workspaceDeletion.remove);
+
+  if (deletionStatus?.status === "deleted") redirect("/dashboard");
+
+  const activeDeletion = startedDeletion
+    ? {
+        ...startedDeletion,
+        lastError: deletionStatus?.lastError,
+        phase: deletionStatus?.phase ?? deletionBySlug?.phase ?? "queued",
+        status:
+          deletionStatus?.status ??
+          deletionBySlug?.status ??
+          ("requested" as const),
+      }
+    : deletionBySlug;
+
+  if (activeDeletion) {
+    return (
+      <WorkspaceDeletionProgress
+        brandName={activeDeletion.brandName}
+        lastError={activeDeletion.lastError}
+        onRetry={async () => {
+          const result = await deleteWorkspace({
+            brandName: activeDeletion.brandName,
+            irreversibleConfirmed: true,
+            organizationId: activeDeletion.organizationId,
+          });
+          setStartedDeletion({
+            brandName: activeDeletion.brandName,
+            deletionId: result.deletionId,
+            organizationId: activeDeletion.organizationId,
+          });
+        }}
+        phase={activeDeletion.phase}
+        status={activeDeletion.status}
+      />
+    );
+  }
 
   if (
     organization === undefined ||
+    deletionBySlug === undefined ||
     (organization && (access === undefined || wallSettings === undefined))
   ) {
     return (
@@ -160,6 +224,36 @@ export function OrganizationSettings({
       publicSlug={organization.publicSlug}
       publicSlugCanChange={organization.publicSlugCanChange}
       wallSettings={wallSettings}
+      workspaceDeletion={
+        access?.can.manageOwnership
+          ? {
+              inboxHref: `/org/${slug}/inbox`,
+              onDelete: async (brandName) => {
+                const result = await deleteWorkspace({
+                  brandName,
+                  irreversibleConfirmed: true,
+                  organizationId,
+                });
+                setStartedDeletion({
+                  brandName,
+                  deletionId: result.deletionId,
+                  organizationId,
+                });
+              },
+              onExport: async () => {
+                const data = await exportWorkspace({ organizationId });
+                const url = URL.createObjectURL(
+                  new Blob([data], { type: "application/json" }),
+                );
+                const link = document.createElement("a");
+                link.download = `${organization.publicSlug}-export.json`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+              },
+            }
+          : undefined
+      }
     />
   );
 }
@@ -179,6 +273,7 @@ export function OrganizationSettingsView({
   publicSlug,
   publicSlugCanChange,
   wallSettings,
+  workspaceDeletion,
 }: {
   canChangePublicSlug: boolean;
   canManageWall: boolean;
@@ -196,6 +291,11 @@ export function OrganizationSettingsView({
   publicSlug: string;
   publicSlugCanChange: boolean;
   wallSettings?: PublicWallSettingsValue;
+  workspaceDeletion?: {
+    inboxHref: string;
+    onDelete: (brandName: string) => Promise<void>;
+    onExport: () => Promise<void>;
+  };
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -343,7 +443,212 @@ export function OrganizationSettingsView({
           publicSlug={publicSlug}
         />
       ) : null}
+
+      {workspaceDeletion ? (
+        <WorkspaceDeletionSection
+          brandName={name}
+          inboxHref={workspaceDeletion.inboxHref}
+          onDelete={workspaceDeletion.onDelete}
+          onExport={workspaceDeletion.onExport}
+        />
+      ) : null}
     </section>
+  );
+}
+
+export function WorkspaceDeletionProgress({
+  brandName,
+  lastError,
+  onRetry,
+  phase,
+  status,
+}: {
+  brandName: string;
+  lastError?: string;
+  onRetry: () => Promise<void>;
+  phase: string;
+  status: "requested" | "failed" | "deleted";
+}) {
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const phaseLabel =
+    phase === "providerCleanup" || phase === "media"
+      ? "Deleting hosted videos"
+      : phase.startsWith("stripe")
+        ? "Removing billing records"
+        : phase === "complete"
+          ? "Finishing deletion"
+          : "Removing private Workspace data";
+
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      await onRetry();
+    } catch (error) {
+      setRetryError(error instanceof Error ? error.message : "Retry failed.");
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-2xl space-y-4 px-6 py-12">
+      <div>
+        <h1 className="text-2xl font-semibold">Deleting {brandName}</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Public access is disabled and will not be restored. You may leave this
+          page; deletion continues in the background.
+        </p>
+      </div>
+      <div className="bg-card space-y-3 rounded-xl border p-6 shadow-xs">
+        <p className="font-medium" role="status">
+          {status === "failed" ? "Cleanup needs another attempt" : phaseLabel}
+        </p>
+        <p className="text-muted-foreground text-sm">
+          {status === "failed"
+            ? "A provider cleanup step failed. The Workspace remains private and the same deletion can be resumed safely."
+            : "The durable cleanup is progressing in small, retryable steps."}
+        </p>
+        {lastError || retryError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {retryError ?? lastError}
+          </p>
+        ) : null}
+        {status === "failed" ? (
+          <Button
+            disabled={retrying}
+            onClick={() => void retry()}
+            type="button"
+          >
+            {retrying ? "Retrying cleanup…" : "Retry cleanup now"}
+          </Button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+export function WorkspaceDeletionSection({
+  brandName,
+  inboxHref,
+  initialConfirmation = "",
+  initialDialogOpen = false,
+  onDelete,
+  onExport,
+}: {
+  brandName: string;
+  inboxHref: string;
+  initialConfirmation?: string;
+  initialDialogOpen?: boolean;
+  onDelete: (brandName: string) => Promise<void>;
+  onExport: () => Promise<void>;
+}) {
+  const [confirmation, setConfirmation] = useState(initialConfirmation);
+  const [dialogOpen, setDialogOpen] = useState(initialDialogOpen);
+  const [pending, setPending] = useState<"delete" | "export" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setPending("export");
+    setError(null);
+    try {
+      await onExport();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Export failed.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function remove() {
+    setPending("delete");
+    setError(null);
+    try {
+      await onDelete(confirmation);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Deletion failed.");
+      setDialogOpen(false);
+      setPending(null);
+    }
+  }
+
+  return (
+    <div className="border-destructive/40 bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs">
+      <div>
+        <h2 className="font-semibold">Delete Workspace</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          This permanently removes the Collection Form, Public Wall, Embed,
+          private data, and every hosted video. There is no recovery window.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          disabled={pending !== null}
+          onClick={() => void download()}
+          type="button"
+          variant="outline"
+        >
+          {pending === "export" ? "Preparing export…" : "Download data first"}
+        </Button>
+        <Button asChild variant="outline">
+          <a href={inboxHref}>Download eligible MP4s from Inbox</a>
+        </Button>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="delete-workspace-name">
+          Type <span className="font-semibold">{brandName}</span> to continue
+        </Label>
+        <Input
+          autoComplete="off"
+          id="delete-workspace-name"
+          onChange={(event) => setConfirmation(event.target.value)}
+          value={confirmation}
+        />
+      </div>
+      {error ? (
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <Button
+        disabled={confirmation !== brandName || pending !== null}
+        onClick={() => setDialogOpen(true)}
+        type="button"
+        variant="destructive"
+      >
+        Review irreversible deletion
+      </Button>
+
+      <AlertDialog onOpenChange={setDialogOpen} open={dialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete {brandName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Public access stops immediately. Billing is canceled and all
+              private records, tokens, captions, thumbnails, renditions, and
+              source videos are deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row">
+            <AlertDialogCancel disabled={pending === "delete"}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                disabled={pending === "delete"}
+                onClick={() => void remove()}
+                variant="destructive"
+              >
+                {pending === "delete"
+                  ? "Deleting Workspace…"
+                  : "Delete Workspace permanently"}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 

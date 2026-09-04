@@ -63,6 +63,7 @@ import type * as videoRetryDelivery from "../videoRetryDelivery.js";
 import type * as videoRetryLinks from "../videoRetryLinks.js";
 import type * as videoWebhooks from "../videoWebhooks.js";
 import type * as wallCustomization from "../wallCustomization.js";
+import type * as workspaceDeletion from "../workspaceDeletion.js";
 
 import type {
   ApiFromModules,
@@ -126,6 +127,7 @@ declare const fullApi: ApiFromModules<{
   videoRetryLinks: typeof videoRetryLinks;
   videoWebhooks: typeof videoWebhooks;
   wallCustomization: typeof wallCustomization;
+  workspaceDeletion: typeof workspaceDeletion;
 }>;
 
 /**

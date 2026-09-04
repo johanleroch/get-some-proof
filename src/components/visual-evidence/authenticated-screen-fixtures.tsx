@@ -11,7 +11,11 @@ import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-no
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { VideoRetryFormView } from "@/components/collection/video-retry-form";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
-import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
+import {
+  OrganizationSettingsView,
+  WorkspaceDeletionProgress,
+  WorkspaceDeletionSection,
+} from "@/components/organizations/organization-settings";
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
@@ -436,6 +440,39 @@ export function OrganizationSettingsScreenFixture() {
           role: true,
         },
       }}
+    />
+  );
+}
+
+export function WorkspaceDeletionScreenFixture() {
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="dashboard-page-title">Brand settings</h1>
+        <p className="dashboard-page-description mt-1">
+          Update the identity shared across your public proof surfaces.
+        </p>
+      </div>
+      <WorkspaceDeletionSection
+        brandName="Visual Studio"
+        inboxHref="/org/visual-studio/inbox"
+        initialConfirmation="Visual Studio"
+        initialDialogOpen
+        onDelete={async () => undefined}
+        onExport={async () => undefined}
+      />
+    </section>
+  );
+}
+
+export function WorkspaceDeletionProgressScreenFixture() {
+  return (
+    <WorkspaceDeletionProgress
+      brandName="Visual Studio"
+      lastError="Mux asset deletion failed (503)"
+      onRetry={async () => undefined}
+      phase="providerCleanup"
+      status="failed"
     />
   );
 }

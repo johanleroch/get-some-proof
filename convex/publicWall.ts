@@ -31,7 +31,7 @@ export const getBrand = query({
         index.eq("publicSlug", publicSlug),
       )
       .unique();
-    if (!brand) return null;
+    if (!brand || brand.deletionStartedAt !== undefined) return null;
     const [entitlement, firstProjection] = await Promise.all([
       getOrganizationBillingEntitlement(ctx, brand._id),
       ctx.db
@@ -69,7 +69,7 @@ export const list = query({
         index.eq("publicSlug", publicSlug),
       )
       .unique();
-    if (!brand) {
+    if (!brand || brand.deletionStartedAt !== undefined) {
       return { continueCursor: "", isDone: true, page: [] };
     }
     const page = await ctx.db

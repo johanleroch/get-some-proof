@@ -81,7 +81,8 @@ export const recordPublicCollectionRequest = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!organization) return null;
+    if (!organization || organization.deletionStartedAt !== undefined)
+      return null;
     await consumeCollectionRequest(ctx, {
       organizationId: organization._id,
       submissionType: args.submissionType,

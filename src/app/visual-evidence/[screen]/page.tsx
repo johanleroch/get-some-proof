@@ -18,6 +18,8 @@ import {
   TestimonialDeleteScreenFixture,
   TestimonialInboxScreenFixture,
   VideoRetryScreenFixture,
+  WorkspaceDeletionScreenFixture,
+  WorkspaceDeletionProgressScreenFixture,
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
@@ -34,6 +36,8 @@ const screens = {
   "testimonial-inbox": TestimonialInboxScreenFixture,
   "testimonial-delete": TestimonialDeleteScreenFixture,
   "video-retry": VideoRetryScreenFixture,
+  "workspace-delete": WorkspaceDeletionScreenFixture,
+  "workspace-delete-progress": WorkspaceDeletionProgressScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,

@@ -115,30 +115,59 @@ export const attachDownloadAsset = internalMutation({
     providerAssetId: v.string(),
   }),
   handler: async (ctx, args) => {
-    const access = await requireOrganizationPermission(
-      ctx,
-      { organizationId: args.organizationId },
-      "ownership:manage",
-    );
+    const now = Date.now();
     const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
       attempts: 0,
-      createdAt: Date.now(),
-      organizationId: access.organization._id,
+      createdAt: now,
+      organizationId: args.organizationId,
       provider: args.provider,
       providerAssetId: args.providerAssetId,
       testimonialId: args.testimonialId,
     });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.videoMedia.processProviderCleanup,
-      { cleanupJobId },
-    );
+    const workspaceDeletion = await ctx.db
+      .query("workspaceDeletions")
+      .withIndex("by_organization", (index) =>
+        index.eq("organizationId", args.organizationId),
+      )
+      .unique();
+    if (workspaceDeletion) {
+      await ctx.db.patch(workspaceDeletion._id, {
+        lastError: undefined,
+        leaseExpiresAt: undefined,
+        leaseId: undefined,
+        nextRetryAt: undefined,
+        phase: "providerCleanup",
+        status: "requested",
+        updatedAt: now,
+      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.workspaceDeletion.processDeletion,
+        { deletionId: workspaceDeletion._id },
+      );
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.videoMedia.processProviderCleanup,
+        { cleanupJobId },
+      );
+    }
     const candidateCleanup = {
       accepted: false,
       cleanupJobId,
       playbackId: args.playbackId,
       providerAssetId: args.providerAssetId,
     };
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization || organization.deletionStartedAt !== undefined) {
+      return candidateCleanup;
+    }
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    ).catch(() => null);
+    if (!access) return candidateCleanup;
     const testimonial = await ctx.db.get(args.testimonialId);
     if (
       !testimonial ||
@@ -202,13 +231,8 @@ export const completeProviderCleanup = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const access = await requireOrganizationPermission(
-      ctx,
-      { organizationId: args.organizationId },
-      "ownership:manage",
-    );
     const job = await ctx.db.get(args.cleanupJobId);
-    if (job && job.organizationId === access.organization._id) {
+    if (job && job.organizationId === args.organizationId) {
       await ctx.db.delete(job._id);
     }
     return null;

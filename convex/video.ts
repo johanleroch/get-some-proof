@@ -57,6 +57,17 @@ function unavailable(code: string, message: string): never {
   throw new ConvexError({ code, message });
 }
 
+async function requireOpenVideoOrganization(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  if (!organization || organization.deletionStartedAt !== undefined) {
+    unavailable("COLLECTION_FORM_UNAVAILABLE", "Collection Form unavailable.");
+  }
+  return organization;
+}
+
 function normalizedClientSubmissionId(value: string) {
   const normalized = value.trim();
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(normalized)) {
@@ -90,6 +101,7 @@ async function reserveForOrganization(
   organizationId: Id<"organizations">,
   requestedClientSubmissionId: string,
 ) {
+  await requireOpenVideoOrganization(ctx, organizationId);
   const clientSubmissionId = normalizedClientSubmissionId(
     requestedClientSubmissionId,
   );
@@ -183,7 +195,7 @@ export const reserveCapacity = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand) {
+    if (!brand || brand.deletionStartedAt !== undefined) {
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -220,6 +232,7 @@ export const attachProviderUpload = internalMutation({
         "Video reservation expired.",
       );
     }
+    await requireOpenVideoOrganization(ctx, reservation.organizationId);
     const now = Date.now();
     await ctx.db.patch(reservation._id, {
       providerUploadId: args.providerUploadId,
@@ -289,6 +302,7 @@ export const reserveRetryCapacity = internalMutation({
         "This replacement link is no longer available.",
       );
     }
+    await requireOpenVideoOrganization(ctx, retry.organizationId);
     const reserved = await reserveForOrganization(
       ctx,
       retry.organizationId,
@@ -360,6 +374,7 @@ export const attachRetryProviderUpload = internalMutation({
         "This replacement upload is no longer available.",
       );
     }
+    await requireOpenVideoOrganization(ctx, reservation.organizationId);
     const now = Date.now();
     await ctx.db.patch(reservation._id, {
       providerUploadId: args.providerUploadId,
@@ -770,7 +785,7 @@ export const createVideoRecords = internalMutation({
       );
     }
     const brand = await ctx.db.get(reservation.organizationId);
-    if (!brand)
+    if (!brand || brand.deletionStartedAt !== undefined)
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -1128,6 +1143,7 @@ export const completeFakeAsset = internalMutation({
         "Video reservation expired.",
       );
     }
+    await requireOpenVideoOrganization(ctx, reservation.organizationId);
     const now = Date.now();
     await ctx.db.patch(asset._id, {
       captionsStatus: "ready",
