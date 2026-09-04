@@ -7,7 +7,10 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { TestimonialInboxView } from "./testimonial-inbox";
+import {
+  TestimonialDeleteDialog,
+  TestimonialInboxView,
+} from "./testimonial-inbox";
 
 const testimonial = {
   avatarUrl: null,
@@ -61,6 +64,63 @@ describe("TestimonialInboxView", () => {
     expect(
       screen.getByText("No Testimonials match these filters."),
     ).toBeInTheDocument();
+  });
+
+  it("identifies the exact Testimonial and keeps download separate from deletion", () => {
+    const onDelete = vi.fn();
+    const onDownload = vi.fn();
+    const video = {
+      ...testimonial,
+      captionsStatus: "ready" as const,
+      canDownload: true,
+      submissionType: "video" as const,
+      videoStatus: "ready" as const,
+    };
+    render(
+      <TestimonialDeleteDialog
+        onDelete={onDelete}
+        onDownload={onDownload}
+        onOpenChange={vi.fn()}
+        pending={false}
+        target={video}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Permanently delete Camille Test's Testimonial?",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Video Testimonial submitted .*testimonial-/),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Download MP4 first" }));
+    expect(onDownload).toHaveBeenCalledWith(video);
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Delete permanently" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it("does not offer an unauthorized MP4 download before deletion", () => {
+    render(
+      <TestimonialDeleteDialog
+        onDelete={vi.fn()}
+        onDownload={vi.fn()}
+        onOpenChange={vi.fn()}
+        pending={false}
+        target={{
+          ...testimonial,
+          captionsStatus: "ready" as const,
+          canDownload: false,
+          submissionType: "video" as const,
+          videoStatus: "ready" as const,
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Download MP4 first" }),
+    ).toBeNull();
   });
 
   it("shows reversible Spam quarantine without ordinary moderation actions", () => {
@@ -118,6 +178,7 @@ describe("TestimonialInboxView", () => {
       consentAcceptedAt: 1,
       createdAt: 2,
       moderationStatus: "pending" as const,
+      canDownload: true,
       submissionType: "video" as const,
       submitterEmail: "camille@example.invalid",
       submitterName: "Camille Test",

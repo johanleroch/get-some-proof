@@ -200,6 +200,15 @@ describe("Video media ownership", () => {
         testimonialId,
       }),
     ).rejects.toMatchObject({ data: { code: "TESTIMONIAL_UNAVAILABLE" } });
+    await expect(
+      outsider.client.action(api.videoMedia.remove, {
+        organizationId: otherBrand.id,
+        testimonialId,
+      }),
+    ).rejects.toMatchObject({ data: { code: "TESTIMONIAL_UNAVAILABLE" } });
+    await expect(
+      t.run((ctx) => ctx.db.get(testimonialId)),
+    ).resolves.not.toBeNull();
   });
 
   it("rejects video deletion through the legacy text-only mutation", async () => {
@@ -443,6 +452,16 @@ describe("Video media ownership", () => {
       publicSlug: "acme-proof",
     });
     const testimonialId = await createReadyVideo(t, brand.id, "delete");
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      status: "archived",
+      testimonialId,
+    });
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      status: "published",
+      testimonialId,
+    });
     await t.run(async (ctx) => {
       const now = Date.now();
       const primaryAsset = await ctx.db
@@ -488,13 +507,46 @@ describe("Video media ownership", () => {
         tokenHash: "retry".padEnd(64, "a"),
         videoAssetId: oldAssetId,
       });
+      const olderReservationId = await ctx.db.insert("videoReservations", {
+        clientSubmissionId: "failed-older",
+        createdAt: now - 1,
+        expiresAt: now,
+        organizationId: brand.id,
+        plan: "premium",
+        providerUploadId: "failed-older-upload",
+        status: "released",
+        updatedAt: now,
+      });
+      const olderAssetId = await ctx.db.insert("videoAssets", {
+        captionsStatus: "failed",
+        createdAt: now - 1,
+        fileSizeBytes: 1_024,
+        mimeType: "video/mp4",
+        organizationId: brand.id,
+        provider: "mux",
+        providerAssetId: "failed-older-asset",
+        providerUploadId: "failed-older-upload",
+        reservationId: olderReservationId,
+        spokenLanguage: "fr",
+        status: "failed",
+        updatedAt: now,
+      });
+      await ctx.db.insert("videoRetryLinks", {
+        createdAt: now - 1,
+        expiresAt: now + 60_000,
+        organizationId: brand.id,
+        testimonialId,
+        tokenHash: "older-retry".padEnd(64, "a"),
+        videoAssetId: olderAssetId,
+      });
     });
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 503 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
@@ -522,10 +574,28 @@ describe("Video media ownership", () => {
         testimonialId,
       }),
     ).resolves.toEqual({ deleted: true });
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    await t.finishInProgressScheduledFunctions();
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(5);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.mux.com/video/v1/assets/failed-original-asset",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.mux.com/video/v1/assets/failed-older-asset",
+      expect.objectContaining({ method: "DELETE" }),
+    );
 
     const remaining = await t.run(async (ctx) => ({
       assets: await ctx.db.query("videoAssets").collect(),
+      audits: await ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", brand.id)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(testimonialId)),
+        )
+        .collect(),
       consents: await ctx.db.query("publicationConsents").collect(),
       cleanupJobs: await ctx.db.query("videoProviderCleanupJobs").collect(),
       deletions: await ctx.db.query("videoMediaDeletions").collect(),
@@ -535,6 +605,12 @@ describe("Video media ownership", () => {
     }));
     expect(remaining).toEqual({
       assets: [],
+      audits: expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "testimonial.deleted",
+          targetLabel: "Deleted Testimonial",
+        }),
+      ]),
       cleanupJobs: [],
       consents: [],
       deletions: [
@@ -548,6 +624,10 @@ describe("Video media ownership", () => {
       reservations: [],
       testimonials: [],
     });
+    expect(remaining.audits.map((event) => event.targetLabel)).not.toContain(
+      "Camille Test",
+    );
+    expect(remaining.audits).toHaveLength(1);
     expect(remaining.deletions[0]).not.toHaveProperty("lastError");
     expect(remaining.deletions[0]).toMatchObject({ providerAssets: [] });
     expect(JSON.stringify(remaining.deletions)).not.toContain("private@");

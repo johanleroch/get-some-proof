@@ -1,8 +1,9 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { query, type MutationCtx } from "./_generated/server";
+import { internalMutation, query, type MutationCtx } from "./_generated/server";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 
 export const auditEventTypeValidator = v.union(
@@ -98,6 +99,68 @@ export async function recordOrganizationAuditEvent(
     occurredAt: event.occurredAt ?? Date.now(),
   });
 }
+
+const testimonialAuditPurgeBatchSize = 64;
+
+async function purgeTestimonialAuditBatch(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  testimonialId: Id<"testimonials">,
+  retainedEventId: Id<"auditEvents">,
+) {
+  const events = await ctx.db
+    .query("auditEvents")
+    .withIndex("by_organization_target", (index) =>
+      index
+        .eq("organizationId", organizationId)
+        .eq("targetType", "testimonial")
+        .eq("targetId", String(testimonialId)),
+    )
+    .take(testimonialAuditPurgeBatchSize + 1);
+  const obsoleteEvents = events
+    .filter((event) => event._id !== retainedEventId)
+    .slice(0, testimonialAuditPurgeBatchSize);
+  await Promise.all(obsoleteEvents.map((event) => ctx.db.delete(event._id)));
+  if (obsoleteEvents.length === testimonialAuditPurgeBatchSize) {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.auditEvents.purgeTestimonialAuditTrailBatch,
+      { organizationId, retainedEventId, testimonialId },
+    );
+  }
+}
+
+export async function beginTestimonialAuditPurge(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  testimonialId: Id<"testimonials">,
+  retainedEventId: Id<"auditEvents">,
+) {
+  await purgeTestimonialAuditBatch(
+    ctx,
+    organizationId,
+    testimonialId,
+    retainedEventId,
+  );
+}
+
+export const purgeTestimonialAuditTrailBatch = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    retainedEventId: v.id("auditEvents"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await purgeTestimonialAuditBatch(
+      ctx,
+      args.organizationId,
+      args.testimonialId,
+      args.retainedEventId,
+    );
+    return null;
+  },
+});
 
 const auditEventSummary = v.object({
   id: v.id("auditEvents"),

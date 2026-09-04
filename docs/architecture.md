@@ -39,7 +39,13 @@ All transactional email goes through `convex/email/provider.ts`. Callers and tem
 
 ## Audit Events
 
-`auditEvents` is an append-only application table partitioned by Organization. Events copy stable actor and target labels so attribution survives Project deletion or Membership deactivation. Payloads expose no Invitation token, credential, provider secret, or delivery idempotency value. Owner and Admin can read the paginated application log. convex-authz keeps its own separate history of authorization changes.
+`auditEvents` is an append-only application table partitioned by Organization. Events copy stable actor and target labels so attribution survives Project deletion or Membership deactivation. Permanent Testimonial deletion is the narrow privacy exception: the prior event stream for that Testimonial is deleted in bounded resumable batches and replaced by one immutable `testimonial.deleted` event containing no submitter content or identity. Payloads expose no Invitation token, credential, provider secret, or delivery idempotency value. Owner and Admin can read the paginated application log. convex-authz keeps its own separate history of authorization changes.
+
+## Permanent Testimonial deletion
+
+Permanent Deletion stays separate from reversible Archive. The Inbox names the submitter, type, submission time, and Testimonial ID, offers an authorized Pro MP4 download as an independent action, and requires a second destructive confirmation. The confirmation transaction immediately removes the Public Projection, private content, consent, avatar storage, and the first bounded batch of related history. Any remaining Spam quarantine, delivery, replacement-link, revision, and audit rows are purged by resumable scheduled batches while the consumed Free Collection Credit and one content-free audit result remain; replay is idempotent through that audit tombstone.
+
+Video deletion first records an application tombstone containing only provider cleanup targets and immediately removes the Public Projection. Mux source and derived download assets are deleted through the provider adapter; failures leave the tombstone retryable and cannot republish the Testimonial. Finalization removes consent, private identity, delivery and replacement state, reservations, local media metadata, retention state, and avatar storage, which frees the Pro Video Slot. Provider retries and late derived-asset cleanup are idempotent.
 
 ## Workspace Billing and Pro Entitlement
 

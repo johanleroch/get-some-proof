@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
 import { buildPublicationConsent } from "@convex/domain/submission";
 import {
+  addStripeSubscription,
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
@@ -150,6 +151,29 @@ describe("Testimonial moderation and Public Projection", () => {
       organizationId: brand.id,
       status: "published",
       testimonialId: submitted.testimonialId,
+    });
+    await expect(
+      owner.client.query(api.testimonialModeration.listInbox, {
+        organizationId: brand.id,
+        paginationOpts: { cursor: null, numItems: 20 },
+        sort: "newest",
+        submissionType: "video",
+      }),
+    ).resolves.toMatchObject({
+      page: [expect.objectContaining({ canDownload: false })],
+    });
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_inbox_download");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_inbox_download");
+    await addStripeSubscription(t, brand.id, "active");
+    await expect(
+      owner.client.query(api.testimonialModeration.listInbox, {
+        organizationId: brand.id,
+        paginationOpts: { cursor: null, numItems: 20 },
+        sort: "newest",
+        submissionType: "video",
+      }),
+    ).resolves.toMatchObject({
+      page: [expect.objectContaining({ canDownload: true })],
     });
 
     const wall = await t.query(api.publicWall.list, {
@@ -499,6 +523,12 @@ describe("Testimonial moderation and Public Projection", () => {
       "acme-proof",
       "delete-submission",
     );
+    const avatarStorageId = await t.run(async (ctx) => {
+      const storageId = await ctx.storage.store(new Blob(["private avatar"]));
+      await ctx.db.patch(storageId, { contentType: "image/jpeg" });
+      await ctx.db.patch(created.testimonialId, { avatarStorageId: storageId });
+      return storageId;
+    });
     await owner.client.mutation(api.testimonialModeration.setStatus, {
       organizationId: brand.id,
       status: "published",
@@ -509,6 +539,12 @@ describe("Testimonial moderation and Public Projection", () => {
       organizationId: brand.id,
       testimonialId: created.testimonialId,
     });
+    await expect(
+      owner.client.mutation(api.testimonialModeration.remove, {
+        organizationId: brand.id,
+        testimonialId: created.testimonialId,
+      }),
+    ).resolves.toEqual({ deleted: true });
 
     await expect(
       t.query(api.publicWall.list, {
@@ -517,16 +553,121 @@ describe("Testimonial moderation and Public Projection", () => {
       }),
     ).resolves.toMatchObject({ page: [] });
     const remaining = await t.run(async (ctx) => ({
+      audits: await ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", brand.id)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(created.testimonialId)),
+        )
+        .collect(),
+      avatar: await ctx.db.system.get("_storage", avatarStorageId),
+      credit: await ctx.db
+        .query("collectionCredits")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", created.testimonialId),
+        )
+        .unique(),
       consents: await ctx.db.query("publicationConsents").collect(),
       deliveries: await ctx.db.query("submissionEmailDeliveries").collect(),
       projections: await ctx.db.query("publicTestimonialProjections").collect(),
       testimonials: await ctx.db.query("testimonials").collect(),
     }));
     expect(remaining).toEqual({
+      audits: expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "testimonial.deleted",
+          targetLabel: "Deleted Testimonial",
+        }),
+      ]),
+      avatar: null,
+      credit: expect.objectContaining({
+        testimonialId: created.testimonialId,
+      }),
       consents: [],
       deliveries: [],
       projections: [],
       testimonials: [],
+    });
+    expect(remaining.audits.map((event) => event.targetLabel)).not.toContain(
+      "Camille Test",
+    );
+    expect(remaining.audits).toHaveLength(1);
+    expect(remaining.credit).not.toHaveProperty("restoredAt");
+  });
+
+  it("removes a prior Spam quarantine after undo and permanent deletion", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t, "owner-delete-spam");
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "delete-spam-brand",
+    });
+    const created = await createPendingTestimonial(
+      t,
+      "delete-spam-brand",
+      "delete-spam-history",
+    );
+
+    await owner.client.mutation(api.testimonialModeration.markSpam, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+    await owner.client.mutation(api.testimonialModeration.undoSpam, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 40; index += 1) {
+        await ctx.db.insert("spamQuarantines", {
+          creditRestored: false,
+          expiresAt: Date.now() - index,
+          organizationId: brand.id,
+          previousModerationStatus: "pending",
+          reportedAt: Date.now() - index,
+          status: "undone",
+          testimonialId: created.testimonialId,
+          updatedAt: Date.now(),
+        });
+      }
+    });
+    await owner.client.mutation(api.testimonialModeration.remove, {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    });
+    await t.mutation(
+      internal.testimonialDeletion.continueTestimonialRelationshipPurge,
+      {
+        includeVideoRelations: false,
+        organizationId: brand.id,
+        testimonialId: created.testimonialId,
+      },
+    );
+
+    const remaining = await t.run(async (ctx) => ({
+      audits: await ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", brand.id)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(created.testimonialId)),
+        )
+        .collect(),
+      quarantines: await ctx.db
+        .query("spamQuarantines")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", created.testimonialId),
+        )
+        .collect(),
+    }));
+    expect(remaining.quarantines).toEqual([]);
+    expect(remaining.audits).toHaveLength(1);
+    expect(remaining.audits[0]).toMatchObject({
+      eventType: "testimonial.deleted",
+      targetLabel: "Deleted Testimonial",
     });
   });
 
