@@ -161,5 +161,9 @@ The seven days after a failed Pro renewal during which existing Pro publication,
 _Avoid_: Trial, Paid period
 
 **Workspace Deletion**:
-The Owner-initiated irreversible removal of the Workspace, its public surfaces, private records, and hosted media after reauthentication and explicit confirmation.
+The Owner-initiated irreversible removal of the Workspace, its public surfaces, private records, subscription, and hosted media after recent authentication, an exact Brand-name check, and a separate destructive confirmation. Starting it immediately closes public access and new writes; provider and record cleanup then advances in bounded, retryable phases without reopening the Workspace.
 _Avoid_: Downgrade, Archive, Account closure
+
+**Workspace Deletion Tombstone**:
+The minimal content-free workflow record retained after Workspace Deletion so the initiating Owner can see completion and retries can remain idempotent. It contains no exported content, media, Brand profile, membership, or public data.
+_Avoid_: Backup, Recoverable Workspace, Trash

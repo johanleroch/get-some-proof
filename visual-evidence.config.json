@@ -200,6 +200,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "workspace-delete",
+      "title": "Permanent Workspace deletion confirmation",
+      "path": "/org/:organizationSlug/settings",
+      "fixturePath": "/visual-evidence/workspace-delete",
+      "heading": "Permanently delete Visual Studio?",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "public-wall",
       "title": "Published Public Wall",
       "path": "/w/:publicSlug",

@@ -29,6 +29,7 @@ export default defineSchema({
     ),
     newSubmissionEmailNotificationsEnabled: v.optional(v.boolean()),
     createdByUserId: v.string(),
+    deletionStartedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -53,6 +54,7 @@ export default defineSchema({
     deactivatedAt: v.optional(v.number()),
   })
     .index("by_organization_user", ["organizationId", "userId"])
+    .index("by_organization", ["organizationId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_organization_status", ["organizationId", "status"]),
   billingProfiles: defineTable({
@@ -110,7 +112,9 @@ export default defineSchema({
     ),
     stripeSubscriptionId: v.optional(v.string()),
     processedAt: v.number(),
-  }).index("by_stripe_event", ["stripeEventId"]),
+  })
+    .index("by_stripe_event", ["stripeEventId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
   stripeSubscriptionReconciliations: defineTable({
     stripeSubscriptionId: v.string(),
     generation: v.number(),
@@ -189,7 +193,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_delivery_key", ["deliveryKey"])
-    .index("by_transition", ["transitionId"]),
+    .index("by_transition", ["transitionId"])
+    .index("by_organization", ["organizationId"]),
   videoDowngradeRetentions: defineTable({
     organizationId: v.id("organizations"),
     transitionId: v.id("billingDowngradeTransitions"),
@@ -210,6 +215,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_transition", ["transitionId"])
     .index("by_expiry", ["status", "expiresAt"]),
@@ -253,6 +259,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_organization_status", ["organizationId", "status"])
     .index("by_organization_email_status", [
       "organizationId",
@@ -310,6 +317,7 @@ export default defineSchema({
     newValue: v.optional(v.string()),
     occurredAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_organization_occurred_at", ["organizationId", "occurredAt"])
     .index("by_organization_target", [
       "organizationId",
@@ -347,6 +355,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_organization_client_submission", [
       "organizationId",
       "clientSubmissionId",
@@ -369,6 +378,7 @@ export default defineSchema({
       v.union(v.literal("automatic"), v.literal("support")),
     ),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization_type", ["organizationId", "submissionType"]),
   spamQuarantines: defineTable({
@@ -395,6 +405,7 @@ export default defineSchema({
     supportActor: v.optional(v.string()),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization_reported_at", ["organizationId", "reportedAt"])
     .index("by_status_expiry", ["status", "expiresAt"]),
@@ -452,6 +463,7 @@ export default defineSchema({
       }),
     ),
   )
+    .index("by_organization", ["organizationId"])
     .index("by_organization_published_at", ["organizationId", "publishedAt"])
     .index("by_organization_type_published_at", [
       "organizationId",
@@ -496,7 +508,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_request", ["requestId"])
-    .index("by_testimonial", ["testimonialId"]),
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"]),
   publicationConsents: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -547,11 +560,11 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_organization_client_submission", [
       "organizationId",
       "clientSubmissionId",
     ])
-    .index("by_organization", ["organizationId"])
     .index("by_storage_id", ["storageId"])
     .index("by_expiry", ["expiresAt"]),
   videoReservations: defineTable({
@@ -568,6 +581,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_organization_client_submission", [
       "organizationId",
       "clientSubmissionId",
@@ -604,6 +618,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_reservation", ["reservationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_provider_upload_id", ["providerUploadId"])
@@ -636,7 +651,8 @@ export default defineSchema({
   })
     .index("by_token_hash", ["tokenHash"])
     .index("by_testimonial", ["testimonialId"])
-    .index("by_video_asset", ["videoAssetId"]),
+    .index("by_video_asset", ["videoAssetId"])
+    .index("by_organization", ["organizationId"]),
   submissionVideoRevisions: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -652,7 +668,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_testimonial_status", ["testimonialId", "status"])
-    .index("by_reservation", ["reservationId"]),
+    .index("by_reservation", ["reservationId"])
+    .index("by_organization", ["organizationId"]),
   videoMediaDeletions: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -692,6 +709,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"])
     .index("by_provider_asset", ["provider", "providerAssetId"])
     .index("by_provider_upload", ["provider", "providerUploadId"]),
   storageCleanupJobs: defineTable({
@@ -701,4 +719,21 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_key", ["key"]),
+  workspaceDeletions: defineTable({
+    organizationId: v.id("organizations"),
+    actorUserId: v.string(),
+    status: v.union(
+      v.literal("requested"),
+      v.literal("failed"),
+      v.literal("deleted"),
+    ),
+    phase: v.string(),
+    subscriptionIds: v.optional(v.array(v.string())),
+    attempts: v.number(),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_actor", ["actorUserId"]),
 });

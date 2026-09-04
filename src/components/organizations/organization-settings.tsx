@@ -1,7 +1,8 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
 import { publicSlugFromBrandName } from "@convex/domain/brand";
@@ -11,6 +12,16 @@ import {
   type PublicWallSettingsValue,
 } from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,6 +95,7 @@ export function OrganizationSettings({
   embedOrigin: string;
   slug: string;
 }) {
+  const router = useRouter();
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const access = useQuery(
     api.organizationAuthorization.getMine,
@@ -101,6 +113,8 @@ export function OrganizationSettings({
     organization ? { organizationId: organization.id } : "skip",
   );
   const updateWallSettings = useMutation(api.wallCustomization.updateSettings);
+  const exportWorkspace = useAction(api.workspaceDeletion.exportData);
+  const deleteWorkspace = useAction(api.workspaceDeletion.remove);
 
   if (
     organization === undefined ||
@@ -160,6 +174,32 @@ export function OrganizationSettings({
       publicSlug={organization.publicSlug}
       publicSlugCanChange={organization.publicSlugCanChange}
       wallSettings={wallSettings}
+      workspaceDeletion={
+        access?.can.manageOwnership
+          ? {
+              inboxHref: `/org/${slug}/inbox`,
+              onDelete: async (brandName) => {
+                await deleteWorkspace({
+                  brandName,
+                  irreversibleConfirmed: true,
+                  organizationId,
+                });
+                router.replace("/dashboard");
+              },
+              onExport: async () => {
+                const data = await exportWorkspace({ organizationId });
+                const url = URL.createObjectURL(
+                  new Blob([data], { type: "application/json" }),
+                );
+                const link = document.createElement("a");
+                link.download = `${organization.publicSlug}-export.json`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+              },
+            }
+          : undefined
+      }
     />
   );
 }
@@ -179,6 +219,7 @@ export function OrganizationSettingsView({
   publicSlug,
   publicSlugCanChange,
   wallSettings,
+  workspaceDeletion,
 }: {
   canChangePublicSlug: boolean;
   canManageWall: boolean;
@@ -196,6 +237,11 @@ export function OrganizationSettingsView({
   publicSlug: string;
   publicSlugCanChange: boolean;
   wallSettings?: PublicWallSettingsValue;
+  workspaceDeletion?: {
+    inboxHref: string;
+    onDelete: (brandName: string) => Promise<void>;
+    onExport: () => Promise<void>;
+  };
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -343,7 +389,139 @@ export function OrganizationSettingsView({
           publicSlug={publicSlug}
         />
       ) : null}
+
+      {workspaceDeletion ? (
+        <WorkspaceDeletionSection
+          brandName={name}
+          inboxHref={workspaceDeletion.inboxHref}
+          onDelete={workspaceDeletion.onDelete}
+          onExport={workspaceDeletion.onExport}
+        />
+      ) : null}
     </section>
+  );
+}
+
+export function WorkspaceDeletionSection({
+  brandName,
+  inboxHref,
+  initialConfirmation = "",
+  initialDialogOpen = false,
+  onDelete,
+  onExport,
+}: {
+  brandName: string;
+  inboxHref: string;
+  initialConfirmation?: string;
+  initialDialogOpen?: boolean;
+  onDelete: (brandName: string) => Promise<void>;
+  onExport: () => Promise<void>;
+}) {
+  const [confirmation, setConfirmation] = useState(initialConfirmation);
+  const [dialogOpen, setDialogOpen] = useState(initialDialogOpen);
+  const [pending, setPending] = useState<"delete" | "export" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setPending("export");
+    setError(null);
+    try {
+      await onExport();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Export failed.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function remove() {
+    setPending("delete");
+    setError(null);
+    try {
+      await onDelete(confirmation);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Deletion failed.");
+      setDialogOpen(false);
+      setPending(null);
+    }
+  }
+
+  return (
+    <div className="border-destructive/40 bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs">
+      <div>
+        <h2 className="font-semibold">Delete Workspace</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          This permanently removes the Collection Form, Public Wall, Embed,
+          private data, and every hosted video. There is no recovery window.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          disabled={pending !== null}
+          onClick={() => void download()}
+          type="button"
+          variant="outline"
+        >
+          {pending === "export" ? "Preparing export…" : "Download data first"}
+        </Button>
+        <Button asChild variant="outline">
+          <a href={inboxHref}>Download eligible MP4s from Inbox</a>
+        </Button>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="delete-workspace-name">
+          Type <span className="font-semibold">{brandName}</span> to continue
+        </Label>
+        <Input
+          autoComplete="off"
+          id="delete-workspace-name"
+          onChange={(event) => setConfirmation(event.target.value)}
+          value={confirmation}
+        />
+      </div>
+      {error ? (
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <Button
+        disabled={confirmation !== brandName || pending !== null}
+        onClick={() => setDialogOpen(true)}
+        type="button"
+        variant="destructive"
+      >
+        Review irreversible deletion
+      </Button>
+
+      <AlertDialog onOpenChange={setDialogOpen} open={dialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete {brandName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Public access stops immediately. Billing is canceled and all
+              private records, tokens, captions, thumbnails, renditions, and
+              source videos are deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row">
+            <AlertDialogCancel disabled={pending === "delete"}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                disabled={pending === "delete"}
+                onClick={() => void remove()}
+                variant="destructive"
+              >
+                {pending === "delete"
+                  ? "Deleting Workspace…"
+                  : "Delete Workspace permanently"}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 

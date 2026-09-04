@@ -55,7 +55,7 @@ export async function findActiveOrganizationAccess(
   const principal = await requireVerifiedPrincipal(ctx);
   const organization = await findOrganization(ctx, selector);
 
-  if (!organization) {
+  if (!organization || organization.deletionStartedAt !== undefined) {
     return null;
   }
 

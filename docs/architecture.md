@@ -72,6 +72,12 @@ Billing downgrade is an application-owned workflow rather than a Stripe-side sid
 
 At the effective downgrade instant, Convex revalidates the Workspace's aggregate trusted entitlement, then freezes the Owner's valid keepers with a descending-`publishedAt` fallback. A versioned cursor applies the downgrade in bounded, durable batches so unlimited Pro text volume cannot exceed transaction limits: at most two videos and thirteen text Testimonials stay Published, excess text is archived, and excess video leaves public projections. Free Collection Credit records are never rewritten. Each excess video receives a separate 30-day retention record: its Mux media remains exceptionally downloadable while retained, warning deliveries are idempotent, re-publication after Pro recovery atomically cancels retention, and a leased provider-deletion outbox with an atomic watchdog retries safely before the local media record is finalized.
 
+## Workspace deletion
+
+Only an Owner with a Better Auth Session created in the previous five minutes may begin Workspace Deletion. The server verifies the exact Brand name and a separate irreversible-confirmation literal; the data export is an independent read action and never creates deletion state. The first deletion mutation stores a content-free tombstone plus the stable Stripe subscription identifiers and marks the Organization as deleting. Every public reader and collection or management mutation treats that flag as unavailable, so a provider failure cannot reopen the Brand.
+
+The resumable action cancels Stripe subscriptions with stable idempotency keys, drains detached provider-cleanup jobs, deletes attached Mux uploads and assets, and only then removes local video metadata. It purges organization-scoped records, storage objects, synchronized Stripe webhook state, convex-authz roles, Memberships, and the Organization in bounded batches. Retry uses the same tombstone and provider identifiers; completion retains only actor, Organization identifier, status, phase, attempts, and timestamps for idempotent status reporting, not Brand content or a recoverable copy.
+
 ## Dashboard and Bklit boundary
 
 Tailwind CSS and repository-owned shadcn components implement the interface. `src/components/charts/` contains the Bklit `@bklit/bar-chart` registry source and its preserved MIT notice. Bklit Studio and proprietary source or assets are not included. Brand and chart replacement points are documented in `docs/customization.md`.

@@ -292,7 +292,10 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 - Require recent authentication, typed Brand-name confirmation, and a separate irreversible confirmation.
 - Offer data and eligible media download first.
 - A failed or abandoned export never initiates deletion.
-- On confirmation, immediately remove public surfaces, end the subscription, and permanently delete private records and Mux media.
+- Only the Owner may confirm, using a Session created within the previous five minutes, the exact Brand name, and a separate irreversible action.
+- On confirmation, immediately disable the Collection Form, public surfaces, management mutations, and new uploads before ending the subscription and permanently deleting private records and Mux media.
+- Provider failure keeps the Workspace private and exposes a retry using the same idempotent deletion record; it never restores public access.
+- After completion, retain only a content-free deletion tombstone needed to report completion and make replay safe, never a recoverable Workspace copy.
 - No recovery window.
 
 ## Accessibility and responsive support

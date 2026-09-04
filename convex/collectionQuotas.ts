@@ -212,7 +212,8 @@ export const getPublicAvailability = query({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!organization) return null;
+    if (!organization || organization.deletionStartedAt !== undefined)
+      return null;
     return await getCollectionAvailability(ctx, organization._id);
   },
 });

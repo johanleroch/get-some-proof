@@ -106,6 +106,21 @@ export function subscriptionPriceDetails(input: {
   };
 }
 
+export async function cancelStripeSubscription(
+  subscriptionId: string,
+  idempotencyKey: string,
+) {
+  const secretKey = env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new ConvexError({
+      code: "BILLING_UNAVAILABLE",
+      message: "Stripe Billing is not configured.",
+    });
+  }
+  const stripe = new Stripe(secretKey);
+  await stripe.subscriptions.cancel(subscriptionId, {}, { idempotencyKey });
+}
+
 export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
   const secretKey = env.STRIPE_SECRET_KEY;
   if (

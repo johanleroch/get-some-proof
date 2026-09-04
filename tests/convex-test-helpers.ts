@@ -116,6 +116,7 @@ export async function authenticatedUser(
 
   return {
     actorId: String(user._id),
+    sessionId: String(session._id),
     client: t.withIdentity({
       subject: String(user._id),
       sessionId: String(session._id),

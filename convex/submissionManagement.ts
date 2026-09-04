@@ -1093,14 +1093,15 @@ export const queueReplacementLinkRequest = internalMutation({
           )
           .unique()
       : null;
-    const testimonials = brand
-      ? await ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_submitter_email", (index) =>
-            index.eq("organizationId", brand._id).eq("submitterEmail", email),
-          )
-          .collect()
-      : [];
+    const testimonials =
+      brand && brand.deletionStartedAt === undefined
+        ? await ctx.db
+            .query("testimonials")
+            .withIndex("by_organization_submitter_email", (index) =>
+              index.eq("organizationId", brand._id).eq("submitterEmail", email),
+            )
+            .collect()
+        : [];
     const requestId = await ctx.db.insert("managementLinkReplacementRequests", {
       attempts: 0,
       brandName: brand?.name,

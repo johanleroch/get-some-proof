@@ -183,7 +183,7 @@ export const reserveCapacity = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand) {
+    if (!brand || brand.deletionStartedAt !== undefined) {
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",

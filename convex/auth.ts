@@ -62,6 +62,9 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
         await sendTransactionalEmail(buildVerificationEmail(user.email, url));
       },
     },
+    session: {
+      freshAge: 5 * 60,
+    },
     socialProviders:
       googleClientId && googleClientSecret
         ? {
