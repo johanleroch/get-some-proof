@@ -15,11 +15,13 @@ import { Label } from "@/components/ui/label";
 
 type RecorderDevice = Pick<MediaDeviceInfo, "deviceId" | "kind" | "label">;
 type RecorderState = {
+  audioLevel: number;
   cameraId: string;
   devices: RecorderDevice[];
   elapsedSeconds: number;
   error: string | null;
   microphoneId: string;
+  noSoundDetected: boolean;
   previewReady: boolean;
   recordedFile: File | null;
   recording: boolean;
@@ -29,6 +31,7 @@ type RecorderUpdate =
 
 function initialRecorderState(visualFixture: boolean): RecorderState {
   return {
+    audioLevel: visualFixture ? 0.58 : 0,
     cameraId: visualFixture ? "fixture-camera" : "",
     devices: visualFixture
       ? [
@@ -47,6 +50,7 @@ function initialRecorderState(visualFixture: boolean): RecorderState {
     elapsedSeconds: 0,
     error: null,
     microphoneId: visualFixture ? "fixture-microphone" : "",
+    noSoundDetected: false,
     previewReady: visualFixture,
     recordedFile: null,
     recording: false,
@@ -82,6 +86,12 @@ export function BrowserVideoRecorder({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioMeterRef = useRef<{
+    analyser: AnalyserNode;
+    context: AudioContext;
+    intervalId: number;
+    source: MediaStreamAudioSourceNode;
+  } | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<number | undefined>(undefined);
@@ -94,15 +104,71 @@ export function BrowserVideoRecorder({
     initialRecorderState,
   );
   const {
+    audioLevel,
     cameraId,
     devices,
     elapsedSeconds,
     error,
     microphoneId,
+    noSoundDetected,
     previewReady,
     recordedFile,
     recording,
   } = state;
+
+  const stopAudioMeter = useCallback(() => {
+    const meter = audioMeterRef.current;
+    if (!meter) return;
+    window.clearInterval(meter.intervalId);
+    meter.source.disconnect();
+    meter.analyser.disconnect();
+    void Promise.resolve(meter.context.close()).catch(() => undefined);
+    audioMeterRef.current = null;
+  }, []);
+
+  const startAudioMeter = useCallback(
+    (stream: MediaStream) => {
+      stopAudioMeter();
+      if (typeof AudioContext === "undefined" || !stream.getAudioTracks()[0]) {
+        setState({ audioLevel: 0, noSoundDetected: false });
+        return;
+      }
+      try {
+        const context = new AudioContext();
+        const source = context.createMediaStreamSource(stream);
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const samples = new Float32Array(analyser.fftSize);
+        let silenceStartedAt = Date.now();
+        const sampleLevel = () => {
+          analyser.getFloatTimeDomainData(samples);
+          const rms = Math.sqrt(
+            samples.reduce((sum, sample) => sum + sample * sample, 0) /
+              samples.length,
+          );
+          const level = Math.min(1, rms * 6);
+          const soundDetected = level >= 0.08;
+          if (soundDetected) silenceStartedAt = Date.now();
+          setState({
+            audioLevel: level,
+            noSoundDetected:
+              !soundDetected && Date.now() - silenceStartedAt >= 5_000,
+          });
+        };
+        sampleLevel();
+        audioMeterRef.current = {
+          analyser,
+          context,
+          intervalId: window.setInterval(sampleLevel, 100),
+          source,
+        };
+      } catch {
+        setState({ audioLevel: 0, noSoundDetected: false });
+      }
+    },
+    [stopAudioMeter],
+  );
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !recordedFile) return;
@@ -140,8 +206,10 @@ export function BrowserVideoRecorder({
           acquiredStream = null;
           return null;
         }
+        stopAudioMeter();
         stopStream(streamRef.current);
         streamRef.current = stream;
+        startAudioMeter(stream);
         acquiredStream = null;
         if (videoRef.current) videoRef.current.srcObject = stream;
 
@@ -158,6 +226,7 @@ export function BrowserVideoRecorder({
         if (!mountedRef.current || requestId !== previewRequestRef.current) {
           return null;
         }
+        stopAudioMeter();
         stopStream(streamRef.current);
         streamRef.current = null;
         setState({
@@ -168,7 +237,7 @@ export function BrowserVideoRecorder({
         return null;
       }
     },
-    [],
+    [startAudioMeter, stopAudioMeter],
   );
 
   const stopRecording = useCallback(() => {
@@ -240,11 +309,14 @@ export function BrowserVideoRecorder({
         { type },
       );
       setState({
+        audioLevel: 0,
+        noSoundDetected: false,
         previewReady: false,
         recordedFile: file,
         recording: false,
       });
       stopStream(stream);
+      stopAudioMeter();
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
       recorderRef.current = null;
@@ -266,7 +338,14 @@ export function BrowserVideoRecorder({
       1_000,
     );
     autoStopRef.current = window.setTimeout(stopRecording, 120_000);
-  }, [cameraId, microphoneId, onRecordingChange, openPreview, stopRecording]);
+  }, [
+    cameraId,
+    microphoneId,
+    onRecordingChange,
+    openPreview,
+    stopAudioMeter,
+    stopRecording,
+  ]);
 
   const recordAgain = useCallback(async () => {
     setState({ elapsedSeconds: 0, recordedFile: null });
@@ -290,9 +369,10 @@ export function BrowserVideoRecorder({
           recorderRef.current.stop();
       }
       stopStream(streamRef.current);
+      stopAudioMeter();
       onRecordingChange(false);
     };
-  }, [onRecordingChange]);
+  }, [onRecordingChange, stopAudioMeter]);
 
   const cameras = devices.filter((device) => device.kind === "videoinput");
   const microphones = devices.filter((device) => device.kind === "audioinput");
@@ -302,9 +382,11 @@ export function BrowserVideoRecorder({
       cameraId={cameraId}
       cameras={cameras}
       elapsedSeconds={elapsedSeconds}
+      audioLevel={audioLevel}
       error={error}
       microphoneId={microphoneId}
       microphones={microphones}
+      noSoundDetected={noSoundDetected}
       onCameraChange={(nextCameraId) => {
         setState({ cameraId: nextCameraId });
         void openPreview({ cameraId: nextCameraId, microphoneId });
@@ -327,12 +409,14 @@ export function BrowserVideoRecorder({
 }
 
 function RecorderView({
+  audioLevel,
   cameraId,
   cameras,
   elapsedSeconds,
   error,
   microphoneId,
   microphones,
+  noSoundDetected,
   onCameraChange,
   onFileChange,
   onMicrophoneChange,
@@ -345,12 +429,14 @@ function RecorderView({
   recording,
   videoRef,
 }: {
+  audioLevel: number;
   cameraId: string;
   cameras: RecorderDevice[];
   elapsedSeconds: number;
   error: string | null;
   microphoneId: string;
   microphones: RecorderDevice[];
+  noSoundDetected: boolean;
   onCameraChange: (deviceId: string) => void;
   onFileChange: (file: File | undefined) => void;
   onMicrophoneChange: (deviceId: string) => void;
@@ -406,13 +492,41 @@ function RecorderView({
               >
                 <Camera aria-hidden="true" className="size-4" />
               </span>
-              <span
-                aria-label="Microphone on"
-                className="grid size-9 place-items-center rounded-full bg-black/55"
-                role="img"
-                title="Microphone on"
-              >
+              <span className="flex h-9 items-center gap-2 rounded-full bg-black/55 px-2.5">
                 <Mic aria-hidden="true" className="size-4" />
+                <meter
+                  aria-label={`Microphone level: ${audioLevel >= 0.08 ? "sound detected" : "quiet"}`}
+                  className="sr-only"
+                  max={100}
+                  min={0}
+                  value={Math.round(audioLevel * 100)}
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 items-end gap-0.5"
+                  title="Microphone level"
+                >
+                  {[0.12, 0.28, 0.44, 0.6, 0.76, 0.92].map(
+                    (threshold, index) => {
+                      const active = audioLevel >= threshold;
+                      return (
+                        <span
+                          className={`w-1 rounded-full transition-colors duration-100 ${
+                            active
+                              ? audioLevel >= 0.85
+                                ? "bg-orange-400"
+                                : "bg-emerald-400"
+                              : "bg-white/25"
+                          }`}
+                          data-active={active}
+                          data-testid="microphone-level-bar"
+                          key={threshold}
+                          style={{ height: `${7 + index * 2}px` }}
+                        />
+                      );
+                    },
+                  )}
+                </span>
               </span>
             </div>
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-4 pt-12 pb-4 text-white">
@@ -443,6 +557,12 @@ function RecorderView({
           </>
         ) : null}
       </div>
+
+      {previewReady && noSoundDetected ? (
+        <p className="text-sm text-amber-700 dark:text-amber-300" role="status">
+          No sound detected. Check your microphone.
+        </p>
+      ) : null}
 
       {previewReady && !recording ? (
         <div className="grid gap-3 sm:grid-cols-2">

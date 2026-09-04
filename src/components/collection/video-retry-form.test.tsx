@@ -189,4 +189,80 @@ describe("VideoRetryFormView", () => {
       token: "one-time-token",
     });
   });
+
+  it("shows progress and cancels an active replacement upload", async () => {
+    const cancelRetryVideo = vi.fn().mockResolvedValue(null);
+    const uploadVideo = vi.fn(
+      (
+        _file: File,
+        input: { onProgress: (value: number) => void; signal?: AbortSignal },
+      ) =>
+        new Promise<void>((_resolve, reject) => {
+          input.onProgress(61);
+          input.signal?.addEventListener("abort", () =>
+            reject(new Error("Video upload cancelled.")),
+          );
+        }),
+    );
+    render(
+      <VideoRetryFormView
+        cancelRetryVideo={cancelRetryVideo}
+        context={context}
+        createRetryUpload={vi.fn().mockResolvedValue({
+          provider: "mux",
+          reservationId,
+          uploadUrl: "https://mux.example/replacement",
+        })}
+        inspectVideo={vi.fn().mockResolvedValue({ durationSeconds: 45 })}
+        token="private-retry-token"
+        uploadVideo={uploadVideo}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("New video"), {
+      target: {
+        files: [new File(["video"], "replacement.mp4", { type: "video/mp4" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
+
+    expect(await screen.findByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "61",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel upload" }));
+
+    await waitFor(() => expect(cancelRetryVideo).toHaveBeenCalledOnce());
+    expect(screen.getByRole("button", { name: "Replace video" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("reports when an interrupted upload reservation cannot be released", async () => {
+    const cancelRetryVideo = vi
+      .fn()
+      .mockRejectedValue(new Error("Cleanup unavailable."));
+    render(
+      <VideoRetryFormView
+        cancelRetryVideo={cancelRetryVideo}
+        context={context}
+        createRetryUpload={vi.fn().mockResolvedValue({
+          provider: "mux",
+          reservationId,
+          uploadUrl: "https://mux.example/replacement",
+        })}
+        inspectVideo={vi.fn().mockResolvedValue({ durationSeconds: 45 })}
+        token="private-retry-token"
+        uploadVideo={vi.fn().mockRejectedValue(new Error("Network lost."))}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("New video"), {
+      target: {
+        files: [new File(["video"], "replacement.mp4", { type: "video/mp4" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "reservation could not be released",
+    );
+  });
 });

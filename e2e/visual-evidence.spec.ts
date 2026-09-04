@@ -76,13 +76,22 @@ for (const screen of config.screens) {
     await page.waitForTimeout(250);
     if (
       fixtureMode &&
-      (screen.slug === "testimonial-inbox" || screen.slug === "public-wall")
+      (screen.slug.startsWith("testimonial-inbox") ||
+        screen.slug === "public-wall")
     ) {
       await page.waitForFunction(() =>
         [...document.images]
           .filter((image) => image.src.startsWith("https://image.mux.com/"))
           .every((image) => image.complete && image.naturalWidth > 0),
       );
+    }
+    if (fixtureMode && screen.slug === "testimonial-inbox-player") {
+      await page
+        .getByRole("button", { name: "Play Remy Jupille's video testimonial" })
+        .click();
+      await expect(
+        page.getByRole("dialog").getByText("Captions ready · 68 seconds"),
+      ).toBeVisible();
     }
 
     const outputRoot = path.resolve(

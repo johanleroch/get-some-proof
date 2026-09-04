@@ -222,4 +222,43 @@ describe("TestimonialInboxView", () => {
     expect(onDownload).toHaveBeenCalledOnce();
     expect(onPublish).toHaveBeenCalledOnce();
   });
+
+  it("plays a Ready video in a dialog only after Owner intent", async () => {
+    render(
+      <TestimonialInboxView
+        onArchive={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        onPublish={vi.fn()}
+        testimonials={[
+          {
+            ...testimonial,
+            canDownload: false,
+            captionsStatus: "ready",
+            durationSeconds: 42,
+            playbackId: "owner-playback-id",
+            submissionType: "video",
+            videoStatus: "ready",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByTestId("inbox-video-player")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Play Camille Test's video testimonial",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Camille Test's video testimonial",
+      }),
+    ).toBeVisible();
+    expect(screen.getByTestId("inbox-video-player")).toHaveAttribute(
+      "data-playback-id",
+      "owner-playback-id",
+    );
+    expect(screen.getByText("Captions ready · 42 seconds")).toBeVisible();
+  });
 });

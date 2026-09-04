@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Archive,
   Download,
   ExternalLink,
+  Play,
   Send,
   ShieldAlert,
   Trash2,
   Undo2,
 } from "lucide-react";
+import MuxPlayer from "@mux/mux-player-react/lazy";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +24,7 @@ import {
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import videoPlayerPolicy from "../../../public/embed/video-player-policy.json";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +37,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import { formatShortDate } from "@/lib/format-date";
 import { PublishedCuration } from "@/components/testimonials/published-curation";
@@ -104,6 +114,13 @@ export function TestimonialInboxView({
   onUndoSpam?: (testimonial: InboxTestimonial) => void;
   testimonials: InboxTestimonial[];
 }) {
+  const [playingVideo, setPlayingVideo] = useState<
+    Extract<InboxTestimonial, { submissionType: "video" }> | undefined
+  >();
+  const playerRef = useRef<React.ElementRef<typeof MuxPlayer>>(null);
+  useEffect(() => {
+    if (playingVideo) void playerRef.current?.play().catch(() => undefined);
+  }, [playingVideo]);
   if (testimonials.length === 0) {
     return (
       <section className="bg-card rounded-xl border border-dashed p-10 text-center shadow-xs">
@@ -144,8 +161,14 @@ export function TestimonialInboxView({
               </blockquote>
             ) : (
               <div className="flex items-start gap-4 rounded-xl border p-3">
-                <div className="bg-muted relative aspect-[9/16] w-20 shrink-0 overflow-hidden rounded-lg">
-                  {testimonial.playbackId ? (
+                {testimonial.playbackId &&
+                testimonial.videoStatus === "ready" ? (
+                  <button
+                    aria-label={`Play ${testimonial.submitterName}'s video testimonial`}
+                    className="bg-muted group relative aspect-[9/16] w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg"
+                    onClick={() => setPlayingVideo(testimonial)}
+                    type="button"
+                  >
                     <Image
                       alt=""
                       className="object-cover"
@@ -154,8 +177,16 @@ export function TestimonialInboxView({
                       src={`https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=160&height=284&fit_mode=smartcrop&time=${testimonial.durationSeconds ? testimonial.durationSeconds / 2 : 0.5}`}
                       unoptimized
                     />
-                  ) : null}
-                </div>
+                    <span className="bg-background/90 text-foreground absolute top-1/2 left-1/2 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-md transition-transform group-hover:scale-105 group-focus-visible:scale-105">
+                      <Play
+                        aria-hidden="true"
+                        className="ml-0.5 size-4 fill-current"
+                      />
+                    </span>
+                  </button>
+                ) : (
+                  <div className="bg-muted relative aspect-[9/16] w-20 shrink-0 overflow-hidden rounded-lg" />
+                )}
                 <div className="space-y-1.5 pt-1 text-sm">
                   <p className="font-medium">
                     {videoStatusLabel(testimonial.videoStatus)}
@@ -276,6 +307,46 @@ export function TestimonialInboxView({
           </CardContent>
         </Card>
       ))}
+      <Dialog
+        onOpenChange={(open) => !open && setPlayingVideo(undefined)}
+        open={Boolean(playingVideo)}
+      >
+        <DialogContent className="max-w-3xl bg-black p-4 text-white">
+          <DialogHeader>
+            <DialogTitle>
+              {playingVideo?.submitterName}&apos;s video testimonial
+            </DialogTitle>
+            <DialogDescription className="text-white/70">
+              {playingVideo
+                ? `${
+                    playingVideo.captionsStatus === "ready"
+                      ? "Captions ready"
+                      : playingVideo.captionsStatus === "failed"
+                        ? "Captions unavailable"
+                        : "Captions requested"
+                  } · ${Math.round(playingVideo.durationSeconds ?? 0)} seconds`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          {playingVideo?.playbackId ? (
+            <div
+              data-playback-id={playingVideo.playbackId}
+              data-testid="inbox-video-player"
+            >
+              <MuxPlayer
+                autoPlay={videoPlayerPolicy.autoplay}
+                className="mx-auto block max-h-[75svh] w-full"
+                disableCookies
+                playbackId={playingVideo.playbackId}
+                playsInline
+                preload="none"
+                ref={playerRef}
+                style={{ aspectRatio: "9 / 16" }}
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

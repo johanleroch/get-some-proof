@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Play, RefreshCw, Trash2, Upload } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react/lazy";
@@ -28,6 +28,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
 import { uploadDirectVideo } from "@/lib/video-upload";
+import {
+  VideoUploadProgress,
+  type VideoUploadPhase,
+} from "@/components/collection/video-upload-progress";
 
 type ManagedSubmissionValue = {
   avatarUrl: string | null;
@@ -134,7 +138,11 @@ export function ManagedSubmissionView({
   uploadAvatar,
 }: {
   onConfirm?: (input: RevisionInput) => Promise<void>;
-  onReplaceVideo?: (file: File, spokenLanguage: "en" | "fr") => Promise<void>;
+  onReplaceVideo?: (
+    file: File,
+    spokenLanguage: "en" | "fr",
+    input: { onProgress: (value: number) => void; signal: AbortSignal },
+  ) => Promise<void>;
   onWithdraw?: () => Promise<void>;
   submission: ManagedSubmissionValue;
   uploadAvatar?: (file: File) => Promise<{
@@ -156,6 +164,10 @@ export function ManagedSubmissionView({
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadPhase, setVideoUploadPhase] =
+    useState<VideoUploadPhase>("idle");
+  const [videoProgress, setVideoProgress] = useState(0);
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [notice, setNotice] = useState<string>();
@@ -173,6 +185,14 @@ export function ManagedSubmissionView({
       role: role.trim() || undefined,
     },
   });
+
+  useEffect(() => {
+    if (videoUploadPhase === "idle") return;
+    const guardNavigation = (event: BeforeUnloadEvent) =>
+      event.preventDefault();
+    window.addEventListener("beforeunload", guardNavigation);
+    return () => window.removeEventListener("beforeunload", guardNavigation);
+  }, [videoUploadPhase]);
 
   async function confirm(event: FormEvent) {
     event.preventDefault();
@@ -211,15 +231,31 @@ export function ManagedSubmissionView({
   async function replaceVideo() {
     if (!videoFile || !onReplaceVideo) return;
     setUploadingVideo(true);
+    setVideoProgress(0);
+    setVideoUploadPhase("uploading");
     setError(undefined);
     setNotice(undefined);
+    const controller = new AbortController();
+    uploadAbortControllerRef.current = controller;
     try {
-      await onReplaceVideo(videoFile, spokenLanguage);
+      await onReplaceVideo(videoFile, spokenLanguage, {
+        onProgress: setVideoProgress,
+        signal: controller.signal,
+      });
+      setVideoProgress(100);
+      setVideoUploadPhase("processing");
       setVideoFile(undefined);
       setNotice("Replacement uploaded. Wait until it is Ready, then confirm.");
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (
+        !controller.signal.aborted ||
+        errorMessage(caught) !== "Video upload cancelled."
+      ) {
+        setError(errorMessage(caught));
+      }
     } finally {
+      uploadAbortControllerRef.current = null;
+      setVideoUploadPhase("idle");
       setUploadingVideo(false);
     }
   }
@@ -429,6 +465,11 @@ export function ManagedSubmissionView({
                 )}
                 {uploadingVideo ? "Uploading…" : "Upload replacement"}
               </Button>
+              <VideoUploadProgress
+                onCancel={() => uploadAbortControllerRef.current?.abort()}
+                phase={videoUploadPhase}
+                progress={videoProgress}
+              />
             </div>
           )}
 
@@ -519,6 +560,9 @@ export function ManagedSubmission({ token }: { token: string }) {
   const createVideoReplacement = useAction(
     api.submissionManagement.createVideoReplacementUpload,
   );
+  const cancelVideoReplacement = useMutation(
+    api.submissionManagement.cancelVideoReplacement,
+  );
   const generateAvatarUploadUrl = useMutation(
     api.submissions.generateAvatarUploadUrl,
   );
@@ -562,7 +606,7 @@ export function ManagedSubmission({ token }: { token: string }) {
           token,
         });
       }}
-      onReplaceVideo={async (file, spokenLanguage) => {
+      onReplaceVideo={async (file, spokenLanguage, input) => {
         await inspectVideoFile(file);
         const upload = await createVideoReplacement({
           expectedContentVersion: submission.contentVersion,
@@ -571,11 +615,27 @@ export function ManagedSubmission({ token }: { token: string }) {
           spokenLanguage,
           token,
         });
-        await uploadDirectVideo(file, {
-          onProgress: () => undefined,
-          provider: upload.provider,
-          uploadUrl: upload.uploadUrl,
-        });
+        try {
+          await uploadDirectVideo(file, {
+            onProgress: input.onProgress,
+            provider: upload.provider,
+            signal: input.signal,
+            uploadUrl: upload.uploadUrl,
+          });
+        } catch (error) {
+          try {
+            await cancelVideoReplacement({
+              reservationId: upload.reservationId,
+              revisionId: upload.revisionId,
+              token,
+            });
+          } catch {
+            throw new Error(
+              "The upload stopped, but its reservation could not be released. Refresh before trying again.",
+            );
+          }
+          throw error;
+        }
       }}
       onWithdraw={async () => {
         await withdrawConsent({ token });
