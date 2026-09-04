@@ -36,7 +36,9 @@ describe("POST /api/mux/webhook", () => {
 
   it("verifies the raw signed body before forwarding the event", async () => {
     const body = JSON.stringify({
+      created_at: "2026-09-04T13:37:14.612000Z",
       data: { id: "asset-1" },
+      environment: { id: "env-1", name: "Development" },
       id: "event-1",
       type: "video.asset.ready",
     });
@@ -47,7 +49,11 @@ describe("POST /api/mux/webhook", () => {
 
     expect(response.status).toBe(200);
     expect(fetchAction).toHaveBeenCalledWith(expect.anything(), {
-      event: JSON.parse(body),
+      event: {
+        data: { id: "asset-1" },
+        id: "event-1",
+        type: "video.asset.ready",
+      },
       ingestSecret: "convex-ingest-secret-with-at-least-32-chars",
     });
   });

@@ -100,7 +100,11 @@ export async function POST(request: Request) {
   }
   try {
     const result = await fetchAction(api.videoWebhooks.ingest, {
-      event,
+      event: {
+        data: event.data,
+        id: event.id,
+        type: event.type,
+      },
       ingestSecret,
     });
     return json(result, 200);
