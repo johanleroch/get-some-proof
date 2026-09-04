@@ -126,6 +126,34 @@ describe("Testimonial moderation and Public Projection", () => {
       }),
     ).rejects.toMatchObject({ data: { code: "VIDEO_NOT_READY" } });
 
+    await expect(
+      t.action(api.videoWebhooks.ingest, {
+        event: {
+          data: {
+            aspect_ratio: "4:3",
+            id: "ready-video-asset",
+            passthrough: upload.reservationId,
+          },
+          id: "early-updated-video-event",
+          type: "video.asset.updated",
+        },
+        ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+      }),
+    ).resolves.toEqual({ outcome: "metadata_updated" });
+    await expect(
+      t.action(api.videoWebhooks.ingest, {
+        event: {
+          data: {
+            aspect_ratio: "4:3",
+            id: "ready-video-asset",
+            passthrough: upload.reservationId,
+          },
+          id: "early-updated-video-event",
+          type: "video.asset.updated",
+        },
+        ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+      }),
+    ).resolves.toEqual({ outcome: "duplicate" });
     await t.action(api.videoWebhooks.ingest, {
       event: {
         data: {
@@ -152,6 +180,26 @@ describe("Testimonial moderation and Public Projection", () => {
       status: "published",
       testimonialId: submitted.testimonialId,
     });
+    const wallBeforeMetadataUpdate = await t.query(api.publicWall.list, {
+      paginationOpts: { cursor: null, numItems: 20 },
+      publicSlug: "acme-proof",
+    });
+    expect(wallBeforeMetadataUpdate.page[0]).toMatchObject({
+      aspectRatio: "4:3",
+    });
+    await expect(
+      t.action(api.videoWebhooks.ingest, {
+        event: {
+          data: {
+            aspect_ratio: "16:9",
+            id: "ready-video-asset",
+          },
+          id: "updated-video-event",
+          type: "video.asset.updated",
+        },
+        ingestSecret: "test-ingest-secret-with-at-least-32-characters",
+      }),
+    ).resolves.toEqual({ outcome: "metadata_updated" });
     await expect(
       owner.client.query(api.testimonialModeration.listInbox, {
         organizationId: brand.id,
@@ -184,6 +232,7 @@ describe("Testimonial moderation and Public Projection", () => {
       {
         avatarUrl: null,
         avatarVisible: true,
+        aspectRatio: "16:9",
         captionsAvailable: false,
         company: "Example Studio",
         id: expect.any(String),

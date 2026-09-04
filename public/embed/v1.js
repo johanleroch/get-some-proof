@@ -45,13 +45,19 @@
       }
     }
     *, *::before, *::after { box-sizing: border-box; }
-    .wall { container-type: inline-size; width: 100%; font-family: inherit; }
+    .wall {
+      container-type: inline-size;
+      width: 100%;
+      max-width: 72rem;
+      margin-inline: auto;
+      font-family: inherit;
+    }
     .grid { column-count: 1; column-gap: 16px; }
     .card {
       display: inline-block;
       width: 100%;
-      margin: 0 0 16px;
-      padding: 20px;
+      margin: 0 0 20px;
+      padding: 0;
       break-inside: avoid;
       overflow: hidden;
       border: 1px solid var(--gsp-border);
@@ -66,41 +72,93 @@
     }
     .card.video-card { padding: 0; }
     .content { padding: 20px; }
+    .video-attribution { padding: 12px 20px; }
+    .video-attribution .attribution { margin-top: 0; }
     .video-shell {
       position: relative;
       width: 100%;
-      aspect-ratio: 9 / 16;
       overflow: hidden;
       background: #000;
     }
-    .video-shell mux-player { display: block; width: 100%; height: 100%; }
+    .video-shell mux-player {
+      display: block;
+      width: 100%;
+      height: 100%;
+      --media-object-fit: cover;
+      --seek-backward-button: none;
+      --seek-forward-button: none;
+    }
+    .player-layer { position: absolute; z-index: 0; inset: 0; }
     .play {
       position: absolute;
+      z-index: 1;
       inset: 0;
-      display: grid;
+      display: block;
       width: 100%;
       height: 100%;
       padding: 0;
       cursor: pointer;
       border: 0;
       background: #000;
+      color: #fff;
+      text-align: left;
+      transition: opacity 200ms ease;
     }
+    .play[data-playing="true"] { pointer-events: none; opacity: 0; }
     .poster { display: block; width: 100%; height: 100%; object-fit: cover; }
-    .play-icon {
+    .video-shade {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      inset: 0;
+      background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.08) 58%, transparent);
+    }
+    .video-overlay {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px;
+    }
+    .video-overlay .stars { margin-top: 0; margin-bottom: 8px; }
+    .video-name {
+      display: block;
+      overflow: hidden;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .video-meta {
+      display: block;
+      overflow: hidden;
+      margin-top: 2px;
+      color: rgb(255 255 255 / 0.75);
+      font-size: 14px;
+      line-height: 1.4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .play-icon {
       display: grid;
-      width: 56px;
-      height: 56px;
-      translate: -50% -50%;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
       place-items: center;
       border-radius: 999px;
-      background: color-mix(in srgb, var(--gsp-surface) 90%, transparent);
-      color: var(--gsp-text);
-      font-size: 24px;
+      background: rgb(255 255 255 / 0.92);
+      color: #000;
+      font-size: 20px;
       box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+      transition: transform 200ms ease;
     }
+    .play:hover .play-icon,
+    .play:focus-visible .play-icon { transform: scale(1.05); }
     .play:focus-visible { outline: 3px solid var(--gsp-accent); outline-offset: -3px; }
     .identity { display: flex; min-width: 0; align-items: center; gap: 12px; }
     .avatar {
@@ -170,8 +228,9 @@
       outline-offset: 4px;
     }
     @container (min-width: 42rem) { .grid { column-count: 2; } }
-    @container (min-width: 64rem) { .grid { column-count: 3; } }
-    @media (prefers-reduced-motion: reduce) { .attribution { transition: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .attribution, .play, .play-icon { transition: none; }
+    }
   `;
 
   function element(tag, className, text) {
@@ -228,43 +287,80 @@
     const button = card.querySelector("[data-gsp-play]");
     const poster = card.querySelector(".poster");
     if (!shell || !button || !poster) throw new Error("INVALID_CARD_HTML");
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      try {
-        const [, videoPlayerPolicy] = await Promise.all([
-          loadMuxPlayer(),
-          loadVideoPlayerPolicy(),
-        ]);
-        const player = element("mux-player");
-        player.setAttribute("accent-color", brand.accentColor);
-        if (videoPlayerPolicy.disableCookies) {
-          player.setAttribute("disable-cookies", "");
-        }
-        player.setAttribute("metadata-video-id", testimonial.id);
-        player.setAttribute(
-          "metadata-video-title",
-          `${testimonial.name}${videoPlayerPolicy.metadataTitleSuffix}`,
-        );
-        player.setAttribute("playback-id", testimonial.playbackId);
-        if (videoPlayerPolicy.playsInline) {
-          player.setAttribute("playsinline", "");
-        }
-        player.setAttribute("poster", poster.src);
-        player.setAttribute("preload", videoPlayerPolicy.preload);
-        if (videoPlayerPolicy.autoplay) {
-          player.setAttribute("autoplay", "");
-        }
-        if (
-          videoPlayerPolicy.hideCaptionsWhenUnavailable &&
-          !testimonial.captionsAvailable
-        ) {
-          player.setAttribute("default-hidden-captions", "");
-        }
-        shell.replaceChildren(player);
-        await player.play().catch(() => undefined);
-      } catch {
-        button.disabled = false;
+    let playerPromise;
+    const restorePlayButton = () => {
+      delete button.dataset.playing;
+      button.removeAttribute("aria-busy");
+      button.disabled = false;
+      shell.querySelector("mux-player")?.setAttribute("inert", "");
+    };
+    const preparePlayer = () => {
+      if (!playerPromise) {
+        playerPromise = Promise.all([loadMuxPlayer(), loadVideoPlayerPolicy()])
+          .then(([, videoPlayerPolicy]) => {
+            const player = element("mux-player");
+            player.className = "player-layer";
+            player.setAttribute("inert", "");
+            player.setAttribute("accent-color", brand.accentColor);
+            if (videoPlayerPolicy.disableCookies) {
+              player.setAttribute("disable-cookies", "");
+            }
+            player.setAttribute("metadata-video-id", testimonial.id);
+            player.setAttribute(
+              "metadata-video-title",
+              `${testimonial.name}${videoPlayerPolicy.metadataTitleSuffix}`,
+            );
+            player.setAttribute("playback-id", testimonial.playbackId);
+            player.setAttribute("prefer-playback", "mse");
+            if (videoPlayerPolicy.playsInline) {
+              player.setAttribute("playsinline", "");
+            }
+            player.setAttribute("poster", poster.src);
+            player.setAttribute("preload", videoPlayerPolicy.preload);
+            if (videoPlayerPolicy.autoplay) {
+              player.setAttribute("autoplay", "");
+            }
+            if (
+              videoPlayerPolicy.hideCaptionsWhenUnavailable &&
+              !testimonial.captionsAvailable
+            ) {
+              player.setAttribute("default-hidden-captions", "");
+            }
+            player.addEventListener("playing", () => {
+              button.dataset.playing = "true";
+              button.removeAttribute("aria-busy");
+              player.removeAttribute("inert");
+            });
+            player.addEventListener("error", restorePlayButton);
+            shell.prepend(player);
+            return player;
+          })
+          .catch((error) => {
+            playerPromise = undefined;
+            restorePlayButton();
+            throw error;
+          });
       }
+      return playerPromise;
+    };
+
+    const prepareAfterIntent = () => {
+      void preparePlayer().catch(() => undefined);
+    };
+    button.addEventListener("pointerenter", prepareAfterIntent);
+    button.addEventListener("focus", prepareAfterIntent);
+    button.addEventListener("touchstart", prepareAfterIntent, {
+      passive: true,
+    });
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      void preparePlayer()
+        .then((player) => {
+          player.removeAttribute("inert");
+          return player.play();
+        })
+        .catch(restorePlayButton);
     });
   }
 

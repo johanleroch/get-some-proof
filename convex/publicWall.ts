@@ -105,6 +105,7 @@ export const list = query({
         return projection.type === "video"
           ? {
               ...identity,
+              aspectRatio: projection.aspectRatio,
               captionsAvailable: projection.captionsAvailable,
               playbackId: projection.playbackId,
               posterTimeSeconds: projection.posterTimeSeconds,

@@ -106,6 +106,7 @@ export async function upsertPublicProjection(
     testimonial.submissionType === "video" && videoAsset
       ? {
           ...identity,
+          aspectRatio: videoAsset.aspectRatio,
           captionsAvailable: videoAsset.captionsStatus === "ready",
           playbackId: videoAsset.playbackId!,
           posterTimeSeconds: videoAsset.durationSeconds
