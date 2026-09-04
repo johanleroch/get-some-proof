@@ -29,6 +29,8 @@ This matrix maps the first-release scope to an automated check or an explicit ad
 | Seven-day grace, deterministic 2/13 downgrade, keeper races, durable reminders, 30-day retention, and Mux retries                  | `tests/billing-downgrade.test.ts`; downgrade-selection desktop and mobile visual evidence                                                    |
 | Separate Archive/Permanent Deletion, exact confirmation, optional Pro download, total erasure, retries, and quotas                 | `tests/testimonial-moderation.test.ts`; `tests/video-media.test.ts`; `testimonial-inbox.test.tsx`; canonical deletion dialog visual evidence |
 | Owner-only Workspace export and irreversible deletion, recent Session, immediate public closure, provider retry, and replay safety | `tests/workspace-deletion.test.ts`; `workspace-deletion.test.tsx`; Workspace deletion desktop and mobile visual evidence                     |
+| Connected text and fake-video MVP journeys across private and public boundaries                                                    | `tests/mvp-happy-path.test.ts`; canonical clean-checkout gate in `docs/mvp-certification.md`                                                 |
+| WCAG 2.2 A/AA, keyboard, focus, 44px targets, validation, reduced motion, alternatives, and video controls                         | `e2e/accessibility.spec.ts` on Chromium, Firefox, and WebKit desktop/mobile profiles                                                         |
 | Stripe test-mode Checkout, webhook, Portal, recovery, and cancellation lifecycle                                                   | Adoption-time sandbox record in `docs/stripe-billing.md`; provider-dependent manual proof                                                    |
 | Live-mode and production changes require separate explicit approval                                                                | Safety boundary in `docs/stripe-billing.md`; promotion gate in section 6 of `docs/deployment.md`                                             |
 | UI research sources and unavailable Mobbin tooling remain traceable                                                                | `docs/research/stripe-billing-ui-flows.md`; UI research traceability section in `docs/stripe-billing.md`                                     |
@@ -37,14 +39,20 @@ This matrix maps the first-release scope to an automated check or an explicit ad
 
 ## Release validation
 
+The canonical release-candidate protocol, provider evidence boundary, security
+ledger, and honest pre-launch gates live in `docs/mvp-certification.md`.
+
 Run from a fresh clone with no copied `node_modules` or `.next` directory:
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
 pnpm check
-pnpm exec playwright install chromium
+pnpm exec playwright install
 pnpm test:e2e
 ```
+
+After the initial install, `pnpm certify:mvp` runs `pnpm check` and the Chromium,
+Firefox, and WebKit desktop/mobile Playwright suite as one local gate.
 
 Provider-dependent end-to-end flows require a disposable Convex development deployment and test credentials. They remain explicit manual release checks because CI does not receive production or developer secrets.

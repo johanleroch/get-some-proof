@@ -76,7 +76,7 @@
   --muted-foreground: rgb(98 102 109);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: rgb(185 28 28);
   --border: oklch(0.89 0.004 286);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -129,7 +129,7 @@
   --secondary-foreground: rgb(208 214 224);
   --muted: rgb(255 255 255 / 5%);
   --muted-foreground: rgb(138 143 152);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: rgb(248 113 113);
   --accent: rgb(255 255 255 / 2%);
   --accent-foreground: rgb(247 248 248);
   --border: rgb(255 255 255 / 8%);
@@ -492,6 +492,15 @@ select:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .dashboard-skeleton::after {
     animation: none;
   }

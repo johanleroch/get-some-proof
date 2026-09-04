@@ -22,10 +22,13 @@ test("sign-in is accessible and responsive", async ({ page }) => {
   expect(horizontalOverflow).toBe(false);
 });
 
-test("password recovery remains keyboard reachable", async ({ page }) => {
+test("password recovery remains keyboard reachable", async ({
+  browserName,
+  page,
+}) => {
   await page.goto("/sign-in");
   await page.getByLabel("Email address").focus();
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
   await expect(
     page.getByRole("link", { name: "Forgot password?" }),
   ).toBeFocused();

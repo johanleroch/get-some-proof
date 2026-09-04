@@ -18,15 +18,18 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "test:visual": "playwright test e2e/visual-evidence.spec.ts",
+    "test:e2e": "VISUAL_EVIDENCE_FIXTURES=true playwright test",
+    "test:a11y": "playwright test e2e/accessibility.spec.ts",
+    "test:mvp": "vitest run tests/mvp-happy-path.test.ts",
+    "test:visual": "playwright test e2e/visual-evidence.spec.ts --project desktop-chromium --project mobile-chromium",
     "visual:manifest": "node scripts/visual-evidence/build-manifest.mjs",
     "visual:publish": "node scripts/visual-evidence/publish.mjs",
     "visual:publish:issue": "node scripts/visual-evidence/publish-issue.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "certify:mvp": "pnpm check && pnpm test:e2e"
   },
   "dependencies": {
     "@convex-dev/better-auth": "0.12.5",
@@ -63,6 +66,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/jest-dom": "7.0.1",
