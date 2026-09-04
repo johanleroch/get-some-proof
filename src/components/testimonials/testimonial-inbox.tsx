@@ -59,6 +59,7 @@ type InboxTestimonial =
       text: string;
     })
   | (InboxTestimonialIdentity & {
+      canDownload: boolean;
       captionsStatus: "requested" | "ready" | "failed";
       durationSeconds?: number;
       playbackId?: string;
@@ -68,6 +69,12 @@ type InboxTestimonial =
 
 type ModerationFilter = "all" | "pending" | "published" | "archived" | "spam";
 type SubmissionTypeFilter = "all" | "text" | "video";
+
+const deletionSubmittedAtFormatter = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+});
 type InboxSort = "newest" | "oldest";
 
 function videoStatusLabel(
@@ -229,6 +236,7 @@ export function TestimonialInboxView({
               {testimonial.moderationStatus !== "spam" &&
               testimonial.submissionType === "video" &&
               testimonial.videoStatus === "ready" &&
+              testimonial.canDownload &&
               onDownload ? (
                 <Button
                   disabled={actionsDisabled}
@@ -272,7 +280,7 @@ export function TestimonialInboxView({
   );
 }
 
-function TestimonialDeleteDialog({
+export function TestimonialDeleteDialog({
   onDelete,
   onDownload,
   onOpenChange,
@@ -285,27 +293,36 @@ function TestimonialDeleteDialog({
   pending: boolean;
   target: InboxTestimonial | null;
 }) {
+  const submittedAt = target
+    ? deletionSubmittedAtFormatter.format(new Date(target.createdAt))
+    : null;
   return (
     <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Permanently delete Testimonial?</AlertDialogTitle>
+          <AlertDialogTitle>
+            Permanently delete {target?.submitterName}&apos;s Testimonial?
+          </AlertDialogTitle>
           <AlertDialogDescription>
+            {target
+              ? `${target.submissionType === "video" ? "Video" : "Text"} Testimonial submitted ${submittedAt} UTC · ${target.testimonialId}. `
+              : null}
             {target?.submissionType === "video"
               ? "This immediately removes the video from the Public Wall, then deletes its Mux source, renditions, captions, thumbnails, private record, consent, and email history. This cannot be undone."
               : "This immediately removes it from the Public Wall and deletes its private content, consent record, email history, and avatar. This cannot be undone."}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="flex-col sm:flex-row">
           {target?.submissionType === "video" &&
-          target.videoStatus === "ready" ? (
+          target.videoStatus === "ready" &&
+          target.canDownload ? (
             <Button
               disabled={pending}
               onClick={() => onDownload(target)}
               variant="outline"
             >
               <Download aria-hidden="true" />
-              Download MP4 (Pro)
+              Download MP4 first
             </Button>
           ) : null}
           <AlertDialogCancel asChild>

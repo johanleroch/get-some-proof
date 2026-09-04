@@ -191,6 +191,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "testimonial-delete",
+      "title": "Permanent Testimonial deletion confirmation",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-delete",
+      "heading": "Permanently delete Remy Jupille's Testimonial?",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "public-wall",
       "title": "Published Public Wall",
       "path": "/w/:publicSlug",

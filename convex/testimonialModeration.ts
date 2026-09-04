@@ -10,11 +10,15 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { recordOrganizationAuditEvent } from "./auditEvents";
+import {
+  beginTestimonialAuditPurge,
+  recordOrganizationAuditEvent,
+} from "./auditEvents";
 import { cancelVideoRetentionForReactivation } from "./billingDowngrade";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { nextPublicOrderKey, upsertPublicProjection } from "./publicProjection";
 import { requireOrganizationPermission } from "./security/organizationAccess";
+import { beginTestimonialRelationshipPurge } from "./testimonialDeletion";
 
 const inboxStatusValidator = v.union(
   v.literal("pending"),
@@ -55,6 +59,7 @@ const inboxItemValidator = v.union(
   }),
   v.object({
     ...inboxIdentityValidator,
+    canDownload: v.boolean(),
     captionsStatus: v.union(
       v.literal("requested"),
       v.literal("ready"),
@@ -117,6 +122,10 @@ export const listInbox = query({
       ctx,
       { organizationId: args.organizationId },
       "ownership:manage",
+    );
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      access.organization._id,
     );
     const indexedQuery = args.status
       ? ctx.db
@@ -196,6 +205,7 @@ export const listInbox = query({
         if (!videoAsset) testimonialUnavailable();
         return {
           ...identity,
+          canDownload: entitlement.effectivePlan === "premium",
           captionsStatus: videoAsset.captionsStatus,
           durationSeconds: videoAsset.durationSeconds,
           playbackId: videoAsset.playbackId,
@@ -826,11 +836,26 @@ export const remove = mutation({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
-    const testimonial = await findTestimonial(
-      ctx,
-      access.organization._id,
-      args.testimonialId,
-    );
+    const testimonial = await ctx.db.get(args.testimonialId);
+    if (!testimonial) {
+      const priorDeletion = await ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", access.organization._id)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(args.testimonialId)),
+        )
+        .filter((filter) =>
+          filter.eq(filter.field("eventType"), "testimonial.deleted"),
+        )
+        .first();
+      if (priorDeletion) return { deleted: true };
+      testimonialUnavailable();
+    }
+    if (testimonial.organizationId !== access.organization._id) {
+      testimonialUnavailable();
+    }
     if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     if (testimonial.submissionType === "video") {
       throw new ConvexError({
@@ -839,54 +864,17 @@ export const remove = mutation({
           "Video Testimonials must be deleted through the media deletion workflow.",
       });
     }
-    const [consent, deliveries, projection, replacementItems] =
-      await Promise.all([
-        ctx.db
-          .query("publicationConsents")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("submissionEmailDeliveries")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-        ctx.db
-          .query("publicTestimonialProjections")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .unique(),
-        ctx.db
-          .query("managementLinkReplacementItems")
-          .withIndex("by_testimonial", (index) =>
-            index.eq("testimonialId", testimonial._id),
-          )
-          .collect(),
-      ]);
-    if (projection) await ctx.db.delete(projection._id);
-    for (const delivery of deliveries) await ctx.db.delete(delivery._id);
-    for (const item of replacementItems) {
-      await ctx.db.delete(item._id);
-      const remaining = await ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_request", (index) =>
-          index.eq("requestId", item.requestId),
-        )
-        .first();
-      if (!remaining) {
-        const request = await ctx.db.get(item.requestId);
-        if (request) await ctx.db.delete(request._id);
-      }
-    }
-    if (consent) await ctx.db.delete(consent._id);
+    await beginTestimonialRelationshipPurge(
+      ctx,
+      access.organization._id,
+      testimonial._id,
+      false,
+    );
     if (testimonial.avatarStorageId) {
       await ctx.storage.delete(testimonial.avatarStorageId);
     }
     await ctx.db.delete(testimonial._id);
-    await recordOrganizationAuditEvent(ctx, {
+    const deletionEventId = await recordOrganizationAuditEvent(ctx, {
       organizationId: access.organization._id,
       eventType: "testimonial.deleted",
       actorUserId: access.principal.actorId,
@@ -897,6 +885,12 @@ export const remove = mutation({
       previousValue: testimonial.moderationStatus,
       occurredAt: Date.now(),
     });
+    await beginTestimonialAuditPurge(
+      ctx,
+      access.organization._id,
+      testimonial._id,
+      deletionEventId,
+    );
     return { deleted: true };
   },
 });

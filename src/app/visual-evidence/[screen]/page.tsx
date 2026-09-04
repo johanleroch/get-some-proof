@@ -15,6 +15,7 @@ import {
   OrganizationSettingsScreenFixture,
   ProfileScreenFixture,
   PublicWallScreenFixture,
+  TestimonialDeleteScreenFixture,
   TestimonialInboxScreenFixture,
   VideoRetryScreenFixture,
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
@@ -31,6 +32,7 @@ const screens = {
   "public-wall": PublicWallScreenFixture,
   "public-wall-empty": EmptyPublicWallScreenFixture,
   "testimonial-inbox": TestimonialInboxScreenFixture,
+  "testimonial-delete": TestimonialDeleteScreenFixture,
   "video-retry": VideoRetryScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   onboarding: OnboardingScreenFixture,

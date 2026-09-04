@@ -2,9 +2,13 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { action, internalAction, internalMutation } from "./_generated/server";
-import { recordOrganizationAuditEvent } from "./auditEvents";
+import {
+  beginTestimonialAuditPurge,
+  recordOrganizationAuditEvent,
+} from "./auditEvents";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { requireOrganizationPermission } from "./security/organizationAccess";
+import { beginTestimonialRelationshipPurge } from "./testimonialDeletion";
 import {
   cancelVideoDirectUpload,
   createVideoDownloadAsset,
@@ -397,7 +401,7 @@ export const prepareRemoval = internalMutation({
         .withIndex("by_testimonial", (index) =>
           index.eq("testimonialId", args.testimonialId),
         )
-        .collect();
+        .take(32);
       if (cleanupJobs.length > 0) {
         return {
           alreadyDeleted: false,
@@ -449,42 +453,42 @@ export const prepareRemoval = internalMutation({
       .unique();
     if (!asset) testimonialUnavailable();
 
-    const [cleanupJobs, projection, retryLinks, revisions] = await Promise.all([
-      ctx.db
-        .query("videoProviderCleanupJobs")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("publicTestimonialProjections")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("videoRetryLinks")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("submissionVideoRevisions")
-        .withIndex("by_testimonial_status", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-    ]);
+    const [cleanupJobs, projection, retryLink, activeRevision] =
+      await Promise.all([
+        ctx.db
+          .query("videoProviderCleanupJobs")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .take(32),
+        ctx.db
+          .query("publicTestimonialProjections")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .unique(),
+        ctx.db
+          .query("videoRetryLinks")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonial._id),
+          )
+          .order("desc")
+          .first(),
+        ctx.db
+          .query("submissionVideoRevisions")
+          .withIndex("by_testimonial_status", (index) =>
+            index.eq("testimonialId", testimonial._id).eq("status", "active"),
+          )
+          .unique(),
+      ]);
     if (projection) await ctx.db.delete(projection._id);
-    const retryAssets = await Promise.all(
-      retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
-    );
-    const revisionAssets = await Promise.all(
-      revisions.map((revision) =>
-        revision.videoAssetId ? ctx.db.get(revision.videoAssetId) : null,
-      ),
-    );
-    const allAssets = [asset, ...retryAssets, ...revisionAssets];
+    const retryAsset = retryLink
+      ? await ctx.db.get(retryLink.videoAssetId)
+      : null;
+    const revisionAsset = activeRevision?.videoAssetId
+      ? await ctx.db.get(activeRevision.videoAssetId)
+      : null;
+    const allAssets = [asset, retryAsset, revisionAsset];
     const providerAssets = allAssets
       .filter((candidate) => candidate?.providerAssetId)
       .map((candidate) => ({
@@ -647,13 +651,13 @@ export const finalizeRemoval = internalMutation({
     }
     if (deletion.status === "deleted") return { deleted: true };
 
-    const pendingCleanupJobs = await ctx.db
+    const pendingCleanupJob = await ctx.db
       .query("videoProviderCleanupJobs")
       .withIndex("by_testimonial", (index) =>
         index.eq("testimonialId", args.testimonialId),
       )
-      .collect();
-    if (pendingCleanupJobs.length > 0) {
+      .first();
+    if (pendingCleanupJob) {
       throw new ConvexError({
         code: "VIDEO_PROVIDER_CLEANUP_PENDING",
         message: "Video provider cleanup is still pending.",
@@ -667,36 +671,9 @@ export const finalizeRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    const [
-      asset,
-      consent,
-      deliveries,
-      projection,
-      retention,
-      retryLinks,
-      revisions,
-      replacementItems,
-    ] = await Promise.all([
+    const [asset, retention] = await Promise.all([
       ctx.db
         .query("videoAssets")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("publicationConsents")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("submissionEmailDeliveries")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("publicTestimonialProjections")
         .withIndex("by_testimonial", (index) =>
           index.eq("testimonialId", testimonial._id),
         )
@@ -707,72 +684,24 @@ export const finalizeRemoval = internalMutation({
           index.eq("testimonialId", testimonial._id),
         )
         .unique(),
-      ctx.db
-        .query("videoRetryLinks")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("submissionVideoRevisions")
-        .withIndex("by_testimonial_status", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
     ]);
-    const retryAssets = await Promise.all(
-      retryLinks.map((retryLink) => ctx.db.get(retryLink.videoAssetId)),
-    );
-    const revisionAssets = await Promise.all(
-      revisions.map((revision) =>
-        revision.videoAssetId ? ctx.db.get(revision.videoAssetId) : null,
-      ),
-    );
-    if (projection) await ctx.db.delete(projection._id);
     if (retention) await ctx.db.delete(retention._id);
-    for (const retryLink of retryLinks) await ctx.db.delete(retryLink._id);
-    for (const revision of revisions) {
-      await ctx.db.delete(revision._id);
-      const reservation = await ctx.db.get(revision.reservationId);
+    if (asset) {
+      await ctx.db.delete(asset._id);
+      const reservation = await ctx.db.get(asset.reservationId);
       if (reservation) await ctx.db.delete(reservation._id);
     }
-    for (const delivery of deliveries) await ctx.db.delete(delivery._id);
-    for (const item of replacementItems) {
-      await ctx.db.delete(item._id);
-      const remaining = await ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_request", (index) =>
-          index.eq("requestId", item.requestId),
-        )
-        .first();
-      if (!remaining) {
-        const request = await ctx.db.get(item.requestId);
-        if (request) await ctx.db.delete(request._id);
-      }
-    }
-    if (consent) await ctx.db.delete(consent._id);
-    const appAssets = [asset, ...retryAssets, ...revisionAssets].filter(
-      (candidate, index, all) =>
-        candidate &&
-        all.findIndex((other) => other?._id === candidate._id) === index,
+    await beginTestimonialRelationshipPurge(
+      ctx,
+      access.organization._id,
+      testimonial._id,
+      true,
     );
-    for (const appAsset of appAssets) {
-      if (!appAsset) continue;
-      await ctx.db.delete(appAsset._id);
-      const reservation = await ctx.db.get(appAsset.reservationId);
-      if (reservation) await ctx.db.delete(reservation._id);
-    }
     if (testimonial.avatarStorageId) {
       await ctx.storage.delete(testimonial.avatarStorageId);
     }
     await ctx.db.delete(testimonial._id);
-    await recordOrganizationAuditEvent(ctx, {
+    const deletionEventId = await recordOrganizationAuditEvent(ctx, {
       actorDisplayName: access.principal.name,
       actorUserId: access.principal.actorId,
       eventType: "testimonial.deleted",
@@ -782,6 +711,12 @@ export const finalizeRemoval = internalMutation({
       targetLabel: "Deleted Testimonial",
       targetType: "testimonial",
     });
+    await beginTestimonialAuditPurge(
+      ctx,
+      access.organization._id,
+      testimonial._id,
+      deletionEventId,
+    );
     await ctx.db.patch(deletion._id, {
       lastError: undefined,
       providerAssets: [],

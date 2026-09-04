@@ -14,7 +14,10 @@ import { OrganizationOnboardingFormView } from "@/components/organizations/organ
 import { OrganizationSettingsView } from "@/components/organizations/organization-settings";
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { HostedWall } from "@/components/public-wall/hosted-wall";
-import { TestimonialInboxView } from "@/components/testimonials/testimonial-inbox";
+import {
+  TestimonialDeleteDialog,
+  TestimonialInboxView,
+} from "@/components/testimonials/testimonial-inbox";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
 import {
@@ -239,6 +242,7 @@ const testimonialFixture = {
 
 const videoTestimonialFixture = {
   avatarUrl: null,
+  canDownload: true,
   captionsStatus: "ready" as const,
   consentAcceptedAt: Date.UTC(2026, 8, 2),
   createdAt: Date.UTC(2026, 8, 2),
@@ -324,6 +328,21 @@ export function TestimonialInboxScreenFixture() {
         ]}
       />
     </section>
+  );
+}
+
+export function TestimonialDeleteScreenFixture() {
+  return (
+    <>
+      <TestimonialInboxScreenFixture />
+      <TestimonialDeleteDialog
+        onDelete={() => undefined}
+        onDownload={() => undefined}
+        onOpenChange={() => undefined}
+        pending={false}
+        target={videoTestimonialFixture}
+      />
+    </>
   );
 }
 
