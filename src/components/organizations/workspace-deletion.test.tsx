@@ -7,7 +7,10 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorkspaceDeletionSection } from "./organization-settings";
+import {
+  WorkspaceDeletionProgress,
+  WorkspaceDeletionSection,
+} from "./organization-settings";
 
 describe("WorkspaceDeletionSection", () => {
   beforeEach(cleanup);
@@ -50,5 +53,27 @@ describe("WorkspaceDeletionSection", () => {
       screen.getByRole("button", { name: "Delete Workspace permanently" }),
     );
     expect(onDelete).toHaveBeenCalledWith("Acme Studio");
+  });
+
+  it("keeps a failed Workspace private and offers an explicit cleanup retry", async () => {
+    const onRetry = vi.fn().mockResolvedValue(undefined);
+    render(
+      <WorkspaceDeletionProgress
+        brandName="Acme Studio"
+        lastError="Mux asset deletion failed (503)"
+        onRetry={onRetry}
+        phase="providerCleanup"
+        status="failed"
+      />,
+    );
+
+    expect(
+      screen.getByText(/Public access is disabled and will not be restored/),
+    ).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Mux asset deletion failed (503)",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry cleanup now" }));
+    await waitFor(() => expect(onRetry).toHaveBeenCalledOnce());
   });
 });

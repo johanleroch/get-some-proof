@@ -13,6 +13,7 @@ import { VideoRetryFormView } from "@/components/collection/video-retry-form";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
 import {
   OrganizationSettingsView,
+  WorkspaceDeletionProgress,
   WorkspaceDeletionSection,
 } from "@/components/organizations/organization-settings";
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
@@ -461,6 +462,18 @@ export function WorkspaceDeletionScreenFixture() {
         onExport={async () => undefined}
       />
     </section>
+  );
+}
+
+export function WorkspaceDeletionProgressScreenFixture() {
+  return (
+    <WorkspaceDeletionProgress
+      brandName="Visual Studio"
+      lastError="Mux asset deletion failed (503)"
+      onRetry={async () => undefined}
+      phase="providerCleanup"
+      status="failed"
+    />
   );
 }
 

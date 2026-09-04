@@ -20,11 +20,19 @@ describe("Workspace deletion", () => {
       email: "admin@example.com",
       name: "Admin User",
     });
+    const otherOwner = await authenticatedUser(t, {
+      email: "other-owner@example.com",
+      name: "Other Owner",
+    });
     const brand = await owner.client.mutation(api.organizations.create, {
       name: "Exact Brand",
       publicSlug: "exact-brand",
     });
     await addMemberWithRole(t, brand.id, member.actorId, "admin");
+    await otherOwner.client.mutation(api.organizations.create, {
+      name: "Other Brand",
+      publicSlug: "other-brand",
+    });
 
     await expect(
       member.client.action(api.workspaceDeletion.remove, {
@@ -34,6 +42,15 @@ describe("Workspace deletion", () => {
       }),
     ).rejects.toMatchObject({
       data: { code: "ORGANIZATION_ACCESS_DENIED" },
+    });
+    await expect(
+      otherOwner.client.action(api.workspaceDeletion.remove, {
+        brandName: "Exact Brand",
+        irreversibleConfirmed: true,
+        organizationId: brand.id,
+      }),
+    ).rejects.toMatchObject({
+      data: { code: "ORGANIZATION_UNAVAILABLE" },
     });
     await expect(
       owner.client.action(api.workspaceDeletion.remove, {
@@ -66,7 +83,7 @@ describe("Workspace deletion", () => {
       name: "Delete Me",
       publicSlug: "delete-me",
     });
-    const testimonialId = await t.run(async (ctx) => {
+    const { reservationId, testimonialId } = await t.run(async (ctx) => {
       const now = Date.now();
       const id = await ctx.db.insert("testimonials", {
         clientSubmissionId: "workspace-delete-text",
@@ -89,7 +106,16 @@ describe("Workspace deletion", () => {
         text: "Private proof",
         type: "text",
       });
-      return id;
+      const reservationId = await ctx.db.insert("videoReservations", {
+        clientSubmissionId: "reserved-before-workspace-delete",
+        createdAt: now,
+        expiresAt: now + 60_000,
+        organizationId: brand.id,
+        plan: "premium",
+        status: "reserved",
+        updatedAt: now,
+      });
+      return { reservationId, testimonialId: id };
     });
 
     const exported = await owner.client.action(
@@ -127,6 +153,31 @@ describe("Workspace deletion", () => {
     ).rejects.toMatchObject({
       data: { code: "COLLECTION_FORM_UNAVAILABLE" },
     });
+    await expect(
+      owner.client.mutation(internal.video.attachProviderUpload, {
+        fileSizeBytes: 1_024,
+        mimeType: "video/mp4",
+        provider: "fake",
+        providerUploadId: "upload-after-workspace-delete",
+        reservationId,
+        spokenLanguage: "fr",
+      }),
+    ).rejects.toMatchObject({
+      data: { code: "COLLECTION_FORM_UNAVAILABLE" },
+    });
+    const replacementRequestId = await owner.client.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      {
+        email: "private@example.com",
+        publicSlug: "delete-me",
+        scheduleDelivery: false,
+      },
+    );
+    const replacementRequest = replacementRequestId
+      ? await t.run((ctx) => ctx.db.get(replacementRequestId))
+      : null;
+    expect(replacementRequest).not.toHaveProperty("organizationId");
+    expect(replacementRequest).not.toHaveProperty("brandName");
 
     await expect(
       owner.client.action(api.workspaceDeletion.remove, {
@@ -134,7 +185,14 @@ describe("Workspace deletion", () => {
         irreversibleConfirmed: true,
         organizationId: brand.id,
       }),
-    ).resolves.toEqual({ deleted: true, deletionId: prepared.deletionId });
+    ).resolves.toEqual({ deleted: false, deletionId: prepared.deletionId });
+    for (let guard = 0; guard < 100; guard += 1) {
+      await owner.client.action(internal.workspaceDeletion.processDeletion, {
+        deletionId: prepared.deletionId,
+      });
+      const deletion = await t.run((ctx) => ctx.db.get(prepared.deletionId));
+      if (deletion?.status === "deleted") break;
+    }
     await expect(
       owner.client.action(api.workspaceDeletion.remove, {
         brandName: "Delete Me",
@@ -230,6 +288,62 @@ describe("Workspace deletion", () => {
         organizationId: brand.id,
       }),
     ).resolves.toEqual(prepared);
+    await expect(
+      owner.client.mutation(
+        internal.stripeWebhookSync.enqueueSubscriptionEvent,
+        {
+          eventCreated: Math.floor(Date.now() / 1_000) + 1,
+          eventId: "evt_after_workspace_delete",
+          eventType: "customer.subscription.deleted",
+          stripeSubscriptionId: "sub_workspace_delete",
+        },
+      ),
+    ).resolves.toEqual({ outcome: "ignored" });
+    await expect(
+      owner.client.mutation(internal.stripeWebhookSync.applySubscriptionEvent, {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: Math.floor(Date.now() / 1_000),
+        eventCreated: Math.floor(Date.now() / 1_000) + 2,
+        eventId: "evt_apply_after_workspace_delete",
+        eventType: "customer.subscription.deleted",
+        organizationId: String(brand.id),
+        priceId: "price_workspace_delete",
+        status: "canceled",
+        stripeCustomerId: "cus_workspace_delete",
+        stripeSubscriptionId: "sub_workspace_delete",
+      }),
+    ).resolves.toEqual({ outcome: "ignored" });
+    await expect(
+      owner.client.mutation(internal.stripeWebhookSync.applySubscriptionEvent, {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: Math.floor(Date.now() / 1_000),
+        eventCreated: Math.floor(Date.now() / 1_000) + 3,
+        eventId: "evt_new_subscription_after_workspace_delete",
+        eventType: "customer.subscription.created",
+        organizationId: String(brand.id),
+        priceId: "price_workspace_delete",
+        status: "active",
+        stripeCustomerId: "cus_workspace_delete",
+        stripeSubscriptionId: "sub_late_workspace_delete",
+      }),
+    ).resolves.toEqual({ outcome: "ignored" });
+    await t.run(async (ctx) => {
+      const deletion = await ctx.db.get(prepared.deletionId);
+      if (!deletion) throw new Error("Deletion missing");
+      const markers = await ctx.db
+        .query("workspaceDeletionSubscriptions")
+        .withIndex("by_deletion", (index) =>
+          index.eq("deletionId", prepared.deletionId),
+        )
+        .collect();
+      expect(
+        markers.map((marker) => marker.stripeSubscriptionId).sort(),
+      ).toEqual(["sub_late_workspace_delete", "sub_workspace_delete"]);
+      for (const marker of markers) {
+        await ctx.db.patch(marker._id, { canceledAt: Date.now() });
+      }
+      await ctx.db.patch(deletion._id, { phase: "managementItems" });
+    });
 
     for (let guard = 0; guard < 100; guard += 1) {
       if (
@@ -254,6 +368,33 @@ describe("Workspace deletion", () => {
       subscriptions: [],
       webhooks: [],
     });
+  });
+
+  it("continues to completion from the durable scheduler without an open browser", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = createConvexTest();
+      const owner = await authenticatedUser(t, {
+        email: "durable-delete@example.com",
+      });
+      const brand = await owner.client.mutation(api.organizations.create, {
+        name: "Durable Delete",
+        publicSlug: "durable-delete",
+      });
+      const started = await owner.client.action(api.workspaceDeletion.remove, {
+        brandName: "Durable Delete",
+        irreversibleConfirmed: true,
+        organizationId: brand.id,
+      });
+
+      expect(started.deleted).toBe(false);
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers(), 500);
+      await expect(
+        t.run((ctx) => ctx.db.get(started.deletionId)),
+      ).resolves.toMatchObject({ phase: "complete", status: "deleted" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps a failed provider cleanup private and resumes it without restoring the Workspace", async () => {
@@ -322,13 +463,20 @@ describe("Workspace deletion", () => {
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
+    const started = await owner.client.action(api.workspaceDeletion.remove, {
+      brandName: "Video Delete",
+      irreversibleConfirmed: true,
+      organizationId: brand.id,
+    });
+    expect(started.deleted).toBe(false);
+    await owner.client.action(internal.workspaceDeletion.processDeletion, {
+      deletionId: started.deletionId,
+    });
     await expect(
-      owner.client.action(api.workspaceDeletion.remove, {
-        brandName: "Video Delete",
-        irreversibleConfirmed: true,
-        organizationId: brand.id,
+      owner.client.query(api.workspaceDeletion.getStatus, {
+        deletionId: started.deletionId,
       }),
-    ).rejects.toThrow("Mux asset deletion failed (503)");
+    ).resolves.toMatchObject({ status: "failed" });
     await expect(
       t.query(api.publicWall.getBrand, { publicSlug: "video-delete" }),
     ).resolves.toBeNull();
@@ -343,7 +491,14 @@ describe("Workspace deletion", () => {
         irreversibleConfirmed: true,
         organizationId: brand.id,
       }),
-    ).resolves.toMatchObject({ deleted: true });
+    ).resolves.toMatchObject({ deleted: false });
+    for (let guard = 0; guard < 100; guard += 1) {
+      await owner.client.action(internal.workspaceDeletion.processDeletion, {
+        deletionId: started.deletionId,
+      });
+      const deletion = await t.run((ctx) => ctx.db.get(started.deletionId));
+      if (deletion?.status === "deleted") break;
+    }
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.mux.com/video/v1/assets/asset-detached-cleanup",
       expect.objectContaining({ method: "DELETE" }),

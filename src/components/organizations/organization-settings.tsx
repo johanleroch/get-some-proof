@@ -2,9 +2,10 @@
 
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { publicSlugFromBrandName } from "@convex/domain/brand";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import {
@@ -95,8 +96,19 @@ export function OrganizationSettings({
   embedOrigin: string;
   slug: string;
 }) {
-  const router = useRouter();
   const organization = useQuery(api.organizations.getBySlug, { slug });
+  const deletionBySlug = useQuery(api.workspaceDeletion.getByOrganizationSlug, {
+    slug,
+  });
+  const [startedDeletion, setStartedDeletion] = useState<{
+    brandName: string;
+    deletionId: Id<"workspaceDeletions">;
+    organizationId: Id<"organizations">;
+  } | null>(null);
+  const deletionStatus = useQuery(
+    api.workspaceDeletion.getStatus,
+    startedDeletion ? { deletionId: startedDeletion.deletionId } : "skip",
+  );
   const access = useQuery(
     api.organizationAuthorization.getMine,
     organization ? { organizationId: organization.id } : "skip",
@@ -116,8 +128,46 @@ export function OrganizationSettings({
   const exportWorkspace = useAction(api.workspaceDeletion.exportData);
   const deleteWorkspace = useAction(api.workspaceDeletion.remove);
 
+  if (deletionStatus?.status === "deleted") redirect("/dashboard");
+
+  const activeDeletion = startedDeletion
+    ? {
+        ...startedDeletion,
+        lastError: deletionStatus?.lastError,
+        phase: deletionStatus?.phase ?? deletionBySlug?.phase ?? "queued",
+        status:
+          deletionStatus?.status ??
+          deletionBySlug?.status ??
+          ("requested" as const),
+      }
+    : deletionBySlug;
+
+  if (activeDeletion) {
+    return (
+      <WorkspaceDeletionProgress
+        brandName={activeDeletion.brandName}
+        lastError={activeDeletion.lastError}
+        onRetry={async () => {
+          const result = await deleteWorkspace({
+            brandName: activeDeletion.brandName,
+            irreversibleConfirmed: true,
+            organizationId: activeDeletion.organizationId,
+          });
+          setStartedDeletion({
+            brandName: activeDeletion.brandName,
+            deletionId: result.deletionId,
+            organizationId: activeDeletion.organizationId,
+          });
+        }}
+        phase={activeDeletion.phase}
+        status={activeDeletion.status}
+      />
+    );
+  }
+
   if (
     organization === undefined ||
+    deletionBySlug === undefined ||
     (organization && (access === undefined || wallSettings === undefined))
   ) {
     return (
@@ -179,12 +229,16 @@ export function OrganizationSettings({
           ? {
               inboxHref: `/org/${slug}/inbox`,
               onDelete: async (brandName) => {
-                await deleteWorkspace({
+                const result = await deleteWorkspace({
                   brandName,
                   irreversibleConfirmed: true,
                   organizationId,
                 });
-                router.replace("/dashboard");
+                setStartedDeletion({
+                  brandName,
+                  deletionId: result.deletionId,
+                  organizationId,
+                });
               },
               onExport: async () => {
                 const data = await exportWorkspace({ organizationId });
@@ -398,6 +452,79 @@ export function OrganizationSettingsView({
           onExport={workspaceDeletion.onExport}
         />
       ) : null}
+    </section>
+  );
+}
+
+export function WorkspaceDeletionProgress({
+  brandName,
+  lastError,
+  onRetry,
+  phase,
+  status,
+}: {
+  brandName: string;
+  lastError?: string;
+  onRetry: () => Promise<void>;
+  phase: string;
+  status: "requested" | "failed" | "deleted";
+}) {
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const phaseLabel =
+    phase === "providerCleanup" || phase === "media"
+      ? "Deleting hosted videos"
+      : phase.startsWith("stripe")
+        ? "Removing billing records"
+        : phase === "complete"
+          ? "Finishing deletion"
+          : "Removing private Workspace data";
+
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      await onRetry();
+    } catch (error) {
+      setRetryError(error instanceof Error ? error.message : "Retry failed.");
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-2xl space-y-4 px-6 py-12">
+      <div>
+        <h1 className="text-2xl font-semibold">Deleting {brandName}</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Public access is disabled and will not be restored. You may leave this
+          page; deletion continues in the background.
+        </p>
+      </div>
+      <div className="bg-card space-y-3 rounded-xl border p-6 shadow-xs">
+        <p className="font-medium" role="status">
+          {status === "failed" ? "Cleanup needs another attempt" : phaseLabel}
+        </p>
+        <p className="text-muted-foreground text-sm">
+          {status === "failed"
+            ? "A provider cleanup step failed. The Workspace remains private and the same deletion can be resumed safely."
+            : "The durable cleanup is progressing in small, retryable steps."}
+        </p>
+        {lastError || retryError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {retryError ?? lastError}
+          </p>
+        ) : null}
+        {status === "failed" ? (
+          <Button
+            disabled={retrying}
+            onClick={() => void retry()}
+            type="button"
+          >
+            {retrying ? "Retrying cleanup…" : "Retry cleanup now"}
+          </Button>
+        ) : null}
+      </div>
     </section>
   );
 }

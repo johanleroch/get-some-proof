@@ -51,6 +51,72 @@ function entitlementDeadline(snapshot: {
   return null;
 }
 
+async function subscriptionDeletionStarted(
+  ctx: MutationCtx,
+  stripeSubscriptionId: string,
+  organizationId?: string,
+) {
+  const marker = await ctx.db
+    .query("workspaceDeletionSubscriptions")
+    .withIndex("by_stripe_subscription", (index) =>
+      index.eq("stripeSubscriptionId", stripeSubscriptionId),
+    )
+    .unique();
+  if (marker) {
+    if (!marker.canceledAt) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.workspaceDeletion.processDeletion,
+        { deletionId: marker.deletionId },
+      );
+    }
+    return true;
+  }
+  const normalizedOrganizationId = organizationId
+    ? ctx.db.normalizeId("organizations", organizationId)
+    : null;
+  if (!normalizedOrganizationId) return false;
+  const deletion = await ctx.db
+    .query("workspaceDeletions")
+    .withIndex("by_organization", (index) =>
+      index.eq("organizationId", normalizedOrganizationId),
+    )
+    .unique();
+  if (!deletion) return false;
+  await ctx.db.insert("workspaceDeletionSubscriptions", {
+    createdAt: Date.now(),
+    deletionId: deletion._id,
+    stripeSubscriptionId,
+  });
+  const phasesAfterWebhookPurge = new Set([
+    "stripeWebhookEvents",
+    "stripeReconciliations",
+    "stripeInvoiceFailures",
+    "billingSubscriptions",
+    "billingProfiles",
+    "auditEvents",
+    "memberships",
+    "organization",
+    "complete",
+  ]);
+  await ctx.db.patch(deletion._id, {
+    lastError: undefined,
+    nextRetryAt: undefined,
+    phase: phasesAfterWebhookPurge.has(deletion.phase)
+      ? "stripeWebhookEvents"
+      : deletion.phase,
+    status: "requested",
+    subscriptionIds: Array.from(
+      new Set([...(deletion.subscriptionIds ?? []), stripeSubscriptionId]),
+    ),
+    updatedAt: Date.now(),
+  });
+  await ctx.scheduler.runAfter(0, internal.workspaceDeletion.processDeletion, {
+    deletionId: deletion._id,
+  });
+  return true;
+}
+
 async function scheduleEntitlementDeadline(
   ctx: MutationCtx,
   stripeSubscriptionId: string,
@@ -138,6 +204,9 @@ export const enqueueSubscriptionEvent = internalMutation({
     outcome: outcomeValidator,
   }),
   handler: async (ctx, args) => {
+    if (await subscriptionDeletionStarted(ctx, args.stripeSubscriptionId)) {
+      return { outcome: "ignored" as const };
+    }
     const priorEvent = await ctx.db
       .query("stripeWebhookEvents")
       .withIndex("by_stripe_event", (index) =>
@@ -321,6 +390,15 @@ export const applySubscriptionEvent = internalMutation({
   },
   returns: v.object({ outcome: outcomeValidator }),
   handler: async (ctx, args) => {
+    if (
+      await subscriptionDeletionStarted(
+        ctx,
+        args.stripeSubscriptionId,
+        args.organizationId,
+      )
+    ) {
+      return { outcome: "ignored" as const };
+    }
     const priorEvent = await ctx.db
       .query("stripeWebhookEvents")
       .withIndex("by_stripe_event", (index) =>

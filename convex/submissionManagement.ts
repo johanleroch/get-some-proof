@@ -75,6 +75,10 @@ async function findManagedTestimonial(ctx: MutationCtx, tokenHash: string) {
   ) {
     unavailable();
   }
+  const organization = await ctx.db.get(testimonial.organizationId);
+  if (!organization || organization.deletionStartedAt !== undefined) {
+    unavailable();
+  }
   return testimonial;
 }
 
@@ -1093,26 +1097,30 @@ export const queueReplacementLinkRequest = internalMutation({
           )
           .unique()
       : null;
-    const testimonials =
-      brand && brand.deletionStartedAt === undefined
-        ? await ctx.db
-            .query("testimonials")
-            .withIndex("by_organization_submitter_email", (index) =>
-              index.eq("organizationId", brand._id).eq("submitterEmail", email),
-            )
-            .collect()
-        : [];
+    const availableBrand =
+      brand?.deletionStartedAt === undefined ? brand : null;
+    const testimonials = availableBrand
+      ? await ctx.db
+          .query("testimonials")
+          .withIndex("by_organization_submitter_email", (index) =>
+            index
+              .eq("organizationId", availableBrand._id)
+              .eq("submitterEmail", email),
+          )
+          .collect()
+      : [];
     const requestId = await ctx.db.insert("managementLinkReplacementRequests", {
       attempts: 0,
-      brandName: brand?.name,
+      brandName: availableBrand?.name,
       createdAt: now,
-      organizationId: brand?._id,
-      recipientEmail: brand && testimonials.length > 0 ? email : undefined,
+      organizationId: availableBrand?._id,
+      recipientEmail:
+        availableBrand && testimonials.length > 0 ? email : undefined,
       requestKey,
       status: "pending",
       updatedAt: now,
     });
-    if (brand && testimonials.length > 0) {
+    if (availableBrand && testimonials.length > 0) {
       const secret = managementLinkTokenSecret();
       const items = await Promise.all(
         testimonials.map(async (testimonial) => {
@@ -1122,7 +1130,7 @@ export const queueReplacementLinkRequest = internalMutation({
             tokenSeed,
           );
           return {
-            organizationId: brand._id,
+            organizationId: availableBrand._id,
             requestId,
             testimonialId: testimonial._id,
             tokenHash: await hashSubmissionManagementToken(token),

@@ -209,6 +209,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "workspace-delete-progress",
+      "title": "Workspace deletion retry",
+      "path": "/org/:organizationSlug/settings",
+      "fixturePath": "/visual-evidence/workspace-delete-progress",
+      "heading": "Deleting Visual Studio",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "public-wall",
       "title": "Published Public Wall",
       "path": "/w/:publicSlug",

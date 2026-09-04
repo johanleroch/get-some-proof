@@ -729,6 +729,9 @@ export default defineSchema({
     ),
     phase: v.string(),
     subscriptionIds: v.optional(v.array(v.string())),
+    leaseId: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    nextRetryAt: v.optional(v.number()),
     attempts: v.number(),
     lastError: v.optional(v.string()),
     createdAt: v.number(),
@@ -736,4 +739,12 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_actor", ["actorUserId"]),
+  workspaceDeletionSubscriptions: defineTable({
+    deletionId: v.id("workspaceDeletions"),
+    stripeSubscriptionId: v.string(),
+    createdAt: v.number(),
+    canceledAt: v.optional(v.number()),
+  })
+    .index("by_deletion", ["deletionId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
 });
