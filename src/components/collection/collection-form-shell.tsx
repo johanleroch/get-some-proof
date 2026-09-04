@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, MessageSquareText, Star, Video } from "lucide-react";
 import Image from "next/image";
@@ -84,6 +84,10 @@ type VideoSubmissionResult = SubmissionResult & {
 
 const fieldClassName =
   "h-4 w-4 shrink-0 accent-(--brand-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent)";
+
+function subscribeToBrowserCapabilities() {
+  return () => undefined;
+}
 
 function ReplacementLinkRequest({
   publicSlug,
@@ -231,6 +235,7 @@ function VideoStep({
         <Label htmlFor="testimonial-video">Import video</Label>
         <Input
           accept="video/mp4,video/quicktime,video/webm"
+          data-step-focus
           id="testimonial-video"
           onChange={(event) => onFileChange(event.target.files?.[0])}
           type="file"
@@ -334,6 +339,7 @@ function ProofTypeStep({
       </div>
       <button
         aria-label="Send a text testimonial"
+        data-step-focus
         className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
         disabled={!textAvailable}
         onClick={onText}
@@ -403,6 +409,7 @@ function TextStep({
         <Label htmlFor="testimonial-text">Your testimonial</Label>
         <textarea
           className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 min-h-40 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+          data-step-focus
           id="testimonial-text"
           maxLength={2_000}
           onChange={(event) => onChange(event.target.value)}
@@ -454,7 +461,9 @@ function SuccessStep({
     <section className="space-y-4 py-2 text-center">
       <CheckCircle2 className="mx-auto size-12 text-(--brand-accent)" />
       <div>
-        <h2 className="text-xl font-semibold">Thank you for your proof</h2>
+        <h2 className="text-xl font-semibold" data-step-focus tabIndex={-1}>
+          Thank you for your proof
+        </h2>
         <p className="text-muted-foreground mt-2 text-sm leading-6">
           {proofType === "video"
             ? `Your video is processing and remains Pending private review by ${brandName}.`
@@ -538,6 +547,7 @@ function IdentityStep({
           <Label htmlFor="submitter-name">Your name</Label>
           <Input
             autoComplete="name"
+            data-step-focus
             id="submitter-name"
             onChange={(event) => onNameChange(event.target.value)}
             required
@@ -595,7 +605,7 @@ function IdentityStep({
         <legend className="text-sm font-medium">Rating (optional)</legend>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((value) => (
-            <label className="cursor-pointer p-1" key={value}>
+            <label className="cursor-pointer p-2.5" key={value}>
               <input
                 checked={rating === value}
                 className="sr-only"
@@ -618,7 +628,7 @@ function IdentityStep({
         </div>
       </fieldset>
       <div className="bg-muted/50 space-y-4 rounded-xl border p-4">
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex min-h-11 items-center gap-3 text-sm">
           <input
             checked={ageConfirmed}
             className={fieldClassName}
@@ -627,7 +637,7 @@ function IdentityStep({
           />
           <span>I confirm that I am at least 18 years old.</span>
         </label>
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex min-h-11 items-center gap-3 text-sm">
           <input
             checked={consentAccepted}
             className={fieldClassName}
@@ -1086,6 +1096,8 @@ export function CollectionFormShellView({
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
+  const flowRef = useRef<HTMLElement | null>(null);
+  const previousStepRef = useRef(step);
   useEffect(
     () => () =>
       discardBrowserRecording({ recorderRef, streamRef: recordingStreamRef }),
@@ -1099,7 +1111,16 @@ export function CollectionFormShellView({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recordingSupported = supportsBrowserRecording();
+  const recordingSupported = useSyncExternalStore(
+    subscribeToBrowserCapabilities,
+    supportsBrowserRecording,
+    () => false,
+  );
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+    flowRef.current?.querySelector<HTMLElement>("[data-step-focus]")?.focus();
+  }, [proofType, step]);
   const textLength = Array.from(text.trim()).length;
   const textValid = textLength >= 20 && textLength <= 2_000;
   const identityValid = hasValidIdentity(submitterName, submitterEmail);
@@ -1114,7 +1135,8 @@ export function CollectionFormShellView({
 
   return (
     <main
-      className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12"
+      className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12 [&_button]:min-h-11 [&_input:not([type=checkbox]):not([type=radio])]:min-h-11"
+      ref={flowRef}
       style={{ "--brand-accent": brand.primaryColor } as CSSProperties}
     >
       <Card className="w-full max-w-xl overflow-hidden shadow-xl shadow-black/5">

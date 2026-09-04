@@ -72,11 +72,13 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec playwright install chromium
+pnpm exec playwright install
 pnpm test:e2e
 ```
 
 `pnpm check` runs every non-browser quality check and the production build.
+`pnpm certify:mvp` then adds the Chromium, Firefox, and WebKit desktop/mobile
+browser and WCAG 2.2 release-candidate matrix without production credentials.
 
 ## Documentation
 
@@ -85,4 +87,5 @@ pnpm test:e2e
 - [Authentication and authorization research](docs/research/authentication-authorization-multitenancy.md)
 - [Stripe sandbox adoption](docs/stripe-billing.md)
 - [Verification matrix](docs/verification.md)
+- [Local MVP certification](docs/mvp-certification.md)
 - [Domain language](CONTEXT.md) and [architecture decisions](docs/adr/)

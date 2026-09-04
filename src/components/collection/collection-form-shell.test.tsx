@@ -112,12 +112,14 @@ describe("CollectionFormShellView", () => {
       screen.getByRole("button", { name: "Send a text testimonial" }),
     );
     expect(screen.getByText("Step 2 of 4")).toBeVisible();
+    expect(screen.getByLabelText("Your testimonial")).toHaveFocus();
     fireEvent.change(screen.getByLabelText("Your testimonial"), {
       target: { value: "Acme helped us turn customer proof into new work." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(screen.getByText("Step 3 of 4")).toBeVisible();
+    expect(screen.getByLabelText("Your name")).toHaveFocus();
     fireEvent.change(screen.getByLabelText("Your name"), {
       target: { value: "Alice Martin" },
     });
@@ -156,7 +158,7 @@ describe("CollectionFormShellView", () => {
     );
     expect(
       await screen.findByRole("heading", { name: "Thank you for your proof" }),
-    ).toBeVisible();
+    ).toHaveFocus();
     expect(screen.getByText("Step 4 of 4")).toBeVisible();
     expect(screen.getAllByText(/management link/i)).not.toHaveLength(0);
   });
