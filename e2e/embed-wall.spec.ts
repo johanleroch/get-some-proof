@@ -108,6 +108,7 @@ const hosts = {
 
 test("renders isolated, responsive, ordered walls in every approved host fixture", async ({
   baseURL,
+  browserName,
   page,
 }, testInfo) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -197,13 +198,14 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
       .toBe("1");
 
     await page.locator(".sentinel").focus();
-    await page.keyboard.press("Tab");
+    const tabKey = browserName === "webkit" ? "Alt+Tab" : "Tab";
+    await page.keyboard.press(tabKey);
     await expect(
       walls.first().getByRole("button", {
         name: "Play Video Person's testimonial",
       }),
     ).toBeFocused();
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(tabKey);
     const attribution = walls.first().locator("a").first();
     await expect(attribution).toBeFocused();
     await expect(attribution).toHaveAttribute("rel", "sponsored nofollow");

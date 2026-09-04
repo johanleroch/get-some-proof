@@ -15,11 +15,29 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "desktop-firefox",
+      testIgnore: /visual-evidence\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "desktop-webkit",
+      testIgnore: /visual-evidence\.spec\.ts/,
+      use: { ...devices["Desktop Safari"] },
+    },
     { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+    {
+      name: "mobile-webkit",
+      testIgnore: /visual-evidence\.spec\.ts/,
+      use: { ...devices["iPhone 15"] },
+    },
   ],
   webServer: {
     command: `pnpm dev --hostname 127.0.0.1 --port ${port}`,
-    env: { VISUAL_EVIDENCE_MODE: "true" },
+    env: {
+      VISUAL_EVIDENCE_FIXTURES: "true",
+      VISUAL_EVIDENCE_MODE: "true",
+    },
     url: `${baseURL}/sign-in`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
