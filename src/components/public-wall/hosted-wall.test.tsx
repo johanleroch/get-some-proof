@@ -56,11 +56,9 @@ describe("HostedWall", () => {
       />,
     );
 
-    expect(screen.getByTestId("public-wall-grid")).toHaveClass(
-      "columns-1",
-      "md:columns-2",
-      "xl:columns-3",
-    );
+    const grid = screen.getByTestId("public-wall-grid");
+    expect(grid).toHaveClass("columns-1", "md:columns-2");
+    expect(grid.parentElement).toHaveClass("max-w-6xl");
     expect(screen.getByText("A clear customer outcome.")).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Load more testimonials" }),

@@ -71,6 +71,60 @@ final result: passed
 
 ---
 
+# Senja-style public Wall of Love
+
+## Comparison target
+
+- Reference: `/var/folders/4q/0rvcnp8x0pl_nclw7wbyzs2w0000gn/T/codex-clipboard-78fb0eda-33fc-4036-9882-f9af93b9ba82.png`
+- Desktop implementation: `/tmp/get-some-proof-wall-evidence-ratio-fix/desktop-chromium/public-wall.png`
+- Mobile implementation: `/tmp/get-some-proof-wall-evidence-ratio-fix/mobile-chromium/public-wall.png`
+- Side-by-side comparison input: `/tmp/get-some-proof-wall-design-qa.png`
+- State: dark hosted public wall containing landscape, portrait, rated, unrated, video, and text testimonials.
+
+## Findings
+
+- The implementation preserves the reference's two-column desktop masonry and single-column mobile flow.
+- Video cards now follow each source asset's ratio instead of forcing every asset into a portrait frame.
+- Rating, customer name, role or company, and play affordance sit over a bottom gradient on the video, matching the reference card anatomy.
+- Text cards retain Get Some Proof's existing design tokens while matching the reference's dark surface, subtle border, radius, density, and type hierarchy.
+- The final desktop and mobile captures show no clipping or horizontal overflow. The poster is intentionally cover-fitted inside the source-ratio frame; no new encoded crop is produced.
+- The free-plan attribution remains in a narrow footer below video cards so it stays a valid, accessible link rather than nesting a link inside the video play button.
+
+## Verification
+
+- Focused public-wall visual capture: passed on desktop and mobile.
+- Full Playwright suite: 102 passed and 46 intentionally skipped.
+- Vitest suite: 83 files and 482 tests passed.
+- TypeScript, ESLint, Prettier, and embedded script syntax: passed.
+- Production build: passed with the documented webpack fallback. The default Turbopack build is blocked in this local execution environment when its CSS worker attempts to bind an internal port.
+- React Doctor found no diagnostic in the changed public-wall or testimonial-card components. Its reported warnings belong to other already-modified files on the branch.
+
+## Follow-up: bounded wall and playback handoff
+
+- Current captures: `visual-evidence/desktop-chromium/public-wall.png` and `visual-evidence/mobile-chromium/public-wall.png`.
+- The hosted wall and embed are capped at 72rem and retain two desktop columns. In the Atrakt integration preview, the host measured 1065px inside the page container, with two 525px cards; the embed reported a 1152px maximum.
+- The Atrakt page was proxied locally without changing its repository, and its native testimonial section was replaced at runtime by the real `embed/v1.js` output using deterministic fixture data.
+- A 9:16 card measured 523 × 929px and a 3:4 card measured 523 × 697px. Both matched their declared source ratios, so the portrait subject was no longer cropped into a landscape frame.
+- At a 385px Atrakt viewport, the embed switched to one 338px column with no document-level horizontal overflow.
+- Mux Player is prepared behind the poster with `preload="none"`. The poster remains interactive and visible until the media emits `playing`; the player is inert before playback so its hidden controls do not steal keyboard focus.
+- The real Atrakt-browser playback reached `readyState=4`, advanced past ten seconds, retained `prefer-playback="mse"`, and exposed a browser-local `blob:` media URL as expected.
+- Targeted component tests, TypeScript, and the four desktop embed integration tests passed. The full visual capture run produced the updated public-wall desktop/mobile images; 52 screens passed and six unrelated dialog fixture captures failed because their expected headings/content were absent.
+- React Doctor reported no finding in the changed public-wall/player files. Its remaining 26 warnings point to other pre-existing changed files, and its global score was unavailable because maintainability analysis did not complete.
+
+## Follow-up: real Atrakt landscape-ratio repair
+
+- Initial live signal: the public card declared and displayed 9:16 while the Mux media element reported an intrinsic 1280 × 720 video.
+- Boundary inspection showed Mux stored `aspect_ratio: "16:9"`, while both the ready Convex Video Asset and its existing Public Projection had no `aspectRatio` value.
+- The observed Mux event sequence included `video.asset.ready` followed by `video.asset.updated`; the latter was stored with outcome `ignored`.
+- The webhook handler now accepts a valid ratio from `video.asset.updated`, persists it on the ready Video Asset, and refreshes an already-published video projection.
+- The affected development asset was repaired from Mux's authoritative metadata. After reload, the live card declared `16:9`, computed to `16 / 9`, and the playing media still reported 1280 × 720.
+- The focused regression test first publishes the projection without a ratio, then verifies that the later metadata event changes the webhook outcome to `metadata_updated` and updates the public result to 16:9.
+- Live visual inspection passed, as did the focused regression, all 484 Vitest tests, lint, TypeScript, webpack production build, and deterministic desktop/mobile Public Wall captures.
+
+final result: passed
+
+---
+
 # Design QA: Profile Images and Organization Logos
 
 ## Sources

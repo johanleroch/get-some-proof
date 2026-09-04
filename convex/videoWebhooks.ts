@@ -25,6 +25,7 @@ type VideoEvent = {
 };
 
 type EventData = {
+  aspect_ratio?: unknown;
   asset_id?: unknown;
   duration?: unknown;
   id?: unknown;
@@ -94,6 +95,16 @@ function publicPlaybackId(data: EventData) {
   return playback?.id;
 }
 
+function videoAspectRatio(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const match = /^(\d{1,5}):(\d{1,5})$/.exec(value);
+  if (!match) return undefined;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (width <= 0 || height <= 0) return undefined;
+  return `${width}:${height}`;
+}
+
 async function failAsset(
   ctx: MutationCtx,
   asset: Doc<"videoAssets">,
@@ -113,6 +124,28 @@ async function failAsset(
     });
   }
   return true;
+}
+
+async function updateVideoAspectRatio(
+  ctx: MutationCtx,
+  asset: Doc<"videoAssets">,
+  aspectRatio: string,
+) {
+  await ctx.db.patch(asset._id, {
+    aspectRatio,
+    updatedAt: Date.now(),
+  });
+  const testimonialId = asset.testimonialId;
+  if (!testimonialId) return;
+  const projection = await ctx.db
+    .query("publicTestimonialProjections")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", testimonialId),
+    )
+    .unique();
+  if (projection?.type === "video") {
+    await ctx.db.patch(projection._id, { aspectRatio });
+  }
 }
 
 export const applyEvent = internalMutation({
@@ -159,6 +192,12 @@ export const applyEvent = internalMutation({
           outcome = "processing";
         } else {
           outcome = `already_${asset.status}`;
+        }
+      } else if (event.type === "video.asset.updated") {
+        const aspectRatio = videoAspectRatio(data.aspect_ratio);
+        if (asset.status !== "failed" && aspectRatio) {
+          await updateVideoAspectRatio(ctx, asset, aspectRatio);
+          outcome = "metadata_updated";
         }
       } else if (
         event.type === "video.upload.cancelled" ||
@@ -233,6 +272,8 @@ export const applyEvent = internalMutation({
             outcome = "failed";
           } else {
             await ctx.db.patch(asset._id, {
+              aspectRatio:
+                videoAspectRatio(data.aspect_ratio) ?? asset.aspectRatio,
               durationSeconds: data.duration,
               playbackId,
               providerAssetId:

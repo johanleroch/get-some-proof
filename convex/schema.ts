@@ -440,6 +440,7 @@ export default defineSchema({
         testimonialId: v.id("testimonials"),
         type: v.literal("video"),
         playbackId: v.string(),
+        aspectRatio: v.optional(v.string()),
         captionsAvailable: v.boolean(),
         posterTimeSeconds: v.optional(v.number()),
         name: v.string(),
@@ -603,6 +604,7 @@ export default defineSchema({
     mimeType: v.string(),
     fileSizeBytes: v.number(),
     durationSeconds: v.optional(v.number()),
+    aspectRatio: v.optional(v.string()),
     status: v.union(
       v.literal("awaiting_upload"),
       v.literal("processing"),

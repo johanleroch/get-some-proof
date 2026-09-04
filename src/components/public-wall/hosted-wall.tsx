@@ -29,7 +29,7 @@ export function HostedWall({
 }) {
   return (
     <main
-      className="public-wall-theme bg-muted/30 text-foreground min-h-svh px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
+      className="public-wall-theme bg-background text-foreground min-h-svh px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
       data-wall-theme={wall.theme}
       style={{ "--wall-accent": wall.accentColor } as CSSProperties}
     >
@@ -54,7 +54,7 @@ export function HostedWall({
         ) : (
           <section
             aria-label={`${wall.brandName} testimonials`}
-            className="columns-1 gap-4 md:columns-2 xl:columns-3"
+            className="columns-1 gap-5 md:columns-2"
             data-testid="public-wall-grid"
           >
             {wall.testimonials.map((testimonial) => (

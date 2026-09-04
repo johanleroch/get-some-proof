@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 
 const projection = [
   {
+    aspectRatio: "16:9",
     avatarUrl: null,
     avatarVisible: true,
     captionsAvailable: true,
@@ -48,7 +49,7 @@ function testimonialHtml(testimonial: (typeof projection)[number]) {
           .join("")}</span>`;
   const video =
     testimonial.type === "video"
-      ? `<div class="video-shell"><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from ${testimonial.name}" class="poster" src="https://image.mux.com/${testimonial.playbackId}/thumbnail.png?width=720&amp;height=1280&amp;fit_mode=smartcrop&amp;time=0.5"><span class="play-icon">Play</span></button></div>`
+      ? `<div class="video-shell" data-video-aspect-ratio="${testimonial.aspectRatio}" style="aspect-ratio:${testimonial.aspectRatio.replace(":", " / ")}"><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from ${testimonial.name}" class="poster" src="https://image.mux.com/${testimonial.playbackId}/thumbnail.webp?width=960&amp;time=0.5"><span class="play-icon">Play</span></button></div>`
       : "";
   const text =
     testimonial.type === "text"
@@ -161,11 +162,13 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
         cardRadius: getComputedStyle(shadow.querySelector("article")!)
           .borderRadius,
         columns: getComputedStyle(shadow.querySelector(".grid")!).columnCount,
+        wallMaxWidth: getComputedStyle(shadow.querySelector(".wall")!).maxWidth,
       };
     });
     expect(computed.cardFont).toContain(fixture.font);
     expect(computed.cardRadius).toBe("12px");
-    expect(computed.columns).toBe("3");
+    expect(computed.columns).toBe("2");
+    expect(computed.wallMaxWidth).toBe("1152px");
 
     await page.locator(".stage").evaluate((element) => {
       (element as HTMLElement).style.width = "720px";
@@ -238,7 +241,7 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
     requests.some(
       (url) =>
         !url.startsWith("https://image.mux.com/") &&
-        /mux|analytics|segment|posthog/i.test(url),
+        /stream\.mux\.com|analytics|segment|posthog/i.test(url),
     ),
   ).toBe(false);
   expect(await page.context().cookies()).toEqual([]);
@@ -307,7 +310,7 @@ test("keeps empty and failed embeds at zero height with explicit state", async (
   ).toEqual(["NETWORK_ERROR"]);
 });
 
-test("reserves a 9:16 video card and loads Mux only after explicit play", async ({
+test("reserves the source ratio and prepares Mux without preloading media", async ({
   baseURL,
   page,
 }) => {
@@ -318,6 +321,7 @@ test("reserves a 9:16 video card and loads Mux only after explicit play", async 
       body: JSON.stringify(
         response([
           {
+            aspectRatio: "4:3",
             avatarUrl: null,
             captionsAvailable: true,
             company: "Example Studio",
@@ -342,20 +346,20 @@ test("reserves a 9:16 video card and loads Mux only after explicit play", async 
   const wall = page.locator("[data-gsp-wall]");
   await expect(wall).toHaveAttribute("data-gsp-state", "ready");
   const video = wall.locator(".video-shell");
-  await expect(video).toHaveCSS("aspect-ratio", "9 / 16");
-  await expect(
-    wall.getByRole("button", { name: "Play Camille Test's testimonial" }),
-  ).toBeVisible();
-  expect(
-    requests.some((url) => /mux-player\.js|stream\.mux\.com/i.test(url)),
-  ).toBe(false);
-
-  await wall
-    .getByRole("button", { name: "Play Camille Test's testimonial" })
-    .click();
+  await expect(video).toHaveCSS("aspect-ratio", "4 / 3");
   const player = wall.locator("mux-player");
+  await expect(player).toHaveCount(0);
+  const playButton = wall.getByRole("button", {
+    name: "Play Camille Test's testimonial",
+  });
+  await expect(playButton).toBeVisible();
+  await playButton.hover();
   await expect(player).toHaveAttribute("playback-id", "public-playback-id");
+  await expect(player).toHaveAttribute("prefer-playback", "mse");
   await expect(player).toHaveAttribute("preload", "none");
+  expect(requests.some((url) => /stream\.mux\.com/i.test(url))).toBe(false);
+
+  await playButton.click();
   await expect(player).not.toHaveAttribute("autoplay", "");
   await expect(player).not.toHaveAttribute("default-hidden-captions", "");
   await expect(wall.locator("[data-testid='testimonial-banner']")).toHaveCount(

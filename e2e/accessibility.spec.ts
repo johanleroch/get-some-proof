@@ -157,7 +157,7 @@ test("iframe-free embed has accessible alternatives, video controls, and reduced
         testimonials: [
           {
             captionsAvailable: true,
-            html: '<article class="card video-card" data-gsp-card><div class="video-shell"><button aria-label="Play Remy Test\'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from Remy Test" class="poster" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="><span class="play-icon">Play</span></button></div><div class="content"><p class="name">Remy Test</p></div></article>',
+            html: '<article class="card video-card" data-gsp-card><div class="video-shell" data-video-aspect-ratio="16:9" style="aspect-ratio:16 / 9"><button aria-label="Play Remy Test\'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from Remy Test" class="poster" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="><span class="play-icon">Play</span></button></div><div class="content"><p class="name">Remy Test</p></div></article>',
             id: "video-proof",
             name: "Remy Test",
             playbackId: "fake-playback",

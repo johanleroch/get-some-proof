@@ -109,6 +109,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
         isDone: true,
         page: [
           {
+            aspectRatio: "3:4",
             avatarUrl: null,
             captionsAvailable: true,
             id: "video-projection",
@@ -128,6 +129,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
 
     expect(body.testimonials).toEqual([
       {
+        aspectRatio: "3:4",
         avatarUrl: null,
         captionsAvailable: true,
         html: expect.stringContaining('data-gsp-play=""'),
