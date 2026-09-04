@@ -258,6 +258,46 @@ describe("Workspace deletion", () => {
         deletionId: prepared.deletionId,
       }),
     ).resolves.toMatchObject({ phase: "complete", status: "deleted" });
+
+    const lateDownload = await owner.client.mutation(
+      internal.videoMedia.attachDownloadAsset,
+      {
+        organizationId: brand.id,
+        playbackId: "download-playback-after-completion",
+        provider: "fake",
+        providerAssetId: "download-asset-after-completion",
+        testimonialId,
+      },
+    );
+    expect(lateDownload).toMatchObject({
+      accepted: false,
+      cleanupJobId: expect.any(String),
+    });
+    await expect(
+      owner.client.query(api.workspaceDeletion.getStatus, {
+        deletionId: prepared.deletionId,
+      }),
+    ).resolves.toMatchObject({ phase: "providerCleanup", status: "requested" });
+    for (let guard = 0; guard < 100; guard += 1) {
+      await owner.client.action(internal.workspaceDeletion.processDeletion, {
+        deletionId: prepared.deletionId,
+      });
+      const deletion = await t.run((ctx) => ctx.db.get(prepared.deletionId));
+      if (deletion?.status === "deleted") break;
+    }
+    const completedAgain = await t.run(async (ctx) => ({
+      cleanupJob: lateDownload.cleanupJobId
+        ? await ctx.db.get(lateDownload.cleanupJobId)
+        : null,
+      deletion: await ctx.db.get(prepared.deletionId),
+    }));
+    expect(completedAgain).toEqual({
+      cleanupJob: null,
+      deletion: expect.objectContaining({
+        phase: "complete",
+        status: "deleted",
+      }),
+    });
   });
 
   it("retains Stripe identifiers across retries and purges synchronized billing traces", async () => {

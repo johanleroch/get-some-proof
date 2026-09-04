@@ -206,6 +206,30 @@ describe("Video media ownership", () => {
         testimonialId,
       }),
     ).rejects.toMatchObject({ data: { code: "TESTIMONIAL_UNAVAILABLE" } });
+    const rejectedAttachment = await outsider.client.mutation(
+      internal.videoMedia.attachDownloadAsset,
+      {
+        organizationId: brand.id,
+        playbackId: "late-cross-tenant-playback",
+        provider: "fake",
+        providerAssetId: "late-cross-tenant-asset",
+        testimonialId,
+      },
+    );
+    expect(rejectedAttachment).toMatchObject({
+      accepted: false,
+      cleanupJobId: expect.any(String),
+    });
+    await expect(
+      t.run((ctx) =>
+        rejectedAttachment.cleanupJobId
+          ? ctx.db.get(rejectedAttachment.cleanupJobId)
+          : null,
+      ),
+    ).resolves.toMatchObject({
+      organizationId: brand.id,
+      providerAssetId: "late-cross-tenant-asset",
+    });
     await expect(
       t.run((ctx) => ctx.db.get(testimonialId)),
     ).resolves.not.toBeNull();
