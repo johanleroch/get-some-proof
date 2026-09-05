@@ -2,7 +2,7 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -14,11 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  VideoUploadProgress,
-  type VideoUploadPhase,
-} from "@/components/collection/video-upload-progress";
+import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { inspectVideoFile } from "@/lib/video-file";
+import { useVideoUpload } from "@/hooks/use-video-upload";
 import { uploadDirectVideo } from "@/lib/video-upload";
 
 type RetryContext = {
@@ -62,9 +60,7 @@ export function VideoRetryFormView({
 }) {
   const [file, setFile] = useState<File>();
   const [language, setLanguage] = useState<"en" | "fr">();
-  const [progress, setProgress] = useState(0);
-  const [uploadPhase, setUploadPhase] = useState<VideoUploadPhase>("idle");
-  const uploadAbortControllerRef = useRef<AbortController | null>(null);
+  const videoUpload = useVideoUpload();
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,16 +68,6 @@ export function VideoRetryFormView({
     null,
   );
   const activeContext = context ?? claimedContext;
-
-  useEffect(() => {
-    if (uploadPhase === "idle") return;
-    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warnBeforeLeaving);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
-  }, [uploadPhase]);
 
   if (context === undefined && !activeContext) {
     return <p className="text-muted-foreground text-sm">Loading link…</p>;
@@ -124,58 +110,38 @@ export function VideoRetryFormView({
       return;
     }
     setSubmitting(true);
-    setProgress(0);
-    setUploadPhase("uploading");
     setClaimedContext(activeContext);
     const clientSubmissionId = crypto.randomUUID();
-    const uploadController = new AbortController();
-    uploadAbortControllerRef.current = uploadController;
-    let reservationId: Id<"videoReservations"> | undefined;
     try {
-      await inspectVideo(file);
-      const target = await createRetryUpload({
-        clientSubmissionId,
-        fileSizeBytes: file.size,
-        mimeType,
-        spokenLanguage,
-        token,
-      });
-      reservationId = target.reservationId;
-      await uploadVideo(file, {
-        onProgress: setProgress,
-        provider: target.provider,
-        signal: uploadController.signal,
-        uploadUrl: target.uploadUrl,
-      });
-      setProgress(100);
-      setUploadPhase("processing");
-      setComplete(true);
-    } catch (caught) {
-      let cancellationCleanupFailed = false;
-      if (reservationId) {
-        try {
-          await cancelRetryVideo({
+      const completed = await videoUpload.run({
+        file,
+        reserve: async () => {
+          await inspectVideo(file);
+          const target = await createRetryUpload({
             clientSubmissionId,
-            reservationId,
+            fileSizeBytes: file.size,
+            mimeType,
+            spokenLanguage,
             token,
           });
-        } catch {
-          cancellationCleanupFailed = true;
-        }
-      }
+          return {
+            ...target,
+            release: () =>
+              cancelRetryVideo({
+                clientSubmissionId,
+                reservationId: target.reservationId,
+                token,
+              }),
+          };
+        },
+        upload: uploadVideo,
+      });
+      if (completed) setComplete(true);
+    } catch (caught) {
       setError(
-        cancellationCleanupFailed
-          ? "The upload stopped, but its reservation could not be released. Refresh before trying again."
-          : caught instanceof Error &&
-              caught.message === "Video upload cancelled."
-            ? null
-            : caught instanceof Error
-              ? caught.message
-              : "Replacement upload failed.",
+        caught instanceof Error ? caught.message : "Replacement upload failed.",
       );
     } finally {
-      uploadAbortControllerRef.current = null;
-      setUploadPhase("idle");
       setSubmitting(false);
     }
   }
@@ -225,15 +191,13 @@ export function VideoRetryFormView({
             <option value="fr">French</option>
           </select>
         </div>
-        {uploadPhase !== "idle" ? (
+        {videoUpload.phase !== "idle" ? (
           <VideoUploadProgress
             onCancel={
-              uploadPhase === "uploading"
-                ? () => uploadAbortControllerRef.current?.abort()
-                : undefined
+              videoUpload.phase === "uploading" ? videoUpload.cancel : undefined
             }
-            phase={uploadPhase}
-            progress={progress}
+            phase={videoUpload.phase}
+            progress={videoUpload.progress}
           />
         ) : null}
         {error ? (
