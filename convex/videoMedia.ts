@@ -8,7 +8,7 @@ import {
 } from "./auditEvents";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { requireOrganizationPermission } from "./security/organizationAccess";
-import { beginTestimonialRelationshipPurge } from "./testimonialDeletion";
+import { deleteTestimonialRecords } from "./testimonialDeletion";
 import {
   cancelVideoDirectUpload,
   createVideoDownloadAsset,
@@ -695,36 +695,7 @@ export const finalizeRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    const [asset, retention] = await Promise.all([
-      ctx.db
-        .query("videoAssets")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("videoDowngradeRetentions")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-    ]);
-    if (retention) await ctx.db.delete(retention._id);
-    if (asset) {
-      await ctx.db.delete(asset._id);
-      const reservation = await ctx.db.get(asset.reservationId);
-      if (reservation) await ctx.db.delete(reservation._id);
-    }
-    await beginTestimonialRelationshipPurge(
-      ctx,
-      access.organization._id,
-      testimonial._id,
-      true,
-    );
-    if (testimonial.avatarStorageId) {
-      await ctx.storage.delete(testimonial.avatarStorageId);
-    }
-    await ctx.db.delete(testimonial._id);
+    await deleteTestimonialRecords(ctx, testimonial);
     const deletionEventId = await recordOrganizationAuditEvent(ctx, {
       actorDisplayName: access.principal.name,
       actorUserId: access.principal.actorId,

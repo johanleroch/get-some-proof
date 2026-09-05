@@ -1,8 +1,5 @@
 {
   "project": "get-some-proof",
-  "bucket": "screenshots",
-  "endpoint": "https://c5766b3d8c072b152df6d2f818707089.r2.cloudflarestorage.com",
-  "publicBaseUrl": "https://screenshots.johancode.fr",
   "screens": [
     {
       "slug": "sign-in",

@@ -1,3 +1,8 @@
+import {
+  deleteTestimonialRecords,
+  enqueueAssetCleanup,
+  enqueueVideoAssetCleanup,
+} from "./testimonialDeletion";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -10,7 +15,10 @@ import {
   type MutationCtx,
   query,
 } from "./_generated/server";
-import { recordOrganizationAuditEvent } from "./auditEvents";
+import {
+  beginTestimonialAuditPurge,
+  recordOrganizationAuditEvent,
+} from "./auditEvents";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import {
   assertPublicationConsentSnapshot,
@@ -107,55 +115,6 @@ function normalizeIdentity(args: {
     unavailable("Rating must be a whole number between 1 and 5.");
   }
   return { company, rating: args.rating, role, submitterName };
-}
-
-async function enqueueAssetCleanup(
-  ctx: MutationCtx,
-  input: {
-    organizationId: Id<"organizations">;
-    provider: "fake" | "mux";
-    providerAssetId?: string;
-    providerUploadId?: string;
-    testimonialId: Id<"testimonials">;
-  },
-) {
-  if (!input.providerAssetId && !input.providerUploadId) return;
-  const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
-    attempts: 0,
-    createdAt: Date.now(),
-    organizationId: input.organizationId,
-    provider: input.provider,
-    providerAssetId: input.providerAssetId,
-    providerUploadId: input.providerUploadId,
-    testimonialId: input.testimonialId,
-  });
-  await ctx.scheduler.runAfter(0, internal.videoMedia.processProviderCleanup, {
-    cleanupJobId,
-  });
-}
-
-async function enqueueVideoAssetCleanup(
-  ctx: MutationCtx,
-  asset: Doc<"videoAssets">,
-  testimonialId: Id<"testimonials">,
-) {
-  await enqueueAssetCleanup(ctx, {
-    organizationId: asset.organizationId,
-    provider: asset.provider,
-    providerAssetId: asset.providerAssetId,
-    providerUploadId: asset.providerAssetId
-      ? undefined
-      : asset.providerUploadId,
-    testimonialId,
-  });
-  if (asset.downloadProviderAssetId) {
-    await enqueueAssetCleanup(ctx, {
-      organizationId: asset.organizationId,
-      provider: asset.provider,
-      providerAssetId: asset.downloadProviderAssetId,
-      testimonialId,
-    });
-  }
 }
 
 export const get = query({
@@ -889,94 +848,12 @@ export const withdrawConsent = mutation({
     ) {
       return { withdrawn: true };
     }
-    const [
-      consent,
-      deliveries,
-      projection,
-      retryLinks,
-      revisions,
-      currentAsset,
-      deletion,
-      priorAuditEvents,
-      replacementItems,
-    ] = await Promise.all([
-      ctx.db
-        .query("publicationConsents")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("submissionEmailDeliveries")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("publicTestimonialProjections")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("videoRetryLinks")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      ctx.db
-        .query("submissionVideoRevisions")
-        .withIndex("by_testimonial_status", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-      testimonial.submissionType === "video"
-        ? ctx.db
-            .query("videoAssets")
-            .withIndex("by_testimonial", (index) =>
-              index.eq("testimonialId", testimonial._id),
-            )
-            .unique()
-        : null,
-      ctx.db
-        .query("videoMediaDeletions")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .unique(),
-      ctx.db
-        .query("auditEvents")
-        .withIndex("by_organization_target", (index) =>
-          index
-            .eq("organizationId", testimonial.organizationId)
-            .eq("targetType", "testimonial")
-            .eq("targetId", String(testimonial._id)),
-        )
-        .collect(),
-      ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonial._id),
-        )
-        .collect(),
-    ]);
-    const extraAssetIds = [
-      ...retryLinks.map((link) => link.videoAssetId),
-      ...revisions.flatMap((revision) =>
-        revision.videoAssetId ? [revision.videoAssetId] : [],
-      ),
-    ];
-    const extraAssets = await Promise.all(
-      extraAssetIds.map((id) => ctx.db.get(id)),
-    );
-    const assets = [currentAsset, ...extraAssets].filter(
-      (asset, index, all): asset is Doc<"videoAssets"> =>
-        Boolean(asset) &&
-        all.findIndex((candidate) => candidate?._id === asset?._id) === index,
-    );
-    for (const asset of assets) {
-      await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
-    }
+    const deletion = await ctx.db
+      .query("videoMediaDeletions")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .unique();
     if (deletion) {
       for (const target of deletion.providerAssets) {
         await enqueueAssetCleanup(ctx, {
@@ -994,46 +871,8 @@ export const withdrawConsent = mutation({
       }
       await ctx.db.delete(deletion._id);
     }
-    if (projection) await ctx.db.delete(projection._id);
-    for (const delivery of deliveries) await ctx.db.delete(delivery._id);
-    for (const retryLink of retryLinks) await ctx.db.delete(retryLink._id);
-    for (const revision of revisions) {
-      await ctx.db.delete(revision._id);
-      const reservation = await ctx.db.get(revision.reservationId);
-      if (reservation) await ctx.db.delete(reservation._id);
-    }
-    if (consent) await ctx.db.delete(consent._id);
-    for (const asset of assets) {
-      await ctx.db.delete(asset._id);
-      const reservation = await ctx.db.get(asset.reservationId);
-      if (reservation) await ctx.db.delete(reservation._id);
-    }
-    if (testimonial.avatarStorageId) {
-      await ctx.storage.delete(testimonial.avatarStorageId);
-    }
-    for (const item of replacementItems) {
-      await ctx.db.delete(item._id);
-      const remaining = await ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_request", (index) =>
-          index.eq("requestId", item.requestId),
-        )
-        .first();
-      if (!remaining) {
-        const request = await ctx.db.get(item.requestId);
-        if (request) await ctx.db.delete(request._id);
-      }
-    }
-    for (const event of priorAuditEvents) {
-      if (
-        event.targetType === "testimonial" &&
-        event.targetId === String(testimonial._id)
-      ) {
-        await ctx.db.delete(event._id);
-      }
-    }
-    await ctx.db.delete(testimonial._id);
-    await recordOrganizationAuditEvent(ctx, {
+    await deleteTestimonialRecords(ctx, testimonial, "consentWithdrawal");
+    const deletionEventId = await recordOrganizationAuditEvent(ctx, {
       actorDisplayName: "Submitter",
       actorUserId: "submitter",
       eventType: "testimonial.consent_withdrawn",
@@ -1043,6 +882,12 @@ export const withdrawConsent = mutation({
       targetLabel: "Withdrawn Testimonial",
       targetType: "testimonial",
     });
+    await beginTestimonialAuditPurge(
+      ctx,
+      testimonial.organizationId,
+      testimonial._id,
+      deletionEventId,
+    );
     return { withdrawn: true };
   },
 });
@@ -1228,10 +1073,23 @@ export const claimReplacementLinkRequest = internalMutation({
     const request = await ctx.db.get(args.requestId);
     const now = Date.now();
     if (!request) return null;
-    const items = await ctx.db
+    const candidates = await ctx.db
       .query("managementLinkReplacementItems")
       .withIndex("by_request", (index) => index.eq("requestId", request._id))
       .collect();
+    const liveItems = await Promise.all(
+      candidates.map(async (item) => {
+        const testimonial = await ctx.db.get(item.testimonialId);
+        if (
+          testimonial &&
+          testimonial.organizationId === request.organizationId
+        )
+          return item;
+        await ctx.db.delete(item._id);
+        return null;
+      }),
+    );
+    const items = liveItems.filter((item) => item !== null);
     if (!request.recipientEmail || !request.brandName || items.length === 0) {
       await Promise.all(items.map((item) => ctx.db.delete(item._id)));
       await ctx.db.delete(request._id);

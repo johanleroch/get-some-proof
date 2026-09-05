@@ -24,7 +24,7 @@
     "test:visual": "playwright test e2e/visual-evidence.spec.ts --project desktop-chromium --project mobile-chromium",
     "visual:manifest": "node scripts/visual-evidence/build-manifest.mjs",
     "visual:publish": "node scripts/visual-evidence/publish.mjs",
-    "visual:publish:issue": "node scripts/visual-evidence/publish-issue.mjs",
+    "visual:publish:issue": "node scripts/visual-evidence/publish.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -65,7 +65,6 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1121.0",
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",

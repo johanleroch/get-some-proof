@@ -172,31 +172,85 @@ export async function consumeReadyVideoCredit(
     .order("desc")
     .first();
   if (!quarantine || quarantine.status !== "active") return creditId;
-  if (quarantine.creditRestored) return creditId;
-  const now = Date.now();
-  const recentReports = await ctx.db
-    .query("spamQuarantines")
-    .withIndex("by_organization_reported_at", (index) =>
-      index
-        .eq("organizationId", input.organizationId)
-        .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+  await restoreSpamCollectionCredit(ctx, quarantine._id);
+  return creditId;
+}
+
+/** Restores both the ledger and its quarantine atomically, in either event order. */
+export async function restoreSpamCollectionCredit(
+  ctx: MutationCtx,
+  quarantineId: Id<"spamQuarantines">,
+  supportActor?: string,
+) {
+  const quarantine = await ctx.db.get(quarantineId);
+  if (
+    !quarantine ||
+    quarantine.status !== "active" ||
+    quarantine.creditRestored
+  ) {
+    return false;
+  }
+  const credit = await ctx.db
+    .query("collectionCredits")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", quarantine.testimonialId),
     )
-    .collect();
-  const automaticRestorations = recentReports.filter(
-    (report) =>
-      report._id !== quarantine._id && report.restorationMode === "automatic",
-  ).length;
-  if (automaticRestorations >= automaticSpamRestorationLimit) return creditId;
-  await ctx.db.patch(creditId, {
-    restorationMode: "automatic",
-    restoredAt: now,
-  });
+    .unique();
+  if (!credit || credit.restoredAt !== undefined) return false;
+  const now = Date.now();
+  const restorationMode = supportActor === undefined ? "automatic" : "support";
+  if (restorationMode === "automatic") {
+    const recentReports = await ctx.db
+      .query("spamQuarantines")
+      .withIndex("by_organization_reported_at", (index) =>
+        index
+          .eq("organizationId", quarantine.organizationId)
+          .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+      )
+      .collect();
+    const automaticRestorations = recentReports.filter(
+      (report) =>
+        report._id !== quarantine._id && report.restorationMode === "automatic",
+    ).length;
+    if (automaticRestorations >= automaticSpamRestorationLimit) return false;
+  }
+  await ctx.db.patch(credit._id, { restorationMode, restoredAt: now });
   await ctx.db.patch(quarantine._id, {
     creditRestored: true,
-    restorationMode: "automatic",
+    restorationMode,
+    ...(supportActor === undefined
+      ? {}
+      : {
+          supportActor: supportActor.trim().slice(0, 100) || "Support",
+        }),
     updatedAt: now,
   });
-  return creditId;
+  return true;
+}
+
+export async function undoSpamCollectionCredit(
+  ctx: MutationCtx,
+  quarantineId: Id<"spamQuarantines">,
+) {
+  const quarantine = await ctx.db.get(quarantineId);
+  if (
+    !quarantine ||
+    quarantine.status !== "active" ||
+    !quarantine.creditRestored
+  )
+    return;
+  const credit = await ctx.db
+    .query("collectionCredits")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", quarantine.testimonialId),
+    )
+    .unique();
+  if (credit) {
+    await ctx.db.patch(credit._id, {
+      restorationMode: undefined,
+      restoredAt: undefined,
+    });
+  }
 }
 
 export const getPublicAvailability = query({

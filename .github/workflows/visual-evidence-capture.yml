@@ -14,6 +14,8 @@ on:
       - "pnpm-lock.yaml"
       - "postcss.config.mjs"
       - "visual-evidence.config.json"
+      - "scripts/visual-evidence/**"
+      - ".github/workflows/visual-evidence-*.yml"
 
 permissions:
   contents: read

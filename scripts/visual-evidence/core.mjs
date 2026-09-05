@@ -15,16 +15,6 @@ export function assertSafeSegment(value, label) {
 
 export function validateTrustedConfig(config) {
   assertSafeSegment(config.project, "project");
-  assertSafeSegment(config.bucket, "bucket");
-  for (const [label, value] of [
-    ["endpoint", config.endpoint],
-    ["publicBaseUrl", config.publicBaseUrl],
-  ]) {
-    const url = new URL(value);
-    if (url.protocol !== "https:" || url.username || url.password) {
-      throw new Error(`${label} must be a credential-free HTTPS URL`);
-    }
-  }
   if (!Array.isArray(config.screens) || config.screens.length === 0) {
     throw new Error("The visual evidence config must define screens");
   }
@@ -149,16 +139,6 @@ export async function listPngFiles(root, prefix = "") {
   return files.sort();
 }
 
-export function objectKeyFor(manifest, screenshot) {
-  return [
-    manifest.project,
-    `${manifest.target.kind}s`,
-    String(manifest.target.number),
-    manifest.headSha,
-    screenshot.path,
-  ].join("/");
-}
-
 export async function listIssueComments(
   github,
   owner,
@@ -178,7 +158,7 @@ export async function listIssueComments(
 
 export function renderComment(manifest, publishedScreenshots) {
   const marker = `<!-- visual-evidence:${manifest.project} -->`;
-  const shortSha = manifest.headSha.slice(0, 7);
+  const headSha = manifest.headSha;
   const images = publishedScreenshots
     .map(
       ({ title, viewport, url }) =>
@@ -187,5 +167,5 @@ export function renderComment(manifest, publishedScreenshots) {
     .join("\n\n");
 
   const targetLabel = manifest.target.kind === "pull" ? "la PR" : "l’issue";
-  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${shortSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.\n\n${images}`;
+  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${headSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.\n\n${images}`;
 }

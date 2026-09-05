@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 
-export type VideoUploadPhase = "idle" | "uploading" | "processing";
+import type { VideoUploadPhase } from "@/hooks/use-video-upload";
 
 export function VideoUploadProgress({
   onCancel,

@@ -7,7 +7,7 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
 
@@ -37,12 +37,15 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
-      - name: Publish to R2 and synchronize the PR comment
+      - name: Install gh-image
+        run: gh extension install drogers0/gh-image --pin v1.3.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Publish GitHub attachments and synchronize the PR comment
         run: pnpm visual:publish
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          GH_SESSION_TOKEN: ${{ secrets.GH_SESSION_TOKEN }}
           VISUAL_EVIDENCE_DIR: visual-evidence
           VISUAL_EVIDENCE_EXPECTED_RUN_ID: ${{ github.event.workflow_run.id }}
           VISUAL_EVIDENCE_EXPECTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}

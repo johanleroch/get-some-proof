@@ -6,33 +6,52 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
 
 const relationshipPurgeBatchSize = 32;
 
-async function enqueueVideoAssetCleanup(
+export async function enqueueAssetCleanup(
+  ctx: MutationCtx,
+  input: {
+    organizationId: Id<"organizations">;
+    provider: "fake" | "mux";
+    providerAssetId?: string;
+    providerUploadId?: string;
+    testimonialId: Id<"testimonials">;
+  },
+) {
+  if (!input.providerAssetId && !input.providerUploadId) return;
+  const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
+    attempts: 0,
+    createdAt: Date.now(),
+    organizationId: input.organizationId,
+    provider: input.provider,
+    providerAssetId: input.providerAssetId,
+    providerUploadId: input.providerUploadId,
+    testimonialId: input.testimonialId,
+  });
+  await ctx.scheduler.runAfter(0, internal.videoMedia.processProviderCleanup, {
+    cleanupJobId,
+  });
+}
+
+export async function enqueueVideoAssetCleanup(
   ctx: MutationCtx,
   asset: Doc<"videoAssets">,
   testimonialId: Id<"testimonials">,
 ) {
-  const targets = [
-    asset.providerAssetId
-      ? { providerAssetId: asset.providerAssetId }
-      : { providerUploadId: asset.providerUploadId },
-    ...(asset.downloadProviderAssetId
-      ? [{ providerAssetId: asset.downloadProviderAssetId }]
-      : []),
-  ];
-  for (const target of targets) {
-    const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
-      attempts: 0,
-      createdAt: Date.now(),
+  await enqueueAssetCleanup(ctx, {
+    organizationId: asset.organizationId,
+    provider: asset.provider,
+    providerAssetId: asset.providerAssetId,
+    providerUploadId: asset.providerAssetId
+      ? undefined
+      : asset.providerUploadId,
+    testimonialId,
+  });
+  if (asset.downloadProviderAssetId) {
+    await enqueueAssetCleanup(ctx, {
       organizationId: asset.organizationId,
       provider: asset.provider,
-      ...target,
+      providerAssetId: asset.downloadProviderAssetId,
       testimonialId,
     });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.videoMedia.processProviderCleanup,
-      { cleanupJobId },
-    );
   }
 }
 
@@ -41,6 +60,7 @@ async function purgeTestimonialRelationshipBatch(
   organizationId: Id<"organizations">,
   testimonialId: Id<"testimonials">,
   includeVideoRelations: boolean,
+  preserveQuarantines = false,
 ) {
   const [consent, deliveries, projection, quarantines, replacementItems] =
     await Promise.all([
@@ -62,12 +82,14 @@ async function purgeTestimonialRelationshipBatch(
           index.eq("testimonialId", testimonialId),
         )
         .unique(),
-      ctx.db
-        .query("spamQuarantines")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .take(relationshipPurgeBatchSize),
+      preserveQuarantines
+        ? []
+        : ctx.db
+            .query("spamQuarantines")
+            .withIndex("by_testimonial", (index) =>
+              index.eq("testimonialId", testimonialId),
+            )
+            .take(relationshipPurgeBatchSize),
       ctx.db
         .query("managementLinkReplacementItems")
         .withIndex("by_testimonial", (index) =>
@@ -116,6 +138,10 @@ async function purgeTestimonialRelationshipBatch(
       const reservation = await ctx.db.get(asset.reservationId);
       if (reservation) await ctx.db.delete(reservation._id);
     }
+    if (retryLink.replacementReservationId) {
+      const replacement = await ctx.db.get(retryLink.replacementReservationId);
+      if (replacement) await ctx.db.delete(replacement._id);
+    }
   }
   for (const revision of revisions) {
     await ctx.db.delete(revision._id);
@@ -141,28 +167,20 @@ async function purgeTestimonialRelationshipBatch(
     await ctx.scheduler.runAfter(
       0,
       internal.testimonialDeletion.continueTestimonialRelationshipPurge,
-      { includeVideoRelations, organizationId, testimonialId },
+      {
+        includeVideoRelations,
+        organizationId,
+        testimonialId,
+        preserveQuarantines,
+      },
     );
   }
-}
-
-export async function beginTestimonialRelationshipPurge(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  testimonialId: Id<"testimonials">,
-  includeVideoRelations: boolean,
-) {
-  await purgeTestimonialRelationshipBatch(
-    ctx,
-    organizationId,
-    testimonialId,
-    includeVideoRelations,
-  );
 }
 
 export const continueTestimonialRelationshipPurge = internalMutation({
   args: {
     includeVideoRelations: v.boolean(),
+    preserveQuarantines: v.optional(v.boolean()),
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
   },
@@ -173,7 +191,53 @@ export const continueTestimonialRelationshipPurge = internalMutation({
       args.organizationId,
       args.testimonialId,
       args.includeVideoRelations,
+      args.preserveQuarantines,
     );
     return null;
   },
 });
+
+/** Invalidates proof immediately and resumes its private relationship purge in bounded batches.
+ * Owner video deletion must complete current provider media deletion before entering here.
+ */
+export async function deleteTestimonialRecords(
+  ctx: MutationCtx,
+  testimonial: Doc<"testimonials">,
+  reason:
+    | "permanentDeletion"
+    | "consentWithdrawal"
+    | "spamExpiry" = "permanentDeletion",
+) {
+  if (testimonial.submissionType === "video") {
+    const asset = await ctx.db
+      .query("videoAssets")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .unique();
+    if (asset) {
+      if (reason !== "permanentDeletion")
+        await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
+      await ctx.db.delete(asset._id);
+      const reservation = await ctx.db.get(asset.reservationId);
+      if (reservation) await ctx.db.delete(reservation._id);
+    }
+    const retention = await ctx.db
+      .query("videoDowngradeRetentions")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonial._id),
+      )
+      .unique();
+    if (retention) await ctx.db.delete(retention._id);
+  }
+  await purgeTestimonialRelationshipBatch(
+    ctx,
+    testimonial.organizationId,
+    testimonial._id,
+    testimonial.submissionType === "video",
+    reason !== "permanentDeletion",
+  );
+  if (testimonial.avatarStorageId)
+    await ctx.storage.delete(testimonial.avatarStorageId);
+  await ctx.db.delete(testimonial._id);
+}

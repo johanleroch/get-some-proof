@@ -1,44 +1,23 @@
 # Visual evidence
 
-The repository captures canonical public screens with Playwright at desktop and mobile sizes, publishes immutable PNG objects to Cloudflare R2, and maintains one replaceable GitHub comment per issue or pull request.
+Playwright captures canonical desktop and mobile screens. The publisher uploads PNGs with `gh-image`, verifies their bytes through an authenticated download, then creates or replaces one GitHub comment. Images are GitHub `user-attachments`; no R2 bucket, public hostname or AWS SDK is needed.
 
-## Storage layout
+## Local publication
 
-Bucket: `screenshots`
+Use the installed `drogers0/gh-image` extension (the workflow pins v1.3.0) and authenticated GitHub CLI. `gh-image` first tries the CLI token for images in repositories the user can push to; it can fall back to an existing browser session. Keep credentials inside the tools, never in command arguments or logs.
 
-Public base URL: `https://screenshots.johancode.fr`
+Commit and review the changes, capture the exact commit, and inspect every image. Build a manifest with `GITHUB_REPOSITORY`, `VISUAL_EVIDENCE_HEAD_SHA`, `VISUAL_EVIDENCE_TARGET_KIND` (`pull` or `issue`), and `VISUAL_EVIDENCE_TARGET_NUMBER`. Set `VISUAL_EVIDENCE_DIR` for both manifest creation and publication. Run `pnpm visual:manifest`, then `pnpm visual:publish`. `pnpm visual:publish:issue` remains a compatibility alias for the same publisher.
 
-Objects are isolated first by project, then by tracker target and exact commit:
+The publisher requires a clean worktree and matching HEAD. For PRs it checks the remote head before upload and again before updating the comment. An issue manifest cannot target a PR. Every upload must return a GitHub image attachment URL and its authenticated download must match the local SHA-256. A failed upload or verification leaves the previous comment intact.
 
-```text
-convex-admin-starter/
-  pulls/<pr-number>/<40-character-sha>/<viewport>/<screen>.png
-  issues/<issue-number>/<40-character-sha>/<viewport>/<screen>.png
-```
+## Automatic publication
 
-The bucket lifecycle removes objects under `convex-admin-starter/` after 365 days. Comments point to commit-specific objects, so browser and CDN caches cannot show a screenshot from another revision.
+`Visual evidence capture` runs PR code without upload credentials and emits an artifact. `Visual evidence publish` runs only trusted default-branch code after a successful capture. It validates the repository, project, triggering run, PR, commit and file paths before invoking `gh-image`; artifact content is never executed.
 
-## Security boundary
+The publisher's `GH_TOKEN` is the job's GitHub token, with content-write permission for image upload and issue/PR-write permission for the comment. `GH_SESSION_TOKEN` is an optional fallback if GitHub's attachment endpoint rejects that token. A local upload succeeding does not prove the Actions token works: verify the real publish run before marking automatic publication complete. If a session fallback is required, use a dedicated attachment account and a protected trusted environment; provisioning or exporting a personal browser session requires the Owner's explicit approval. Neither token is needed by capture jobs.
 
-The capture workflow checks out and executes pull-request code without Cloudflare credentials. It uploads only a GitHub artifact.
+A `workflow_run` publisher executes the version on the default branch. A PR changing this publisher cannot activate its new code until that change is merged. During bootstrap, use the reviewed local publisher and record the actual attachment comment as local publication. Keep automatic activation pending until a subsequent capture/publish run succeeds. Do not merge or deploy solely to satisfy the evidence gate without Owner authorization.
 
-The publisher is triggered by the completed capture workflow. It checks out trusted code from the default branch, validates the artifact manifest and every file path, refuses stale PR commits, then uploads to R2 and updates the GitHub comment. It never executes pull-request code or artifact content.
+## Completion
 
-The manifest project must match the project in the trusted default-branch `visual-evidence.config.json`; pull-request code cannot select another R2 prefix. The bucket, endpoint, public hostname, project prefix, and screen list all live in that one configuration file.
-
-For issues without a pull request, an agent runs `pnpm visual:publish:issue` after capture and manifest creation. The command uses the authenticated Wrangler and GitHub CLIs, requires the current commit to match the manifest, verifies every public object byte-for-byte, and updates the same marked comment instead of adding duplicates.
-
-## Repository secrets
-
-Configure these GitHub Actions secrets:
-
-- `R2_ACCESS_KEY_ID`: access-key ID for an R2 Object Read & Write token limited to the `screenshots` bucket.
-- `R2_SECRET_ACCESS_KEY`: matching secret access key.
-
-The workflow commits the non-secret endpoint, bucket, and public hostname. Do not place credentials in `.env` files, workflow YAML, issue comments, or logs.
-
-## Bootstrap and clones
-
-GitHub only triggers a `workflow_run` publisher when its workflow file exists on the default branch. On the pull request that first introduces this system, the capture and local validation can pass, but automatic publication starts after that workflow reaches the default branch. All later pull requests are fully automatic.
-
-For a clone under a different project or Cloudflare account, update every non-secret value in `visual-evidence.config.json`, create the project prefix and lifecycle rule, connect a public R2 hostname, and configure the two repository secrets.
+Verify the marked `Visual evidence` comment embeds every desktop/mobile attachment and names the current full commit SHA. A local PNG, a successful upload without a comment, or a CI artifact alone is incomplete evidence. The trusted project and screen list live in `visual-evidence.config.json`; a clone only needs its own project identity, screens and GitHub authentication.
