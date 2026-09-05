@@ -38,8 +38,11 @@ type ProLookupKey = "pro_monthly";
 type PublicOffer = {
   amount: number;
   currency: string;
+  description: string | null;
+  features: string[];
   interval: "month";
   lookupKey: ProLookupKey;
+  name: string;
 };
 
 type SubscriptionDetails = {
@@ -48,7 +51,7 @@ type SubscriptionDetails = {
   interval: "month";
 };
 
-function formatOfferAmount(offer: PublicOffer) {
+function formatOfferAmount(offer: Pick<PublicOffer, "amount" | "currency">) {
   return new Intl.NumberFormat(undefined, {
     currency: offer.currency,
     maximumFractionDigits: offer.amount % 100 === 0 ? 0 : 2,
@@ -795,11 +798,8 @@ export function BillingCockpit({
                   <div>
                     <dt className="text-muted-foreground text-xs">Price</dt>
                     <dd className="mt-1 font-medium">
-                      {formatOfferAmount({
-                        ...subscriptionDetails,
-                        lookupKey: "pro_monthly",
-                      })}{" "}
-                      per {subscriptionDetails.interval}
+                      {formatOfferAmount(subscriptionDetails)} per{" "}
+                      {subscriptionDetails.interval}
                     </dd>
                   </div>
                 ) : null}
@@ -973,7 +973,9 @@ export function BillingCockpit({
               ) : offers?.[0] ? (
                 <div className="border-primary bg-primary/5 rounded-xl border p-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <span className="text-sm font-medium">Pro monthly</span>
+                    <span className="text-sm font-medium">
+                      {offers[0]!.name}
+                    </span>
                     <span className="text-2xl font-semibold">
                       {formatOfferAmount(offers[0]!)}
                       <span className="text-muted-foreground ml-1 text-xs font-normal">
@@ -981,12 +983,18 @@ export function BillingCockpit({
                       </span>
                     </span>
                   </div>
-                  <ul className="text-muted-foreground mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                    <li>Unlimited text collection</li>
-                    <li>25 stored Ready videos</li>
-                    <li>MP4 downloads up to 1080p</li>
-                    <li>Removable attribution</li>
-                  </ul>
+                  {offers[0]!.description ? (
+                    <p className="text-muted-foreground mt-3 text-sm">
+                      {offers[0]!.description}
+                    </p>
+                  ) : null}
+                  {offers[0]!.features.length > 0 ? (
+                    <ul className="text-muted-foreground mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                      {offers[0]!.features.map((feature) => (
+                        <li key={feature}>{feature}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               ) : (
                 <p aria-live="polite" className="text-muted-foreground text-sm">

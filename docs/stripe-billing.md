@@ -26,10 +26,12 @@ In the Platform Stripe Account's sandbox or test mode:
 
 1. Create one recurring Product named `Get Some Proof Pro`.
 2. Create one active EUR 29 recurring monthly Price with lookup key `pro_monthly`.
-3. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, non-monthly, or non-EUR-29 offers.
-4. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
+3. Set the Product tax code to `txcd_10103001` (`Software as a service (SaaS) - business use`). Managed Payments is enabled by default on some new Stripe accounts and rejects Checkout until the Product has an eligible tax code.
+4. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, non-monthly, or incorrectly classified offers. Stripe owns the amount: future price changes use a new Price and transfer the stable lookup key without a code deployment.
+5. Populate the Product name, description, and marketing features used by the Billing upgrade card and Stripe-hosted surfaces. These presentation fields never grant entitlements.
+6. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
 
-Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>
+Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>. Managed Payments setup and eligible tax codes: <https://docs.stripe.com/payments/managed-payments/set-up> and <https://docs.stripe.com/payments/managed-payments/how-it-works>.
 
 ## 2. Configure hosted Checkout and the Customer Portal
 
@@ -77,6 +79,31 @@ pnpm convex env set STRIPE_WEBHOOK_SECRET 'whsec_...'
 pnpm dev:convex --once
 ```
 
+After setting the test secret locally for the duration of one command, verify
+the catalog through the redacted read-only check. It reports the commercial
+terms and Product presentation, but never prints credentials or provider IDs:
+
+```bash
+STRIPE_SECRET_KEY='sk_test_...' pnpm stripe:verify-catalog
+```
+
+For operational inspection and test-event fixtures, install Stripe CLI on
+macOS with `brew install stripe/stripe-cli/stripe`. Do not persist the account
+secret in the CLI profile. Load the Convex Development value into the process
+environment only for the command session, verify the active context, and clear
+it afterwards:
+
+```bash
+export STRIPE_API_KEY="$(pnpm convex env get STRIPE_SECRET_KEY)"
+stripe products list --active=true --limit=10
+unset STRIPE_API_KEY
+```
+
+Stripe CLI API commands default to test mode. Never add `--live` during this
+rehearsal. `stripe trigger` creates real sandbox fixtures; use it to test signed
+delivery, not as evidence that the application Checkout and Customer Portal
+journey works end to end.
+
 Start Convex and Next.js in separate terminals:
 
 ```bash
@@ -108,7 +135,7 @@ Record the Organization slug, test Customer ID, Subscription ID, webhook event I
 ### A. Free and forged return
 
 1. Sign in as a verified Owner and create a new Organization.
-2. Open Workspace Billing. Verify `Free` and the single EUR 29 monthly offer loaded from Stripe.
+2. Open Workspace Billing. Verify `Free` and that the Product name, description, marketing features, amount, currency, and cadence match the single Stripe offer.
 3. Before paying, manually open `/org/<slug>/billing?checkout=success`.
 4. Verify the page may explain that confirmation is pending but still shows Free.
 5. Verify Free limits and required attribution remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or attribution removal.

@@ -26,6 +26,7 @@
     "visual:publish": "node scripts/visual-evidence/publish.mjs",
     "visual:publish:issue": "node scripts/visual-evidence/publish-issue.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
+    "stripe:verify-catalog": "node scripts/verify-stripe-catalog.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",

@@ -55,8 +55,17 @@ export function BillingVisualFixture({
                     {
                       amount: 2_900,
                       currency: "eur",
+                      description:
+                        "Unlimited text and video proof for growing brands.",
+                      features: [
+                        "Unlimited text collection",
+                        "25 stored Ready videos",
+                        "MP4 downloads up to 1080p",
+                        "Removable Get Some Proof attribution",
+                      ],
                       interval: "month",
                       lookupKey: "pro_monthly",
+                      name: "Get Some Proof Pro",
                     },
                   ]
                 : undefined

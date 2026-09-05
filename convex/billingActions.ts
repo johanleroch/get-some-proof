@@ -21,8 +21,11 @@ import { isStripeSandboxConfigured } from "./stripeConfiguration";
 const publicOfferValidator = v.object({
   amount: v.number(),
   currency: v.string(),
+  description: v.union(v.string(), v.null()),
+  features: v.array(v.string()),
   interval: v.union(v.literal("month"), v.literal("year")),
   lookupKey: proLookupKeyValidator,
+  name: v.string(),
 });
 
 function requireStripeConfiguration() {
