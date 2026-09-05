@@ -21,8 +21,11 @@ function fakeProvider(): BillingProvider {
     resolveOffer: vi.fn().mockResolvedValue({
       amount: 2_900,
       currency: "eur",
+      description: "Collect and publish customer proof.",
+      features: ["Unlimited text collection", "25 stored Ready videos"],
       interval: "month",
       lookupKey: "pro_monthly",
+      name: "Get Some Proof Pro",
       priceId: "price_server_resolved",
     }),
     retrieveCheckout: vi.fn().mockResolvedValue({
@@ -45,8 +48,11 @@ describe("Organization Checkout service", () => {
     vi.mocked(provider.resolveOffer).mockImplementation(async (lookupKey) => ({
       amount: 2_900,
       currency: "eur",
+      description: "Collect and publish customer proof.",
+      features: ["Unlimited text collection", "25 stored Ready videos"],
       interval: "month",
       lookupKey,
+      name: "Get Some Proof Pro",
       priceId: `price_${lookupKey}`,
     }));
 
@@ -54,8 +60,11 @@ describe("Organization Checkout service", () => {
       {
         amount: 2_900,
         currency: "eur",
+        description: "Collect and publish customer proof.",
+        features: ["Unlimited text collection", "25 stored Ready videos"],
         interval: "month",
         lookupKey: "pro_monthly",
+        name: "Get Some Proof Pro",
       },
     ]);
     expect(provider.resolveOffer).toHaveBeenCalledOnce();

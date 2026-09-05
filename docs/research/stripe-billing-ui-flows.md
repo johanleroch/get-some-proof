@@ -1,6 +1,6 @@
 # Recherche UI — Billing Stripe par Organization
 
-_Sources vérifiées le 1er septembre 2026. Cette note alimente la conception de l’intégration ; ce n’est ni une implémentation ni une copie d’interface tierce._
+_Sources vérifiées le 1er septembre 2026. Cette note est une recherche historique antérieure à la décision MVP finale. Pour la configuration Stripe actuelle et la frontière d'autorité des plans, voir [`stripe-sandbox-plan-configuration.md`](stripe-sandbox-plan-configuration.md) et l'ADR 0021._
 
 ## Résumé exécutable
 

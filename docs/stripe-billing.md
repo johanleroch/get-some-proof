@@ -26,8 +26,9 @@ In the Platform Stripe Account's sandbox or test mode:
 
 1. Create one recurring Product named `Get Some Proof Pro`.
 2. Create one active EUR 29 recurring monthly Price with lookup key `pro_monthly`.
-3. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, non-monthly, or non-EUR-29 offers.
-4. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
+3. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, or non-monthly offers. Stripe owns the amount: future price changes use a new Price and transfer the stable lookup key without a code deployment.
+4. Populate the Product name, description, and marketing features used by the Billing upgrade card and Stripe-hosted surfaces. These presentation fields never grant entitlements.
+5. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
 
 Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>
 
@@ -77,6 +78,14 @@ pnpm convex env set STRIPE_WEBHOOK_SECRET 'whsec_...'
 pnpm dev:convex --once
 ```
 
+After setting the test secret locally for the duration of one command, verify
+the catalog through the redacted read-only check. It reports the commercial
+terms and Product presentation, but never prints credentials or provider IDs:
+
+```bash
+STRIPE_SECRET_KEY='sk_test_...' pnpm stripe:verify-catalog
+```
+
 Start Convex and Next.js in separate terminals:
 
 ```bash
@@ -108,7 +117,7 @@ Record the Organization slug, test Customer ID, Subscription ID, webhook event I
 ### A. Free and forged return
 
 1. Sign in as a verified Owner and create a new Organization.
-2. Open Workspace Billing. Verify `Free` and the single EUR 29 monthly offer loaded from Stripe.
+2. Open Workspace Billing. Verify `Free` and that the Product name, description, marketing features, amount, currency, and cadence match the single Stripe offer.
 3. Before paying, manually open `/org/<slug>/billing?checkout=success`.
 4. Verify the page may explain that confirmation is pending but still shows Free.
 5. Verify Free limits and required attribution remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or attribution removal.
