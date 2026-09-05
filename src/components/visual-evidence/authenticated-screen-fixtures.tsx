@@ -323,7 +323,7 @@ export function TestimonialInboxScreenFixture() {
           aria-label="Type"
           className="border-input bg-background h-9 rounded-md border px-3 text-sm"
         >
-          <option>Text</option>
+          <option>All types</option>
         </select>
         <select
           aria-label="Sort"
@@ -332,36 +332,45 @@ export function TestimonialInboxScreenFixture() {
           <option>Newest first</option>
         </select>
       </div>
-      <PublishedCurationView
-        onMove={async () => undefined}
-        onSetVisibility={async () => undefined}
-        testimonials={[
-          {
-            submissionType: "video",
-            submitterName: "Remy Jupille",
-            testimonialId: "fixture-published-video" as Id<"testimonials">,
-          },
-          {
-            overrides: { company: false },
-            submissionType: "text",
-            submitterName: "Alice Martin",
-            testimonialId: "fixture-published-text" as Id<"testimonials">,
-          },
-        ]}
-      />
       <TestimonialInboxView
+        accentColor={collectionFormFixtureBrand.primaryColor}
         onArchive={() => undefined}
         onDeleteRequest={() => undefined}
         onDownload={() => undefined}
         onPublish={() => undefined}
         onSpam={() => undefined}
+        onUnpublish={() => undefined}
         onUndoSpam={() => undefined}
         testimonials={[
           spamTestimonialFixture,
-          videoTestimonialFixture,
+          { ...videoTestimonialFixture, moderationStatus: "published" },
           testimonialFixture,
         ]}
       />
+      <details className="bg-card rounded-xl border shadow-xs">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+          Wall order &amp; visibility
+        </summary>
+        <div className="border-t p-4 sm:p-5">
+          <PublishedCurationView
+            onMove={async () => undefined}
+            onSetVisibility={async () => undefined}
+            testimonials={[
+              {
+                submissionType: "video",
+                submitterName: "Remy Jupille",
+                testimonialId: "fixture-published-video" as Id<"testimonials">,
+              },
+              {
+                overrides: { company: false },
+                submissionType: "text",
+                submitterName: "Alice Martin",
+                testimonialId: "fixture-published-text" as Id<"testimonials">,
+              },
+            ]}
+          />
+        </div>
+      </details>
     </section>
   );
 }

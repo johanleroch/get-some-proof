@@ -223,7 +223,7 @@ describe("TestimonialInboxView", () => {
     expect(onPublish).toHaveBeenCalledOnce();
   });
 
-  it("plays a Ready video in a dialog only after Owner intent", async () => {
+  it("uses the Public Wall video card and loads playback only after Owner intent", async () => {
     render(
       <TestimonialInboxView
         onArchive={vi.fn()}
@@ -243,22 +243,40 @@ describe("TestimonialInboxView", () => {
       />,
     );
 
-    expect(screen.queryByTestId("inbox-video-player")).toBeNull();
+    expect(screen.queryByTestId("mux-video-player")).toBeNull();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Play Camille Test's video testimonial",
+        name: "Play Camille Test's testimonial",
       }),
     );
 
-    expect(
-      await screen.findByRole("dialog", {
-        name: "Camille Test's video testimonial",
-      }),
-    ).toBeVisible();
-    expect(screen.getByTestId("inbox-video-player")).toHaveAttribute(
+    expect(await screen.findByTestId("mux-video-player")).toHaveAttribute(
       "data-playback-id",
       "owner-playback-id",
     );
-    expect(screen.getByText("Captions ready · 42 seconds")).toBeVisible();
+  });
+
+  it("exposes unpublish and permanent delete after publication", () => {
+    const onUnpublish = vi.fn();
+    const onDeleteRequest = vi.fn();
+    const published = {
+      ...testimonial,
+      moderationStatus: "published" as const,
+    };
+    render(
+      <TestimonialInboxView
+        onArchive={vi.fn()}
+        onDeleteRequest={onDeleteRequest}
+        onPublish={vi.fn()}
+        onUnpublish={onUnpublish}
+        testimonials={[published]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete permanently" }));
+    expect(onUnpublish).toHaveBeenCalledWith(published);
+    expect(onDeleteRequest).toHaveBeenCalledWith(published);
+    expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
   });
 });

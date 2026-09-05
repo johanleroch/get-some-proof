@@ -87,11 +87,9 @@ for (const screen of config.screens) {
     }
     if (fixtureMode && screen.slug === "testimonial-inbox-player") {
       await page
-        .getByRole("button", { name: "Play Remy Jupille's video testimonial" })
+        .getByRole("button", { name: "Play Remy Jupille's testimonial" })
         .click();
-      await expect(
-        page.getByRole("dialog").getByText("Captions ready · 68 seconds"),
-      ).toBeVisible();
+      await expect(page.getByTestId("mux-video-player")).toBeVisible();
     }
 
     const outputRoot = path.resolve(
