@@ -9,7 +9,6 @@ import { env, type ActionCtx } from "./_generated/server";
 import { type BillingProvider, type ProLookupKey } from "./billingService";
 import { isStripeSandboxConfigured } from "./stripeConfiguration";
 
-export const proMonthlyAmount = 2_900;
 export const proMonthlyCurrency = "eur";
 
 function offerUnavailable(lookupKey: ProLookupKey): never {
@@ -93,7 +92,9 @@ export function subscriptionPriceDetails(input: {
 } {
   const interval = input.interval;
   if (
-    input.unitAmount !== proMonthlyAmount ||
+    input.unitAmount === null ||
+    !Number.isSafeInteger(input.unitAmount) ||
+    input.unitAmount < 0 ||
     input.currency !== proMonthlyCurrency ||
     interval !== "month"
   ) {
@@ -103,6 +104,34 @@ export function subscriptionPriceDetails(input: {
     amount: input.unitAmount,
     currency: input.currency,
     interval,
+  };
+}
+
+export function catalogOfferDetails(input: {
+  currency: string;
+  interval: string | null;
+  lookupKey: ProLookupKey;
+  priceActive: boolean;
+  product: {
+    active: boolean;
+    description: string | null;
+    marketingFeatures: string[];
+    name: string;
+  };
+  unitAmount: number | null;
+}) {
+  if (!input.priceActive || !input.product.active) {
+    offerUnavailable(input.lookupKey);
+  }
+  const price = subscriptionPriceDetails(input);
+  if (!input.product.name.trim()) {
+    offerUnavailable(input.lookupKey);
+  }
+  return {
+    ...price,
+    description: input.product.description,
+    features: input.product.marketingFeatures,
+    name: input.product.name,
   };
 }
 
@@ -155,26 +184,41 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
     async resolveOffer(lookupKey) {
       const prices = await stripe.prices.list({
         active: true,
+        expand: ["data.product"],
         limit: 2,
         lookup_keys: [lookupKey],
         type: "recurring",
       });
       if (prices.data.length !== 1) offerUnavailable(lookupKey);
       const price = prices.data[0];
-      if (
-        !price ||
-        price.lookup_key !== lookupKey ||
-        price.unit_amount !== proMonthlyAmount ||
-        price.currency !== proMonthlyCurrency ||
-        price.recurring?.interval !== "month"
-      ) {
+      const product =
+        price &&
+        typeof price.product === "object" &&
+        !("deleted" in price.product)
+          ? price.product
+          : null;
+      if (!price || price.lookup_key !== lookupKey || !product) {
         offerUnavailable(lookupKey);
       }
 
-      return {
-        amount: price.unit_amount,
+      const offer = catalogOfferDetails({
         currency: price.currency,
-        interval: "month",
+        interval: price.recurring?.interval ?? null,
+        lookupKey,
+        priceActive: price.active,
+        product: {
+          active: product.active,
+          description: product.description,
+          marketingFeatures: product.marketing_features
+            .map(({ name }) => name)
+            .filter((name): name is string => Boolean(name)),
+          name: product.name,
+        },
+        unitAmount: price.unit_amount,
+      });
+
+      return {
+        ...offer,
         lookupKey,
         priceId: price.id,
       };

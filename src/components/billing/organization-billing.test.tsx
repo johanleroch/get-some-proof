@@ -101,8 +101,11 @@ describe("OrganizationBilling", () => {
       {
         amount: 2_900,
         currency: "eur",
+        description: "Collect and publish customer proof.",
+        features: ["Unlimited text collection", "25 stored Ready videos"],
         interval: "month",
         lookupKey: "pro_monthly",
+        name: "Get Some Proof Pro",
       },
     ]);
     mocks.getSubscriptionDetails.mockReset();
@@ -170,13 +173,29 @@ describe("OrganizationBilling", () => {
     ).toBeVisible();
   });
 
-  it("loads the single EUR 29 monthly Pro offer for a Free Owner", async () => {
+  it("renders the Stripe-owned name, price, and presentation for a Free Owner", async () => {
     mocks.availability = "available";
+    mocks.getOffers.mockResolvedValue([
+      {
+        amount: 4_900,
+        currency: "eur",
+        description: "Everything needed to collect video proof.",
+        features: ["Unlimited proof", "Priority exports"],
+        interval: "month",
+        lookupKey: "pro_monthly",
+        name: "Proof Pro Plus",
+      },
+    ]);
 
     render(<OrganizationBilling slug="acme-1234" />);
 
-    expect(await screen.findByText("€29")).toBeVisible();
-    expect(screen.getByText("Pro monthly")).toBeVisible();
+    expect(await screen.findByText("€49")).toBeVisible();
+    expect(screen.getByText("Proof Pro Plus")).toBeVisible();
+    expect(
+      screen.getByText("Everything needed to collect video proof."),
+    ).toBeVisible();
+    expect(screen.getByText("Unlimited proof")).toBeVisible();
+    expect(screen.getByText("Priority exports")).toBeVisible();
     expect(screen.queryByText(/annual/i)).toBeNull();
     expect(mocks.getOffers).toHaveBeenCalledWith({
       organizationId: "organization-1",
@@ -289,8 +308,11 @@ describe("OrganizationBilling", () => {
           {
             amount: 2_900,
             currency: "eur",
+            description: null,
+            features: [],
             interval: "month",
             lookupKey: "pro_monthly",
+            name: "Get Some Proof Pro",
           },
         ]}
         onStartCheckout={onStartCheckout}
@@ -340,8 +362,11 @@ describe("OrganizationBilling", () => {
           {
             amount: 2_900,
             currency: "eur",
+            description: null,
+            features: [],
             interval: "month",
             lookupKey: "pro_monthly",
+            name: "Get Some Proof Pro",
           },
         ]}
         onOpenPortal={onOpenPortal}
@@ -476,8 +501,11 @@ describe("OrganizationBilling", () => {
           {
             amount: 2_900,
             currency: "eur",
+            description: null,
+            features: [],
             interval: "month",
             lookupKey: "pro_monthly",
+            name: "Get Some Proof Pro",
           },
         ]}
         onUpdateContact={mocks.updateContact}
@@ -523,8 +551,11 @@ describe("OrganizationBilling", () => {
             {
               amount: 2_900,
               currency: "eur",
+              description: null,
+              features: [],
               interval: "month",
               lookupKey: "pro_monthly",
+              name: "Get Some Proof Pro",
             },
           ]}
           onOpenPortal={mocks.openPortal}

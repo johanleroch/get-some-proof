@@ -9,8 +9,11 @@ export const proLookupKeyValidator = v.literal(proLookupKey);
 export type ResolvedBillingOffer = {
   amount: number;
   currency: string;
+  description: string | null;
+  features: string[];
   interval: "month";
   lookupKey: ProLookupKey;
+  name: string;
   priceId: string;
 };
 
@@ -75,14 +78,17 @@ const terminalSubscriptionStatuses = new Set([
 ]);
 
 export async function listPublicOffers(provider: BillingProvider) {
-  const { amount, currency, interval, lookupKey } =
+  const { amount, currency, description, features, interval, lookupKey, name } =
     await provider.resolveOffer(proLookupKey);
   return [
     {
       amount,
       currency,
+      description,
+      features,
       interval,
       lookupKey,
+      name,
     },
   ];
 }
