@@ -614,10 +614,13 @@ describe("CollectionFormShellView", () => {
       }
     }
     vi.stubGlobal("MediaRecorder", Recorder);
-    vi.stubGlobal("URL", {
-      createObjectURL: vi.fn(() => "blob:recording"),
-      revokeObjectURL: vi.fn(),
-    });
+    vi.stubGlobal(
+      "URL",
+      class extends URL {
+        static createObjectURL = vi.fn(() => "blob:recording");
+        static revokeObjectURL = vi.fn();
+      },
+    );
     try {
       render(
         <CollectionFormShellView

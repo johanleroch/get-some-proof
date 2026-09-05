@@ -18,6 +18,7 @@
 /public/embed/mux-player.js
 /public/embed/video-player-policy.js
 /.scratch
+/output
 *.tsbuildinfo
 
 # operating system and editors
