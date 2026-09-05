@@ -44,9 +44,7 @@ export const getBrand = query({
     ]);
     return {
       accentColor: brand.publicWallAccentColor ?? brand.primaryColor,
-      attributionRequired:
-        entitlement.effectivePlan === "free" ||
-        brand.publicWallHideAttribution !== true,
+      attributionRequired: entitlement.effectivePlan === "free",
       brandName: brand.name,
       hasPublishedTestimonials: firstProjection !== null,
       publicSlug: brand.publicSlug,

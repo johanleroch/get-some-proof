@@ -59,12 +59,13 @@ function testimonialHtml(testimonial: (typeof projection)[number]) {
     ? `<div aria-label="${testimonial.rating} out of 5 stars" class="stars" role="img">★★★★★</div>`
     : "";
 
-  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content"><div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div></div>${stars}${text}<a class="attribution" href="https://proof.example/?utm_source=embedded_wall&amp;utm_medium=referral&amp;utm_campaign=powered_by" rel="sponsored nofollow">Powered by Get Some Proof</a></div></article>`;
+  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content"><div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div></div>${stars}${text}</div></article>`;
 }
 
 function response(
   testimonials = projection,
   brandOverrides: Partial<{
+    attributionRequired: boolean;
     theme: "light" | "dark" | "system";
     transparentEmbed: boolean;
   }> = {},
@@ -209,21 +210,21 @@ test("renders isolated, responsive, ordered walls in every approved host fixture
       }),
     ).toBeFocused();
     await page.keyboard.press(tabKey);
-    const attribution = walls.first().locator("a").first();
-    await expect(attribution).toBeFocused();
-    await expect(attribution).toHaveAttribute("rel", "sponsored nofollow");
-    await expect(attribution).toHaveAttribute(
+    const promotionLink = walls.first().getByRole("link", {
+      name: "Sign up for free",
+    });
+    await expect(promotionLink).toBeFocused();
+    await expect(promotionLink).toHaveAttribute("rel", "sponsored nofollow");
+    await expect(promotionLink).toHaveAttribute(
       "href",
       /utm_source=embedded_wall.*utm_medium=referral.*utm_campaign=powered_by/,
     );
-    const linkStyle = await walls
-      .first()
-      .locator("a")
-      .first()
-      .evaluate((link) => ({
-        outline: getComputedStyle(link).outlineStyle,
-        transition: getComputedStyle(link).transitionDuration,
-      }));
+    await expect(walls.first().locator("[data-gsp-promotion]")).toHaveCount(1);
+    await expect(walls.first()).not.toContainText("Powered by Get Some Proof");
+    const linkStyle = await promotionLink.evaluate((link) => ({
+      outline: getComputedStyle(link).outlineStyle,
+      transition: getComputedStyle(link).transitionDuration,
+    }));
     expect(linkStyle).toEqual({ outline: "solid", transition: "0s" });
 
     const evidenceRoot = process.env.EMBED_EVIDENCE_DIR;
@@ -271,6 +272,31 @@ test("applies the configured theme and transparent embed background", async ({
     "background-color",
     "rgb(24, 24, 27)",
   );
+});
+
+test("does not render the promotion card for Pro", async ({
+  baseURL,
+  page,
+}) => {
+  await page.route("**/api/public-wall/acme-proof*", (route) =>
+    route.fulfill({
+      body: JSON.stringify(
+        response(projection, { attributionRequired: false }),
+      ),
+      contentType: "application/json",
+    }),
+  );
+  await page.setContent(`
+    <div data-gsp-wall data-public-slug="acme-proof"></div>
+    <script src="${baseURL}/embed/v1.js" data-api-origin="${baseURL}"></script>
+  `);
+
+  const wall = page.locator("[data-gsp-wall]");
+  await expect(wall).toHaveAttribute("data-gsp-state", "ready");
+  await expect(wall.locator("[data-gsp-promotion]")).toHaveCount(0);
+  await expect(
+    wall.getByRole("link", { name: "Sign up for free" }),
+  ).toHaveCount(0);
 });
 
 test("keeps empty and failed embeds at zero height with explicit state", async ({

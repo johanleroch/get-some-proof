@@ -48,8 +48,8 @@ The responsive layout becomes one column with full-width cards and retains the s
 
 ## Get Some Proof card direction
 
-**Text card**: avatar, name, role/company, optional stars, testimonial text, and optional Attribution Badge. No banner.
+**Text card**: avatar, name, role/company, optional stars, and testimonial text. No banner. The audited source used an attribution badge, but Get Some Proof replaces repeated per-testimonial attribution with one Promotion Card in Free walls.
 
-**Video card**: `9:16` poster/player first, followed by avatar, name, role/company, optional stars, and optional Attribution Badge. No banner and no separate text quote unless a later product decision introduces one.
+**Video card**: `9:16` poster/player first, followed by avatar, name, role/company, and optional stars. No banner and no separate text quote unless a later product decision introduces one. Free walls may insert one Promotion Card between testimonial cards; Pro walls do not.
 
 Both variants use the same visibility settings, curated order, public-safe data, Brand accent color, theme, and responsive masonry container.

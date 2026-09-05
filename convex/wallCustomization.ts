@@ -90,9 +90,7 @@ export const getSettings = query({
         access.organization.publicWallAccentColor ??
         access.organization.primaryColor,
       canHideAttribution,
-      hideAttribution:
-        canHideAttribution &&
-        access.organization.publicWallHideAttribution === true,
+      hideAttribution: canHideAttribution,
       theme: access.organization.publicWallTheme ?? "system",
       transparentEmbed: access.organization.publicWallTransparentEmbed ?? false,
       visibility: organizationPublicVisibility(access.organization),
@@ -162,7 +160,7 @@ export const updateSettings = mutation({
       access.organization._id,
     );
     if (args.hideAttribution && entitlement.effectivePlan !== "premium") {
-      invalid("Only Pro can remove the Attribution Badge.");
+      invalid("Only Pro can remove the Promotion Card.");
     }
     let accentColor: string;
     try {

@@ -72,8 +72,49 @@
     }
     .card.video-card { padding: 0; }
     .content { padding: 20px; }
-    .video-attribution { padding: 12px 20px; }
-    .video-attribution .attribution { margin-top: 0; }
+    .promo-card {
+      padding: 24px;
+      border-color: transparent;
+      background: #6d5dfc;
+      color: #fff;
+    }
+    .promo-title, .promo-copy { margin: 0; color: #fff; font-family: inherit; }
+    .promo-title {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+    }
+    .promo-copy {
+      margin-top: 20px;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+    .promo-cta {
+      display: flex;
+      width: 100%;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 28px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: #000;
+      color: #fff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      text-align: center;
+      text-decoration: none;
+      transition: background-color 120ms ease;
+    }
+    .promo-cta:hover { background: rgb(0 0 0 / 0.85); }
+    .promo-cta:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
     .video-shell {
       position: relative;
       width: 100%;
@@ -210,26 +251,9 @@
       letter-spacing: -0.01em;
       line-height: 1.75;
     }
-    .attribution {
-      display: inline-flex;
-      margin-top: 20px;
-      border-radius: 4px;
-      color: var(--gsp-muted);
-      font-family: inherit;
-      font-size: 12px;
-      line-height: 1.4;
-      text-decoration: underline;
-      text-underline-offset: 4px;
-      transition: color 120ms ease;
-    }
-    .attribution:hover { color: var(--gsp-text); }
-    .attribution:focus-visible {
-      outline: 3px solid var(--gsp-accent);
-      outline-offset: 4px;
-    }
     @container (min-width: 42rem) { .grid { column-count: 2; } }
     @media (prefers-reduced-motion: reduce) {
-      .attribution, .play, .play-icon { transition: none; }
+      .play, .play-icon, .promo-cta { transition: none; }
     }
   `;
 
@@ -378,6 +402,27 @@
     return card;
   }
 
+  function renderPromotionCard() {
+    const card = element("aside", "card promo-card");
+    card.dataset.gspPromotion = "";
+    card.setAttribute("aria-label", "Get Some Proof");
+    const title = element("h2", "promo-title", "Testimonials made easy");
+    const copy = element(
+      "p",
+      "promo-copy",
+      "Collect text and video testimonials. Share them everywhere! Free, forever.",
+    );
+    const link = element("a", "promo-cta", "Sign up for free");
+    const href = new URL("/sign-up", apiOrigin);
+    href.searchParams.set("utm_source", "embedded_wall");
+    href.searchParams.set("utm_medium", "referral");
+    href.searchParams.set("utm_campaign", "powered_by");
+    link.href = href.toString();
+    link.rel = "sponsored nofollow";
+    card.append(title, copy, link);
+    return card;
+  }
+
   function setState(host, state) {
     host.dataset.gspState = state;
     host.style.setProperty(
@@ -471,11 +516,13 @@
       host.dataset.transparentEmbed = String(
         projection.brand.transparentEmbed === true,
       );
-      grid.replaceChildren(
-        ...projection.testimonials.map((testimonial) =>
-          renderCard(testimonial, projection.brand),
-        ),
+      const cards = projection.testimonials.map((testimonial) =>
+        renderCard(testimonial, projection.brand),
       );
+      if (projection.brand.attributionRequired === true) {
+        cards.splice(1, 0, renderPromotionCard());
+      }
+      grid.replaceChildren(...cards);
       wall.setAttribute("aria-label", `${projection.brand.name} testimonials`);
       setState(host, "ready");
     } catch (error) {

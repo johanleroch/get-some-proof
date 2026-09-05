@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
+import Link from "next/link";
 
 import {
   TestimonialCard,
@@ -15,6 +16,31 @@ export type PublicWallValue = {
   testimonials: PublicTestimonial[];
   transparentEmbed: boolean;
 };
+
+function FreeWallPromotion() {
+  return (
+    <aside
+      aria-label="Get Some Proof"
+      className="mb-5 break-inside-avoid overflow-hidden rounded-xl bg-[#6d5dfc] p-6 text-white shadow-xs sm:p-8"
+      data-gsp-promotion=""
+    >
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Testimonials made easy
+      </h2>
+      <p className="mt-5 text-base leading-7 text-white sm:text-lg">
+        Collect text and video testimonials. Share them everywhere! Free,
+        forever.
+      </p>
+      <Link
+        className="mt-7 flex min-h-12 w-full items-center justify-center rounded-lg bg-black px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-black/85 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white motion-reduce:transition-none"
+        href="/sign-up?utm_source=public_wall&utm_medium=referral&utm_campaign=powered_by"
+        rel="sponsored nofollow"
+      >
+        Sign up for free
+      </Link>
+    </aside>
+  );
+}
 
 export function HostedWall({
   canLoadMore = false,
@@ -57,13 +83,17 @@ export function HostedWall({
             className="columns-1 gap-5 md:columns-2"
             data-testid="public-wall-grid"
           >
-            {wall.testimonials.map((testimonial) => (
-              <TestimonialCard
-                accentColor={wall.accentColor}
-                attributionRequired={wall.attributionRequired}
-                key={testimonial.id}
-                testimonial={testimonial}
-              />
+            {wall.testimonials.map((testimonial, index) => (
+              <Fragment key={testimonial.id}>
+                <TestimonialCard
+                  accentColor={wall.accentColor}
+                  attributionRequired={wall.attributionRequired}
+                  testimonial={testimonial}
+                />
+                {wall.attributionRequired && index === 0 ? (
+                  <FreeWallPromotion />
+                ) : null}
+              </Fragment>
             ))}
           </section>
         )}

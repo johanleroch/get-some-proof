@@ -77,7 +77,8 @@ for (const screen of config.screens) {
     if (
       fixtureMode &&
       (screen.slug.startsWith("testimonial-inbox") ||
-        screen.slug === "public-wall")
+        (screen.slug.startsWith("public-wall") &&
+          screen.slug !== "public-wall-empty"))
     ) {
       await page.waitForFunction(() =>
         [...document.images]

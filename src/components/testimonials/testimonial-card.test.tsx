@@ -46,14 +46,7 @@ describe("TestimonialCard", () => {
       screen.getByText("A specific customer outcome belongs here."),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("5 out of 5 stars")).toBeInTheDocument();
-    const attribution = screen.getByRole("link", {
-      name: "Powered by Get Some Proof",
-    });
-    expect(attribution).toHaveAttribute("rel", "sponsored nofollow");
-    expect(attribution).toHaveAttribute(
-      "href",
-      "/?utm_source=public_wall&utm_medium=referral&utm_campaign=powered_by",
-    );
+    expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByTestId("testimonial-banner")).not.toBeInTheDocument();
   });
 
@@ -109,7 +102,7 @@ describe("TestimonialCard", () => {
     expect(screen.queryByTestId("testimonial-banner")).toBeNull();
   });
 
-  it("keeps free-plan attribution in the video card footer", () => {
+  it("never puts Get Some Proof promotion inside a video card", () => {
     render(
       <TestimonialCard
         accentColor="#123abc"
@@ -127,11 +120,8 @@ describe("TestimonialCard", () => {
       />,
     );
 
-    const attribution = screen.getByRole("link", {
-      name: "Powered by Get Some Proof",
-    });
-    expect(attribution.closest(".video-attribution")).toBeInTheDocument();
-    expect(attribution.closest(".video-shell")).toBeNull();
+    expect(screen.queryByText("Powered by Get Some Proof")).toBeNull();
+    expect(screen.queryByText("Testimonials made easy")).toBeNull();
   });
 
   it("does not render an image or initials when avatar visibility is off", () => {

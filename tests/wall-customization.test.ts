@@ -279,7 +279,7 @@ describe("Public Wall customization and curation", () => {
     expect(projection.page[0]).not.toHaveProperty("company");
   });
 
-  it("lets only the server-side Pro entitlement remove attribution", async () => {
+  it("automatically removes the Promotion Card only for server-side Pro entitlement", async () => {
     const current = await setup();
     await expect(
       current.owner.client.mutation(api.wallCustomization.updateSettings, {
@@ -299,19 +299,6 @@ describe("Public Wall customization and curation", () => {
       data: { code: "INVALID_WALL_CUSTOMIZATION" },
     });
     await addStripeSubscription(current.t, String(current.brand.id), "active");
-    await current.owner.client.mutation(api.wallCustomization.updateSettings, {
-      accentColor: "#123abc",
-      hideAttribution: true,
-      organizationId: current.brand.id,
-      theme: "system",
-      transparentEmbed: false,
-      visibility: {
-        avatar: true,
-        company: true,
-        rating: true,
-        role: true,
-      },
-    });
     await expect(
       current.t.query(api.publicWall.getBrand, { publicSlug: "acme-proof" }),
     ).resolves.toMatchObject({ attributionRequired: false });

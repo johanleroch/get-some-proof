@@ -452,6 +452,10 @@ export function PublicWallScreenFixture() {
   return <HostedWall wall={wallFixture} />;
 }
 
+export function ProPublicWallScreenFixture() {
+  return <HostedWall wall={{ ...wallFixture, attributionRequired: false }} />;
+}
+
 export function EmptyPublicWallScreenFixture() {
   return <HostedWall wall={{ ...wallFixture, testimonials: [] }} />;
 }

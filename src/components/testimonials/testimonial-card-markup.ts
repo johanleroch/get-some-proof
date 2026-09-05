@@ -81,8 +81,6 @@ function starsMarkup(rating?: number) {
 
 export function testimonialCardHtml({
   accentColor,
-  attributionHref,
-  attributionRequired,
   testimonial,
 }: {
   accentColor: string;
@@ -93,9 +91,6 @@ export function testimonialCardHtml({
   const identity = [testimonial.role, testimonial.company]
     .filter(Boolean)
     .join(" · ");
-  const attribution = attributionRequired
-    ? `<a class="attribution text-muted-foreground hover:text-foreground inline-flex text-xs underline underline-offset-4" href="${escapeHtml(attributionHref)}" rel="sponsored nofollow">Powered by Get Some Proof</a>`
-    : "";
   const video =
     testimonial.type === "video"
       ? `<div class="video-shell relative w-full overflow-hidden bg-black" data-video-aspect-ratio="${escapeHtml(testimonial.aspectRatio ?? "9:16")}" style="aspect-ratio:${testimonialAspectRatio(testimonial)}"><button aria-label="Play ${escapeHtml(testimonial.name)}&#39;s testimonial" class="play group absolute inset-0 z-10 cursor-pointer text-left transition-opacity duration-200 data-[playing=true]:pointer-events-none data-[playing=true]:opacity-0" data-gsp-play="" type="button"><img alt="Video from ${escapeHtml(testimonial.name)}" class="poster absolute inset-0 h-full w-full object-cover" loading="lazy" src="${escapeHtml(testimonialPoster(testimonial))}"><span aria-hidden="true" class="video-shade absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent"></span><span class="video-overlay absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white"><span class="min-w-0">${testimonial.rating ? `<span class="stars mb-2 flex gap-1 text-(--wall-accent)" aria-label="${testimonial.rating} out of 5 stars" role="img">${starIconsMarkup(testimonial.rating)}</span>` : ""}<span class="video-name block truncate text-xl font-semibold tracking-tight">${escapeHtml(testimonial.name)}</span>${identity ? `<span class="video-meta mt-0.5 block truncate text-sm text-white/75">${escapeHtml(identity)}</span>` : ""}</span><span class="play-icon grid size-11 shrink-0 place-items-center rounded-full bg-white/92 text-black shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105"><svg aria-hidden="true" class="ml-0.5 size-5 fill-current" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="m6 3 14 9-14 9z"></path></svg></span></span></button></div>`
@@ -109,8 +104,8 @@ export function testimonialCardHtml({
       : "";
   const body =
     testimonial.type === "video"
-      ? `${video}${attribution ? `<div class="video-attribution px-5 py-3">${attribution}</div>` : ""}`
-      : `<div class="content space-y-5 p-5 sm:p-6"><div class="identity flex items-center gap-3">${avatarMarkup(testimonial)}<div class="person min-w-0"><p class="name truncate font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div>${starsMarkup(testimonial.rating)}${text}${attribution}</div>`;
+      ? video
+      : `<div class="content space-y-5 p-5 sm:p-6"><div class="identity flex items-center gap-3">${avatarMarkup(testimonial)}<div class="person min-w-0"><p class="name truncate font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div>${starsMarkup(testimonial.rating)}${text}</div>`;
 
   return `<article class="card mb-5 break-inside-avoid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)}">${body}</article>`;
 }

@@ -40,8 +40,7 @@ export function PublicWallSettings({
       const form = new FormData(event.currentTarget);
       await onSave({
         accentColor: String(form.get("accentColor")),
-        hideAttribution:
-          settings.canHideAttribution && form.has("hideAttribution"),
+        hideAttribution: settings.canHideAttribution,
         theme: String(form.get("theme")) as PublicWallSettingsValue["theme"],
         transparentEmbed: form.has("transparentEmbed"),
         visibility: {
@@ -123,18 +122,17 @@ export function PublicWallSettings({
         />
         <span>Use a transparent Embedded Wall background</span>
       </label>
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          defaultChecked={settings.hideAttribution}
-          disabled={!settings.canHideAttribution}
-          name="hideAttribution"
-          type="checkbox"
-        />
-        <span>
-          Hide the Attribution Badge
-          {!settings.canHideAttribution ? " (Pro)" : ""}
-        </span>
-      </label>
+      <div className="bg-muted/40 rounded-lg border p-4 text-sm">
+        <p className="font-medium">
+          {settings.canHideAttribution
+            ? "The Get Some Proof promo card is hidden on Pro."
+            : "Free walls include one Get Some Proof promo card."}
+        </p>
+        <p className="text-muted-foreground mt-1 text-xs leading-5">
+          It appears once among your Testimonials on Free and is removed
+          automatically while Pro is active.
+        </p>
+      </div>
       {message ? (
         <p className="text-sm" role="status">
           {message}

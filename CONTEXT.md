@@ -134,18 +134,18 @@ _Avoid_: Sort, feed order
 A per-Testimonial choice that replaces a Wall-wide visibility default for one optional public identity field. Submitter name is not optional and cannot receive an override.
 _Avoid_: Hidden field, privacy consent
 
-**Attribution Badge**:
-The visible Get Some Proof branding required on Free public surfaces and removable on Pro.
-_Avoid_: Backlink, SEO link
+**Promotion Card**:
+A Get Some Proof call-to-action placed once among Testimonials on a Free Public Wall or Embedded Wall. It is absent while Pro is active.
+_Avoid_: Attribution Badge, backlink, SEO link
 
 ## Plans
 
 **Free Plan**:
-The no-cost entitlement with lifetime Collection Credits, fixed product limits, and a required Attribution Badge. Its used credits persist through upgrades and later downgrades.
+The no-cost entitlement with lifetime Collection Credits, fixed product limits, and a required Promotion Card. Its used credits persist through upgrades and later downgrades.
 _Avoid_: Trial
 
 **Pro Plan**:
-The paid entitlement with unlimited text collection, a renewable video storage allowance, removable branding, and MP4 download.
+The paid entitlement with unlimited text collection, a renewable video storage allowance, no Promotion Card, and MP4 download.
 _Avoid_: Premium, Unlimited plan
 
 **Video Slot**:

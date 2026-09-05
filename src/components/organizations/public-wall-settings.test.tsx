@@ -39,6 +39,9 @@ describe("PublicWallSettings", () => {
       }),
     );
     expect(screen.queryByLabelText(/name/i)).toBeNull();
-    expect(screen.getByLabelText(/Hide the Attribution Badge/)).toBeDisabled();
+    expect(
+      screen.getByText("Free walls include one Get Some Proof promo card."),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Attribution Badge/)).toBeNull();
   });
 });

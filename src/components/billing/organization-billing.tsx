@@ -757,8 +757,8 @@ export function BillingCockpit({
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-sm leading-6">
               {overview.effectivePlan === "premium"
-                ? "Pro includes unlimited text collection, 25 stored Ready videos, MP4 downloads, and removable attribution."
-                : "Free includes 13 lifetime text credits, 2 lifetime video credits, and required attribution."}
+                ? "Pro includes unlimited text collection, 25 stored Ready videos, MP4 downloads, and no Get Some Proof promo card."
+                : "Free includes 13 lifetime text credits, 2 lifetime video credits, and one Get Some Proof promo card in each Wall."}
             </p>
             <div className="bg-muted/40 rounded-lg border p-4">
               <p className="text-sm font-medium">

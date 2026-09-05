@@ -249,6 +249,15 @@
       "heading": "Visual Studio",
       "theme": "light",
       "requiresBackend": true
+    },
+    {
+      "slug": "public-wall-pro",
+      "title": "Published Public Wall - Pro",
+      "path": "/w/:publicSlug",
+      "fixturePath": "/visual-evidence/public-wall-pro",
+      "heading": "Visual Studio",
+      "theme": "light",
+      "requiresBackend": true
     }
   ]
 }

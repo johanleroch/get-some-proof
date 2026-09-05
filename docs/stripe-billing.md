@@ -8,7 +8,7 @@ Perform this procedure only in a disposable Convex development deployment and a 
 
 Production and Stripe live mode are not part of this rehearsal. They require a separate explicit approval for the exact account, deployment, webhook, Prices, and charge plan. See `docs/deployment.md` before any promotion.
 
-Stripe is optional. If either `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` is absent, or if they do not have the expected `sk_test_...` and `whsec_...` test credential formats, Billing reports unavailable, every Workspace remains on Free, Free quotas and attribution remain enforced, and no payment action is offered. This keeps live-mode Billing disabled until a separately approved production change. Leave both values unset when an adopter does not want Billing.
+Stripe is optional. If either `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` is absent, or if they do not have the expected `sk_test_...` and `whsec_...` test credential formats, Billing reports unavailable, every Workspace remains on Free, Free quotas and the Promotion Card remain enforced, and no payment action is offered. This keeps live-mode Billing disabled until a separately approved production change. Leave both values unset when an adopter does not want Billing.
 
 ## What stays server-only
 
@@ -138,7 +138,7 @@ Record the Organization slug, test Customer ID, Subscription ID, webhook event I
 2. Open Workspace Billing. Verify `Free` and that the Product name, description, marketing features, amount, currency, and cadence match the single Stripe offer.
 3. Before paying, manually open `/org/<slug>/billing?checkout=success`.
 4. Verify the page may explain that confirmation is pending but still shows Free.
-5. Verify Free limits and required attribution remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or attribution removal.
+5. Verify Free limits and the required Promotion Card remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or Promotion Card removal.
 
 This proves that a success query parameter is presentation state only. Never mark this step passed merely because the browser hides a control.
 
@@ -150,7 +150,7 @@ This proves that a success query parameter is presentation state only. Never mar
 4. On return, verify the application remains pending or Free until the signed webhook synchronizes the Subscription.
 5. In Stripe, confirm one Customer and one non-terminal Subscription with canonical Organization metadata.
 6. In the webhook delivery log, confirm successful delivery to the Convex endpoint.
-7. Verify the Billing page becomes Pro reactively, shows the synchronized cadence, price, state, and period end, and enables unlimited text, 25 stored Ready videos, MP4 download, and removable attribution.
+7. Verify the Billing page becomes Pro reactively, shows the synchronized cadence, price, state, and period end, and enables unlimited text, 25 stored Ready videos, MP4 download, and automatic Promotion Card removal.
 
 ### C. Customer Portal and Billing Contact
 
@@ -178,7 +178,7 @@ Stripe documents the failure card and test clocks at <https://docs.stripe.com/bi
 2. Verify `customer.subscription.updated` reaches Convex with cancellation scheduled.
 3. Verify Billing shows the exact access end date and Pro capabilities remain effective before that date.
 4. Advance the sandbox simulation past the period end or wait for the test-mode lifecycle to emit `customer.subscription.deleted`.
-5. Verify the Workspace returns to Free and Free quotas plus attribution are enforced.
+5. Verify the Workspace returns to Free and Free quotas plus the Promotion Card are enforced.
 
 ## 6. Automated proof before the provider rehearsal
 
@@ -214,7 +214,7 @@ Automated provider doubles prove authorization, idempotency, concurrency, state 
 | ---------------- | ------------------------------------------------------------------------- | ------- |
 | Target isolation | Convex development deployment and Stripe test-mode account names          | Pending |
 | Catalog          | One `pro_monthly` EUR 29 Price observed through the Billing UI            | Pending |
-| Forged return    | Free quotas and attribution remain effective                              | Pending |
+| Forged return    | Free quotas and Promotion Card remain effective                           | Pending |
 | Checkout         | Hosted session, one Customer, one Subscription, successful signed webhook | Pending |
 | Pro              | Reactive plan update and all four Pro capabilities                        | Pending |
 | Portal           | Fresh Owner session, return to same Organization, Admin read-only         | Pending |

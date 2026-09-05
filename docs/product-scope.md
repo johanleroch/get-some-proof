@@ -172,8 +172,9 @@ The MVP does not block a Submission on email verification. A failed confirmation
 
 Adapt the verified Atrakt `astro-lp` testimonial treatment without copying its brand:
 
-- Text card: avatar, name, role/company, optional stars, testimonial text, and applicable Attribution Badge.
-- Video card: vertical `9:16` poster/player, followed by avatar, name, role/company, optional stars, and applicable Attribution Badge.
+- Text card: avatar, name, role/company, optional stars, and testimonial text.
+- Video card: vertical `9:16` poster/player followed by the public identity and optional stars.
+- A single Get Some Proof Promotion Card follows the first Testimonial on Free; it is not repeated inside Testimonial cards.
 - Remove all LinkedIn banner images.
 - Use the Brand accent color and configured theme rather than Atrakt colors or typography.
 - Do not use User-Agent detection to create different testimonial orders.
@@ -190,8 +191,8 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 - Wall-wide visibility toggles for stars, avatar, role, and company.
 - Per-Testimonial visibility overrides for the same optional fields.
 - Submitter name remains visible on every Published Testimonial.
-- Required Attribution Badge on Free; removable on Pro.
-- The badge uses a visible brand link with attribution parameters and `rel="sponsored nofollow"`.
+- Required Promotion Card on Free; automatically absent on Pro.
+- Its call-to-action uses attribution parameters and `rel="sponsored nofollow"`.
 - No custom CSS, carousel, popup, single-Testimonial widget, or alternate layout in the MVP.
 
 ### Video playback
@@ -243,7 +244,7 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 | Text collection          | 13 lifetime Collection Credits | Unlimited                       |
 | Video collection/storage | 2 lifetime Collection Credits  | 25 stored videos simultaneously |
 | Maximum video duration   | 2 minutes                      | 2 minutes                       |
-| Attribution Badge        | Required                       | Removable                       |
+| Promotion Card           | Required once per Wall         | Absent                          |
 | MP4 download             | No                             | Yes, best available up to 1080p |
 
 - Free credits count valid collected proof, not merely Published proof.
@@ -266,7 +267,7 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 - Without a complete selection, keep the most recently Published eligible items.
 - Archive excess text; do not delete it.
 - Retain excess video assets for 30 days for reactivation or exceptional download, warn during retention, then permanently delete them from Mux.
-- Free Attribution Badge returns when Pro ends.
+- The Free Promotion Card returns when Pro ends.
 - The target price is EUR 29/month. Tax-inclusive or tax-exclusive configuration, registrations, and display rules are deliberately deferred to mandatory accounting/legal validation before live payments are enabled.
 
 ### Failed renewal

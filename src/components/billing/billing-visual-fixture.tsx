@@ -61,7 +61,7 @@ export function BillingVisualFixture({
                         "Unlimited text collection",
                         "25 stored Ready videos",
                         "MP4 downloads up to 1080p",
-                        "Removable Get Some Proof attribution",
+                        "No Get Some Proof promo card",
                       ],
                       interval: "month",
                       lookupKey: "pro_monthly",

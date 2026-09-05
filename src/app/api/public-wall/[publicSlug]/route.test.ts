@@ -66,7 +66,8 @@ describe("GET /api/public-wall/:publicSlug", () => {
       "public, max-age=0, must-revalidate",
     );
     expect(response.headers.get("etag")).toMatch(/^"[a-f0-9]{64}"$/);
-    await expect(response.json()).resolves.toEqual({
+    const body = await response.json();
+    expect(body).toEqual({
       brand: {
         accentColor: "#123abc",
         attributionRequired: true,
@@ -90,6 +91,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
       ],
     });
     expect(fetchMutation).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(body)).not.toContain("Powered by Get Some Proof");
   });
 
   it("returns the same public-safe video projection without private identity", async () => {
