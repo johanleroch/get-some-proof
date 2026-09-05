@@ -1,17 +1,17 @@
-import { GalleryVerticalEnd } from "lucide-react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span
+    <Image
+      alt=""
       aria-hidden="true"
-      className={cn(
-        "bg-primary text-primary-foreground grid size-8 shrink-0 place-items-center rounded-lg",
-        className,
-      )}
-    >
-      <GalleryVerticalEnd className="size-4" />
-    </span>
+      className={cn("size-8 shrink-0", className)}
+      height={32}
+      src="/icon.svg"
+      unoptimized
+      width={32}
+    />
   );
 }
