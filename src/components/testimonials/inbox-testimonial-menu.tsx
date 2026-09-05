@@ -1,6 +1,5 @@
 import {
   Archive,
-  Download,
   Ellipsis,
   EyeOff,
   Send,
@@ -20,16 +19,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export type InboxTestimonialAction =
-  | "archive"
-  | "delete"
-  | "download"
-  | "publish"
-  | "spam"
-  | "undo-spam"
-  | "unpublish";
+  "archive" | "delete" | "publish" | "spam" | "undo-spam" | "unpublish";
 
 export type InboxTestimonialMenuValue = {
-  canDownload?: boolean;
   moderationStatus: "pending" | "published" | "archived" | "spam";
   submissionType: "text" | "video";
   submitterName: string;
@@ -93,14 +85,6 @@ export function InboxTestimonialMenu({
               <DropdownMenuItem onSelect={() => onAction("archive")}>
                 <Archive aria-hidden="true" />
                 Archive
-              </DropdownMenuItem>
-            ) : null}
-            {testimonial.submissionType === "video" &&
-            testimonial.videoStatus === "ready" &&
-            testimonial.canDownload ? (
-              <DropdownMenuItem onSelect={() => onAction("download")}>
-                <Download aria-hidden="true" />
-                Download MP4
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem onSelect={() => onAction("spam")}>

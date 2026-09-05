@@ -1,18 +1,8 @@
-import { generateKeyPairSync } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import {
-  addStripeSubscription,
-  authenticatedUser,
-  createConvexTest,
-} from "./convex-test-helpers";
-
-const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-const signingPrivateKey = Buffer.from(
-  privateKey.export({ format: "pem", type: "pkcs8" }),
-).toString("base64");
+import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
 
 async function createReadyVideo(
   t: ReturnType<typeof createConvexTest>,
@@ -89,8 +79,6 @@ describe("Video media ownership", () => {
     vi.stubEnv("MUX_PROVIDER", "mux");
     vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
     vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
-    vi.stubEnv("MUX_SIGNING_KEY_ID", "mux-signing-key-id");
-    vi.stubEnv("MUX_SIGNING_PRIVATE_KEY", signingPrivateKey);
   });
 
   afterEach(() => {
@@ -99,145 +87,7 @@ describe("Video media ownership", () => {
     vi.unstubAllGlobals();
   });
 
-  it("lets only a Pro Owner request the best ready MP4 up to 1080p", async () => {
-    const t = createConvexTest();
-    const owner = await authenticatedUser(t);
-    const brand = await owner.client.mutation(api.organizations.create, {
-      name: "Acme Studio",
-      publicSlug: "acme-proof",
-    });
-    const testimonialId = await createReadyVideo(t, brand.id, "download");
-    await addStripeSubscription(t, String(brand.id), "active");
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              data: {
-                id: "download-asset-download",
-                playback_ids: [
-                  { id: "signed-playback-download", policy: "signed" },
-                ],
-              },
-            }),
-            { status: 201 },
-          ),
-        )
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              data: {
-                static_renditions: {
-                  files: [
-                    { name: "2160p.mp4", resolution: "2160p", status: "ready" },
-                    { name: "1080p.mp4", resolution: "1080p", status: "ready" },
-                  ],
-                },
-              },
-            }),
-            { status: 200 },
-          ),
-        ),
-    );
-
-    await expect(
-      owner.client.action(api.videoMedia.requestDownload, {
-        organizationId: brand.id,
-        testimonialId,
-      }),
-    ).resolves.toMatchObject({
-      status: "ready",
-      url: expect.stringMatching(
-        /^https:\/\/stream\.mux\.com\/signed-playback-download\/1080p\.mp4\?token=.+&download=video-testimonial\.mp4$/,
-      ),
-    });
-    const stored = await t.run(async (ctx) => ({
-      asset: await ctx.db
-        .query("videoAssets")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .unique(),
-      cleanupJobs: await ctx.db.query("videoProviderCleanupJobs").collect(),
-    }));
-    expect(stored.asset).toMatchObject({
-      downloadPlaybackId: "signed-playback-download",
-      downloadProviderAssetId: "download-asset-download",
-    });
-    expect(stored.cleanupJobs).toEqual([]);
-  });
-
-  it("returns processing and reuses the derived asset until its MP4 is ready", async () => {
-    const t = createConvexTest();
-    const owner = await authenticatedUser(t);
-    const brand = await owner.client.mutation(api.organizations.create, {
-      name: "Acme Studio",
-      publicSlug: "acme-processing",
-    });
-    const testimonialId = await createReadyVideo(t, brand.id, "processing");
-    await addStripeSubscription(t, String(brand.id), "active");
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            data: {
-              id: "download-asset-processing",
-              playback_ids: [
-                { id: "signed-playback-processing", policy: "signed" },
-              ],
-            },
-          }),
-          { status: 201 },
-        ),
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            data: { static_renditions: { status: "preparing" } },
-          }),
-          { status: 200 },
-        ),
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            data: {
-              static_renditions: {
-                status: "ready",
-                files: [
-                  {
-                    ext: "mp4",
-                    height: 1080,
-                    name: "capped-1080p.mp4",
-                  },
-                ],
-              },
-            },
-          }),
-          { status: 200 },
-        ),
-      );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const args = { organizationId: brand.id, testimonialId };
-    await expect(
-      owner.client.action(api.videoMedia.requestDownload, args),
-    ).resolves.toEqual({ status: "processing" });
-    await expect(
-      owner.client.action(api.videoMedia.requestDownload, args),
-    ).resolves.toMatchObject({
-      status: "ready",
-      url: expect.stringMatching(
-        /\/signed-playback-processing\/capped-1080p\.mp4\?/,
-      ),
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-  });
-
-  it("rejects Free and cross-tenant download requests on the server", async () => {
+  it("rejects cross-tenant video deletion", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const outsider = await authenticatedUser(t, {
@@ -258,47 +108,11 @@ describe("Video media ownership", () => {
     const testimonialId = await createReadyVideo(t, brand.id, "protected");
 
     await expect(
-      owner.client.action(api.videoMedia.requestDownload, {
-        organizationId: brand.id,
-        testimonialId,
-      }),
-    ).rejects.toMatchObject({ data: { code: "PREMIUM_REQUIRED" } });
-    await expect(
-      outsider.client.action(api.videoMedia.requestDownload, {
-        organizationId: otherBrand.id,
-        testimonialId,
-      }),
-    ).rejects.toMatchObject({ data: { code: "TESTIMONIAL_UNAVAILABLE" } });
-    await expect(
       outsider.client.action(api.videoMedia.remove, {
         organizationId: otherBrand.id,
         testimonialId,
       }),
     ).rejects.toMatchObject({ data: { code: "TESTIMONIAL_UNAVAILABLE" } });
-    const rejectedAttachment = await outsider.client.mutation(
-      internal.videoMedia.attachDownloadAsset,
-      {
-        organizationId: brand.id,
-        playbackId: "late-cross-tenant-playback",
-        provider: "fake",
-        providerAssetId: "late-cross-tenant-asset",
-        testimonialId,
-      },
-    );
-    expect(rejectedAttachment).toMatchObject({
-      accepted: false,
-      cleanupJobId: expect.any(String),
-    });
-    await expect(
-      t.run((ctx) =>
-        rejectedAttachment.cleanupJobId
-          ? ctx.db.get(rejectedAttachment.cleanupJobId)
-          : null,
-      ),
-    ).resolves.toMatchObject({
-      organizationId: brand.id,
-      providerAssetId: "late-cross-tenant-asset",
-    });
     await expect(
       t.run((ctx) => ctx.db.get(testimonialId)),
     ).resolves.not.toBeNull();
@@ -426,70 +240,6 @@ describe("Video media ownership", () => {
         publicSlug: "acme-proof",
       }),
     ).resolves.toMatchObject({ page: [] });
-  });
-
-  it("durably cleans a derived asset created after deletion already finalized", async () => {
-    vi.useFakeTimers();
-    const t = createConvexTest();
-    const owner = await authenticatedUser(t);
-    const brand = await owner.client.mutation(api.organizations.create, {
-      name: "Acme Studio",
-      publicSlug: "acme-proof",
-    });
-    const testimonialId = await createReadyVideo(t, brand.id, "late-download");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
-    );
-    await owner.client.action(api.videoMedia.remove, {
-      organizationId: brand.id,
-      testimonialId,
-    });
-
-    const attached = await owner.client.mutation(
-      internal.videoMedia.attachDownloadAsset,
-      {
-        organizationId: brand.id,
-        playbackId: "late-signed-playback",
-        provider: "mux",
-        providerAssetId: "late-download-asset",
-        testimonialId,
-      },
-    );
-    expect(attached).toMatchObject({
-      accepted: false,
-      providerAssetId: "late-download-asset",
-    });
-    const pending = await t.run((ctx) =>
-      ctx.db.query("videoProviderCleanupJobs").collect(),
-    );
-    expect(pending).toHaveLength(1);
-
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(new Response(null, { status: 503 }))
-        .mockResolvedValueOnce(new Response(null, { status: 204 })),
-    );
-    await t.action(internal.videoMedia.processProviderCleanup, {
-      cleanupJobId: pending[0]!._id,
-    });
-    const afterFailure = await t.run(async (ctx) => ({
-      deletion: await ctx.db.query("videoMediaDeletions").unique(),
-      jobs: await ctx.db.query("videoProviderCleanupJobs").collect(),
-    }));
-    expect(afterFailure.deletion?.status).toBe("deleted");
-    expect(afterFailure.jobs).toHaveLength(1);
-    expect(afterFailure.jobs[0]?.attempts).toBe(1);
-
-    await t.action(internal.videoMedia.processProviderCleanup, {
-      cleanupJobId: pending[0]!._id,
-    });
-    const remaining = await t.run((ctx) =>
-      ctx.db.query("videoProviderCleanupJobs").collect(),
-    );
-    expect(remaining).toEqual([]);
   });
 
   it("cancels an unfinished Direct Upload before deleting application state", async () => {

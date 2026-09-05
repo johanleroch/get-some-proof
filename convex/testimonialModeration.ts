@@ -64,7 +64,6 @@ const inboxItemValidator = v.union(
   v.object({
     ...inboxIdentityValidator,
     card: v.union(v.null(), testimonialCardValueValidator),
-    canDownload: v.boolean(),
     captionsStatus: v.union(
       v.literal("requested"),
       v.literal("ready"),
@@ -125,10 +124,6 @@ export const listInbox = query({
       ctx,
       { organizationId: args.organizationId },
       "ownership:manage",
-    );
-    const entitlement = await getOrganizationBillingEntitlement(
-      ctx,
-      access.organization._id,
     );
     const indexedQuery = args.status
       ? ctx.db
@@ -216,7 +211,6 @@ export const listInbox = query({
         if (!videoAsset) testimonialUnavailable();
         return {
           ...identity,
-          canDownload: entitlement.effectivePlan === "premium",
           card:
             videoAsset.status === "ready" && videoAsset.playbackId
               ? testimonialCardValue(cardIdentity, {

@@ -39,3 +39,38 @@ No actionable P0, P1, or P2 mismatch remains.
 No P3 item is required for this scope.
 
 final result: passed
+
+---
+
+# Testimonial deletion dialog design QA
+
+## Evidence
+
+- Source visual target: the user-provided Senja deletion dialog, `codex-clipboard-036bef48-e920-4d5a-988e-5f37d760d18a.png` (1220 x 578 px).
+- Implementation: `visual-evidence/desktop-chromium/testimonial-delete.png` (1280 x 720 px) and `visual-evidence/mobile-chromium/testimonial-delete.png` (412 x 1098 px), device scale factor 1.
+- Combined source/implementation comparison: `visual-evidence/manual/testimonial-delete-senja-comparison.png`.
+- State: light-theme testimonial Inbox with the permanent-deletion confirmation open.
+
+## Full-view and focused comparison
+
+The implementation preserves the reference's compact hierarchy: warning icon, short title, one plain-language sentence, and Cancel/Delete actions. The destructive action remains visually primary. The desktop and mobile captures confirm that the dialog and both actions stay within the viewport; the mobile layout stacks the full-width actions without clipping.
+
+The combined comparison keeps the title, description, warning treatment, and actions readable at the same time, so no additional focused crop is needed. The missing top-right close icon is intentional: this destructive AlertDialog requires an explicit Cancel or Delete decision and already exposes an accessible Cancel action.
+
+## Required fidelity surfaces
+
+- Fonts and typography: the existing product font and weight tokens preserve the reference's strong title and quieter description hierarchy.
+- Spacing and layout rhythm: warning icon and copy align on one row; the action row has clear separation and no overflow at either captured breakpoint.
+- Colors and tokens: existing background, muted copy, border, and destructive tokens replace Senja's brand-specific palette while retaining the same semantic contrast.
+- Image quality: no raster asset is required; the warning symbol uses the project's installed icon library and renders sharply.
+- Copy and content: the technical Mux, record, consent, timestamp, and identifier details are removed. The dialog now asks one question and states permanence once.
+
+## Findings and comparison history
+
+The first implementation already has no actionable P0, P1, or P2 mismatch. Desktop and mobile captures both keep every control inside the dialog. No visual fix was required after comparison.
+
+## Follow-up polish
+
+No P3 item is required for this scope.
+
+final result: passed

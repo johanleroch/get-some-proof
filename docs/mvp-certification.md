@@ -99,15 +99,15 @@ camera permissions remain manual pre-launch checks.
 
 ## Security proof ledger
 
-| Boundary                                              | Authoritative automated proof                                                                                                             |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Brand tenancy and role enforcement                    | `tests/organizations.test.ts`, `tests/testimonial-moderation.test.ts`, `tests/mvp-happy-path.test.ts`                                     |
-| Public/private field separation                       | `tests/testimonial-moderation.test.ts`, `tests/wall-customization.test.ts`, `tests/mvp-happy-path.test.ts`                                |
-| Management, invitation, retry, and destructive tokens | `tests/submission-management.test.ts`, `tests/video-submissions.test.ts`, `tests/workspace-deletion.test.ts`, `tests/invitations.test.ts` |
-| Signed, replay-safe provider webhooks                 | `tests/video-submissions.test.ts`, `tests/stripe-webhook-sync.test.ts`, `src/app/api/mux/webhook/route.test.ts`                           |
-| Public read and collection rate limits                | `tests/public-read-rate-limit.test.ts`, `tests/submissions.test.ts`, `tests/turnstile-integration.test.ts`                                |
-| Free credits, Video Reservations, downgrade limits    | `tests/collection-quotas.test.ts`, `tests/video-submissions.test.ts`, `tests/billing-downgrade.test.ts`                                   |
-| Testimonial and Workspace destruction                 | `tests/testimonial-moderation.test.ts`, `tests/video-media.test.ts`, `tests/workspace-deletion.test.ts`                                   |
+| Boundary                                              | Authoritative automated proof                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Brand tenancy and role enforcement                    | `tests/organizations.test.ts`, `tests/testimonial-moderation.test.ts`, `tests/mvp-happy-path.test.ts`                                             |
+| Public/private field separation                       | `tests/testimonial-moderation.test.ts`, `tests/wall-customization.test.ts`, `tests/mvp-happy-path.test.ts`                                        |
+| Management, invitation, retry, and destructive tokens | `tests/submission-management.test.ts`, `tests/video-submissions.test.ts`, `tests/workspace-deletion.test.ts`, `tests/invitations.test.ts`         |
+| Signed, replay-safe provider webhooks                 | `tests/video-submissions.test.ts`, `tests/mux-webhook-http.test.ts`, `tests/stripe-webhook-sync.test.ts`, `src/app/api/mux/webhook/route.test.ts` |
+| Public read and collection rate limits                | `tests/public-read-rate-limit.test.ts`, `tests/submissions.test.ts`, `tests/turnstile-integration.test.ts`                                        |
+| Free credits, Video Reservations, downgrade limits    | `tests/collection-quotas.test.ts`, `tests/video-submissions.test.ts`, `tests/billing-downgrade.test.ts`                                           |
+| Testimonial and Workspace destruction                 | `tests/testimonial-moderation.test.ts`, `tests/video-media.test.ts`, `tests/workspace-deletion.test.ts`                                           |
 
 ## Provider evidence boundary
 
@@ -118,8 +118,8 @@ not prove that an external dashboard is configured correctly.
 - Stripe sandbox rehearsal is optional and separately documented in
   `docs/stripe-billing.md`. Keep its evidence separate from this local gate.
 - A Mux sandbox rehearsal requires development-only token credentials, a
-  development webhook, a real upload, playback, captions observation, MP4
-  generation, replacement, and source deletion. No such credential is required
+  development webhook, a real upload, playback, captions observation,
+  replacement, and source deletion. No such credential is required
   for local certification.
 - Resend, Google OAuth, and deployed Turnstile hostnames require provider and
   final-origin evidence before launch.

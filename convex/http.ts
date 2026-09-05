@@ -4,8 +4,11 @@ import { registerRoutes } from "@convex-dev/stripe";
 import { components, internal } from "./_generated/api";
 import { env } from "./_generated/server";
 import { authComponent, createAuth } from "./auth";
+import { muxWebhook } from "./muxWebhook";
 
 const http = httpRouter();
+
+http.route({ method: "POST", path: "/mux/webhook", handler: muxWebhook });
 
 authComponent.registerRoutes(http, createAuth);
 registerRoutes(http, components.stripe, {

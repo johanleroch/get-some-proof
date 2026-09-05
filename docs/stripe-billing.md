@@ -138,7 +138,7 @@ Record the Organization slug, test Customer ID, Subscription ID, webhook event I
 2. Open Workspace Billing. Verify `Free` and that the Product name, description, marketing features, amount, currency, and cadence match the single Stripe offer.
 3. Before paying, manually open `/org/<slug>/billing?checkout=success`.
 4. Verify the page may explain that confirmation is pending but still shows Free.
-5. Verify Free limits and the required Promotion Card remain unchanged. A forged return URL must not enable unlimited text, extra video storage, MP4 download, or Promotion Card removal.
+5. Verify Free limits and the required Promotion Card remain unchanged. A forged return URL must not enable unlimited text, extra video storage, or Promotion Card removal.
 
 This proves that a success query parameter is presentation state only. Never mark this step passed merely because the browser hides a control.
 
@@ -150,7 +150,7 @@ This proves that a success query parameter is presentation state only. Never mar
 4. On return, verify the application remains pending or Free until the signed webhook synchronizes the Subscription.
 5. In Stripe, confirm one Customer and one non-terminal Subscription with canonical Organization metadata.
 6. In the webhook delivery log, confirm successful delivery to the Convex endpoint.
-7. Verify the Billing page becomes Pro reactively, shows the synchronized cadence, price, state, and period end, and enables unlimited text, 25 stored Ready videos, MP4 download, and automatic Promotion Card removal.
+7. Verify the Billing page becomes Pro reactively, shows the synchronized cadence, price, state, and period end, and enables unlimited text, 25 stored Ready videos, and automatic Promotion Card removal.
 
 ### C. Customer Portal and Billing Contact
 

@@ -145,7 +145,7 @@ The no-cost entitlement with lifetime Collection Credits, fixed product limits, 
 _Avoid_: Trial
 
 **Pro Plan**:
-The paid entitlement with unlimited text collection, a renewable video storage allowance, no Promotion Card, and MP4 download.
+The paid entitlement with unlimited text collection, a renewable video storage allowance, and no Promotion Card.
 _Avoid_: Premium, Unlimited plan
 
 **Video Slot**:
@@ -157,7 +157,7 @@ The Owner's choice of which Testimonials remain Published when Pro entitlements 
 _Avoid_: Deletion list, Migration
 
 **Payment Grace Period**:
-The seven days after a failed Pro renewal during which existing Pro publication, branding, and download access remain available but additional video storage is blocked.
+The seven days after a failed Pro renewal during which existing Pro publication and branding remain available but additional video storage is blocked.
 _Avoid_: Trial, Paid period
 
 **Workspace Deletion**:

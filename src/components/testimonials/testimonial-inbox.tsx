@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, ExternalLink } from "lucide-react";
+import { ExternalLink, TriangleAlert } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import {
@@ -35,10 +35,6 @@ import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
 } from "@/components/testimonials/inbox-testimonial-menu";
-import {
-  videoDownloadFeedback,
-  waitForVideoDownload,
-} from "@/components/testimonials/video-download-feedback";
 
 type InboxTestimonialIdentity = {
   card: TestimonialCardValue | null;
@@ -64,7 +60,6 @@ type InboxTestimonial =
       submissionType: "text";
     })
   | (InboxTestimonialIdentity & {
-      canDownload: boolean;
       captionsStatus: "requested" | "ready" | "failed";
       submissionType: "video";
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
@@ -73,11 +68,6 @@ type InboxTestimonial =
 type ModerationFilter = "all" | "pending" | "published" | "archived" | "spam";
 type SubmissionTypeFilter = "all" | "text" | "video";
 
-const deletionSubmittedAtFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 type InboxSort = "newest" | "oldest";
 
 function videoStatusLabel(
@@ -160,60 +150,52 @@ export function TestimonialInboxView({
 
 export function TestimonialDeleteDialog({
   onDelete,
-  onDownload,
   onOpenChange,
   pending,
   target,
 }: {
   onDelete: () => void;
-  onDownload: (testimonial: InboxTestimonial) => void;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
   target: InboxTestimonial | null;
 }) {
-  const submittedAt = target
-    ? deletionSubmittedAtFormatter.format(new Date(target.createdAt))
-    : null;
   return (
     <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Permanently delete {target?.submitterName}&apos;s Testimonial?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {target
-              ? `${target.submissionType === "video" ? "Video" : "Text"} Testimonial submitted ${submittedAt} UTC · ${target.testimonialId}. `
-              : null}
-            {target?.submissionType === "video"
-              ? "This immediately removes the video from the Public Wall, then deletes its Mux source, renditions, captions, thumbnails, private record, consent, and email history. This cannot be undone."
-              : "This immediately removes it from the Public Wall and deletes its private content, consent record, email history, and avatar. This cannot be undone."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col sm:flex-row">
-          {target?.submissionType === "video" &&
-          target.videoStatus === "ready" &&
-          target.canDownload ? (
-            <Button
-              disabled={pending}
-              onClick={() => onDownload(target)}
-              variant="outline"
-            >
-              <Download aria-hidden="true" />
-              Download MP4 first
-            </Button>
-          ) : null}
-          <AlertDialogCancel asChild>
-            <Button disabled={pending} variant="outline">
-              Cancel
-            </Button>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button disabled={pending} onClick={onDelete} variant="destructive">
-              {pending ? "Deleting…" : "Delete permanently"}
-            </Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
+      <AlertDialogContent className="max-w-lg">
+        <div className="flex items-start gap-4">
+          <div className="bg-destructive/10 text-destructive flex size-10 shrink-0 items-center justify-center rounded-full">
+            <TriangleAlert aria-hidden="true" className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {target
+                  ? `Delete ${target.submitterName}'s testimonial?`
+                  : "Delete testimonial"}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-base leading-relaxed">
+                Are you sure you want to delete this testimonial? This action is
+                permanent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-6">
+              <AlertDialogCancel asChild>
+                <Button disabled={pending} variant="outline">
+                  Cancel
+                </Button>
+              </AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  disabled={pending}
+                  onClick={onDelete}
+                  variant="destructive"
+                >
+                  {pending ? "Deleting…" : "Delete"}
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -285,24 +267,13 @@ function InboxFilters({
 export function InboxFeedback({
   error,
   message,
-  tone = "success",
 }: {
   error: string | null;
   message: string | null;
-  tone?: "processing" | "success";
 }) {
   return (
     <>
-      {message && tone === "success" ? (
-        <SuccessToast message={message} />
-      ) : message ? (
-        <p
-          className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300"
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
+      {message ? <SuccessToast message={message} /> : null}
       {error ? <ErrorToast message={error} /> : null}
     </>
   );
@@ -399,14 +370,10 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
   const removeText = useMutation(api.testimonialModeration.remove);
   const removeVideo = useAction(api.videoMedia.remove);
-  const requestDownload = useAction(api.videoMedia.requestDownload);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
   );
   const [message, setMessage] = useState<string | null>(null);
-  const [messageTone, setMessageTone] = useState<"processing" | "success">(
-    "success",
-  );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -431,7 +398,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setMessage(null);
       },
       onSuccess: () => {
-        setMessageTone("success");
         setMessage(
           `${testimonial.submitterName}'s Testimonial is now ${nextStatus}.`,
         );
@@ -462,7 +428,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setMessage(null);
       },
       onSuccess: () => {
-        setMessageTone("success");
         setMessage("Testimonial permanently deleted.");
         setDeleteTarget(null);
       },
@@ -483,7 +448,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setMessage(null);
       },
       onSuccess: () => {
-        setMessageTone("success");
         setMessage(
           action === "mark"
             ? "Testimonial moved to seven-day Spam quarantine."
@@ -498,40 +462,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     });
   }
 
-  async function downloadVideo(testimonial: InboxTestimonial) {
-    if (testimonial.submissionType !== "video") return;
-    await runInboxAction({
-      onError: setError,
-      onFinish: () => setPending(false),
-      onStart: () => {
-        setPending(true);
-        setError(null);
-        setMessage(null);
-      },
-      onSuccess: () => {
-        setMessageTone("success");
-        setMessage(videoDownloadFeedback("ready"));
-      },
-      run: async () => {
-        const result = await waitForVideoDownload({
-          onProcessing: () => {
-            setMessageTone("processing");
-            setMessage(videoDownloadFeedback("processing"));
-          },
-          requestDownload: () =>
-            requestDownload({
-              organizationId: activeOrganization.id,
-              testimonialId: testimonial.testimonialId,
-            }),
-        });
-        const link = document.createElement("a");
-        link.href = result.url;
-        link.rel = "noopener noreferrer";
-        link.click();
-      },
-    });
-  }
-
   function handleInboxAction(
     testimonial: InboxTestimonial,
     action: InboxTestimonialAction,
@@ -539,9 +469,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     switch (action) {
       case "delete":
         setDeleteTarget(testimonial);
-        return;
-      case "download":
-        void downloadVideo(testimonial);
         return;
       case "spam":
       case "undo-spam":
@@ -587,7 +514,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         submissionType={submissionType}
       />
 
-      <InboxFeedback error={error} message={message} tone={messageTone} />
+      <InboxFeedback error={error} message={message} />
 
       <div aria-busy={pending} className={pending ? "opacity-70" : undefined}>
         <TestimonialInboxView
@@ -615,7 +542,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
 
       <TestimonialDeleteDialog
         onDelete={() => void confirmDelete()}
-        onDownload={(testimonial) => void downloadVideo(testimonial)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         pending={pending}
         target={deleteTarget}

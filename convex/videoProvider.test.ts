@@ -1,23 +1,10 @@
-import { generateKeyPairSync } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   cancelVideoDirectUpload,
-  createVideoDownloadAsset,
   createVideoDirectUpload,
   deleteVideoAsset,
-  getVideoDownloadUrl,
 } from "./videoProvider";
-
-const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-const signingPrivateKey = Buffer.from(
-  privateKey.export({ format: "pem", type: "pkcs8" }),
-).toString("base64");
-
-function stubSigningKey() {
-  vi.stubEnv("MUX_SIGNING_KEY_ID", "mux-signing-key-id");
-  vi.stubEnv("MUX_SIGNING_PRIVATE_KEY", signingPrivateKey);
-}
 
 describe("video upload provider", () => {
   afterEach(() => {
@@ -91,38 +78,6 @@ describe("video upload provider", () => {
     });
   });
 
-  it("creates a separate signed 1080p download asset from public HLS", async () => {
-    vi.stubEnv("MUX_PROVIDER", "mux");
-    vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
-    vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: {
-            id: "download-asset-id",
-            playback_ids: [{ id: "signed-download-id", policy: "signed" }],
-          },
-        }),
-        { status: 201 },
-      ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      createVideoDownloadAsset({ sourcePlaybackId: "public-source-id" }),
-    ).resolves.toEqual({
-      playbackId: "signed-download-id",
-      providerAssetId: "download-asset-id",
-    });
-    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(String(request.body))).toMatchObject({
-      inputs: [{ url: "https://stream.mux.com/public-source-id.m3u8" }],
-      max_resolution_tier: "1080p",
-      playback_policies: ["signed"],
-      static_renditions: [{ resolution: "highest" }],
-    });
-  });
-
   it("refuses implicit provider selection", async () => {
     vi.stubEnv("MUX_PROVIDER", "");
     await expect(
@@ -132,121 +87,6 @@ describe("video upload provider", () => {
         spokenLanguage: "en",
       }),
     ).rejects.toThrow("MUX_PROVIDER must be explicitly set");
-  });
-
-  it("selects the best ready MP4 up to 1080p", async () => {
-    vi.stubEnv("MUX_PROVIDER", "mux");
-    vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
-    vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
-    stubSigningKey();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            data: {
-              static_renditions: {
-                status: "ready",
-                files: [
-                  {
-                    ext: "mp4",
-                    height: 3840,
-                    name: "2160p.mp4",
-                    width: 2160,
-                  },
-                  {
-                    ext: "mp4",
-                    height: 1280,
-                    name: "720p.mp4",
-                    width: 720,
-                  },
-                  {
-                    ext: "mp4",
-                    height: 1920,
-                    name: "capped-1080p.mp4",
-                    width: 1080,
-                  },
-                ],
-              },
-            },
-          }),
-          { headers: { "Content-Type": "application/json" }, status: 200 },
-        ),
-      ),
-    );
-
-    await expect(
-      getVideoDownloadUrl({
-        playbackId: "signed-playback-id",
-        provider: "mux",
-        providerAssetId: "mux-asset-id",
-      }),
-    ).resolves.toMatch(
-      /^https:\/\/stream\.mux\.com\/signed-playback-id\/capped-1080p\.mp4\?token=.+&download=video-testimonial\.mp4$/,
-    );
-  });
-
-  it("returns no URL while Mux prepares the static rendition", async () => {
-    vi.stubEnv("MUX_PROVIDER", "mux");
-    vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
-    vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            data: { static_renditions: { status: "preparing" } },
-          }),
-          { status: 200 },
-        ),
-      ),
-    );
-
-    await expect(
-      getVideoDownloadUrl({
-        playbackId: "signed-playback-id",
-        provider: "mux",
-        providerAssetId: "mux-asset-id",
-      }),
-    ).resolves.toBeNull();
-  });
-
-  it("supports Mux's highest rendition filename under the 1080p upload cap", async () => {
-    vi.stubEnv("MUX_PROVIDER", "mux");
-    vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
-    vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
-    stubSigningKey();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            data: {
-              static_renditions: {
-                files: [
-                  {
-                    name: "highest.mp4",
-                    resolution: "highest",
-                    status: "ready",
-                  },
-                ],
-              },
-            },
-          }),
-          { status: 200 },
-        ),
-      ),
-    );
-
-    await expect(
-      getVideoDownloadUrl({
-        playbackId: "signed-playback-id",
-        provider: "mux",
-        providerAssetId: "mux-asset-id",
-      }),
-    ).resolves.toMatch(
-      /\/highest\.mp4\?token=.+&download=video-testimonial\.mp4$/,
-    );
   });
 
   it("deletes the whole Mux asset and treats not-found as idempotent", async () => {

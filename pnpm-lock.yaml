@@ -68,9 +68,6 @@ importers:
       d3-array:
         specifier: 3.2.4
         version: 3.2.4
-      jose:
-        specifier: ^6.2.10
-        version: 6.2.10
       lucide-react:
         specifier: 1.37.0
         version: 1.37.0(react@19.2.8)

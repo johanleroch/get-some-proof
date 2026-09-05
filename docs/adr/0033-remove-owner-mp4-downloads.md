@@ -1,0 +1,3 @@
+# Remove Owner MP4 downloads
+
+Get Some Proof no longer generates or offers downloadable MP4 renditions to Owners, including before Permanent Testimonial Deletion, during Payment Grace, during downgrade retention, or before Workspace Deletion. Videos remain hosted for playback and captions through Mux until the applicable source-deletion workflow runs; this removes the extra rendition, entitlement, polling, and cleanup paths in favor of a smaller MVP. This decision supersedes the MP4-download clauses in ADRs 0014, 0018, 0022, and 0029 while preserving their source-deletion, grace, retention, and irreversibility policies.

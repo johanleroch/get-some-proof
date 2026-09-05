@@ -60,7 +60,6 @@ export function BillingVisualFixture({
                       features: [
                         "Unlimited text collection",
                         "25 stored Ready videos",
-                        "MP4 downloads up to 1080p",
                         "No Get Some Proof promo card",
                       ],
                       interval: "month",

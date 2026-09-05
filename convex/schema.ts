@@ -598,6 +598,8 @@ export default defineSchema({
     providerUploadId: v.string(),
     providerAssetId: v.optional(v.string()),
     playbackId: v.optional(v.string()),
+    // Cleanup-only compatibility for derived assets created before MP4 export
+    // was removed. No active function writes these fields.
     downloadProviderAssetId: v.optional(v.string()),
     downloadPlaybackId: v.optional(v.string()),
     spokenLanguage: v.union(v.literal("en"), v.literal("fr")),

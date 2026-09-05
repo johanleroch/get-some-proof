@@ -123,7 +123,7 @@ test("destructive confirmations trap keyboard focus and expose their warning", a
   page,
 }) => {
   for (const [path, warning] of [
-    ["/visual-evidence/testimonial-delete", "cannot be undone"],
+    ["/visual-evidence/testimonial-delete", "permanent"],
     ["/visual-evidence/workspace-delete", "cannot be undone"],
   ] as const) {
     await page.goto(path);

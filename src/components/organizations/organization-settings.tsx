@@ -232,7 +232,6 @@ export function OrganizationSettings({
       workspaceDeletion={
         access?.can.manageOwnership
           ? {
-              inboxHref: `/org/${slug}/inbox`,
               onDelete: async (brandName) => {
                 const result = await deleteWorkspace({
                   brandName,
@@ -297,7 +296,6 @@ export function OrganizationSettingsView({
   publicSlugCanChange: boolean;
   wallSettings?: PublicWallSettingsValue;
   workspaceDeletion?: {
-    inboxHref: string;
     onDelete: (brandName: string) => Promise<void>;
     onExport: () => Promise<void>;
   };
@@ -450,7 +448,6 @@ export function OrganizationSettingsView({
       {workspaceDeletion ? (
         <WorkspaceDeletionSection
           brandName={name}
-          inboxHref={workspaceDeletion.inboxHref}
           onDelete={workspaceDeletion.onDelete}
           onExport={workspaceDeletion.onExport}
         />
@@ -532,14 +529,12 @@ export function WorkspaceDeletionProgress({
 
 export function WorkspaceDeletionSection({
   brandName,
-  inboxHref,
   initialConfirmation = "",
   initialDialogOpen = false,
   onDelete,
   onExport,
 }: {
   brandName: string;
-  inboxHref: string;
   initialConfirmation?: string;
   initialDialogOpen?: boolean;
   onDelete: (brandName: string) => Promise<void>;
@@ -583,7 +578,7 @@ export function WorkspaceDeletionSection({
           private data, and every hosted video. There is no recovery window.
         </p>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div>
         <Button
           disabled={pending !== null}
           onClick={() => void download()}
@@ -591,9 +586,6 @@ export function WorkspaceDeletionSection({
           variant="outline"
         >
           {pending === "export" ? "Preparing export…" : "Download data first"}
-        </Button>
-        <Button asChild variant="outline">
-          <a href={inboxHref}>Download eligible MP4s from Inbox</a>
         </Button>
       </div>
       <div className="space-y-2">

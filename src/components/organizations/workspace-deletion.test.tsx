@@ -21,15 +21,10 @@ describe("WorkspaceDeletionSection", () => {
     render(
       <WorkspaceDeletionSection
         brandName="Acme Studio"
-        inboxHref="/org/acme-studio/inbox"
         onDelete={onDelete}
         onExport={onExport}
       />,
     );
-    expect(
-      screen.getByRole("link", { name: "Download eligible MP4s from Inbox" }),
-    ).toHaveAttribute("href", "/org/acme-studio/inbox");
-
     fireEvent.click(
       screen.getByRole("button", { name: "Download data first" }),
     );

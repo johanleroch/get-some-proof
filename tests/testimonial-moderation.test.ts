@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
 import { buildPublicationConsent } from "@convex/domain/submission";
 import {
-  addStripeSubscription,
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
@@ -211,7 +210,6 @@ describe("Testimonial moderation and Public Projection", () => {
     ).resolves.toMatchObject({
       page: [
         expect.objectContaining({
-          canDownload: false,
           card: expect.objectContaining({
             aspectRatio: "16:9",
             playbackId: "public-playback-id",
@@ -220,20 +218,6 @@ describe("Testimonial moderation and Public Projection", () => {
         }),
       ],
     });
-    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_inbox_download");
-    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_inbox_download");
-    await addStripeSubscription(t, brand.id, "active");
-    await expect(
-      owner.client.query(api.testimonialModeration.listInbox, {
-        organizationId: brand.id,
-        paginationOpts: { cursor: null, numItems: 20 },
-        sort: "newest",
-        submissionType: "video",
-      }),
-    ).resolves.toMatchObject({
-      page: [expect.objectContaining({ canDownload: true })],
-    });
-
     const wall = await t.query(api.publicWall.list, {
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",

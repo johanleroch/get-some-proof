@@ -535,8 +535,8 @@ function DowngradeSelectionCard({
           </Button>
         ) : null}
         <p className="text-muted-foreground text-sm leading-6">
-          Extra text is archived. Extra video is unpublished and remains
-          downloadable for 30 days before its Mux media is permanently deleted.
+          Extra text is archived. Extra video is unpublished and retained for
+          reactivation for 30 days before its Mux media is permanently deleted.
         </p>
         {message ? <SuccessToast message={message} /> : null}
         {error ? <ErrorToast message={error} /> : null}
@@ -739,7 +739,7 @@ export function BillingCockpit({
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-sm leading-6">
               {overview.effectivePlan === "premium"
-                ? "Pro includes unlimited text collection, 25 stored Ready videos, MP4 downloads, and no Get Some Proof promo card."
+                ? "Pro includes unlimited text collection, 25 stored Ready videos, and no Get Some Proof promo card."
                 : "Free includes 13 lifetime text credits, 2 lifetime video credits, and one Get Some Proof promo card in each Wall."}
             </p>
             <div className="bg-muted/40 rounded-lg border p-4">

@@ -231,20 +231,11 @@
       "requiresAuth": true
     },
     {
-      "slug": "testimonial-inbox-download-processing",
-      "title": "Testimonial Inbox - MP4 download processing",
-      "path": "/org/:organizationSlug/inbox",
-      "fixturePath": "/visual-evidence/testimonial-inbox-download-processing",
-      "heading": "Inbox",
-      "theme": "light",
-      "requiresAuth": true
-    },
-    {
       "slug": "testimonial-delete",
       "title": "Permanent Testimonial deletion confirmation",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-delete",
-      "heading": "Permanently delete Remy Jupille's Testimonial?",
+      "heading": "Delete Remy Jupille's testimonial?",
       "theme": "light",
       "requiresAuth": true
     },

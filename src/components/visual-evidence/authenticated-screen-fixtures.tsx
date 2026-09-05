@@ -24,7 +24,6 @@ import {
   TestimonialDeleteDialog,
   TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
-import { videoDownloadFeedback } from "@/components/testimonials/video-download-feedback";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
@@ -311,7 +310,6 @@ const testimonialFixture = {
 };
 
 const videoTestimonialFixture = {
-  canDownload: true,
   card: {
     aspectRatio: "4:3",
     avatarUrl: null,
@@ -351,11 +349,7 @@ const spamTestimonialFixture = {
   testimonialId: "fixture-spam-testimonial" as Id<"testimonials">,
 };
 
-export function TestimonialInboxScreenFixture({
-  downloadProcessing = false,
-}: {
-  downloadProcessing?: boolean;
-}) {
+export function TestimonialInboxScreenFixture() {
   return (
     <section className="space-y-6">
       <div>
@@ -384,13 +378,7 @@ export function TestimonialInboxScreenFixture({
           <option>Newest first</option>
         </select>
       </div>
-      <InboxFeedback
-        error={null}
-        message={
-          downloadProcessing ? videoDownloadFeedback("processing") : null
-        }
-        tone={downloadProcessing ? "processing" : "success"}
-      />
+      <InboxFeedback error={null} message={null} />
       <TestimonialInboxView
         accentColor={collectionFormFixtureBrand.primaryColor}
         onAction={() => undefined}
@@ -428,17 +416,12 @@ export function TestimonialInboxScreenFixture({
   );
 }
 
-export function TestimonialInboxDownloadProcessingScreenFixture() {
-  return <TestimonialInboxScreenFixture downloadProcessing />;
-}
-
 export function TestimonialDeleteScreenFixture() {
   return (
     <>
       <TestimonialInboxScreenFixture />
       <TestimonialDeleteDialog
         onDelete={() => undefined}
-        onDownload={() => undefined}
         onOpenChange={() => undefined}
         pending={false}
         target={videoTestimonialFixture}
@@ -571,7 +554,6 @@ export function WorkspaceDeletionScreenFixture() {
       </div>
       <WorkspaceDeletionSection
         brandName="Visual Studio"
-        inboxHref="/org/visual-studio/inbox"
         initialConfirmation="Visual Studio"
         initialDialogOpen
         onDelete={async () => undefined}

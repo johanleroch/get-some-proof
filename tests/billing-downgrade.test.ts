@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, components, internal } from "@convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   addStripeSubscription,
@@ -219,32 +219,6 @@ describe("deterministic Pro downgrade", () => {
     expect(state.retentions).toHaveLength(1);
     expect(state.credits).toHaveLength(17);
     expect(state.retentions[0]).toMatchObject({ testimonialId: videos[2] });
-    const session = await t.mutation(components.betterAuth.adapter.create, {
-      input: {
-        model: "session",
-        data: {
-          userId: owner.actorId,
-          token: "downgrade-download-session",
-          expiresAt: baseNow + 8 * DAY_MS,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      },
-    });
-    const reauthenticatedOwner = t.withIdentity({
-      subject: owner.actorId,
-      sessionId: String(session._id),
-      tokenIdentifier: `test|${owner.actorId}`,
-      email: "alice@example.com",
-      emailVerified: true,
-      name: "Alice Owner",
-    });
-    await expect(
-      reauthenticatedOwner.mutation(internal.videoMedia.authorizeDownload, {
-        organizationId: organization.id,
-        testimonialId: videos[2]!,
-      }),
-    ).resolves.toMatchObject({ providerAssetId: "asset-2" });
   });
 
   it("honors valid keepers and fills a raced selection with newest eligible proof", async () => {
@@ -803,7 +777,7 @@ describe("deterministic Pro downgrade", () => {
     expect(deleted.retention).toMatchObject({ attempts: 2, status: "deleted" });
   });
 
-  it("serializes video reactivation and late download attachment against retention deletion", async () => {
+  it("serializes video reactivation against retention deletion", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const organization = await owner.client.mutation(api.organizations.create, {
@@ -876,23 +850,5 @@ describe("deterministic Pro downgrade", () => {
     ).rejects.toMatchObject({
       data: { code: "VIDEO_RETENTION_DELETION_IN_PROGRESS" },
     });
-    await expect(
-      owner.client.mutation(internal.videoMedia.attachDownloadAsset, {
-        organizationId: organization.id,
-        playbackId: "late-download-playback",
-        provider: "mux",
-        providerAssetId: "late-download-asset",
-        testimonialId,
-      }),
-    ).resolves.toMatchObject({ accepted: false });
-    const asset = await t.run((ctx) =>
-      ctx.db
-        .query("videoAssets")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .unique(),
-    );
-    expect(asset?.downloadProviderAssetId).toBeUndefined();
   });
 });

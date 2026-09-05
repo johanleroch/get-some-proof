@@ -245,7 +245,6 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 | Video collection/storage | 2 lifetime Collection Credits  | 25 stored videos simultaneously |
 | Maximum video duration   | 2 minutes                      | 2 minutes                       |
 | Promotion Card           | Required once per Wall         | Absent                          |
-| MP4 download             | No                             | Yes, best available up to 1080p |
 
 - Free credits count valid collected proof, not merely Published proof.
 - Deleting or archiving genuine Free proof never restores a credit.
@@ -266,14 +265,14 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 - Remind the Owner seven days and one day before Pro ends.
 - Without a complete selection, keep the most recently Published eligible items.
 - Archive excess text; do not delete it.
-- Retain excess video assets for 30 days for reactivation or exceptional download, warn during retention, then permanently delete them from Mux.
+- Retain excess video assets for 30 days for reactivation, warn during retention, then permanently delete them from Mux.
 - The Free Promotion Card returns when Pro ends.
 - The target price is EUR 29/month. Tax-inclusive or tax-exclusive configuration, registrations, and display rules are deliberately deferred to mandatory accounting/legal validation before live payments are enabled.
 
 ### Failed renewal
 
 - A failed renewal begins a seven-day Payment Grace Period.
-- Keep existing Pro publication, branding, and MP4 download access during grace.
+- Keep existing Pro publication and branding during grace.
 - Block new video storage during grace.
 - Restore full access immediately when payment recovers.
 - Apply Free downgrade rules after seven days or when Stripe reports `unpaid` or `canceled`, whichever happens first.
@@ -283,16 +282,14 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 ### One video
 
 - Permanent Deletion is explicit and irreversible.
-- Offer the applicable MP4 download before a separate destructive confirmation.
 - Explain that the source, renditions, captions, and thumbnails will be deleted from Mux.
-- A failed or abandoned download never initiates deletion.
 - Retain no media copy after successful source deletion.
 
 ### Entire Workspace
 
 - Require recent authentication, typed Brand-name confirmation, and a separate irreversible confirmation.
-- Offer data and eligible media download first.
-- A failed or abandoned export never initiates deletion.
+- Offer data export first.
+- A failed or abandoned data export never initiates deletion.
 - Only the Owner may confirm, using a Session created within the previous five minutes, the exact Brand name, and a separate irreversible action.
 - On confirmation, immediately disable the Collection Form, public surfaces, management mutations, and new uploads before ending the subscription and permanently deleting private records and Mux media.
 - Provider failure keeps the Workspace private and exposes a retry using the same idempotent deletion record; it never restores public access.
@@ -311,7 +308,7 @@ See `docs/research/astro-lp-testimonial-reference.md` for captured desktop and m
 - One Next.js application; no Turborepo in the MVP.
 - Vercel owns Next.js rendering, route handlers, static assets, and the versioned embed runtime.
 - Convex Cloud owns persistence, tenant authorization, transactional product rules, quotas, realtime state, audit records, and backend workflows.
-- Mux PAYG owns direct video ingest, processing, playback, generated captions, static MP4 renditions, thumbnails, and source deletion.
+- Mux PAYG owns direct video ingest, processing, playback, generated captions, thumbnails, and source deletion.
 - Stripe owns payment collection and subscription self-service; application entitlements come only from synchronized server-side billing state.
 - Transactional email remains behind the starter's provider-neutral delivery port.
 - Do not provision or configure production providers until targets are explicitly confirmed.
