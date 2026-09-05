@@ -903,6 +903,75 @@ describe("Submission Management Links", () => {
     ).resolves.toMatchObject({ submitterEmail: "alice@example.com" });
   });
 
+  it("excludes deferred deleted items when claiming a grouped replacement delivery", async () => {
+    const t = createConvexTest();
+    const { brand, testimonialId } = await createManagedText(t);
+    const secondId = await t.run(async (ctx) => {
+      const original = (await ctx.db.get(testimonialId))!;
+      const { _id, _creationTime, ...fields } = original;
+      void _id;
+      void _creationTime;
+      return ctx.db.insert("testimonials", {
+        ...fields,
+        clientSubmissionId: "sibling",
+        managementTokenHash: "sibling-hash",
+      });
+    });
+    const requestId = (await t.mutation(
+      internal.submissionManagement.queueReplacementLinkRequest,
+      {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+        scheduleDelivery: false,
+      },
+    ))!;
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 64; index++)
+        await ctx.db.insert("managementLinkReplacementItems", {
+          createdAt: Date.now(),
+          organizationId: brand.id,
+          requestId,
+          testimonialId,
+          tokenHash: `deferred-hash-${index}`,
+          tokenSeed: `deferred-seed-${index}`,
+        });
+    });
+    await t.mutation(api.submissionManagement.withdrawConsent, {
+      token: originalToken,
+    });
+    expect(
+      (
+        await t.run((ctx) =>
+          ctx.db.query("managementLinkReplacementItems").collect(),
+        )
+      ).length,
+    ).toBeGreaterThan(1);
+    const claim = await t.mutation(
+      internal.submissionManagement.claimReplacementLinkRequest,
+      {
+        requestId,
+        leaseId: "sibling-delivery",
+      },
+    );
+    expect(claim?.items.map((item) => item.testimonialId)).toEqual([secondId]);
+    await t.mutation(
+      internal.submissionManagement.finishReplacementLinkRequest,
+      {
+        requestId,
+        leaseId: "sibling-delivery",
+        sent: true,
+      },
+    );
+    expect(await t.run((ctx) => ctx.db.get(requestId))).toBeNull();
+    expect(
+      await t.run((ctx) =>
+        ctx.db.query("managementLinkReplacementItems").collect(),
+      ),
+    ).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.get(testimonialId))).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(secondId))).not.toBeNull();
+  });
+
   it("withdraws consent idempotently, invalidates public content, and leaves only content-free audit", async () => {
     const t = createConvexTest();
     const { brand, testimonialId } = await createManagedVideo(t);
@@ -955,6 +1024,253 @@ describe("Submission Management Links", () => {
       stored.audit.filter(({ targetType }) => targetType === "testimonial"),
     ).toHaveLength(1);
   });
+
+  it.each(["withdrawal", "spam-expiry"])(
+    "purges multiple batches after %s without losing media cleanup or quota history",
+    async (reason) => {
+      vi.useFakeTimers();
+      vi.stubEnv("MUX_TOKEN_ID", "test-token");
+      vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+      const providerRequests: string[] = [];
+      let failedOnce = false;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => {
+          providerRequests.push(url);
+          if (url.endsWith("/assets/retry-source-0") && !failedOnce) {
+            failedOnce = true;
+            return new Response(null, { status: 503 });
+          }
+          return new Response(null, { status: 204 });
+        }),
+      );
+      try {
+        const t = createConvexTest();
+        const { brand, owner, testimonialId, videoAssetId } =
+          await createManagedVideo(t);
+        const now = Date.now();
+        const quarantineId = await t.run(async (ctx) => {
+          await ctx.db.insert("collectionCredits", {
+            organizationId: brand.id,
+            testimonialId,
+            submissionType: "video",
+            consumedAt: now,
+            restorationMode: "automatic",
+            restoredAt: now,
+          });
+          const quarantineId = await ctx.db.insert("spamQuarantines", {
+            organizationId: brand.id,
+            testimonialId,
+            creditRestored: true,
+            expiresAt: now - 1,
+            previousModerationStatus: "published",
+            reportedAt: now,
+            restorationMode: "automatic",
+            status: "active",
+            updatedAt: now,
+          });
+          if (reason === "spam-expiry")
+            await ctx.db.patch(testimonialId, { moderationStatus: "spam" });
+          for (let index = 0; index < 65; index++) {
+            await ctx.db.insert("submissionEmailDeliveries", {
+              organizationId: brand.id,
+              testimonialId,
+              recipientKind: "submitter",
+              recipientEmail: "alice@example.com",
+              attemptId: String(index),
+              attemptLeaseExpiresAt: now,
+              status: "sent",
+              createdAt: now,
+              updatedAt: now,
+            });
+            for (const kind of ["retry", "revision"] as const) {
+              const reservationId = await ctx.db.insert("videoReservations", {
+                organizationId: brand.id,
+                clientSubmissionId: `${kind}-${index}`,
+                plan: "free",
+                status: "released",
+                expiresAt: now,
+                createdAt: now,
+                updatedAt: now,
+              });
+              const assetId = await ctx.db.insert("videoAssets", {
+                organizationId: brand.id,
+                reservationId,
+                provider: "mux",
+                providerUploadId: `${kind}-upload-${index}`,
+                ...(index % 2 === 0
+                  ? {
+                      providerAssetId: `${kind}-source-${index}`,
+                      downloadProviderAssetId: `${kind}-download-${index}`,
+                    }
+                  : {}),
+                spokenLanguage: "en",
+                mimeType: "video/mp4",
+                fileSizeBytes: 1,
+                status: "failed",
+                captionsStatus: "failed",
+                createdAt: now,
+                updatedAt: now,
+              });
+              if (kind === "retry") {
+                const replacementReservationId = await ctx.db.insert(
+                  "videoReservations",
+                  {
+                    organizationId: brand.id,
+                    clientSubmissionId: `late-${index}`,
+                    plan: "free",
+                    status: "reserved",
+                    expiresAt: now + 60_000,
+                    createdAt: now,
+                    updatedAt: now,
+                  },
+                );
+                await ctx.db.insert("videoRetryLinks", {
+                  replacementReservationId,
+                  organizationId: brand.id,
+                  testimonialId,
+                  videoAssetId: assetId,
+                  tokenHash: `retry-hash-${index}`,
+                  tokenSeed: `retry-seed-${index}`,
+                  expiresAt: now,
+                  createdAt: now,
+                });
+              } else
+                await ctx.db.insert("submissionVideoRevisions", {
+                  organizationId: brand.id,
+                  testimonialId,
+                  videoAssetId: assetId,
+                  reservationId,
+                  baseContentVersion: 1,
+                  status: "superseded",
+                  createdAt: now,
+                  updatedAt: now,
+                });
+            }
+          }
+          for (let index = 0; index < 129; index++)
+            await ctx.db.insert("auditEvents", {
+              organizationId: brand.id,
+              actorDisplayName: "Owner",
+              actorUserId: "owner",
+              targetType: "testimonial",
+              targetId: String(testimonialId),
+              targetLabel: "Alice Martin",
+              eventType: "testimonial.published",
+              occurredAt: now,
+            });
+          return quarantineId;
+        });
+        if (reason === "withdrawal")
+          await t.mutation(api.submissionManagement.withdrawConsent, {
+            token: originalToken,
+          });
+        else
+          await t.mutation(
+            internal.testimonialModeration.expireSpamQuarantine,
+            { quarantineId },
+          );
+        await expect(
+          t.run((ctx) => ctx.db.get(testimonialId)),
+        ).resolves.toBeNull();
+        await expect(
+          t.run((ctx) => ctx.db.get(videoAssetId)),
+        ).resolves.toBeNull();
+        expect(
+          await t.run((ctx) =>
+            ctx.db.query("publicTestimonialProjections").collect(),
+          ),
+        ).toEqual([]);
+        expect(
+          (await t.run((ctx) => ctx.db.query("videoRetryLinks").collect()))
+            .length,
+        ).toBeGreaterThan(0);
+        await expect(
+          t.query(api.submissionManagement.get, { token: originalToken }),
+        ).resolves.toBeNull();
+        await expect(
+          owner.client.mutation(api.testimonialModeration.setStatus, {
+            organizationId: brand.id,
+            testimonialId,
+            status: "published",
+          }),
+        ).rejects.toThrow();
+        await t.finishAllScheduledFunctions(() => vi.runAllTimers(), 1000);
+        await t.mutation(
+          internal.testimonialDeletion.continueTestimonialRelationshipPurge,
+          {
+            organizationId: brand.id,
+            testimonialId,
+            includeVideoRelations: true,
+            preserveQuarantines: true,
+          },
+        );
+        const remaining = await t.run(async (ctx) => ({
+          deliveries: await ctx.db.query("submissionEmailDeliveries").collect(),
+          links: await ctx.db.query("videoRetryLinks").collect(),
+          revisions: await ctx.db.query("submissionVideoRevisions").collect(),
+          assets: await ctx.db.query("videoAssets").collect(),
+          reservations: await ctx.db.query("videoReservations").collect(),
+          jobs: await ctx.db.query("videoProviderCleanupJobs").collect(),
+          audits: await ctx.db
+            .query("auditEvents")
+            .withIndex("by_organization_target", (index) =>
+              index
+                .eq("organizationId", brand.id)
+                .eq("targetType", "testimonial")
+                .eq("targetId", String(testimonialId)),
+            )
+            .collect(),
+          credit: await ctx.db.query("collectionCredits").unique(),
+          quarantine: await ctx.db.get(quarantineId),
+        }));
+        for (const records of [
+          remaining.deliveries,
+          remaining.links,
+          remaining.revisions,
+          remaining.assets,
+          remaining.reservations,
+          remaining.jobs,
+        ])
+          expect(records).toEqual([]);
+        expect(remaining.audits).toHaveLength(1);
+        expect(remaining.audits[0]?.eventType).toBe(
+          reason === "withdrawal"
+            ? "testimonial.consent_withdrawn"
+            : "testimonial.spam_expired",
+        );
+        expect(JSON.stringify(remaining.audits)).not.toContain("Alice");
+        expect(remaining.credit?.restoredAt).toBe(now);
+        expect(remaining.quarantine?.restorationMode).toBe("automatic");
+        expect(remaining.quarantine?.status).toBe(
+          reason === "withdrawal" ? "active" : "expired",
+        );
+        expect(failedOnce).toBe(true);
+        expect(
+          providerRequests.filter((url) =>
+            url.endsWith("/assets/retry-source-0"),
+          ),
+        ).toHaveLength(2);
+        for (let index = 0; index < 65; index++)
+          for (const kind of ["retry", "revision"]) {
+            if (index % 2 === 0) {
+              expect(providerRequests).toContain(
+                `https://api.mux.com/video/v1/assets/${kind}-source-${index}`,
+              );
+              expect(providerRequests).toContain(
+                `https://api.mux.com/video/v1/assets/${kind}-download-${index}`,
+              );
+            } else
+              expect(providerRequests).toContain(
+                `https://api.mux.com/video/v1/uploads/${kind}-upload-${index}/cancel`,
+              );
+          }
+      } finally {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 
   it("keeps withdrawal authoritative when it races a revision confirmation", async () => {
     const t = createConvexTest();

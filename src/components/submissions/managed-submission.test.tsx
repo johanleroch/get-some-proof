@@ -7,6 +7,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { DirectVideoUploadTarget } from "@/lib/video-upload";
+
 import { ManagedSubmissionView } from "./managed-submission";
 
 describe("ManagedSubmissionView", () => {
@@ -71,22 +73,24 @@ describe("ManagedSubmissionView", () => {
   });
 
   it("shows and cancels replacement upload progress", async () => {
-    const onReplaceVideo = vi.fn(
-      (
-        _file: File,
-        _language: "en" | "fr",
-        input: { onProgress: (value: number) => void; signal: AbortSignal },
-      ) =>
+    const release = vi.fn().mockResolvedValue(null);
+    const uploadVideo = vi.fn(
+      (_file: File, input: DirectVideoUploadTarget) =>
         new Promise<void>((_resolve, reject) => {
           input.onProgress(72);
-          input.signal.addEventListener("abort", () =>
+          input.signal!.addEventListener("abort", () =>
             reject(new Error("Video upload cancelled.")),
           );
         }),
     );
     render(
       <ManagedSubmissionView
-        onReplaceVideo={onReplaceVideo}
+        prepareVideoUpload={async () => ({
+          provider: "fake",
+          uploadUrl: "fake://upload",
+          release,
+        })}
+        uploadVideo={uploadVideo}
         submission={{
           avatarUrl: null,
           brandName: "Acme Studio",
@@ -122,19 +126,23 @@ describe("ManagedSubmissionView", () => {
       ).toBeEnabled(),
     );
     expect(screen.queryByRole("alert")).toBeNull();
+    expect(release).toHaveBeenCalledOnce();
   });
 
   it("does not hide a failed reservation cleanup after cancellation", async () => {
     render(
       <ManagedSubmissionView
-        onReplaceVideo={(_file, _language, input) =>
+        prepareVideoUpload={async () => ({
+          provider: "fake",
+          uploadUrl: "fake://upload",
+          release: async () => {
+            throw new Error("offline");
+          },
+        })}
+        uploadVideo={(_file, input) =>
           new Promise<void>((_resolve, reject) => {
-            input.signal.addEventListener("abort", () =>
-              reject(
-                new Error(
-                  "The upload stopped, but its reservation could not be released. Refresh before trying again.",
-                ),
-              ),
+            input.signal!.addEventListener("abort", () =>
+              reject(new Error("Video upload cancelled.")),
             );
           })
         }

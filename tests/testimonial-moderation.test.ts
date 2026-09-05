@@ -746,6 +746,67 @@ describe("Testimonial moderation and Public Projection", () => {
       restorationMode: "support",
       supportActor: "Johan Support",
     });
+    await expect(
+      t.mutation(internal.testimonialModeration.approveSpamCreditRestoration, {
+        actorDisplayName: "Another Support",
+        quarantineId: fourthQuarantine!._id,
+      }),
+    ).resolves.toEqual({ restored: false });
+    const supportEvents = await t.run((ctx) =>
+      ctx.db
+        .query("auditEvents")
+        .withIndex("by_organization_target", (index) =>
+          index
+            .eq("organizationId", brand.id)
+            .eq("targetType", "testimonial")
+            .eq("targetId", String(testimonials[3]!.testimonialId)),
+        )
+        .collect(),
+    );
+    expect(
+      supportEvents.filter(
+        (event) => event.eventType === "testimonial.spam_credit_restored",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("allows a new automatic restoration after the rolling window expires", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    for (let index = 0; index < 3; index++) {
+      const item = await createPendingTestimonial(
+        t,
+        "acme-proof",
+        `old-spam-${index}`,
+      );
+      await owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: brand.id,
+        testimonialId: item.testimonialId,
+      });
+    }
+    await t.run(async (ctx) => {
+      for (const report of await ctx.db.query("spamQuarantines").collect()) {
+        await ctx.db.patch(report._id, {
+          reportedAt: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+      }
+    });
+    const next = await createPendingTestimonial(
+      t,
+      "acme-proof",
+      "new-window-spam",
+    );
+    await expect(
+      owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: brand.id,
+        testimonialId: next.testimonialId,
+      }),
+    ).resolves.toMatchObject({ creditRestored: true });
   });
 
   it("keeps collection closed when Spam undo races use of the restored credit", async () => {

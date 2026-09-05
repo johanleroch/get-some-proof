@@ -16,16 +16,18 @@ import {
 import { BrandMark } from "@/components/brand-mark";
 import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
-import {
-  VideoUploadProgress,
-  type VideoUploadPhase,
-} from "@/components/collection/video-upload-progress";
+import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
+import {
+  useVideoUpload,
+  type VideoUploadReservation,
+  type VideoUploadPhase,
+} from "@/hooks/use-video-upload";
 import { uploadDirectVideo } from "@/lib/video-upload";
 import { browserTurnstile } from "@/lib/turnstile-browser";
 
@@ -750,10 +752,9 @@ async function submitCollectionForm(input: {
   setError: (value: string | null) => void;
   setStep: (value: 1 | 2 | 3 | 4) => void;
   setSubmitting: (value: boolean) => void;
-  setVideoProgress: (value: number) => void;
-  setVideoUploadPhase: (value: VideoUploadPhase) => void;
-  setVideoReservationId: (value: Id<"videoReservations"> | undefined) => void;
-  uploadAbortControllerRef: { current: AbortController | null };
+  videoUpload: ReturnType<
+    typeof useVideoUpload<VideoDirectUploadResult & VideoUploadReservation>
+  >;
   resetBotVerification?: () => void;
   spokenLanguage: "en" | "fr";
   submitText: (input: TextSubmissionInput) => Promise<SubmissionResult>;
@@ -780,7 +781,6 @@ async function submitCollectionForm(input: {
   ) => Promise<void>;
   videoDurationSeconds: number | undefined;
   videoFile: File | undefined;
-  videoReservationId: Id<"videoReservations"> | undefined;
 }) {
   input.event.preventDefault();
   if (
@@ -795,8 +795,6 @@ async function submitCollectionForm(input: {
   }
   input.setSubmitting(true);
   input.setError(null);
-  let videoReservationId = input.videoReservationId;
-  let videoSubmissionAttempted = false;
   try {
     const avatarUpload =
       input.avatar && input.uploadAvatar
@@ -824,68 +822,46 @@ async function submitCollectionForm(input: {
         ...(input.botToken ? { turnstileToken: input.botToken } : {}),
       });
     } else if (input.videoFile && input.videoDurationSeconds) {
-      if (!videoReservationId) {
-        input.setVideoProgress(0);
-        input.setVideoUploadPhase("uploading");
-        const uploadController = new AbortController();
-        input.uploadAbortControllerRef.current = uploadController;
-        const directUpload = await input.createDirectUpload({
-          clientSubmissionId: input.clientSubmissionId,
-          fileSizeBytes: input.videoFile.size,
-          mimeType: input.videoFile.type,
-          publicSlug: input.brand.publicSlug,
-          spokenLanguage: input.spokenLanguage,
-          ...(input.botToken ? { turnstileToken: input.botToken } : {}),
-        });
-        videoReservationId = directUpload.reservationId;
-        input.setVideoReservationId(videoReservationId);
-        await input.uploadVideo(input.videoFile, {
-          onProgress: input.setVideoProgress,
-          provider: directUpload.provider,
-          signal: uploadController.signal,
-          uploadUrl: directUpload.uploadUrl,
-        });
-        input.setVideoProgress(100);
-      }
-      input.setVideoUploadPhase("processing");
-      videoSubmissionAttempted = true;
-      await input.submitVideo({
-        ...identity,
-        durationSeconds: input.videoDurationSeconds,
-        reservationId: videoReservationId,
+      const completed = await input.videoUpload.run({
+        file: input.videoFile,
+        reserve: async () => {
+          const upload = await input.createDirectUpload({
+            clientSubmissionId: input.clientSubmissionId,
+            fileSizeBytes: input.videoFile!.size,
+            mimeType: input.videoFile!.type,
+            publicSlug: input.brand.publicSlug,
+            spokenLanguage: input.spokenLanguage,
+            ...(input.botToken ? { turnstileToken: input.botToken } : {}),
+          });
+          return {
+            ...upload,
+            release: () =>
+              input.cancelVideo({
+                clientSubmissionId: input.clientSubmissionId,
+                reservationId: upload.reservationId,
+              }),
+          };
+        },
+        upload: input.uploadVideo,
+        confirm: (upload) =>
+          input.submitVideo({
+            ...identity,
+            durationSeconds: input.videoDurationSeconds!,
+            reservationId: upload.reservationId,
+          }),
+        retainOnConfirmationError: (error) =>
+          !isDefinitiveVideoUploadFailure(error),
       });
+      if (!completed) return;
     }
     input.setStep(4);
   } catch (submissionError) {
-    let cancellationCleanupFailed = false;
-    if (
-      videoReservationId &&
-      (!videoSubmissionAttempted ||
-        isDefinitiveVideoUploadFailure(submissionError))
-    ) {
-      try {
-        await input.cancelVideo({
-          clientSubmissionId: input.clientSubmissionId,
-          reservationId: videoReservationId,
-        });
-      } catch {
-        cancellationCleanupFailed = true;
-      }
-      input.setVideoReservationId(undefined);
-    }
     input.setError(
-      cancellationCleanupFailed
-        ? "The upload stopped, but its reservation could not be released. Refresh before trying again."
-        : submissionError instanceof Error &&
-            submissionError.message === "Video upload cancelled."
-          ? null
-          : submissionError instanceof Error
-            ? submissionError.message
-            : "Your testimonial could not be submitted. Please try again.",
+      submissionError instanceof Error
+        ? submissionError.message
+        : "Your testimonial could not be submitted. Please try again.",
     );
   } finally {
-    input.uploadAbortControllerRef.current = null;
-    input.setVideoUploadPhase("idle");
     input.resetBotVerification?.();
     input.setSubmitting(false);
   }
@@ -1068,15 +1044,11 @@ export function CollectionFormShellView({
   );
   const [avatar, setAvatar] = useState<File | undefined>();
   const [videoFile, setVideoFile] = useState<File | undefined>();
-  const [videoReservationId, setVideoReservationId] = useState<
-    Id<"videoReservations"> | undefined
+  const videoUpload = useVideoUpload<
+    VideoDirectUploadResult & VideoUploadReservation
   >();
   const videoDurationSecondsRef = useRef<number | undefined>(undefined);
   const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
-  const [videoProgress, setVideoProgress] = useState(0);
-  const [videoUploadPhase, setVideoUploadPhase] =
-    useState<VideoUploadPhase>("idle");
-  const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
   const flowRef = useRef<HTMLElement | null>(null);
@@ -1094,15 +1066,6 @@ export function CollectionFormShellView({
     supportsBrowserRecording,
     () => false,
   );
-  useEffect(() => {
-    if (videoUploadPhase === "idle") return;
-    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warnBeforeLeaving);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
-  }, [videoUploadPhase]);
   useEffect(() => {
     if (previousStepRef.current === step) return;
     previousStepRef.current = step;
@@ -1212,9 +1175,7 @@ export function CollectionFormShellView({
               onConsentAcceptedChange={setConsentAccepted}
               onEmailChange={setSubmitterEmail}
               onNameChange={setSubmitterName}
-              onCancelVideoUpload={() =>
-                uploadAbortControllerRef.current?.abort()
-              }
+              onCancelVideoUpload={videoUpload.cancel}
               onRatingChange={setRating}
               onRoleChange={setRole}
               onSubmit={(event) =>
@@ -1237,9 +1198,6 @@ export function CollectionFormShellView({
                   setError,
                   setStep,
                   setSubmitting,
-                  setVideoProgress,
-                  setVideoUploadPhase,
-                  setVideoReservationId,
                   resetBotVerification,
                   spokenLanguage,
                   submitText,
@@ -1249,21 +1207,20 @@ export function CollectionFormShellView({
                   text,
                   textValid,
                   uploadAvatar,
-                  uploadAbortControllerRef,
                   uploadVideo,
                   videoDurationSeconds: videoDurationSecondsRef.current,
                   videoFile,
-                  videoReservationId,
+                  videoUpload,
                 })
               }
               rating={rating}
               role={role}
               submitting={submitting}
               videoSelectionLocked={
-                proofType === "video" && videoReservationId !== undefined
+                proofType === "video" && videoUpload.hasReservation
               }
-              videoProgress={videoProgress}
-              videoUploadPhase={videoUploadPhase}
+              videoProgress={videoUpload.progress}
+              videoUploadPhase={videoUpload.phase}
             />
           ) : null}
 
@@ -1272,7 +1229,7 @@ export function CollectionFormShellView({
               brandName={brand.name}
               email={submitterEmail.trim()}
               proofType={proofType}
-              videoUploaded={videoProgress > 0}
+              videoUploaded={videoUpload.progress > 0}
             />
           ) : null}
 
