@@ -42,7 +42,7 @@ Treat a failed, cancelled, skipped, pending, queued, or missing required check a
 
 Completion criterion: every required check on the pull request's current head commit has conclusion `success`.
 
-For user-visible work, the `Visual evidence capture` check must succeed and the trusted publisher must update the pull request's `Visual evidence` comment with R2 URLs for the current head commit. A GitHub artifact alone is not published visual evidence.
+For user-visible work, the `Visual evidence capture` check must succeed and the trusted publisher must update the pull request's `Visual evidence` comment with GitHub attachment URLs for the current head commit. A GitHub artifact alone is not published visual evidence.
 
 ## 5. Synchronize the tracker
 

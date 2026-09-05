@@ -22,16 +22,8 @@ Make screenshots part of delivery, not an optional afterthought.
 
 ## Publish
 
-- Pull requests: push the reviewed commit. `Visual evidence capture` creates an untrusted artifact without credentials. `Visual evidence publish` validates it in a trusted workflow, uploads it to R2, and creates or replaces one PR comment.
-- Issues without a PR: capture locally, build an issue manifest, then run the reusable publisher. It uploads only the validated images to `screenshots/<project>/issues/<issue-number>/<commit>/`, verifies each public R2 object byte-for-byte, and creates or replaces the marked issue comment. Do not ask the user to remind you.
-- Treat an R2 upload plus the visible issue/PR comment as proof. A local file or GitHub artifact alone is not proof.
-
-```bash
-VISUAL_EVIDENCE_DIR=visual-evidence pnpm test:visual
-GITHUB_REPOSITORY=<owner/repository> VISUAL_EVIDENCE_DIR=visual-evidence VISUAL_EVIDENCE_HEAD_SHA=<commit> VISUAL_EVIDENCE_TARGET_KIND=issue VISUAL_EVIDENCE_TARGET_NUMBER=<issue> pnpm visual:manifest
-VISUAL_EVIDENCE_DIR=visual-evidence pnpm visual:publish:issue
-```
-
-## Storage contract
-
-Read `docs/agents/visual-evidence.md` for paths, credentials, retention, bootstrap behavior, and clone setup.
+- Use `gh-image` for GitHub attachments. Follow [the publication guide](../../../docs/agents/visual-evidence.md) for local PR/issue publication, CI authentication and default-branch bootstrap.
+- Pull requests: push the reviewed commit. `Visual evidence capture` creates an untrusted artifact; `Visual evidence publish` validates it with trusted code, uploads and byte-verifies attachments, and replaces the marked PR comment.
+- Local publication: build the exact-commit manifest for `pull` or `issue`, then run `pnpm visual:publish` from a clean reviewed checkout. Re-check the remote PR head before reporting success.
+- Verify every desktop/mobile image is embedded in the marked comment with the current full SHA. A GitHub artifact alone is not published evidence.
+- Report local publication and automatic workflow success separately. Changing a default-branch publisher requires an authorized merge before its new workflow can run automatically.
