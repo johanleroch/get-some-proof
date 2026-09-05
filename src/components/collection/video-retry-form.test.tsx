@@ -32,7 +32,11 @@ describe("VideoRetryFormView", () => {
       <VideoRetryFormView
         context={context}
         createRetryUpload={createRetryUpload}
-        inspectVideo={vi.fn().mockResolvedValue({ durationSeconds: 45 })}
+        inspectVideo={vi.fn().mockResolvedValue({
+          durationSeconds: 45,
+          height: 1080,
+          width: 1920,
+        })}
         token="private-retry-token"
         uploadVideo={uploadVideo}
       />,
@@ -50,6 +54,7 @@ describe("VideoRetryFormView", () => {
     await waitFor(() => expect(createRetryUpload).toHaveBeenCalledTimes(1));
     expect(createRetryUpload).toHaveBeenCalledWith(
       expect.objectContaining({
+        dimensions: { height: 1080, width: 1920 },
         fileSizeBytes: file.size,
         mimeType: "video/mp4",
         spokenLanguage: "fr",

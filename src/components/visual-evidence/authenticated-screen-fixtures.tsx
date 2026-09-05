@@ -334,6 +334,20 @@ const videoTestimonialFixture = {
   videoStatus: "ready" as const,
 };
 
+const processingVideoTestimonialFixture = {
+  aspectRatio: "9:16",
+  card: null,
+  captionsStatus: "requested" as const,
+  consentAcceptedAt: Date.UTC(2026, 8, 6),
+  createdAt: Date.UTC(2026, 8, 6),
+  moderationStatus: "pending" as const,
+  submissionType: "video" as const,
+  submitterEmail: "nora@example.invalid",
+  submitterName: "Nora Lewis",
+  testimonialId: "fixture-processing-video" as Id<"testimonials">,
+  videoStatus: "processing" as const,
+};
+
 const spamTestimonialFixture = {
   ...testimonialFixture,
   card: {
@@ -383,6 +397,7 @@ export function TestimonialInboxScreenFixture() {
         accentColor={collectionFormFixtureBrand.primaryColor}
         onAction={() => undefined}
         testimonials={[
+          processingVideoTestimonialFixture,
           spamTestimonialFixture,
           { ...videoTestimonialFixture, moderationStatus: "published" },
           testimonialFixture,

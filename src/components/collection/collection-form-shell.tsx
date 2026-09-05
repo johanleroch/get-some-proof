@@ -70,6 +70,7 @@ type SubmissionResult = {
 
 type VideoDirectUploadInput = {
   clientSubmissionId: string;
+  dimensions?: { height: number; width: number };
   fileSizeBytes: number;
   mimeType: string;
   publicSlug: string;
@@ -781,6 +782,7 @@ async function submitCollectionForm(input: {
     },
   ) => Promise<void>;
   videoDurationSeconds: number | undefined;
+  videoDimensions: { height: number; width: number } | undefined;
   videoFile: File | undefined;
 }) {
   input.event.preventDefault();
@@ -828,6 +830,9 @@ async function submitCollectionForm(input: {
         reserve: async () => {
           const upload = await input.createDirectUpload({
             clientSubmissionId: input.clientSubmissionId,
+            ...(input.videoDimensions
+              ? { dimensions: input.videoDimensions }
+              : {}),
             fileSizeBytes: input.videoFile!.size,
             mimeType: input.videoFile!.type,
             publicSlug: input.brand.publicSlug,
@@ -870,8 +875,13 @@ async function submitCollectionForm(input: {
 
 async function continueWithSelectedVideo(input: {
   file: File | undefined;
-  inspect: (file: File) => Promise<{ durationSeconds: number }>;
+  inspect: (file: File) => Promise<{
+    durationSeconds: number;
+    height?: number;
+    width?: number;
+  }>;
   setDuration: (duration: number) => void;
+  setDimensions: (dimensions: { height: number; width: number }) => void;
   setError: (error: string | null) => void;
   setStep: (step: 1 | 2 | 3 | 4) => void;
   setValidating: (validating: boolean) => void;
@@ -889,6 +899,9 @@ async function continueWithSelectedVideo(input: {
     }
     const metadata = await input.inspect(input.file);
     input.setDuration(metadata.durationSeconds);
+    if (metadata.height && metadata.width) {
+      input.setDimensions({ height: metadata.height, width: metadata.width });
+    }
     input.setStep(3);
   } catch (videoError) {
     input.setError(
@@ -1019,7 +1032,11 @@ export function CollectionFormShellView({
       uploadUrl: string;
     },
   ) => Promise<void>;
-  inspectVideo?: (file: File) => Promise<{ durationSeconds: number }>;
+  inspectVideo?: (file: File) => Promise<{
+    durationSeconds: number;
+    height?: number;
+    width?: number;
+  }>;
   botChallenge?: ReactNode;
   botToken?: string;
   resetBotVerification?: () => void;
@@ -1049,6 +1066,9 @@ export function CollectionFormShellView({
     VideoDirectUploadResult & VideoUploadReservation
   >();
   const videoDurationSecondsRef = useRef<number | undefined>(undefined);
+  const videoDimensionsRef = useRef<
+    { height: number; width: number } | undefined
+  >(undefined);
   const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -1133,6 +1153,9 @@ export function CollectionFormShellView({
                   setDuration: (duration) => {
                     videoDurationSecondsRef.current = duration;
                   },
+                  setDimensions: (dimensions) => {
+                    videoDimensionsRef.current = dimensions;
+                  },
                   setError,
                   setStep,
                   setValidating: setValidatingVideo,
@@ -1141,6 +1164,7 @@ export function CollectionFormShellView({
               onFileChange={(file) => {
                 setVideoFile(file);
                 videoDurationSecondsRef.current = undefined;
+                videoDimensionsRef.current = undefined;
                 setError(null);
               }}
               onLanguageChange={setSpokenLanguage}
@@ -1210,6 +1234,7 @@ export function CollectionFormShellView({
                   uploadAvatar,
                   uploadVideo,
                   videoDurationSeconds: videoDurationSecondsRef.current,
+                  videoDimensions: videoDimensionsRef.current,
                   videoFile,
                   videoUpload,
                 })

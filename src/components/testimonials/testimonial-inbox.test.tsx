@@ -151,6 +151,7 @@ describe("TestimonialInboxView", () => {
     const onAction = vi.fn();
     const video = {
       avatarUrl: null,
+      aspectRatio: "9:16",
       card: null,
       captionsStatus: "requested" as const,
       consentAcceptedAt: 1,
@@ -167,6 +168,14 @@ describe("TestimonialInboxView", () => {
     );
 
     expect(screen.getByText("Processing")).toBeVisible();
+    expect(
+      screen.getByText(
+        "This video was just submitted. Playback will be available shortly.",
+      ),
+    ).toBeVisible();
+    const processingCard = screen.getByTestId("processing-video-placeholder");
+    expect(processingCard).toHaveAttribute("data-video-aspect-ratio", "9:16");
+    expect(processingCard).toHaveStyle({ aspectRatio: "9 / 16" });
     fireEvent.pointerDown(
       screen.getByRole("button", {
         name: "Options for Camille Test's Testimonial",
@@ -179,6 +188,39 @@ describe("TestimonialInboxView", () => {
     expect(
       screen.queryByRole("menuitem", { name: /Download MP4/i }),
     ).toBeNull();
+
+    rerender(
+      <TestimonialInboxView
+        onAction={onAction}
+        testimonials={[
+          {
+            ...video,
+            captionsStatus: "failed",
+            videoStatus: "failed",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("failed-video-placeholder")).toBeVisible();
+    expect(screen.queryByTestId("processing-video-placeholder")).toBeNull();
+    expect(screen.getByText("Captions unavailable")).toBeVisible();
+
+    rerender(
+      <TestimonialInboxView
+        onAction={onAction}
+        testimonials={[
+          {
+            ...video,
+            captionsStatus: "ready",
+            videoStatus: "ready",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("ready-video-placeholder")).toBeVisible();
+    expect(screen.getByText("Ready")).toBeVisible();
+    expect(screen.queryByTestId("processing-video-placeholder")).toBeNull();
+    expect(screen.getByText("Captions ready")).toBeVisible();
 
     rerender(
       <TestimonialInboxView

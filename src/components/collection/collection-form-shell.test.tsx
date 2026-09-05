@@ -242,7 +242,11 @@ describe("CollectionFormShellView", () => {
           publicSlug: "acme-studio",
         }}
         createDirectUpload={createDirectUpload}
-        inspectVideo={vi.fn().mockResolvedValue({ durationSeconds: 72 })}
+        inspectVideo={vi.fn().mockResolvedValue({
+          durationSeconds: 72,
+          height: 1920,
+          width: 1080,
+        })}
         submitVideo={submitVideo}
         uploadVideo={uploadVideo}
       />,
@@ -275,6 +279,7 @@ describe("CollectionFormShellView", () => {
     await waitFor(() => expect(submitVideo).toHaveBeenCalledTimes(1));
     expect(createDirectUpload).toHaveBeenCalledWith(
       expect.objectContaining({
+        dimensions: { height: 1920, width: 1080 },
         fileSizeBytes: file.size,
         mimeType: "video/mp4",
         spokenLanguage: "fr",

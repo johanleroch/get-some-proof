@@ -28,6 +28,7 @@ type RetryContext = {
 
 type RetryUpload = (input: {
   clientSubmissionId: string;
+  dimensions?: { height: number; width: number };
   fileSizeBytes: number;
   mimeType: string;
   spokenLanguage: "en" | "fr";
@@ -55,7 +56,11 @@ export function VideoRetryFormView({
   cancelRetryVideo?: CancelRetryVideo;
   context: RetryContext | null | undefined;
   createRetryUpload: RetryUpload;
-  inspectVideo?: (file: File) => Promise<{ durationSeconds: number }>;
+  inspectVideo?: (file: File) => Promise<{
+    durationSeconds: number;
+    height?: number;
+    width?: number;
+  }>;
   token: string;
   uploadVideo?: typeof uploadDirectVideo;
 }) {
@@ -117,9 +122,17 @@ export function VideoRetryFormView({
       const completed = await videoUpload.run({
         file,
         reserve: async () => {
-          await inspectVideo(file);
+          const metadata = await inspectVideo(file);
           const target = await createRetryUpload({
             clientSubmissionId,
+            ...(metadata.height && metadata.width
+              ? {
+                  dimensions: {
+                    height: metadata.height,
+                    width: metadata.width,
+                  },
+                }
+              : {}),
             fileSizeBytes: file.size,
             mimeType,
             spokenLanguage,

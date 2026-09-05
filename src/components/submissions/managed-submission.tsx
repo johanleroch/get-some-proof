@@ -579,8 +579,9 @@ export function ManagedSubmission({ token }: { token: string }) {
         });
       }}
       prepareVideoUpload={async (file, spokenLanguage) => {
-        await inspectVideoFile(file);
+        const metadata = await inspectVideoFile(file);
         const upload = await createVideoReplacement({
+          dimensions: { height: metadata.height, width: metadata.width },
           expectedContentVersion: submission.contentVersion,
           fileSizeBytes: file.size,
           mimeType: file.type,

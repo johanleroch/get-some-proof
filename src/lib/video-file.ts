@@ -1,5 +1,9 @@
 export function inspectVideoFile(file: File) {
-  return new Promise<{ durationSeconds: number }>((resolve, reject) => {
+  return new Promise<{
+    durationSeconds: number;
+    height: number;
+    width: number;
+  }>((resolve, reject) => {
     const video = document.createElement("video");
     const objectUrl = URL.createObjectURL(file);
     const cleanup = () => {
@@ -9,6 +13,8 @@ export function inspectVideoFile(file: File) {
     video.preload = "metadata";
     video.onloadedmetadata = () => {
       const durationSeconds = video.duration;
+      const height = video.videoHeight;
+      const width = video.videoWidth;
       cleanup();
       if (
         !Number.isFinite(durationSeconds) ||
@@ -18,7 +24,16 @@ export function inspectVideoFile(file: File) {
         reject(new Error("Video must be no longer than 2 minutes."));
         return;
       }
-      resolve({ durationSeconds });
+      if (
+        !Number.isSafeInteger(height) ||
+        height <= 0 ||
+        !Number.isSafeInteger(width) ||
+        width <= 0
+      ) {
+        reject(new Error("This video's dimensions could not be read."));
+        return;
+      }
+      resolve({ durationSeconds, height, width });
     };
     video.onerror = () => {
       cleanup();

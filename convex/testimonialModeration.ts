@@ -63,6 +63,7 @@ const inboxItemValidator = v.union(
   }),
   v.object({
     ...inboxIdentityValidator,
+    aspectRatio: v.optional(v.string()),
     card: v.union(v.null(), testimonialCardValueValidator),
     captionsStatus: v.union(
       v.literal("requested"),
@@ -211,6 +212,7 @@ export const listInbox = query({
         if (!videoAsset) testimonialUnavailable();
         return {
           ...identity,
+          aspectRatio: videoAsset.aspectRatio,
           card:
             videoAsset.status === "ready" && videoAsset.playbackId
               ? testimonialCardValue(cardIdentity, {

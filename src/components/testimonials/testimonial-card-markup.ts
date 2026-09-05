@@ -45,7 +45,11 @@ export function testimonialPoster(testimonial: TestimonialCardVideoValue) {
 }
 
 export function testimonialAspectRatio(testimonial: TestimonialCardVideoValue) {
-  const match = /^(\d{1,5}):(\d{1,5})$/.exec(testimonial.aspectRatio ?? "");
+  return videoAspectRatioStyle(testimonial.aspectRatio);
+}
+
+export function videoAspectRatioStyle(aspectRatio?: string) {
+  const match = /^(\d{1,5}):(\d{1,5})$/.exec(aspectRatio ?? "");
   if (!match || Number(match[1]) <= 0 || Number(match[2]) <= 0) {
     return "9 / 16";
   }

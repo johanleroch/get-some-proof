@@ -99,6 +99,8 @@ The MVP does not block a Submission on email verification. A failed confirmation
 - Always offer file import. Show browser recording only where camera, microphone, and recording APIs are supported.
 - Creating a direct upload requires an available video allowance and creates a temporary Video Reservation.
 - Upload directly from the visitor's browser to Mux.
+- Read and persist the source video's dimensions before upload so the private Inbox reserves the correct aspect ratio while Mux is processing it.
+- Show a black, ratio-correct processing placeholder with a loader and availability message until playback is ready.
 - Keep Testimonial moderation separate from Video Asset state.
 - After upload, a Pending video may be `Processing`, `Ready`, or `Failed`.
 - Only a Ready video may be Published.

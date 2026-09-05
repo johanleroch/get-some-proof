@@ -607,6 +607,8 @@ export default defineSchema({
     fileSizeBytes: v.number(),
     durationSeconds: v.optional(v.number()),
     aspectRatio: v.optional(v.string()),
+    sourceHeight: v.optional(v.number()),
+    sourceWidth: v.optional(v.number()),
     status: v.union(
       v.literal("awaiting_upload"),
       v.literal("processing"),

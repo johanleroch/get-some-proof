@@ -21,6 +21,8 @@ import {
   assertVideoMetadata,
   deriveVideoRetryToken,
   normalizeVideoMimeType,
+  sourceVideoDimensionsValidator,
+  sourceVideoMetadata,
   supportedVideoMimeTypes,
   type VideoPlan,
 } from "./domain/video";
@@ -211,6 +213,7 @@ export const reserveCapacity = internalMutation({
 
 export const attachProviderUpload = internalMutation({
   args: {
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
     provider: v.union(v.literal("fake"), v.literal("mux")),
@@ -233,6 +236,7 @@ export const attachProviderUpload = internalMutation({
       );
     }
     await requireOpenVideoOrganization(ctx, reservation.organizationId);
+    const metadata = sourceVideoMetadata(args.dimensions);
     const now = Date.now();
     await ctx.db.patch(reservation._id, {
       providerUploadId: args.providerUploadId,
@@ -247,6 +251,7 @@ export const attachProviderUpload = internalMutation({
       provider: args.provider,
       providerUploadId: args.providerUploadId,
       reservationId: reservation._id,
+      ...metadata,
       spokenLanguage: args.spokenLanguage,
       status: "awaiting_upload",
       updatedAt: now,
@@ -322,6 +327,7 @@ export const reserveRetryCapacity = internalMutation({
 
 export const attachRetryProviderUpload = internalMutation({
   args: {
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     failedVideoAssetId: v.id("videoAssets"),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
@@ -375,6 +381,7 @@ export const attachRetryProviderUpload = internalMutation({
       );
     }
     await requireOpenVideoOrganization(ctx, reservation.organizationId);
+    const metadata = sourceVideoMetadata(args.dimensions);
     const now = Date.now();
     await ctx.db.patch(reservation._id, {
       providerUploadId: args.providerUploadId,
@@ -393,6 +400,7 @@ export const attachRetryProviderUpload = internalMutation({
       provider: args.provider,
       providerUploadId: args.providerUploadId,
       reservationId: reservation._id,
+      ...metadata,
       spokenLanguage: args.spokenLanguage,
       status: "awaiting_upload",
       testimonialId: testimonial._id,
@@ -616,6 +624,7 @@ export const cancelRetryUpload = mutation({
 export const createDirectUpload = action({
   args: {
     clientSubmissionId: v.string(),
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
     publicSlug: v.string(),
@@ -638,6 +647,7 @@ export const createDirectUpload = action({
       },
     );
     const mimeType = validateUploadRequest(args.mimeType, args.fileSizeBytes);
+    sourceVideoMetadata(args.dimensions);
     const reserved: {
       expiresAt: number;
       reservationId: import("./_generated/dataModel").Id<"videoReservations">;
@@ -654,6 +664,7 @@ export const createDirectUpload = action({
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachProviderUpload, {
+        ...(args.dimensions ? { dimensions: args.dimensions } : {}),
         fileSizeBytes: args.fileSizeBytes,
         mimeType,
         provider: directUpload.provider,
@@ -1253,6 +1264,7 @@ export const getRetryContext = query({
 export const createRetryDirectUpload = action({
   args: {
     clientSubmissionId: v.string(),
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
     spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
@@ -1266,6 +1278,7 @@ export const createRetryDirectUpload = action({
   }),
   handler: async (ctx, args) => {
     const mimeType = validateUploadRequest(args.mimeType, args.fileSizeBytes);
+    sourceVideoMetadata(args.dimensions);
     const tokenHash = await hashSubmissionManagementToken(args.token);
     const reserved: {
       expiresAt: number;
@@ -1285,6 +1298,7 @@ export const createRetryDirectUpload = action({
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachRetryProviderUpload, {
+        ...(args.dimensions ? { dimensions: args.dimensions } : {}),
         failedVideoAssetId: reserved.failedVideoAssetId,
         fileSizeBytes: args.fileSizeBytes,
         mimeType,

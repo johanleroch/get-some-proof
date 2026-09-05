@@ -65,7 +65,11 @@ describe("Submission Revision upload orchestration", () => {
         submitterName: "Alice",
         text: "",
       });
-      vi.mocked(inspectVideoFile).mockResolvedValue({ durationSeconds: 10 });
+      vi.mocked(inspectVideoFile).mockResolvedValue({
+        durationSeconds: 10,
+        height: 1920,
+        width: 1080,
+      });
       vi.mocked(uploadDirectVideo).mockRejectedValue(
         new Error("connection lost"),
       );
@@ -89,6 +93,7 @@ describe("Submission Revision upload orchestration", () => {
       );
       expect(reserve).toHaveBeenCalledWith(
         expect.objectContaining({
+          dimensions: { height: 1920, width: 1080 },
           expectedContentVersion: 4,
           token: "private-link",
         }),

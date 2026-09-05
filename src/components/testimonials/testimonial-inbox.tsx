@@ -1,7 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
-import { ExternalLink, TriangleAlert } from "lucide-react";
+import { ExternalLink, LoaderCircle, TriangleAlert } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import {
@@ -31,6 +32,7 @@ import {
   TestimonialCard,
   type TestimonialCardValue,
 } from "@/components/testimonials/testimonial-card";
+import { videoAspectRatioStyle } from "@/components/testimonials/testimonial-card-markup";
 import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
@@ -60,6 +62,7 @@ type InboxTestimonial =
       submissionType: "text";
     })
   | (InboxTestimonialIdentity & {
+      aspectRatio?: string;
       captionsStatus: "requested" | "ready" | "failed";
       submissionType: "video";
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
@@ -74,8 +77,64 @@ function videoStatusLabel(
   status: Extract<InboxTestimonial, { submissionType: "video" }>["videoStatus"],
 ) {
   return status === "awaiting_upload"
-    ? "Awaiting upload"
+    ? "Processing"
     : `${status[0].toUpperCase()}${status.slice(1)}`;
+}
+
+function VideoAssetPlaceholder({
+  menu,
+  testimonial,
+}: {
+  menu: ReactNode;
+  testimonial: Extract<InboxTestimonial, { submissionType: "video" }>;
+}) {
+  if (
+    testimonial.videoStatus !== "awaiting_upload" &&
+    testimonial.videoStatus !== "processing"
+  ) {
+    return (
+      <section
+        className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-xl border px-6 py-10 text-center shadow-xs"
+        data-testid={`${testimonial.videoStatus}-video-placeholder`}
+      >
+        <div className="absolute top-3 right-3">{menu}</div>
+        <div>
+          <p className="font-medium">
+            {videoStatusLabel(testimonial.videoStatus)}
+          </p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {testimonial.captionsStatus === "failed"
+              ? "Captions unavailable"
+              : testimonial.captionsStatus === "ready"
+                ? "Captions ready"
+                : "Captions requested"}
+          </p>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section
+      className="relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-xl border border-white/10 bg-black px-6 py-10 text-center text-white shadow-xs"
+      data-testid="processing-video-placeholder"
+      data-video-aspect-ratio={testimonial.aspectRatio ?? "9:16"}
+      style={{ aspectRatio: videoAspectRatioStyle(testimonial.aspectRatio) }}
+    >
+      <div className="absolute top-3 right-3">{menu}</div>
+      <div className="max-w-64">
+        <LoaderCircle
+          aria-hidden="true"
+          className="mx-auto size-8 animate-spin motion-reduce:animate-none"
+        />
+        <p className="mt-4 font-medium">
+          {videoStatusLabel(testimonial.videoStatus)}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-white/70">
+          This video was just submitted. Playback will be available shortly.
+        </p>
+      </div>
+    </section>
+  );
 }
 
 export function TestimonialInboxView({
@@ -125,21 +184,7 @@ export function TestimonialInboxView({
                 testimonial={testimonial.card}
               />
             ) : testimonial.submissionType === "video" ? (
-              <section className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-xl border px-6 py-10 text-center shadow-xs">
-                <div className="absolute top-3 right-3">{menu}</div>
-                <div>
-                  <p className="font-medium">
-                    {videoStatusLabel(testimonial.videoStatus)}
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {testimonial.captionsStatus === "failed"
-                      ? "Captions unavailable"
-                      : testimonial.captionsStatus === "ready"
-                        ? "Captions ready"
-                        : "Captions requested"}
-                  </p>
-                </div>
-              </section>
+              <VideoAssetPlaceholder menu={menu} testimonial={testimonial} />
             ) : null}
           </div>
         );

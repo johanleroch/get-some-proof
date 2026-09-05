@@ -28,6 +28,10 @@ import {
   randomSubmissionManagementToken,
 } from "./domain/submission";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import {
+  sourceVideoDimensionsValidator,
+  sourceVideoMetadata,
+} from "./domain/video";
 import { sendTransactionalEmail } from "./email/provider";
 import { buildReplacementManagementLinkEmail } from "./email/templates";
 import {
@@ -540,6 +544,7 @@ export const reserveVideoReplacement = internalMutation({
 
 export const attachVideoReplacement = internalMutation({
   args: {
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
     provider: v.union(v.literal("fake"), v.literal("mux")),
@@ -575,6 +580,7 @@ export const attachVideoReplacement = internalMutation({
     ) {
       unavailable("This replacement upload is no longer active.");
     }
+    const metadata = sourceVideoMetadata(args.dimensions);
     const now = Date.now();
     await ctx.db.patch(reservation._id, {
       providerUploadId: args.providerUploadId,
@@ -589,6 +595,7 @@ export const attachVideoReplacement = internalMutation({
       provider: args.provider,
       providerUploadId: args.providerUploadId,
       reservationId: reservation._id,
+      ...metadata,
       spokenLanguage: args.spokenLanguage,
       status: "awaiting_upload",
       updatedAt: now,
@@ -718,6 +725,7 @@ export const recordDetachedReplacementUpload = internalMutation({
 
 export const createVideoReplacementUpload = action({
   args: {
+    dimensions: v.optional(sourceVideoDimensionsValidator),
     expectedContentVersion: v.number(),
     fileSizeBytes: v.number(),
     mimeType: v.string(),
@@ -741,6 +749,7 @@ export const createVideoReplacementUpload = action({
     ) {
       unavailable("Choose an MP4, MOV or WebM video smaller than 512 MB.");
     }
+    sourceVideoMetadata(args.dimensions);
     const tokenHash = await hashSubmissionManagementToken(args.token);
     const reserved: {
       expiresAt: number;
@@ -767,6 +776,7 @@ export const createVideoReplacementUpload = action({
       const videoAssetId: Id<"videoAssets"> = await ctx.runMutation(
         internal.submissionManagement.attachVideoReplacement,
         {
+          ...(args.dimensions ? { dimensions: args.dimensions } : {}),
           fileSizeBytes: args.fileSizeBytes,
           mimeType,
           provider: directUpload.provider,

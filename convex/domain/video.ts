@@ -1,3 +1,5 @@
+import { v } from "convex/values";
+
 export const supportedVideoMimeTypes = [
   "video/mp4",
   "video/quicktime",
@@ -11,6 +13,36 @@ export type VideoPlan = "free" | "premium";
 
 export function normalizeVideoMimeType(value: string) {
   return value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+}
+
+export type SourceVideoDimensions = { height: number; width: number };
+
+export const sourceVideoDimensionsValidator = v.object({
+  height: v.number(),
+  width: v.number(),
+});
+
+export function sourceVideoMetadata(dimensions?: SourceVideoDimensions) {
+  if (!dimensions) return undefined;
+  const { height, width } = dimensions;
+  if (
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    width > 32_768 ||
+    height > 32_768
+  ) {
+    throw new Error("This video's dimensions could not be read.");
+  }
+  const greatestCommonDivisor = (left: number, right: number): number =>
+    right === 0 ? left : greatestCommonDivisor(right, left % right);
+  const divisor = greatestCommonDivisor(width, height);
+  return {
+    aspectRatio: `${width / divisor}:${height / divisor}`,
+    sourceHeight: height,
+    sourceWidth: width,
+  };
 }
 
 export async function deriveVideoRetryToken(secret: string, seed: string) {

@@ -68,6 +68,7 @@ describe("Testimonial moderation and Public Projection", () => {
     });
     const upload = await t.action(api.video.createDirectUpload, {
       clientSubmissionId: "moderated-video-proof",
+      dimensions: { height: 1920, width: 1080 },
       fileSizeBytes: 2_048,
       mimeType: "video/mp4",
       publicSlug: "acme-proof",
@@ -112,6 +113,7 @@ describe("Testimonial moderation and Public Projection", () => {
     expect(processingInbox.page).toEqual([
       expect.objectContaining({
         card: null,
+        aspectRatio: "9:16",
         captionsStatus: "requested",
         moderationStatus: "pending",
         submissionType: "video",

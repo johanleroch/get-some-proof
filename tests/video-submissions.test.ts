@@ -566,6 +566,7 @@ describe("Video Testimonial collection", () => {
     await expect(
       t.action(api.video.createRetryDirectUpload, {
         clientSubmissionId: "video-client-replacement",
+        dimensions: { height: 1080, width: 1920 },
         fileSizeBytes: 4_096,
         mimeType: "video/webm",
         spokenLanguage: "en",
@@ -590,9 +591,12 @@ describe("Video Testimonial collection", () => {
         (asset) => asset.testimonialId === retry.testimonialId,
       ),
     ).toMatchObject({
+      aspectRatio: "16:9",
       captionsStatus: "ready",
       mimeType: "video/webm",
       spokenLanguage: "en",
+      sourceHeight: 1080,
+      sourceWidth: 1920,
       status: "ready",
     });
     expect(
