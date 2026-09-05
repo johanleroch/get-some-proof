@@ -20,11 +20,14 @@ import {
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
+  InboxFeedback,
   TestimonialDeleteDialog,
   TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
+import { videoDownloadFeedback } from "@/components/testimonials/video-download-feedback";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -46,6 +49,19 @@ function useFixtureImage() {
     remove: async () => setImageUrl(null),
     upload: async (blob: Blob) => setImageUrl(URL.createObjectURL(blob)),
   };
+}
+
+export function ToastErrorScreenFixture() {
+  return (
+    <section className="bg-card min-h-64 rounded-xl border p-6 shadow-xs">
+      <h1 className="text-2xl font-semibold">Error notification</h1>
+      <p className="text-muted-foreground mt-2 max-w-xl text-sm leading-6">
+        Errors now appear as dismissible notifications without shifting the form
+        layout.
+      </p>
+      <ErrorToast message="Unable to save your changes. Please try again." />
+    </section>
+  );
 }
 
 export function ProfileScreenFixture() {
@@ -261,49 +277,72 @@ export function ManagedSubmissionScreenFixture() {
 }
 
 const testimonialFixture = {
-  avatarUrl: null,
-  company: "North Star Co",
+  card: {
+    avatarUrl: null,
+    company: "North Star Co",
+    id: "fixture-testimonial",
+    name: "Alice Martin",
+    publishedAt: Date.UTC(2026, 8, 3),
+    rating: 5,
+    role: "Founder",
+    text: collectionFormFixtureValues.text,
+    type: "text" as const,
+  },
   consentAcceptedAt: Date.UTC(2026, 8, 3),
   createdAt: Date.UTC(2026, 8, 3),
   moderationStatus: "pending" as const,
-  rating: 5,
-  role: "Founder",
   submissionType: "text" as const,
   submitterEmail: "alice@example.invalid",
   submitterName: "Alice Martin",
-  testimonialId: "fixture-testimonial",
-  text: collectionFormFixtureValues.text,
+  testimonialId: "fixture-testimonial" as Id<"testimonials">,
 };
 
 const videoTestimonialFixture = {
-  avatarUrl: null,
   canDownload: true,
+  card: {
+    aspectRatio: "4:3",
+    avatarUrl: null,
+    captionsAvailable: true,
+    id: "fixture-video-testimonial",
+    name: "Remy Jupille",
+    playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
+    posterTimeSeconds: 34,
+    publishedAt: Date.UTC(2026, 8, 2),
+    rating: 5,
+    role: "Founder",
+    type: "video" as const,
+  },
   captionsStatus: "ready" as const,
   consentAcceptedAt: Date.UTC(2026, 8, 2),
   createdAt: Date.UTC(2026, 8, 2),
-  durationSeconds: 68,
   moderationStatus: "pending" as const,
-  playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
-  rating: 5,
-  role: "Founder",
   submissionType: "video" as const,
   submitterEmail: "remy@example.invalid",
   submitterName: "Remy Jupille",
-  testimonialId: "fixture-video-testimonial",
+  testimonialId: "fixture-video-testimonial" as Id<"testimonials">,
   videoStatus: "ready" as const,
 };
 
 const spamTestimonialFixture = {
   ...testimonialFixture,
+  card: {
+    ...testimonialFixture.card,
+    id: "fixture-spam-testimonial",
+    name: "Suspicious Submission",
+  },
   moderationStatus: "spam" as const,
   quarantineExpiresAt: Date.UTC(2026, 8, 10),
   spamCreditRestored: true,
   submitterEmail: "spam@example.invalid",
   submitterName: "Suspicious Submission",
-  testimonialId: "fixture-spam-testimonial",
+  testimonialId: "fixture-spam-testimonial" as Id<"testimonials">,
 };
 
-export function TestimonialInboxScreenFixture() {
+export function TestimonialInboxScreenFixture({
+  downloadProcessing = false,
+}: {
+  downloadProcessing?: boolean;
+}) {
   return (
     <section className="space-y-6">
       <div>
@@ -323,7 +362,7 @@ export function TestimonialInboxScreenFixture() {
           aria-label="Type"
           className="border-input bg-background h-9 rounded-md border px-3 text-sm"
         >
-          <option>Text</option>
+          <option>All types</option>
         </select>
         <select
           aria-label="Sort"
@@ -332,38 +371,52 @@ export function TestimonialInboxScreenFixture() {
           <option>Newest first</option>
         </select>
       </div>
-      <PublishedCurationView
-        onMove={async () => undefined}
-        onSetVisibility={async () => undefined}
-        testimonials={[
-          {
-            submissionType: "video",
-            submitterName: "Remy Jupille",
-            testimonialId: "fixture-published-video" as Id<"testimonials">,
-          },
-          {
-            overrides: { company: false },
-            submissionType: "text",
-            submitterName: "Alice Martin",
-            testimonialId: "fixture-published-text" as Id<"testimonials">,
-          },
-        ]}
+      <InboxFeedback
+        error={null}
+        message={
+          downloadProcessing ? videoDownloadFeedback("processing") : null
+        }
+        tone={downloadProcessing ? "processing" : "success"}
       />
       <TestimonialInboxView
-        onArchive={() => undefined}
-        onDeleteRequest={() => undefined}
-        onDownload={() => undefined}
-        onPublish={() => undefined}
-        onSpam={() => undefined}
-        onUndoSpam={() => undefined}
+        accentColor={collectionFormFixtureBrand.primaryColor}
+        onAction={() => undefined}
         testimonials={[
           spamTestimonialFixture,
-          videoTestimonialFixture,
+          { ...videoTestimonialFixture, moderationStatus: "published" },
           testimonialFixture,
         ]}
       />
+      <details className="bg-card rounded-xl border shadow-xs">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+          Wall order &amp; visibility
+        </summary>
+        <div className="border-t p-4 sm:p-5">
+          <PublishedCurationView
+            onMove={async () => undefined}
+            onSetVisibility={async () => undefined}
+            testimonials={[
+              {
+                submissionType: "video",
+                submitterName: "Remy Jupille",
+                testimonialId: "fixture-published-video" as Id<"testimonials">,
+              },
+              {
+                overrides: { company: false },
+                submissionType: "text",
+                submitterName: "Alice Martin",
+                testimonialId: "fixture-published-text" as Id<"testimonials">,
+              },
+            ]}
+          />
+        </div>
+      </details>
     </section>
   );
+}
+
+export function TestimonialInboxDownloadProcessingScreenFixture() {
+  return <TestimonialInboxScreenFixture downloadProcessing />;
 }
 
 export function TestimonialDeleteScreenFixture() {

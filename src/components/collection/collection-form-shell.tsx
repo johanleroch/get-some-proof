@@ -19,6 +19,7 @@ import { TurnstileChallenge } from "@/components/collection/turnstile-challenge"
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -301,11 +302,7 @@ function VideoStep({
           Used to generate captions. Caption failure will not block your video.
         </p>
       </div>
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <div className="flex gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
@@ -683,11 +680,7 @@ function IdentityStep({
           progress={videoProgress}
         />
       ) : null}
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <div className="flex gap-3">
         <Button
           disabled={videoSelectionLocked}

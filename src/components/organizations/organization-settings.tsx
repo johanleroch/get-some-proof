@@ -13,6 +13,7 @@ import {
   type PublicWallSettingsValue,
 } from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -511,9 +512,7 @@ export function WorkspaceDeletionProgress({
             : "The durable cleanup is progressing in small, retryable steps."}
         </p>
         {lastError || retryError ? (
-          <p className="text-destructive text-sm" role="alert">
-            {retryError ?? lastError}
-          </p>
+          <ErrorToast message={(retryError ?? lastError)!} />
         ) : null}
         {status === "failed" ? (
           <Button
@@ -606,11 +605,7 @@ export function WorkspaceDeletionSection({
           value={confirmation}
         />
       </div>
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <Button
         disabled={confirmation !== brandName || pending !== null}
         onClick={() => setDialogOpen(true)}

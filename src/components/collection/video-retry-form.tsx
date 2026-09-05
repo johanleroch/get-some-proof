@@ -12,6 +12,7 @@ import {
 } from "@convex/domain/video";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
@@ -200,11 +201,7 @@ export function VideoRetryFormView({
             progress={videoUpload.progress}
           />
         ) : null}
-        {error ? (
-          <p className="text-destructive text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error ? <ErrorToast message={error} /> : null}
         <Button
           className="w-full"
           disabled={!file || submitting}

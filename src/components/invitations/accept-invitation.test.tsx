@@ -34,10 +34,12 @@ describe("AcceptInvitation", () => {
     render(<AcceptInvitation token="unavailable-token" />);
     fireEvent.click(screen.getByRole("button", { name: "Accept Invitation" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "This invitation has expired, was revoked, or was already used.",
     );
-    expect(screen.getByRole("alert")).not.toHaveTextContent("internal");
+    expect(screen.getByTestId("error-toast-message")).not.toHaveTextContent(
+      "internal",
+    );
   });
 
   it("explains the verified-email requirement without exposing internals", async () => {
@@ -48,7 +50,7 @@ describe("AcceptInvitation", () => {
     render(<AcceptInvitation token="mismatch-token" />);
     fireEvent.click(screen.getByRole("button", { name: "Accept Invitation" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Sign in with the verified email address that received this invitation.",
     );
   });

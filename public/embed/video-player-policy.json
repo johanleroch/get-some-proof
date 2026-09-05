@@ -1,7 +1,7 @@
 {
   "autoplay": false,
   "disableCookies": true,
-  "hideCaptionsWhenUnavailable": true,
+  "hideCaptions": true,
   "metadataTitleSuffix": "'s testimonial",
   "playsInline": true,
   "preload": "none"

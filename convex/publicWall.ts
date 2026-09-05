@@ -4,6 +4,7 @@ import { paginationOptsValidator } from "convex/server";
 import { query } from "./_generated/server";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { organizationPublicVisibility } from "./publicProjection";
+import { testimonialCardValue } from "./testimonialCardValue";
 
 export const getBrand = query({
   args: { publicSlug: v.string() },
@@ -101,15 +102,17 @@ export const list = query({
           role: visible.role ? projection.role : undefined,
         };
         return projection.type === "video"
-          ? {
-              ...identity,
+          ? testimonialCardValue(identity, {
               aspectRatio: projection.aspectRatio,
               captionsAvailable: projection.captionsAvailable,
               playbackId: projection.playbackId,
               posterTimeSeconds: projection.posterTimeSeconds,
               type: "video" as const,
-            }
-          : { ...identity, text: projection.text, type: "text" as const };
+            })
+          : testimonialCardValue(identity, {
+              text: projection.text,
+              type: "text" as const,
+            });
       }),
     );
     return { ...page, page: testimonials };

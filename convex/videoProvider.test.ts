@@ -146,10 +146,26 @@ describe("video upload provider", () => {
           JSON.stringify({
             data: {
               static_renditions: {
+                status: "ready",
                 files: [
-                  { name: "2160p.mp4", resolution: "2160p", status: "ready" },
-                  { name: "720p.mp4", resolution: "720p", status: "ready" },
-                  { name: "1080p.mp4", resolution: "1080p", status: "ready" },
+                  {
+                    ext: "mp4",
+                    height: 3840,
+                    name: "2160p.mp4",
+                    width: 2160,
+                  },
+                  {
+                    ext: "mp4",
+                    height: 1280,
+                    name: "720p.mp4",
+                    width: 720,
+                  },
+                  {
+                    ext: "mp4",
+                    height: 1920,
+                    name: "capped-1080p.mp4",
+                    width: 1080,
+                  },
                 ],
               },
             },
@@ -166,8 +182,33 @@ describe("video upload provider", () => {
         providerAssetId: "mux-asset-id",
       }),
     ).resolves.toMatch(
-      /^https:\/\/stream\.mux\.com\/signed-playback-id\/1080p\.mp4\?token=.+&download=video-testimonial\.mp4$/,
+      /^https:\/\/stream\.mux\.com\/signed-playback-id\/capped-1080p\.mp4\?token=.+&download=video-testimonial\.mp4$/,
     );
+  });
+
+  it("returns no URL while Mux prepares the static rendition", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "mux-token-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "mux-token-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: { static_renditions: { status: "preparing" } },
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(
+      getVideoDownloadUrl({
+        playbackId: "signed-playback-id",
+        provider: "mux",
+        providerAssetId: "mux-asset-id",
+      }),
+    ).resolves.toBeNull();
   });
 
   it("supports Mux's highest rendition filename under the 1080p upload cap", async () => {

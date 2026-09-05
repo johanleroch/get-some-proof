@@ -432,9 +432,9 @@ describe("OrganizationBilling", () => {
     const button = screen.getByRole("button", { name: "Manage subscription" });
     fireEvent.click(button);
 
-    expect(
-      await screen.findByText("Stripe Portal is temporarily unavailable"),
-    ).toBeVisible();
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+      "Stripe Portal is temporarily unavailable",
+    );
     expect(button).toBeEnabled();
   });
 

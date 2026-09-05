@@ -6,6 +6,7 @@ import { IconCamera, IconTrash } from "@tabler/icons-react";
 import { ImageCropDialog } from "@/components/profile-image/image-crop-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 
 const maximumImageBytes = 5 * 1024 * 1024;
 
@@ -145,15 +146,7 @@ export function ProfileImageControl({
           ref={inputRef}
           type="file"
         />
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="text-destructive text-xs"
-            role="alert"
-          >
-            {error}
-          </p>
-        ) : null}
+        {error ? <ErrorToast message={error} /> : null}
       </div>
       <ImageCropDialog
         key={source ?? "closed"}

@@ -7,6 +7,7 @@ import { useMutation } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 
 function invitationAcceptanceError(caught: unknown) {
   const message = caught instanceof Error ? caught.message : "";
@@ -53,15 +54,7 @@ export function AcceptInvitation({ token }: { token: string }) {
           Your verified account email must match the address that received this
           link.
         </p>
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="mt-5 text-sm text-red-600"
-            role="alert"
-          >
-            {error}
-          </p>
-        ) : null}
+        {error ? <ErrorToast message={error} /> : null}
         <Button
           className="mt-6 w-full"
           disabled={pending}

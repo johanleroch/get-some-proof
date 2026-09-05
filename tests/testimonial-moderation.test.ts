@@ -112,6 +112,7 @@ describe("Testimonial moderation and Public Projection", () => {
     );
     expect(processingInbox.page).toEqual([
       expect.objectContaining({
+        card: null,
         captionsStatus: "requested",
         moderationStatus: "pending",
         submissionType: "video",
@@ -208,7 +209,16 @@ describe("Testimonial moderation and Public Projection", () => {
         submissionType: "video",
       }),
     ).resolves.toMatchObject({
-      page: [expect.objectContaining({ canDownload: false })],
+      page: [
+        expect.objectContaining({
+          canDownload: false,
+          card: expect.objectContaining({
+            aspectRatio: "16:9",
+            playbackId: "public-playback-id",
+            type: "video",
+          }),
+        }),
+      ],
     });
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_inbox_download");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_inbox_download");

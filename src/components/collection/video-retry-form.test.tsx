@@ -105,9 +105,9 @@ describe("VideoRetryFormView", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
 
-    expect(
-      await screen.findByText("Video must be no longer than 2 minutes."),
-    ).toBeVisible();
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+      "Video must be no longer than 2 minutes.",
+    );
     expect(createRetryUpload).not.toHaveBeenCalled();
   });
 
@@ -182,7 +182,9 @@ describe("VideoRetryFormView", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Network lost.");
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+      "Network lost.",
+    );
     expect(cancelRetryVideo).toHaveBeenCalledWith({
       clientSubmissionId: expect.any(String),
       reservationId,
@@ -233,7 +235,7 @@ describe("VideoRetryFormView", () => {
 
     await waitFor(() => expect(cancelRetryVideo).toHaveBeenCalledOnce());
     expect(screen.getByRole("button", { name: "Replace video" })).toBeEnabled();
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByTestId("error-toast-message")).toBeNull();
   });
 
   it("reports when an interrupted upload reservation cannot be released", async () => {
@@ -261,7 +263,7 @@ describe("VideoRetryFormView", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "reservation could not be released",
     );
   });

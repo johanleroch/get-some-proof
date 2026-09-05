@@ -327,8 +327,14 @@ export const requestDownload = action({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
   },
-  returns: v.object({ url: v.string() }),
-  handler: async (ctx, args): Promise<{ url: string }> => {
+  returns: v.union(
+    v.object({ status: v.literal("processing") }),
+    v.object({ status: v.literal("ready"), url: v.string() }),
+  ),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ status: "processing" } | { status: "ready"; url: string }> => {
     const authorized: {
       downloadPlaybackId?: string;
       downloadProviderAssetId?: string;
@@ -374,12 +380,11 @@ export const requestDownload = action({
         throw error;
       }
     }
-    return {
-      url: await getVideoDownloadUrl({
-        ...downloadable,
-        provider: authorized.provider,
-      }),
-    };
+    const url = await getVideoDownloadUrl({
+      ...downloadable,
+      provider: authorized.provider,
+    });
+    return url ? { status: "ready", url } : { status: "processing" };
   },
 });
 

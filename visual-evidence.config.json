@@ -30,6 +30,14 @@
       "theme": "light"
     },
     {
+      "slug": "toast-error",
+      "title": "Error notification toast",
+      "path": "/visual-evidence/toast-error",
+      "fixturePath": "/visual-evidence/toast-error",
+      "heading": "Error notification",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in-dark",
       "title": "Sign in - dark",
       "path": "/sign-in",
@@ -201,6 +209,24 @@
       "title": "Testimonial Inbox - video player",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-options",
+      "title": "Testimonial Inbox - options",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-download-processing",
+      "title": "Testimonial Inbox - MP4 download processing",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox-download-processing",
       "heading": "Inbox",
       "theme": "light",
       "requiresAuth": true

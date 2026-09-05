@@ -148,6 +148,7 @@ describe("Video media ownership", () => {
         testimonialId,
       }),
     ).resolves.toMatchObject({
+      status: "ready",
       url: expect.stringMatching(
         /^https:\/\/stream\.mux\.com\/signed-playback-download\/1080p\.mp4\?token=.+&download=video-testimonial\.mp4$/,
       ),
@@ -166,6 +167,74 @@ describe("Video media ownership", () => {
       downloadProviderAssetId: "download-asset-download",
     });
     expect(stored.cleanupJobs).toEqual([]);
+  });
+
+  it("returns processing and reuses the derived asset until its MP4 is ready", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      publicSlug: "acme-processing",
+    });
+    const testimonialId = await createReadyVideo(t, brand.id, "processing");
+    await addStripeSubscription(t, String(brand.id), "active");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "download-asset-processing",
+              playback_ids: [
+                { id: "signed-playback-processing", policy: "signed" },
+              ],
+            },
+          }),
+          { status: 201 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { static_renditions: { status: "preparing" } },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              static_renditions: {
+                status: "ready",
+                files: [
+                  {
+                    ext: "mp4",
+                    height: 1080,
+                    name: "capped-1080p.mp4",
+                  },
+                ],
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const args = { organizationId: brand.id, testimonialId };
+    await expect(
+      owner.client.action(api.videoMedia.requestDownload, args),
+    ).resolves.toEqual({ status: "processing" });
+    await expect(
+      owner.client.action(api.videoMedia.requestDownload, args),
+    ).resolves.toMatchObject({
+      status: "ready",
+      url: expect.stringMatching(
+        /\/signed-playback-processing\/capped-1080p\.mp4\?/,
+      ),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("rejects Free and cross-tenant download requests on the server", async () => {

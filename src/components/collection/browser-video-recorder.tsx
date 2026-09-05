@@ -11,6 +11,7 @@ import { Camera, Check, Circle, Mic, RotateCcw, Square } from "lucide-react";
 
 import { normalizeVideoMimeType } from "@convex/domain/video";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Label } from "@/components/ui/label";
 
 type RecorderDevice = Pick<MediaDeviceInfo, "deviceId" | "kind" | "label">;
@@ -626,11 +627,7 @@ function RecorderView({
         </div>
       ) : null}
 
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
     </div>
   );
 }

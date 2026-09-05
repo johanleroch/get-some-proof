@@ -196,7 +196,7 @@ export async function getVideoDownloadUrl(input: {
   playbackId: string;
   provider: VideoUploadProvider;
   providerAssetId: string;
-}) {
+}): Promise<string | null> {
   if (input.provider === "fake") {
     return `https://fake-mux.invalid/${encodeURIComponent(input.playbackId)}/1080p.mp4?download=video-testimonial.mp4`;
   }
@@ -210,36 +210,80 @@ export async function getVideoDownloadUrl(input: {
   const body = (await response.json()) as {
     data?: {
       static_renditions?: {
+        status?: unknown;
         files?: Array<{
+          ext?: unknown;
+          height?: unknown;
           name?: unknown;
           resolution?: unknown;
           status?: unknown;
+          width?: unknown;
         }>;
       };
     };
   };
   const maximumHeight = 1080;
-  const renditionHeight = (file: { name?: unknown; resolution?: unknown }) => {
+  const staticRenditions = body.data?.static_renditions;
+  if (staticRenditions?.status === "preparing") return null;
+  if (staticRenditions?.status === "errored") {
+    throw new Error("Mux MP4 rendition generation failed.");
+  }
+  const renditionHeight = (file: {
+    height?: unknown;
+    name?: unknown;
+    resolution?: unknown;
+    width?: unknown;
+  }) => {
+    if (
+      typeof file.height === "number" &&
+      Number.isFinite(file.height) &&
+      file.height > 0 &&
+      typeof file.width === "number" &&
+      Number.isFinite(file.width) &&
+      file.width > 0
+    ) {
+      return Math.min(file.height, file.width);
+    }
+    if (
+      typeof file.height === "number" &&
+      Number.isFinite(file.height) &&
+      file.height > 0
+    ) {
+      return file.height;
+    }
     if (file.resolution === "highest" || file.name === "highest.mp4") {
       return maximumHeight;
     }
     if (typeof file.resolution === "string" && /^\d+p$/.test(file.resolution)) {
       return Number.parseInt(file.resolution, 10);
     }
+    if (typeof file.name === "string") {
+      const filenameHeight = /(?:^|-)(\d+)p\.mp4$/.exec(file.name)?.[1];
+      if (filenameHeight) return Number.parseInt(filenameHeight, 10);
+    }
     return null;
   };
-  const ready = (body.data?.static_renditions?.files ?? [])
+  const ready = (staticRenditions?.files ?? [])
     .filter(
-      (file): file is { name: string; resolution?: unknown; status: "ready" } =>
-        file.status === "ready" &&
+      (
+        file,
+      ): file is { name: string; resolution?: unknown; status?: unknown } =>
+        (staticRenditions?.status === "ready"
+          ? file.status === undefined || file.status === "ready"
+          : file.status === "ready") &&
         typeof file.name === "string" &&
-        file.name.endsWith(".mp4") &&
+        (file.ext === "mp4" || file.name.endsWith(".mp4")) &&
         renditionHeight(file) !== null &&
         renditionHeight(file)! <= maximumHeight,
     )
     .sort((left, right) => renditionHeight(right)! - renditionHeight(left)!);
   const selected = ready[0];
-  if (!selected) throw new Error("MP4 download is still processing.");
+  if (!selected) {
+    if (staticRenditions?.status === "ready") {
+      throw new Error("Mux MP4 rendition response is invalid.");
+    }
+    return null;
+  }
   const token = await signVideoPlaybackToken(input.playbackId);
   return `https://stream.mux.com/${encodeURIComponent(input.playbackId)}/${encodeURIComponent(selected.name)}?token=${encodeURIComponent(token)}&download=video-testimonial.mp4`;
 }

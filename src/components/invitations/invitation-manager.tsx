@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import {
   Dialog,
   DialogContent,
@@ -152,15 +153,7 @@ export function InvitationManager({
 
   return (
     <section aria-label="Pending invitations">
-      {showList && error ? (
-        <div
-          aria-live="assertive"
-          className="border-destructive/30 bg-destructive/5 text-destructive mb-4 rounded-md border px-3 py-2 text-sm"
-          role="alert"
-        >
-          {error}
-        </div>
-      ) : null}
+      {showList && error ? <ErrorToast message={error} /> : null}
       {showList && success ? (
         <div
           aria-live="polite"
@@ -307,15 +300,7 @@ export function InvitationManager({
             </DialogDescription>
           </DialogHeader>
           <form className="mt-2 space-y-5" onSubmit={invite}>
-            {error ? (
-              <div
-                aria-live="assertive"
-                className="border-destructive/30 bg-destructive/5 text-destructive rounded-md border px-3 py-2 text-sm"
-                role="alert"
-              >
-                {error}
-              </div>
-            ) : null}
+            {error ? <ErrorToast message={error} /> : null}
             <div className="space-y-2">
               <Label htmlFor="invitation-email">Email address</Label>
               <Input

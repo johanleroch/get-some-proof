@@ -125,7 +125,7 @@ describe("ManagedSubmissionView", () => {
         screen.getByRole("button", { name: "Upload replacement" }),
       ).toBeEnabled(),
     );
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByTestId("error-toast-message")).toBeNull();
     expect(release).toHaveBeenCalledOnce();
   });
 
@@ -172,7 +172,7 @@ describe("ManagedSubmissionView", () => {
       await screen.findByRole("button", { name: "Cancel upload" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "reservation could not be released",
     );
   });

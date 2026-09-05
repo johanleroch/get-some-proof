@@ -13,6 +13,7 @@ import {
 } from "@convex/domain/brand";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -267,14 +268,7 @@ export function OrganizationOnboardingFormView({
         />
       </div>
 
-      {error ? (
-        <p
-          aria-live="polite"
-          className="text-sm text-red-600 dark:text-red-400"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <Button className="w-full" disabled={pending} type="submit">
         {pending
           ? createdOrganization

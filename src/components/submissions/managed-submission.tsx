@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -466,11 +467,7 @@ export function ManagedSubmissionView({
               </span>
             </label>
           </div>
-          {error ? (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
+          {error ? <ErrorToast message={error} /> : null}
           {notice ? (
             <p className="flex items-center gap-2 text-sm" role="status">
               <CheckCircle2 className="size-4" /> {notice}

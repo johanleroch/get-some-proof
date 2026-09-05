@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -7,60 +8,165 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Id } from "@convex/_generated/dataModel";
 import {
   TestimonialDeleteDialog,
+  TestimonialInbox,
   TestimonialInboxView,
 } from "./testimonial-inbox";
+import { videoDownloadFeedback } from "./video-download-feedback";
 
 const testimonial = {
-  avatarUrl: null,
-  company: "Example Studio",
+  card: {
+    avatarUrl: null,
+    company: "Example Studio",
+    id: "testimonial-1",
+    name: "Camille Test",
+    publishedAt: 2,
+    rating: 5,
+    role: "Founder",
+    text: "A real customer outcome that is ready for review.",
+    type: "text" as const,
+  },
   consentAcceptedAt: 1,
   createdAt: 2,
   moderationStatus: "pending" as const,
-  rating: 5,
-  role: "Founder",
   submissionType: "text" as const,
   submitterEmail: "camille@example.invalid",
   submitterName: "Camille Test",
-  testimonialId: "testimonial-1",
-  text: "A real customer outcome that is ready for review.",
+  testimonialId: "testimonial-1" as Id<"testimonials">,
 };
 
+const inboxMocks = vi.hoisted(() => ({
+  requestDownload: vi.fn(),
+}));
+
+vi.mock("convex/react", async () => {
+  const { getFunctionName } = await import("convex/server");
+
+  return {
+    useAction: (reference: Parameters<typeof getFunctionName>[0]) =>
+      getFunctionName(reference) === "videoMedia:requestDownload"
+        ? inboxMocks.requestDownload
+        : vi.fn(),
+    useMutation: () => vi.fn(),
+    usePaginatedQuery: () => ({
+      loadMore: vi.fn(),
+      results: [
+        {
+          card: {
+            avatarUrl: null,
+            captionsAvailable: true,
+            id: "testimonial-video",
+            name: "Camille Test",
+            playbackId: "owner-playback-id",
+            publishedAt: 2,
+            type: "video",
+          },
+          canDownload: true,
+          captionsStatus: "ready",
+          consentAcceptedAt: 1,
+          createdAt: 2,
+          moderationStatus: "pending",
+          submissionType: "video",
+          submitterEmail: "camille@example.invalid",
+          submitterName: "Camille Test",
+          testimonialId: "testimonial-video",
+          videoStatus: "ready",
+        },
+      ],
+      status: "Exhausted",
+    }),
+    useQuery: (
+      _reference: Parameters<typeof getFunctionName>[0],
+      args: unknown,
+    ) =>
+      typeof args === "object" && args && "slug" in args
+        ? {
+            id: "organization-1",
+            name: "Acme",
+            publicSlug: "acme-public",
+            slug: "acme",
+          }
+        : { accentColor: "#6d5dfc" },
+  };
+});
+
 describe("TestimonialInboxView", () => {
-  beforeEach(cleanup);
-  it("previews private data and exposes publish, archive, and permanent delete", () => {
-    const onPublish = vi.fn();
-    const onArchive = vi.fn();
-    const onDeleteRequest = vi.fn();
+  beforeEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    inboxMocks.requestDownload.mockReset();
+  });
+
+  it("starts the MP4 download automatically when Mux finishes processing", async () => {
+    vi.useFakeTimers();
+    inboxMocks.requestDownload
+      .mockResolvedValueOnce({ status: "processing" })
+      .mockResolvedValueOnce({
+        status: "ready",
+        url: "https://stream.mux.com/playback/high.mp4",
+      });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    render(<TestimonialInbox slug="acme" />);
+    fireEvent.pointerDown(
+      screen.getByRole("button", {
+        name: "Options for Camille Test's Testimonial",
+      }),
+      { button: 0, ctrlKey: false },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Download MP4" }));
+
+    await vi.waitFor(() =>
+      expect(inboxMocks.requestDownload).toHaveBeenCalledOnce(),
+    );
+    await act(async () => undefined);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Preparing your MP4. The download will start automatically.",
+    );
+    expect(screen.getByRole("status")).toHaveClass("bg-sky-50");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    await vi.waitFor(() =>
+      expect(inboxMocks.requestDownload).toHaveBeenCalledTimes(2),
+    );
+    expect(click).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your MP4 download is ready.",
+    );
+    click.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it("uses a retryable message while an MP4 download is processing", () => {
+    expect(videoDownloadFeedback("processing")).toBe(
+      "Preparing your MP4. The download will start automatically.",
+    );
+    expect(videoDownloadFeedback("ready")).toBe("Your MP4 download is ready.");
+  });
+
+  it("renders the shared card and exposes private actions only through options", async () => {
+    const onAction = vi.fn();
     render(
-      <TestimonialInboxView
-        onArchive={onArchive}
-        onDeleteRequest={onDeleteRequest}
-        onPublish={onPublish}
-        testimonials={[testimonial]}
-      />,
+      <TestimonialInboxView onAction={onAction} testimonials={[testimonial]} />,
     );
 
-    expect(screen.getByText("camille@example.invalid")).toBeInTheDocument();
-    expect(screen.getByText("Consent recorded")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete permanently" }));
-    expect(onPublish).toHaveBeenCalledWith(testimonial);
-    expect(onArchive).toHaveBeenCalledWith(testimonial);
-    expect(onDeleteRequest).toHaveBeenCalledWith(testimonial);
+    expect(screen.getByText(testimonial.card.text)).toBeVisible();
+    expect(screen.queryByText(testimonial.submitterEmail)).toBeNull();
+    const options = screen.getByRole("button", {
+      name: "Options for Camille Test's Testimonial",
+    });
+    fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Publish" }));
+    expect(onAction).toHaveBeenCalledWith(testimonial, "publish");
   });
 
   it("renders a useful empty state", () => {
-    render(
-      <TestimonialInboxView
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onPublish={vi.fn()}
-        testimonials={[]}
-      />,
-    );
+    render(<TestimonialInboxView onAction={vi.fn()} testimonials={[]} />);
     expect(
       screen.getByText("No Testimonials match these filters."),
     ).toBeInTheDocument();
@@ -71,6 +177,15 @@ describe("TestimonialInboxView", () => {
     const onDownload = vi.fn();
     const video = {
       ...testimonial,
+      card: {
+        avatarUrl: null,
+        captionsAvailable: true,
+        id: "testimonial-1",
+        name: "Camille Test",
+        playbackId: "owner-playback-id",
+        publishedAt: 2,
+        type: "video" as const,
+      },
       captionsStatus: "ready" as const,
       canDownload: true,
       submissionType: "video" as const,
@@ -132,18 +247,17 @@ describe("TestimonialInboxView", () => {
       spamCreditRestored: true,
     };
     render(
-      <TestimonialInboxView
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onPublish={vi.fn()}
-        onUndoSpam={onUndoSpam}
-        testimonials={[spam]}
-      />,
+      <TestimonialInboxView onAction={onUndoSpam} testimonials={[spam]} />,
     );
 
-    expect(screen.getByText(/Collection capacity was restored/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Undo Spam" }));
-    expect(onUndoSpam).toHaveBeenCalledWith(spam);
+    fireEvent.pointerDown(
+      screen.getByRole("button", {
+        name: "Options for Camille Test's Testimonial",
+      }),
+      { button: 0, ctrlKey: false },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Undo Spam" }));
+    expect(onUndoSpam).toHaveBeenCalledWith(spam, "undo-spam");
     expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Delete permanently" }),
@@ -154,26 +268,24 @@ describe("TestimonialInboxView", () => {
     const { container } = render(
       <TestimonialInboxView
         actionsDisabled
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onPublish={vi.fn()}
+        onAction={vi.fn()}
         testimonials={[testimonial]}
       />,
     );
     const view = within(container);
 
-    expect(view.getByRole("button", { name: "Publish" })).toBeDisabled();
-    expect(view.getByRole("button", { name: "Archive" })).toBeDisabled();
     expect(
-      view.getByRole("button", { name: "Delete permanently" }),
+      view.getByRole("button", {
+        name: "Options for Camille Test's Testimonial",
+      }),
     ).toBeDisabled();
   });
 
   it("shows video readiness and blocks publication until Ready", () => {
-    const onPublish = vi.fn();
-    const onDownload = vi.fn();
+    const onAction = vi.fn();
     const video = {
       avatarUrl: null,
+      card: null,
       captionsStatus: "requested" as const,
       consentAcceptedAt: 1,
       createdAt: 2,
@@ -182,60 +294,71 @@ describe("TestimonialInboxView", () => {
       submissionType: "video" as const,
       submitterEmail: "camille@example.invalid",
       submitterName: "Camille Test",
-      testimonialId: "testimonial-video",
+      testimonialId: "testimonial-video" as Id<"testimonials">,
       videoStatus: "processing" as const,
     };
     const { rerender } = render(
-      <TestimonialInboxView
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onDownload={onDownload}
-        onPublish={onPublish}
-        testimonials={[video]}
-      />,
+      <TestimonialInboxView onAction={onAction} testimonials={[video]} />,
     );
 
     expect(screen.getByText("Processing")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
+    fireEvent.pointerDown(
+      screen.getByRole("button", {
+        name: "Options for Camille Test's Testimonial",
+      }),
+      { button: 0, ctrlKey: false },
+    );
+    expect(screen.getByRole("menuitem", { name: "Publish" })).toHaveAttribute(
+      "data-disabled",
+    );
 
     rerender(
       <TestimonialInboxView
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onDownload={onDownload}
-        onPublish={onPublish}
+        onAction={onAction}
         testimonials={[
           {
             ...video,
+            card: {
+              aspectRatio: "4:3",
+              avatarUrl: null,
+              captionsAvailable: false,
+              id: "testimonial-video",
+              name: "Camille Test",
+              playbackId: "owner-playback-id",
+              publishedAt: 2,
+              type: "video",
+            },
             captionsStatus: "failed",
-            durationSeconds: 42,
-            playbackId: "owner-playback-id",
             videoStatus: "ready",
           },
         ]}
       />,
     );
-    expect(screen.getByText("Ready")).toBeVisible();
-    expect(screen.getByText("Captions unavailable")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Download MP4 (Pro)" }));
-    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    expect(onDownload).toHaveBeenCalledOnce();
-    expect(onPublish).toHaveBeenCalledOnce();
+    expect(document.querySelector(".video-shell")).toHaveAttribute(
+      "data-video-aspect-ratio",
+      "4:3",
+    );
   });
 
-  it("plays a Ready video in a dialog only after Owner intent", async () => {
+  it("uses the Public Wall video card and loads playback only after Owner intent", async () => {
     render(
       <TestimonialInboxView
-        onArchive={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        onPublish={vi.fn()}
+        onAction={vi.fn()}
         testimonials={[
           {
             ...testimonial,
+            card: {
+              aspectRatio: "4:3",
+              avatarUrl: null,
+              captionsAvailable: true,
+              id: "testimonial-1",
+              name: "Camille Test",
+              playbackId: "owner-playback-id",
+              publishedAt: 2,
+              type: "video",
+            },
             canDownload: false,
             captionsStatus: "ready",
-            durationSeconds: 42,
-            playbackId: "owner-playback-id",
             submissionType: "video",
             videoStatus: "ready",
           },
@@ -243,22 +366,39 @@ describe("TestimonialInboxView", () => {
       />,
     );
 
-    expect(screen.queryByTestId("inbox-video-player")).toBeNull();
+    expect(screen.queryByTestId("mux-video-player")).toBeNull();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Play Camille Test's video testimonial",
+        name: "Play Camille Test's testimonial",
       }),
     );
 
-    expect(
-      await screen.findByRole("dialog", {
-        name: "Camille Test's video testimonial",
-      }),
-    ).toBeVisible();
-    expect(screen.getByTestId("inbox-video-player")).toHaveAttribute(
+    expect(await screen.findByTestId("mux-video-player")).toHaveAttribute(
       "data-playback-id",
       "owner-playback-id",
     );
-    expect(screen.getByText("Captions ready · 42 seconds")).toBeVisible();
+  });
+
+  it("exposes unpublish and permanent delete after publication", async () => {
+    const onAction = vi.fn();
+    const published = {
+      ...testimonial,
+      moderationStatus: "published" as const,
+    };
+    render(
+      <TestimonialInboxView onAction={onAction} testimonials={[published]} />,
+    );
+
+    const options = screen.getByRole("button", {
+      name: "Options for Camille Test's Testimonial",
+    });
+    fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Unpublish" }));
+    fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Delete permanently" }),
+    );
+    expect(onAction).toHaveBeenNthCalledWith(1, published, "unpublish");
+    expect(onAction).toHaveBeenNthCalledWith(2, published, "delete");
   });
 });

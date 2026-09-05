@@ -87,7 +87,6 @@ export function HostedWall({
               <Fragment key={testimonial.id}>
                 <TestimonialCard
                   accentColor={wall.accentColor}
-                  attributionRequired={wall.attributionRequired}
                   testimonial={testimonial}
                 />
                 {wall.attributionRequired && index === 0 ? (

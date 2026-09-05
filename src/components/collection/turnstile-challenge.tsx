@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ErrorToast } from "@/components/ui/error-toast";
 import { browserTurnstile } from "@/lib/turnstile-browser";
 
 export function TurnstileChallenge({
@@ -94,10 +95,8 @@ export function TurnstileChallenge({
         </p>
       ) : null}
       {status === "error" ? (
-        <div className="space-y-2" role="alert">
-          <p className="text-destructive text-sm">
-            Verification is unavailable. Check your connection and try again.
-          </p>
+        <div>
+          <ErrorToast message="Verification is unavailable. Check your connection and try again." />
           <button
             className="rounded-md border px-3 py-2 text-sm font-medium"
             onClick={() => {

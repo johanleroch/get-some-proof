@@ -93,7 +93,9 @@ describe("Submission Revision upload orchestration", () => {
           token: "private-link",
         }),
       );
-      expect(await screen.findByRole("alert")).toHaveTextContent(
+      expect(
+        await screen.findByTestId("error-toast-message"),
+      ).toHaveTextContent(
         cleanupFails ? "reservation could not be released" : "connection lost",
       );
       expect(confirm).not.toHaveBeenCalled();

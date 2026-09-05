@@ -189,6 +189,20 @@
   --border: rgb(255 255 255 / 8%);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .video-shell[data-video-playing] .video-shade,
+  .video-shell[data-video-playing] .video-overlay {
+    opacity: 0;
+  }
+
+  .video-shell[data-video-playing]:hover .video-shade,
+  .video-shell[data-video-playing]:hover .video-overlay,
+  .video-shell[data-video-playing]:has(.play:focus-visible) .video-shade,
+  .video-shell[data-video-playing]:has(.play:focus-visible) .video-overlay {
+    opacity: 1;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .public-wall-theme[data-wall-theme="system"] {
     color-scheme: dark;

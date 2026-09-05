@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { DirectoryLoadingSkeleton } from "@/components/ui/page-skeletons";
 import { formatShortDate } from "@/lib/format-date";
 
@@ -147,15 +148,7 @@ export function MemberDirectory({
 
   return (
     <section aria-label={view === "active" ? "Members" : "Former members"}>
-      {error ? (
-        <div
-          aria-live="assertive"
-          className="border-destructive/30 bg-destructive/5 text-destructive mb-4 rounded-md border px-3 py-2 text-sm"
-          role="alert"
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       {success ? (
         <div
           aria-live="polite"

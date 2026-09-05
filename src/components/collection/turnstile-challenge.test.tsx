@@ -22,7 +22,7 @@ describe("TurnstileChallenge", () => {
     expect(script).not.toBeNull();
     script!.dispatchEvent(new Event("error"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Verification is unavailable",
     );
     fireEvent.click(screen.getByRole("button", { name: "Retry verification" }));

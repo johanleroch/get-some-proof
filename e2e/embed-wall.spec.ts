@@ -49,7 +49,7 @@ function testimonialHtml(testimonial: (typeof projection)[number]) {
           .join("")}</span>`;
   const video =
     testimonial.type === "video"
-      ? `<div class="video-shell" data-video-aspect-ratio="${testimonial.aspectRatio}" style="aspect-ratio:${testimonial.aspectRatio.replace(":", " / ")}"><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play type="button"><img alt="Video from ${testimonial.name}" class="poster" src="https://image.mux.com/${testimonial.playbackId}/thumbnail.webp?width=960&amp;time=0.5"><span class="play-icon">Play</span></button></div>`
+      ? `<div class="video-shell" data-video-aspect-ratio="${testimonial.aspectRatio}" style="aspect-ratio:${testimonial.aspectRatio.replace(":", " / ")}"><span aria-hidden="true" aria-label="Loading video" class="video-loader" data-gsp-video-loader role="status"></span><img alt="Video from ${testimonial.name}" class="poster" data-gsp-video-poster src="https://image.mux.com/${testimonial.playbackId}/thumbnail.webp?width=960&amp;time=0.5"><span class="video-shade"></span><span class="video-overlay"><span><span class="video-name">${testimonial.name}</span></span><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play data-pause-label="Pause ${testimonial.name}'s testimonial" data-play-label="Play ${testimonial.name}'s testimonial" type="button"><span class="play-icon"><svg data-gsp-play-icon fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9z"></path></svg><svg class="hidden" data-gsp-pause-icon fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></svg></span></button></span></div>`
       : "";
   const text =
     testimonial.type === "text"
@@ -339,7 +339,7 @@ test("keeps empty and failed embeds at zero height with explicit state", async (
 test("reserves the source ratio and prepares Mux without preloading media", async ({
   baseURL,
   page,
-}) => {
+}, testInfo) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await page.route("**/api/public-wall/acme-proof*", (route) =>
@@ -373,6 +373,7 @@ test("reserves the source ratio and prepares Mux without preloading media", asyn
   await expect(wall).toHaveAttribute("data-gsp-state", "ready");
   const video = wall.locator(".video-shell");
   await expect(video).toHaveCSS("aspect-ratio", "4 / 3");
+  await expect(video).toHaveCSS("cursor", "pointer");
   const player = wall.locator("mux-player");
   await expect(player).toHaveCount(0);
   const playButton = wall.getByRole("button", {
@@ -385,9 +386,116 @@ test("reserves the source ratio and prepares Mux without preloading media", asyn
   await expect(player).toHaveAttribute("preload", "none");
   expect(requests.some((url) => /stream\.mux\.com/i.test(url))).toBe(false);
 
-  await playButton.click();
+  const loadingState = await playButton.evaluate((button) => {
+    const shell = button.closest<HTMLElement>(".video-shell");
+    shell?.click();
+    const loader = shell?.querySelector<HTMLElement>("[data-gsp-video-loader]");
+    return {
+      active: shell?.hasAttribute("data-video-active"),
+      ariaHidden: loader?.getAttribute("aria-hidden"),
+      loading: shell?.dataset.loading,
+      playing: (button as HTMLElement).dataset.playing,
+    };
+  });
+  expect(loadingState).toEqual({
+    active: true,
+    ariaHidden: null,
+    loading: "true",
+    playing: undefined,
+  });
+  await expect(player).toHaveAttribute("stream-type", "on-demand");
+  await expect(player).toHaveCSS("--controls", "none");
+  await player.dispatchEvent("playing");
+  await expect(video).not.toHaveAttribute("data-loading");
+  await expect(video.locator("[data-gsp-video-loader]")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+  const pauseButton = wall.getByRole("button", {
+    name: "Pause Camille Test's testimonial",
+  });
+  await expect(pauseButton).toBeVisible();
+  await expect(video).toHaveAttribute("data-video-playing");
+  const overlay = video.locator(".video-overlay");
+  const shade = video.locator(".video-shade");
+  await expect(overlay).toHaveCSS("opacity", "1");
+  await expect(overlay).toHaveCSS("transition-property", "opacity");
+  const supportsHover = await page.evaluate(
+    () => matchMedia("(hover: hover) and (pointer: fine)").matches,
+  );
+  const evidenceRoot = process.env.EMBED_EVIDENCE_DIR;
+  if (evidenceRoot) {
+    await player.evaluate((element) => {
+      (element as HTMLElement).style.setProperty(
+        "display",
+        "none",
+        "important",
+      );
+    });
+    await video.evaluate((shell) => {
+      shell.style.background = "#64748b";
+      const poster = shell.querySelector<HTMLElement>(".poster");
+      if (poster) poster.style.display = "none";
+    });
+  }
+  if (supportsHover) {
+    await page.mouse.move(0, 0);
+    await expect(overlay).toHaveCSS("opacity", "0");
+    await expect(shade).toHaveCSS("opacity", "0");
+    if (evidenceRoot) {
+      const hiddenPath = path.join(
+        evidenceRoot,
+        testInfo.project.name,
+        "video-overlay-hidden.png",
+      );
+      await mkdir(path.dirname(hiddenPath), { recursive: true });
+      await video.screenshot({ path: hiddenPath });
+    }
+    await video.hover();
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await expect(shade).toHaveCSS("opacity", "1");
+    if (evidenceRoot) {
+      await video.screenshot({
+        path: path.join(
+          evidenceRoot,
+          testInfo.project.name,
+          "video-overlay-hover.png",
+        ),
+      });
+    }
+  } else {
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await expect(shade).toHaveCSS("opacity", "1");
+    if (evidenceRoot) {
+      const touchPath = path.join(
+        evidenceRoot,
+        testInfo.project.name,
+        "video-overlay-touch.png",
+      );
+      await mkdir(path.dirname(touchPath), { recursive: true });
+      await video.screenshot({ path: touchPath });
+    }
+  }
+  await expect(
+    wall.locator(".video-name", { hasText: "Camille Test" }),
+  ).toBeVisible();
+  await player.dispatchEvent("pause");
+  await expect(video).not.toHaveAttribute("data-video-playing");
+  await expect(playButton).toBeVisible();
+  await player.dispatchEvent("playing");
+  await player.dispatchEvent("waiting");
+  await expect(video).toHaveAttribute("data-loading", "true");
+  await expect(video.locator("[data-gsp-video-loader]")).not.toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+  await player.dispatchEvent("error");
+  await expect(video).not.toHaveAttribute("data-loading");
+  await expect(playButton).toBeEnabled();
+  await expect(playButton).not.toHaveAttribute("aria-busy");
+  await expect(playButton).not.toHaveAttribute("data-playing");
   await expect(player).not.toHaveAttribute("autoplay", "");
-  await expect(player).not.toHaveAttribute("default-hidden-captions", "");
+  await expect(player).toHaveAttribute("default-hidden-captions", "");
   await expect(wall.locator("[data-testid='testimonial-banner']")).toHaveCount(
     0,
   );

@@ -70,7 +70,7 @@ describe("WorkspaceDeletionSection", () => {
     expect(
       screen.getByText(/Public access is disabled and will not be restored/),
     ).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent(
+    expect(screen.getByTestId("error-toast-message")).toHaveTextContent(
       "Mux asset deletion failed (503)",
     );
     fireEvent.click(screen.getByRole("button", { name: "Retry cleanup now" }));

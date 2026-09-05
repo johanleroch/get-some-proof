@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -98,14 +99,7 @@ export function SignInForm({
           type="password"
         />
       </div>
-      {error ? (
-        <p
-          aria-live="polite"
-          className="text-sm text-red-600 dark:text-red-400"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <Button className="w-full" disabled={pending} type="submit">
         {pending ? "Signing in…" : "Sign in"}
       </Button>

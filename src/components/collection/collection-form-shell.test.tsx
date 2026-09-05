@@ -437,7 +437,7 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Verification failed",
     );
     expect(resetBotVerification).toHaveBeenCalledTimes(1);
@@ -513,13 +513,13 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(screen.getByLabelText(/at least 18 years old/i));
     fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Connection lost after submission.",
     );
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "VIDEO_RESERVATION_UNAVAILABLE",
     );
     await waitFor(() => expect(cancelVideo).toHaveBeenCalledTimes(1));
@@ -561,9 +561,9 @@ describe("CollectionFormShellView", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
 
-      expect(await screen.findByRole("alert")).toHaveTextContent(
-        /still upload a video/i,
-      );
+      expect(
+        await screen.findByTestId("error-toast-message"),
+      ).toHaveTextContent(/still upload a video/i);
       expect(screen.getByLabelText("Upload a video")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: "Back" }));
       expect(

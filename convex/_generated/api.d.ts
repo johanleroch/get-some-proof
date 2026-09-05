@@ -53,6 +53,7 @@ import type * as stripeWebhookSync from "../stripeWebhookSync.js";
 import type * as submissionManagement from "../submissionManagement.js";
 import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
+import type * as testimonialCardValue from "../testimonialCardValue.js";
 import type * as testimonialDeletion from "../testimonialDeletion.js";
 import type * as testimonialModeration from "../testimonialModeration.js";
 import type * as turnstile from "../turnstile.js";
@@ -117,6 +118,7 @@ declare const fullApi: ApiFromModules<{
   submissionManagement: typeof submissionManagement;
   submissions: typeof submissions;
   system: typeof system;
+  testimonialCardValue: typeof testimonialCardValue;
   testimonialDeletion: typeof testimonialDeletion;
   testimonialModeration: typeof testimonialModeration;
   turnstile: typeof turnstile;

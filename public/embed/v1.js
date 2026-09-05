@@ -119,41 +119,72 @@
       position: relative;
       width: 100%;
       overflow: hidden;
+      cursor: pointer;
       background: #000;
     }
     .video-shell mux-player {
       display: block;
       width: 100%;
       height: 100%;
+      --controls: none;
+      --loading-indicator: none;
       --media-object-fit: cover;
-      --seek-backward-button: none;
-      --seek-forward-button: none;
     }
     .player-layer { position: absolute; z-index: 0; inset: 0; }
+    .video-loader {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgb(0 0 0 / 0.35);
+      color: #fff;
+      pointer-events: none;
+    }
+    .video-loader svg { width: 40px; height: 40px; animation: gsp-spin 800ms linear infinite; }
+    .video-shell[data-loading="true"] .video-loader { display: grid; }
+    @keyframes gsp-spin { to { transform: rotate(360deg); } }
     .play {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      place-items: center;
+      padding: 0;
+      cursor: pointer;
+      border: 0;
+      border-radius: 999px;
+      background: rgb(255 255 255 / 0.92);
+      color: #000;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+      pointer-events: auto;
+      transition: transform 200ms ease;
+    }
+    .play:hover, .play:focus-visible { transform: scale(1.05); }
+    .play:focus-visible { outline: 3px solid var(--gsp-accent); outline-offset: 3px; }
+    .play:disabled { cursor: wait; }
+    .poster {
       position: absolute;
       z-index: 1;
       inset: 0;
       display: block;
       width: 100%;
       height: 100%;
-      padding: 0;
-      cursor: pointer;
-      border: 0;
-      background: #000;
-      color: #fff;
-      text-align: left;
+      object-fit: cover;
       transition: opacity 200ms ease;
     }
-    .play[data-playing="true"] { pointer-events: none; opacity: 0; }
-    .poster { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .video-shell[data-video-active] .poster { opacity: 0; }
     .video-shade {
       position: absolute;
+      z-index: 2;
       inset: 0;
-      background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.08) 58%, transparent);
+      background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.35) 42%, transparent 72%);
+      pointer-events: none;
+      transition: opacity 200ms ease-out;
     }
     .video-overlay {
       position: absolute;
+      z-index: 3;
       right: 0;
       bottom: 0;
       left: 0;
@@ -162,6 +193,17 @@
       justify-content: space-between;
       gap: 16px;
       padding: 20px;
+      color: #fff;
+      pointer-events: none;
+      transition: opacity 200ms ease-out;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .video-shell[data-video-playing] .video-shade,
+      .video-shell[data-video-playing] .video-overlay { opacity: 0; }
+      .video-shell[data-video-playing]:hover .video-shade,
+      .video-shell[data-video-playing]:hover .video-overlay,
+      .video-shell[data-video-playing]:has(.play:focus-visible) .video-shade,
+      .video-shell[data-video-playing]:has(.play:focus-visible) .video-overlay { opacity: 1; }
     }
     .video-overlay .stars { margin-top: 0; margin-bottom: 8px; }
     .video-name {
@@ -186,21 +228,11 @@
       white-space: nowrap;
     }
     .play-icon {
-      display: grid;
-      width: 44px;
-      height: 44px;
-      flex: 0 0 44px;
-      place-items: center;
-      border-radius: 999px;
-      background: rgb(255 255 255 / 0.92);
-      color: #000;
-      font-size: 20px;
-      box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
-      transition: transform 200ms ease;
+      display: contents;
     }
-    .play:hover .play-icon,
-    .play:focus-visible .play-icon { transform: scale(1.05); }
-    .play:focus-visible { outline: 3px solid var(--gsp-accent); outline-offset: -3px; }
+    .play-icon svg { width: 20px; height: 20px; }
+    .play-icon [data-gsp-play-icon] { margin-left: 2px; }
+    .play-icon .hidden { display: none; }
     .identity { display: flex; min-width: 0; align-items: center; gap: 12px; }
     .avatar {
       display: grid;
@@ -253,7 +285,8 @@
     }
     @container (min-width: 42rem) { .grid { column-count: 2; } }
     @media (prefers-reduced-motion: reduce) {
-      .play, .play-icon, .promo-cta { transition: none; }
+      .play, .play-icon, .promo-cta, .video-shade, .video-overlay { transition: none; }
+      .video-loader svg { animation: none; }
     }
   `;
 
@@ -312,10 +345,29 @@
     const poster = card.querySelector(".poster");
     if (!shell || !button || !poster) throw new Error("INVALID_CARD_HTML");
     let playerPromise;
+    const setPlaying = (playing) => {
+      shell.toggleAttribute("data-video-playing", playing);
+      button.toggleAttribute("data-playing", playing);
+      button.setAttribute(
+        "aria-label",
+        playing ? button.dataset.pauseLabel : button.dataset.playLabel,
+      );
+      button
+        .querySelector("[data-gsp-play-icon]")
+        ?.classList.toggle("hidden", playing);
+      button
+        .querySelector("[data-gsp-pause-icon]")
+        ?.classList.toggle("hidden", !playing);
+    };
     const restorePlayButton = () => {
-      delete button.dataset.playing;
+      setPlaying(false);
+      delete shell.dataset.videoActive;
+      delete shell.dataset.loading;
       button.removeAttribute("aria-busy");
       button.disabled = false;
+      shell
+        .querySelector("[data-gsp-video-loader]")
+        ?.setAttribute("aria-hidden", "true");
       shell.querySelector("mux-player")?.setAttribute("inert", "");
     };
     const preparePlayer = () => {
@@ -336,6 +388,7 @@
             );
             player.setAttribute("playback-id", testimonial.playbackId);
             player.setAttribute("prefer-playback", "mse");
+            player.setAttribute("stream-type", "on-demand");
             if (videoPlayerPolicy.playsInline) {
               player.setAttribute("playsinline", "");
             }
@@ -344,16 +397,34 @@
             if (videoPlayerPolicy.autoplay) {
               player.setAttribute("autoplay", "");
             }
-            if (
-              videoPlayerPolicy.hideCaptionsWhenUnavailable &&
-              !testimonial.captionsAvailable
-            ) {
+            if (videoPlayerPolicy.hideCaptions) {
               player.setAttribute("default-hidden-captions", "");
             }
             player.addEventListener("playing", () => {
-              button.dataset.playing = "true";
+              setPlaying(true);
+              delete shell.dataset.loading;
               button.removeAttribute("aria-busy");
-              player.removeAttribute("inert");
+              button.disabled = false;
+              shell
+                .querySelector("[data-gsp-video-loader]")
+                ?.setAttribute("aria-hidden", "true");
+            });
+            const handlePaused = () => {
+              setPlaying(false);
+              delete shell.dataset.loading;
+              button.removeAttribute("aria-busy");
+              button.disabled = false;
+              shell
+                .querySelector("[data-gsp-video-loader]")
+                ?.setAttribute("aria-hidden", "true");
+            };
+            player.addEventListener("pause", handlePaused);
+            player.addEventListener("ended", handlePaused);
+            player.addEventListener("waiting", () => {
+              shell.dataset.loading = "true";
+              shell
+                .querySelector("[data-gsp-video-loader]")
+                ?.removeAttribute("aria-hidden");
             });
             player.addEventListener("error", restorePlayButton);
             shell.prepend(player);
@@ -371,17 +442,26 @@
     const prepareAfterIntent = () => {
       void preparePlayer().catch(() => undefined);
     };
-    button.addEventListener("pointerenter", prepareAfterIntent);
+    shell.addEventListener("pointerenter", prepareAfterIntent);
     button.addEventListener("focus", prepareAfterIntent);
-    button.addEventListener("touchstart", prepareAfterIntent, {
+    shell.addEventListener("touchstart", prepareAfterIntent, {
       passive: true,
     });
-    button.addEventListener("click", () => {
+    shell.addEventListener("click", () => {
+      const currentPlayer = shell.querySelector("mux-player");
+      if (button.hasAttribute("data-playing") && currentPlayer) {
+        currentPlayer.pause();
+        return;
+      }
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
+      shell.dataset.videoActive = "true";
+      shell.dataset.loading = "true";
+      shell
+        .querySelector("[data-gsp-video-loader]")
+        ?.removeAttribute("aria-hidden");
       void preparePlayer()
         .then((player) => {
-          player.removeAttribute("inert");
           return player.play();
         })
         .catch(restorePlayButton);

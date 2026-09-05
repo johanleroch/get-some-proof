@@ -5,6 +5,7 @@ import type { Route } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -89,14 +90,7 @@ export function SignUpForm({
           Use at least 8 characters.
         </p>
       </div>
-      {error ? (
-        <p
-          aria-live="polite"
-          className="text-sm text-red-600 dark:text-red-400"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       <Button className="w-full" disabled={pending} type="submit">
         {pending ? "Creating account…" : "Create account"}
       </Button>

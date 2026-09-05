@@ -1,11 +1,78 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const muxMedia = vi.hoisted(() => ({
+  pause: vi.fn(),
+  play: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@mux/mux-player-react/lazy", async () => {
+  const { forwardRef } = await import("react");
+
+  return {
+    default: forwardRef<
+      HTMLVideoElement,
+      {
+        onError?: () => void;
+        onEnded?: () => void;
+        onPause?: () => void;
+        onPlaying?: () => void;
+        onWaiting?: () => void;
+        defaultHiddenCaptions?: boolean;
+        style?: Record<string, string>;
+      }
+    >(function MockMuxPlayer(
+      {
+        defaultHiddenCaptions,
+        onEnded,
+        onError,
+        onPause,
+        onPlaying,
+        onWaiting,
+        style,
+      },
+      ref,
+    ) {
+      return (
+        <video
+          aria-label="Mock video player"
+          data-controls={style?.["--controls"]}
+          data-default-hidden-captions={defaultHiddenCaptions}
+          data-testid="mux-event-source"
+          onEnded={onEnded}
+          onError={onError}
+          onPause={onPause}
+          onPlaying={onPlaying}
+          onWaiting={onWaiting}
+          ref={(node) => {
+            if (node) {
+              Object.defineProperty(node, "play", {
+                configurable: true,
+                value: muxMedia.play,
+              });
+              Object.defineProperty(node, "pause", {
+                configurable: true,
+                value: muxMedia.pause,
+              });
+            }
+            if (typeof ref === "function") ref(node);
+            else if (ref) ref.current = node;
+          }}
+        />
+      );
+    }),
+  };
+});
 
 import { TestimonialCard } from "./testimonial-card";
 import { testimonialAspectRatio } from "./testimonial-card-markup";
 
 describe("TestimonialCard", () => {
-  beforeEach(cleanup);
+  beforeEach(() => {
+    cleanup();
+    muxMedia.pause.mockClear();
+    muxMedia.play.mockClear();
+  });
 
   it("keeps legacy portrait recordings in their expected frame", () => {
     expect(
@@ -25,7 +92,6 @@ describe("TestimonialCard", () => {
     render(
       <TestimonialCard
         accentColor="#123abc"
-        attributionRequired
         testimonial={{
           avatarUrl: null,
           company: "Example Studio",
@@ -54,7 +120,6 @@ describe("TestimonialCard", () => {
     const { container } = render(
       <TestimonialCard
         accentColor="#123abc"
-        attributionRequired={false}
         testimonial={{
           aspectRatio: "4:3",
           avatarUrl: null,
@@ -85,28 +150,124 @@ describe("TestimonialCard", () => {
       "style",
       "aspect-ratio:4 / 3",
     );
+    expect(play.closest(".video-shell")).toHaveClass("cursor-pointer");
+    expect(container.querySelector(".video-overlay")).toHaveClass(
+      "transition-opacity",
+    );
     expect(screen.getByLabelText("5 out of 5 stars")).toBeInTheDocument();
     expect(container.querySelector(".video-accent")).toBeNull();
-    expect(container.querySelector(".play-icon")).toHaveClass("size-11");
+    expect(play).toHaveClass("size-11");
+    expect(screen.queryByRole("status", { name: "Loading video" })).toBeNull();
 
-    fireEvent.pointerEnter(play);
+    fireEvent.pointerEnter(play.closest(".video-shell")!);
     const player = await screen.findByTestId("mux-video-player");
-    fireEvent.click(play);
+    fireEvent.click(play.closest(".video-shell")!);
+    expect(screen.getByRole("status", { name: "Loading video" })).toBeVisible();
+    expect(play).not.toHaveAttribute("data-playing");
+    expect(play.closest(".video-shell")).toHaveAttribute("data-video-active");
     expect(play).toBeInTheDocument();
     expect(player).toHaveAttribute("data-playback-id", "public-playback-id");
     expect(player).toHaveAttribute("data-autoplay", "false");
-    expect(player).toHaveAttribute("data-captions", "visible");
+    expect(player).toHaveAttribute("data-captions", "hidden");
+    expect(screen.getByTestId("mux-event-source")).toHaveAttribute(
+      "data-default-hidden-captions",
+      "true",
+    );
     expect(player).toHaveAttribute("data-disable-cookies", "true");
     expect(player).toHaveAttribute("data-prefer-playback", "mse");
     expect(player).toHaveAttribute("data-preload", "none");
+    const eventSource = screen.getByTestId("mux-event-source");
+    expect(eventSource).toHaveAttribute("data-controls", "none");
+    fireEvent.playing(eventSource);
+    expect(screen.queryByRole("status", { name: "Loading video" })).toBeNull();
+    const pause = screen.getByRole("button", {
+      name: "Pause Camille Test's testimonial",
+    });
+    expect(pause).toHaveAttribute("data-playing");
+    expect(pause.closest(".video-shell")).toHaveAttribute("data-video-playing");
+    expect(screen.getByText("Camille Test")).toBeVisible();
+    expect(screen.getByText("Founder · Example Studio")).toBeVisible();
+    expect(
+      screen.getByRole("img", { name: "Video from Camille Test" }),
+    ).toHaveClass("opacity-0");
+    fireEvent.click(pause);
+    expect(muxMedia.pause).toHaveBeenCalledOnce();
+    fireEvent.pause(eventSource);
+    expect(play.closest(".video-shell")).not.toHaveAttribute(
+      "data-video-playing",
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "Play Camille Test's testimonial",
+      }),
+    ).toBeEnabled();
+    fireEvent.click(play);
+    fireEvent.playing(eventSource);
+    fireEvent.waiting(eventSource);
+    expect(screen.getByRole("status", { name: "Loading video" })).toBeVisible();
+    fireEvent.error(eventSource);
+    expect(screen.queryByRole("status", { name: "Loading video" })).toBeNull();
+    expect(play).toBeEnabled();
+    expect(play).not.toHaveAttribute("aria-busy");
+    expect(play).not.toHaveAttribute("data-playing");
     expect(screen.queryByTestId("testimonial-banner")).toBeNull();
+  });
+
+  it("mounts an optional private menu without changing the shared card", async () => {
+    render(
+      <TestimonialCard
+        accentColor="#123abc"
+        menu={<button type="button">Private options</button>}
+        testimonial={{
+          avatarUrl: null,
+          id: "testimonial-with-menu",
+          name: "Camille Test",
+          publishedAt: 1,
+          text: "A specific customer outcome belongs here.",
+          type: "text",
+        }}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Private options" }),
+    ).toBeVisible();
+    expect(document.querySelectorAll("[data-gsp-card]")).toHaveLength(1);
+    expect(
+      document
+        .querySelector("[data-gsp-card-menu]")
+        ?.closest("[data-gsp-card]"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps a private menu click isolated from video playback", async () => {
+    render(
+      <TestimonialCard
+        accentColor="#123abc"
+        menu={<button type="button">Private options</button>}
+        testimonial={{
+          aspectRatio: "16:9",
+          avatarUrl: null,
+          captionsAvailable: true,
+          id: "video-with-menu",
+          name: "Camille Test",
+          playbackId: "playback-with-menu",
+          publishedAt: 1,
+          type: "video",
+        }}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Private options" }),
+    );
+    expect(screen.queryByTestId("mux-video-player")).toBeNull();
   });
 
   it("never puts Get Some Proof promotion inside a video card", () => {
     render(
       <TestimonialCard
         accentColor="#123abc"
-        attributionRequired
         testimonial={{
           avatarUrl: null,
           captionsAvailable: true,
@@ -128,7 +289,6 @@ describe("TestimonialCard", () => {
     const { container } = render(
       <TestimonialCard
         accentColor="#123abc"
-        attributionRequired={false}
         testimonial={{
           avatarUrl: null,
           avatarVisible: false,
@@ -149,7 +309,6 @@ describe("TestimonialCard", () => {
     const { container } = render(
       <TestimonialCard
         accentColor="#123abc"
-        attributionRequired={false}
         testimonial={{
           avatarUrl: 'https://example.com/avatar.png" onerror="alert(1)',
           id: "projection-untrusted",

@@ -61,6 +61,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-easy-crop": "6.2.3",
+    "sonner": "^2.0.8",
     "stripe": "22.6.0",
     "tailwind-merge": "3.6.0",
     "zod": "4.5.4"

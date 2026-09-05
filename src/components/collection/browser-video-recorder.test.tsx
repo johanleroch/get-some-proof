@@ -360,7 +360,7 @@ describe("BrowserVideoRecorder", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Camera or microphone access was refused",
     );
     expect(stopTrack).toHaveBeenCalledTimes(1);
@@ -533,7 +533,7 @@ describe("BrowserVideoRecorder", () => {
       await screen.findByRole("button", { name: "Start recording" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Recording stopped unexpectedly",
     );
     expect(
@@ -591,7 +591,7 @@ describe("BrowserVideoRecorder", () => {
     );
     act(() => recorderError?.());
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
       "Recording stopped unexpectedly",
     );
     expect(

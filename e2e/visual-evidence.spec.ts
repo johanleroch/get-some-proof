@@ -88,11 +88,35 @@ for (const screen of config.screens) {
     }
     if (fixtureMode && screen.slug === "testimonial-inbox-player") {
       await page
-        .getByRole("button", { name: "Play Remy Jupille's video testimonial" })
+        .getByRole("button", { name: "Play Remy Jupille's testimonial" })
+        .click();
+      await expect(page.getByTestId("mux-video-player")).toBeVisible();
+      await page.waitForFunction(() => customElements.get("mux-player"));
+      const muxPlayer = page
+        .getByTestId("mux-video-player")
+        .locator("mux-player:not([data-mux-player-react-lazy-placeholder])");
+      await expect(muxPlayer).toBeVisible();
+      await muxPlayer.dispatchEvent("playing");
+      await expect(
+        page.getByRole("button", {
+          name: "Pause Remy Jupille's testimonial",
+        }),
+      ).toBeVisible();
+    }
+    if (fixtureMode && screen.slug === "testimonial-inbox-options") {
+      await page
+        .getByRole("button", {
+          name: "Options for Remy Jupille's Testimonial",
+        })
         .click();
       await expect(
-        page.getByRole("dialog").getByText("Captions ready · 68 seconds"),
+        page.getByRole("menuitem", { name: "Unpublish" }),
       ).toBeVisible();
+    }
+    if (fixtureMode && screen.slug === "toast-error") {
+      await expect(
+        page.locator('[data-sonner-toast][data-type="error"]'),
+      ).toContainText("Unable to save your changes. Please try again.");
     }
 
     const outputRoot = path.resolve(

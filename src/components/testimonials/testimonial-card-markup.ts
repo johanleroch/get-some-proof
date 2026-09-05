@@ -1,28 +1,21 @@
-export type PublicTextTestimonial = {
-  avatarUrl: string | null;
-  avatarVisible?: boolean;
-  company?: string;
-  id: string;
-  name: string;
-  publishedAt: number;
-  rating?: number;
-  role?: string;
-  text: string;
-  type: "text";
-};
+import type {
+  TestimonialCardTextValue,
+  TestimonialCardValue,
+  TestimonialCardVideoValue,
+} from "@convex/testimonialCardValue";
 
-export type PublicVideoTestimonial = Omit<
-  PublicTextTestimonial,
-  "text" | "type"
-> & {
-  aspectRatio?: string;
-  captionsAvailable: boolean;
-  playbackId: string;
-  posterTimeSeconds?: number;
-  type: "video";
-};
+export type {
+  TestimonialCardTextValue,
+  TestimonialCardValue,
+  TestimonialCardVideoValue,
+} from "@convex/testimonialCardValue";
 
-export type PublicTestimonial = PublicTextTestimonial | PublicVideoTestimonial;
+/** @deprecated Prefer the surface-neutral TestimonialCardValue name. */
+export type PublicTextTestimonial = TestimonialCardTextValue;
+/** @deprecated Prefer the surface-neutral TestimonialCardValue name. */
+export type PublicVideoTestimonial = TestimonialCardVideoValue;
+/** @deprecated Prefer the surface-neutral TestimonialCardValue name. */
+export type PublicTestimonial = TestimonialCardValue;
 
 function escapeHtml(value: string) {
   return value.replace(
@@ -47,11 +40,11 @@ function initials(name: string) {
     .join("");
 }
 
-export function testimonialPoster(testimonial: PublicVideoTestimonial) {
+export function testimonialPoster(testimonial: TestimonialCardVideoValue) {
   return `https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.webp?width=960&time=${testimonial.posterTimeSeconds ?? 0.5}`;
 }
 
-export function testimonialAspectRatio(testimonial: PublicVideoTestimonial) {
+export function testimonialAspectRatio(testimonial: TestimonialCardVideoValue) {
   const match = /^(\d{1,5}):(\d{1,5})$/.exec(testimonial.aspectRatio ?? "");
   if (!match || Number(match[1]) <= 0 || Number(match[2]) <= 0) {
     return "9 / 16";
@@ -59,7 +52,7 @@ export function testimonialAspectRatio(testimonial: PublicVideoTestimonial) {
   return `${Number(match[1])} / ${Number(match[2])}`;
 }
 
-function avatarMarkup(testimonial: PublicTestimonial) {
+function avatarMarkup(testimonial: TestimonialCardValue) {
   if (testimonial.avatarVisible === false) return "";
   if (testimonial.avatarUrl) {
     return `<span class="avatar"><img alt="" class="size-11 rounded-full object-cover" height="44" loading="lazy" src="${escapeHtml(testimonial.avatarUrl)}" width="44"></span>`;
@@ -79,21 +72,25 @@ function starsMarkup(rating?: number) {
   return `<div aria-label="${rating} out of 5 stars" class="stars flex gap-1 text-(--wall-accent)" role="img">${starIconsMarkup(rating)}</div>`;
 }
 
+function videoLoaderMarkup() {
+  return '<span aria-hidden="true" aria-label="Loading video" class="video-loader pointer-events-none absolute inset-0 z-[5] hidden place-items-center bg-black/35 text-white" data-gsp-video-loader="" role="status"><svg aria-hidden="true" class="size-10 animate-spin motion-reduce:animate-none" fill="none" viewBox="0 0 24 24"><circle class="opacity-30" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle><path class="opacity-90" d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-linecap="round" stroke-width="3"></path></svg></span>';
+}
+
 export function testimonialCardHtml({
   accentColor,
+  menuMount = false,
   testimonial,
 }: {
   accentColor: string;
-  attributionHref: string;
-  attributionRequired: boolean;
-  testimonial: PublicTestimonial;
+  menuMount?: boolean;
+  testimonial: TestimonialCardValue;
 }) {
   const identity = [testimonial.role, testimonial.company]
     .filter(Boolean)
     .join(" · ");
   const video =
     testimonial.type === "video"
-      ? `<div class="video-shell relative w-full overflow-hidden bg-black" data-video-aspect-ratio="${escapeHtml(testimonial.aspectRatio ?? "9:16")}" style="aspect-ratio:${testimonialAspectRatio(testimonial)}"><button aria-label="Play ${escapeHtml(testimonial.name)}&#39;s testimonial" class="play group absolute inset-0 z-10 cursor-pointer text-left transition-opacity duration-200 data-[playing=true]:pointer-events-none data-[playing=true]:opacity-0" data-gsp-play="" type="button"><img alt="Video from ${escapeHtml(testimonial.name)}" class="poster absolute inset-0 h-full w-full object-cover" loading="lazy" src="${escapeHtml(testimonialPoster(testimonial))}"><span aria-hidden="true" class="video-shade absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent"></span><span class="video-overlay absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white"><span class="min-w-0">${testimonial.rating ? `<span class="stars mb-2 flex gap-1 text-(--wall-accent)" aria-label="${testimonial.rating} out of 5 stars" role="img">${starIconsMarkup(testimonial.rating)}</span>` : ""}<span class="video-name block truncate text-xl font-semibold tracking-tight">${escapeHtml(testimonial.name)}</span>${identity ? `<span class="video-meta mt-0.5 block truncate text-sm text-white/75">${escapeHtml(identity)}</span>` : ""}</span><span class="play-icon grid size-11 shrink-0 place-items-center rounded-full bg-white/92 text-black shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105"><svg aria-hidden="true" class="ml-0.5 size-5 fill-current" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="m6 3 14 9-14 9z"></path></svg></span></span></button></div>`
+      ? `<div class="video-shell relative w-full cursor-pointer overflow-hidden bg-black" data-video-aspect-ratio="${escapeHtml(testimonial.aspectRatio ?? "9:16")}" style="aspect-ratio:${testimonialAspectRatio(testimonial)}">${videoLoaderMarkup()}<img alt="Video from ${escapeHtml(testimonial.name)}" class="poster absolute inset-0 z-[1] h-full w-full object-cover transition-opacity duration-200" data-gsp-video-poster="" loading="lazy" src="${escapeHtml(testimonialPoster(testimonial))}"><span aria-hidden="true" class="video-shade pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/90 via-black/35 to-transparent transition-opacity duration-200 ease-out motion-reduce:transition-none"></span><span class="video-overlay pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-4 p-5 text-white transition-opacity duration-200 ease-out motion-reduce:transition-none"><span class="min-w-0">${testimonial.rating ? `<span class="stars mb-2 flex gap-1 text-(--wall-accent)" aria-label="${testimonial.rating} out of 5 stars" role="img">${starIconsMarkup(testimonial.rating)}</span>` : ""}<span class="video-name block truncate text-xl font-semibold tracking-tight">${escapeHtml(testimonial.name)}</span>${identity ? `<span class="video-meta mt-0.5 block truncate text-sm text-white/75">${escapeHtml(identity)}</span>` : ""}</span><button aria-label="Play ${escapeHtml(testimonial.name)}&#39;s testimonial" class="play group pointer-events-auto grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-white/92 text-black shadow-lg transition-transform hover:scale-105 focus-visible:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--wall-accent) disabled:cursor-wait" data-gsp-play="" data-pause-label="Pause ${escapeHtml(testimonial.name)}&#39;s testimonial" data-play-label="Play ${escapeHtml(testimonial.name)}&#39;s testimonial" type="button"><span class="play-icon contents"><svg aria-hidden="true" class="ml-0.5 size-5 fill-current" data-gsp-play-icon="" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="m6 3 14 9-14 9z"></path></svg><svg aria-hidden="true" class="hidden size-5 fill-current" data-gsp-pause-icon="" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M8 5v14M16 5v14"></path></svg></span></button></span></div>`
       : "";
   const meta = identity
     ? `<p class="meta text-muted-foreground truncate text-sm">${escapeHtml(identity)}</p>`
@@ -107,5 +104,9 @@ export function testimonialCardHtml({
       ? video
       : `<div class="content space-y-5 p-5 sm:p-6"><div class="identity flex items-center gap-3">${avatarMarkup(testimonial)}<div class="person min-w-0"><p class="name truncate font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div>${starsMarkup(testimonial.rating)}${text}</div>`;
 
-  return `<article class="card mb-5 break-inside-avoid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)}">${body}</article>`;
+  const menu = menuMount
+    ? '<span class="absolute right-3 top-3 z-20" data-gsp-card-menu=""></span>'
+    : "";
+
+  return `<article class="card relative mb-5 break-inside-avoid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)}">${menu}${body}</article>`;
 }

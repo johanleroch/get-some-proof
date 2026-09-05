@@ -1,19 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Archive,
-  Download,
-  ExternalLink,
-  Play,
-  Send,
-  ShieldAlert,
-  Trash2,
-  Undo2,
-} from "lucide-react";
-import MuxPlayer from "@mux/mux-player-react/lazy";
+import { useState } from "react";
+import { Download, ExternalLink } from "lucide-react";
 import type { Route } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   useAction,
@@ -24,7 +13,6 @@ import {
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import videoPlayerPolicy from "../../../public/embed/video-player-policy.json";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,43 +24,48 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
-import { formatShortDate } from "@/lib/format-date";
 import { PublishedCuration } from "@/components/testimonials/published-curation";
+import {
+  TestimonialCard,
+  type TestimonialCardValue,
+} from "@/components/testimonials/testimonial-card";
+import {
+  InboxTestimonialMenu,
+  type InboxTestimonialAction,
+} from "@/components/testimonials/inbox-testimonial-menu";
+import {
+  videoDownloadFeedback,
+  waitForVideoDownload,
+} from "@/components/testimonials/video-download-feedback";
 
 type InboxTestimonialIdentity = {
-  avatarUrl: string | null;
-  company?: string;
+  card: TestimonialCardValue | null;
   consentAcceptedAt: number;
   createdAt: number;
   moderationStatus: "pending" | "published" | "archived" | "spam";
+  publicVisibilityOverrides?: {
+    avatar?: boolean;
+    company?: boolean;
+    rating?: boolean;
+    role?: boolean;
+  };
   quarantineExpiresAt?: number;
-  rating?: number;
-  role?: string;
+  spamCreditRestored?: boolean;
   submitterEmail: string;
   submitterName: string;
-  spamCreditRestored?: boolean;
-  testimonialId: Id<"testimonials"> | string;
+  testimonialId: Id<"testimonials">;
 };
 
 type InboxTestimonial =
   | (InboxTestimonialIdentity & {
+      card: TestimonialCardValue;
       submissionType: "text";
-      text: string;
     })
   | (InboxTestimonialIdentity & {
       canDownload: boolean;
       captionsStatus: "requested" | "ready" | "failed";
-      durationSeconds?: number;
-      playbackId?: string;
       submissionType: "video";
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
     });
@@ -96,31 +89,19 @@ function videoStatusLabel(
 }
 
 export function TestimonialInboxView({
+  accentColor = "#6d5dfc",
   actionsDisabled = false,
-  onArchive,
-  onDeleteRequest,
-  onDownload,
-  onPublish,
-  onSpam,
-  onUndoSpam,
+  onAction,
   testimonials,
 }: {
+  accentColor?: string;
   actionsDisabled?: boolean;
-  onArchive: (testimonial: InboxTestimonial) => void;
-  onDeleteRequest: (testimonial: InboxTestimonial) => void;
-  onDownload?: (testimonial: InboxTestimonial) => void;
-  onPublish: (testimonial: InboxTestimonial) => void;
-  onSpam?: (testimonial: InboxTestimonial) => void;
-  onUndoSpam?: (testimonial: InboxTestimonial) => void;
+  onAction: (
+    testimonial: InboxTestimonial,
+    action: InboxTestimonialAction,
+  ) => void;
   testimonials: InboxTestimonial[];
 }) {
-  const [playingVideo, setPlayingVideo] = useState<
-    Extract<InboxTestimonial, { submissionType: "video" }> | undefined
-  >();
-  const playerRef = useRef<React.ElementRef<typeof MuxPlayer>>(null);
-  useEffect(() => {
-    if (playingVideo) void playerRef.current?.play().catch(() => undefined);
-  }, [playingVideo]);
   if (testimonials.length === 0) {
     return (
       <section className="bg-card rounded-xl border border-dashed p-10 text-center shadow-xs">
@@ -133,220 +114,46 @@ export function TestimonialInboxView({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      {testimonials.map((testimonial) => (
-        <Card className="shadow-xs" key={testimonial.testimonialId}>
-          <CardHeader className="space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold">{testimonial.submitterName}</p>
-                <p className="text-muted-foreground text-sm">
-                  {testimonial.submitterEmail}
-                </p>
-              </div>
-              <span className="bg-muted rounded-full px-2.5 py-1 text-xs font-medium capitalize">
-                {testimonial.moderationStatus}
-              </span>
-            </div>
-            <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              <span className="capitalize">{testimonial.submissionType}</span>
-              <span>{formatShortDate(testimonial.createdAt)}</span>
-              <span>Consent recorded</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {testimonial.submissionType === "text" ? (
-              <blockquote className="bg-muted/30 rounded-xl border p-4 text-sm leading-6">
-                “{testimonial.text}”
-              </blockquote>
-            ) : (
-              <div className="flex items-start gap-4 rounded-xl border p-3">
-                {testimonial.playbackId &&
-                testimonial.videoStatus === "ready" ? (
-                  <button
-                    aria-label={`Play ${testimonial.submitterName}'s video testimonial`}
-                    className="bg-muted group relative aspect-[9/16] w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg"
-                    onClick={() => setPlayingVideo(testimonial)}
-                    type="button"
-                  >
-                    <Image
-                      alt=""
-                      className="object-cover"
-                      fill
-                      sizes="80px"
-                      src={`https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.png?width=160&height=284&fit_mode=smartcrop&time=${testimonial.durationSeconds ? testimonial.durationSeconds / 2 : 0.5}`}
-                      unoptimized
-                    />
-                    <span className="bg-background/90 text-foreground absolute top-1/2 left-1/2 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-md transition-transform group-hover:scale-105 group-focus-visible:scale-105">
-                      <Play
-                        aria-hidden="true"
-                        className="ml-0.5 size-4 fill-current"
-                      />
-                    </span>
-                  </button>
-                ) : (
-                  <div className="bg-muted relative aspect-[9/16] w-20 shrink-0 overflow-hidden rounded-lg" />
-                )}
-                <div className="space-y-1.5 pt-1 text-sm">
+    <div className="columns-1 gap-4 lg:columns-2 xl:columns-3">
+      {testimonials.map((testimonial) => {
+        const menu = (
+          <InboxTestimonialMenu
+            disabled={actionsDisabled}
+            onAction={(action) => onAction(testimonial, action)}
+            testimonial={testimonial}
+          />
+        );
+        return (
+          <div
+            data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
+            key={testimonial.testimonialId}
+          >
+            {testimonial.card ? (
+              <TestimonialCard
+                accentColor={accentColor}
+                menu={menu}
+                testimonial={testimonial.card}
+              />
+            ) : testimonial.submissionType === "video" ? (
+              <section className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-xl border px-6 py-10 text-center shadow-xs">
+                <div className="absolute top-3 right-3">{menu}</div>
+                <div>
                   <p className="font-medium">
                     {videoStatusLabel(testimonial.videoStatus)}
                   </p>
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     {testimonial.captionsStatus === "failed"
                       ? "Captions unavailable"
                       : testimonial.captionsStatus === "ready"
                         ? "Captions ready"
                         : "Captions requested"}
                   </p>
-                  {testimonial.durationSeconds ? (
-                    <p className="text-muted-foreground text-xs">
-                      {Math.round(testimonial.durationSeconds)} seconds
-                    </p>
-                  ) : null}
                 </div>
-              </div>
-            )}
-            {testimonial.role || testimonial.company || testimonial.rating ? (
-              <p className="text-muted-foreground text-sm">
-                {[testimonial.role, testimonial.company]
-                  .filter(Boolean)
-                  .join(" · ")}
-                {testimonial.rating ? ` · ${testimonial.rating}/5` : ""}
-              </p>
+              </section>
             ) : null}
-            {testimonial.moderationStatus === "spam" ? (
-              <p className="text-muted-foreground rounded-xl border p-3 text-sm">
-                Quarantined until{" "}
-                {testimonial.quarantineExpiresAt
-                  ? formatShortDate(testimonial.quarantineExpiresAt)
-                  : "expiry"}
-                .{" "}
-                {testimonial.spamCreditRestored
-                  ? "Collection capacity was restored."
-                  : "Credit restoration requires support review."}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              {testimonial.moderationStatus === "spam" && onUndoSpam ? (
-                <Button
-                  disabled={actionsDisabled}
-                  onClick={() => onUndoSpam(testimonial)}
-                  size="sm"
-                >
-                  <Undo2 aria-hidden="true" />
-                  Undo Spam
-                </Button>
-              ) : null}
-              {testimonial.moderationStatus !== "spam" &&
-              testimonial.moderationStatus !== "published" ? (
-                <Button
-                  disabled={
-                    actionsDisabled ||
-                    (testimonial.submissionType === "video" &&
-                      testimonial.videoStatus !== "ready")
-                  }
-                  onClick={() => onPublish(testimonial)}
-                  size="sm"
-                >
-                  <Send aria-hidden="true" />
-                  Publish
-                </Button>
-              ) : null}
-              {testimonial.moderationStatus !== "spam" &&
-              testimonial.moderationStatus !== "archived" ? (
-                <Button
-                  disabled={actionsDisabled}
-                  onClick={() => onArchive(testimonial)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Archive aria-hidden="true" />
-                  Archive
-                </Button>
-              ) : null}
-              {testimonial.moderationStatus !== "spam" &&
-              testimonial.submissionType === "video" &&
-              testimonial.videoStatus === "ready" &&
-              testimonial.canDownload &&
-              onDownload ? (
-                <Button
-                  disabled={actionsDisabled}
-                  onClick={() => onDownload(testimonial)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Download aria-hidden="true" />
-                  Download MP4 (Pro)
-                </Button>
-              ) : null}
-              {testimonial.moderationStatus !== "spam" ? (
-                <>
-                  {onSpam ? (
-                    <Button
-                      disabled={actionsDisabled}
-                      onClick={() => onSpam(testimonial)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <ShieldAlert aria-hidden="true" />
-                      Mark as Spam
-                    </Button>
-                  ) : null}
-                  <Button
-                    disabled={actionsDisabled}
-                    onClick={() => onDeleteRequest(testimonial)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Trash2 aria-hidden="true" />
-                    Delete permanently
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-      <Dialog
-        onOpenChange={(open) => !open && setPlayingVideo(undefined)}
-        open={Boolean(playingVideo)}
-      >
-        <DialogContent className="max-w-3xl bg-black p-4 text-white">
-          <DialogHeader>
-            <DialogTitle>
-              {playingVideo?.submitterName}&apos;s video testimonial
-            </DialogTitle>
-            <DialogDescription className="text-white/70">
-              {playingVideo
-                ? `${
-                    playingVideo.captionsStatus === "ready"
-                      ? "Captions ready"
-                      : playingVideo.captionsStatus === "failed"
-                        ? "Captions unavailable"
-                        : "Captions requested"
-                  } · ${Math.round(playingVideo.durationSeconds ?? 0)} seconds`
-                : null}
-            </DialogDescription>
-          </DialogHeader>
-          {playingVideo?.playbackId ? (
-            <div
-              data-playback-id={playingVideo.playbackId}
-              data-testid="inbox-video-player"
-            >
-              <MuxPlayer
-                autoPlay={videoPlayerPolicy.autoplay}
-                className="mx-auto block max-h-[75svh] w-full"
-                disableCookies
-                playbackId={playingVideo.playbackId}
-                playsInline
-                preload="none"
-                ref={playerRef}
-                style={{ aspectRatio: "9 / 16" }}
-              />
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -475,31 +282,30 @@ function InboxFilters({
   );
 }
 
-function InboxFeedback({
+export function InboxFeedback({
   error,
   message,
+  tone = "success",
 }: {
   error: string | null;
   message: string | null;
+  tone?: "processing" | "success";
 }) {
   return (
     <>
       {message ? (
         <p
-          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+          className={
+            tone === "processing"
+              ? "rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300"
+              : "rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+          }
           role="status"
         >
           {message}
         </p>
       ) : null}
-      {error ? (
-        <p
-          className="text-destructive rounded-xl border p-3 text-sm"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
     </>
   );
 }
@@ -587,6 +393,10 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     { initialNumItems: 20 },
   );
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
+  );
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
   const removeText = useMutation(api.testimonialModeration.remove);
@@ -596,6 +406,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     null,
   );
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"processing" | "success">(
+    "success",
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -619,15 +432,17 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setError(null);
         setMessage(null);
       },
-      onSuccess: () =>
+      onSuccess: () => {
+        setMessageTone("success");
         setMessage(
           `${testimonial.submitterName}'s Testimonial is now ${nextStatus}.`,
-        ),
+        );
+      },
       run: () =>
         setModerationStatus({
           organizationId: activeOrganization.id,
           status: nextStatus,
-          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+          testimonialId: testimonial.testimonialId,
         }),
     });
   }
@@ -636,7 +451,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     if (!deleteTarget) return;
     const args = {
       organizationId: activeOrganization.id,
-      testimonialId: deleteTarget.testimonialId as Id<"testimonials">,
+      testimonialId: deleteTarget.testimonialId,
     };
     const remove =
       deleteTarget.submissionType === "video" ? removeVideo : removeText;
@@ -649,6 +464,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setMessage(null);
       },
       onSuccess: () => {
+        setMessageTone("success");
         setMessage("Testimonial permanently deleted.");
         setDeleteTarget(null);
       },
@@ -668,16 +484,18 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setError(null);
         setMessage(null);
       },
-      onSuccess: () =>
+      onSuccess: () => {
+        setMessageTone("success");
         setMessage(
           action === "mark"
             ? "Testimonial moved to seven-day Spam quarantine."
             : "Spam report undone and collection capacity updated.",
-        ),
+        );
+      },
       run: () =>
         (action === "mark" ? markSpam : undoSpam)({
           organizationId: activeOrganization.id,
-          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+          testimonialId: testimonial.testimonialId,
         }),
     });
   }
@@ -692,11 +510,21 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setError(null);
         setMessage(null);
       },
-      onSuccess: () => setMessage("Your MP4 download is ready."),
+      onSuccess: () => {
+        setMessageTone("success");
+        setMessage(videoDownloadFeedback("ready"));
+      },
       run: async () => {
-        const result = await requestDownload({
-          organizationId: activeOrganization.id,
-          testimonialId: testimonial.testimonialId as Id<"testimonials">,
+        const result = await waitForVideoDownload({
+          onProcessing: () => {
+            setMessageTone("processing");
+            setMessage(videoDownloadFeedback("processing"));
+          },
+          requestDownload: () =>
+            requestDownload({
+              organizationId: activeOrganization.id,
+              testimonialId: testimonial.testimonialId,
+            }),
         });
         const link = document.createElement("a");
         link.href = result.url;
@@ -704,6 +532,35 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         link.click();
       },
     });
+  }
+
+  function handleInboxAction(
+    testimonial: InboxTestimonial,
+    action: InboxTestimonialAction,
+  ) {
+    switch (action) {
+      case "delete":
+        setDeleteTarget(testimonial);
+        return;
+      case "download":
+        void downloadVideo(testimonial);
+        return;
+      case "spam":
+      case "undo-spam":
+        void changeSpamStatus(testimonial, action === "spam" ? "mark" : "undo");
+        return;
+      case "publish":
+        void changeStatus(testimonial, "published");
+        return;
+      case "archive":
+      case "unpublish":
+        void changeStatus(testimonial, "archived");
+        return;
+      default: {
+        const unhandledAction: never = action;
+        throw new Error(`Unhandled Inbox action: ${unhandledAction}`);
+      }
+    }
   }
 
   return (
@@ -732,28 +589,25 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         submissionType={submissionType}
       />
 
-      <PublishedCuration organizationId={activeOrganization.id} />
-
-      <InboxFeedback error={error} message={message} />
+      <InboxFeedback error={error} message={message} tone={messageTone} />
 
       <div aria-busy={pending} className={pending ? "opacity-70" : undefined}>
         <TestimonialInboxView
+          accentColor={wallSettings?.accentColor}
           actionsDisabled={pending}
-          onArchive={(testimonial) =>
-            void changeStatus(testimonial, "archived")
-          }
-          onDeleteRequest={setDeleteTarget}
-          onDownload={(testimonial) => void downloadVideo(testimonial)}
-          onPublish={(testimonial) =>
-            void changeStatus(testimonial, "published")
-          }
-          onSpam={(testimonial) => void changeSpamStatus(testimonial, "mark")}
-          onUndoSpam={(testimonial) =>
-            void changeSpamStatus(testimonial, "undo")
-          }
+          onAction={handleInboxAction}
           testimonials={testimonials}
         />
       </div>
+
+      <details className="bg-card rounded-xl border shadow-xs">
+        <summary className="marker:text-muted-foreground cursor-pointer px-4 py-3 text-sm font-medium">
+          Wall order &amp; visibility
+        </summary>
+        <div className="border-t p-4 sm:p-5">
+          <PublishedCuration organizationId={activeOrganization.id} />
+        </div>
+      </details>
 
       <InboxLoadMore
         onLoadMore={() => loadMore(20)}

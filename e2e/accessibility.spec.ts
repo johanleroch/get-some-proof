@@ -191,7 +191,7 @@ test("iframe-free embed has accessible alternatives, video controls, and reduced
   await expect(player).toHaveAttribute("playback-id", "fake-playback");
   await expect(player).toHaveAttribute("preload", "none");
   await expect(player).not.toHaveAttribute("autoplay", "");
-  await expect(player).not.toHaveAttribute("default-hidden-captions", "");
+  await expect(player).toHaveAttribute("default-hidden-captions", "");
   await expect(player).toHaveAttribute(
     "metadata-video-title",
     "Remy Test's testimonial",

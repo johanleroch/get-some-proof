@@ -228,11 +228,6 @@ export async function GET(
       ...testimonial,
       html: testimonialCardHtml({
         accentColor: brand.accentColor,
-        attributionHref: new URL(
-          "/?utm_source=embedded_wall&utm_medium=referral&utm_campaign=powered_by",
-          request.url,
-        ).toString(),
-        attributionRequired: brand.attributionRequired,
         testimonial,
       }),
     })),

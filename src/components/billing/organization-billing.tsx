@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -541,11 +542,7 @@ function DowngradeSelectionCard({
             {message}
           </p>
         ) : null}
-        {error ? (
-          <p aria-live="assertive" className="text-destructive text-sm">
-            {error}
-          </p>
-        ) : null}
+        {error ? <ErrorToast message={error} /> : null}
         {plan.canManage ? (
           <Button disabled={pending} onClick={() => void save()} type="button">
             {pending ? "Saving…" : "Save selection"}
@@ -810,12 +807,7 @@ export function BillingCockpit({
                   <dd className="mt-1 font-medium">{lifecycle.title}</dd>
                 </div>
                 {subscriptionDetailsError ? (
-                  <p
-                    aria-live="assertive"
-                    className="text-destructive text-xs sm:col-span-2"
-                  >
-                    {subscriptionDetailsError}
-                  </p>
+                  <ErrorToast message={subscriptionDetailsError} />
                 ) : null}
               </dl>
             ) : null}
@@ -859,11 +851,7 @@ export function BillingCockpit({
                     {message}
                   </p>
                 ) : null}
-                {error ? (
-                  <p aria-live="assertive" className="text-destructive text-sm">
-                    {error}
-                  </p>
-                ) : null}
+                {error ? <ErrorToast message={error} /> : null}
                 <Button disabled={contactPending} type="submit">
                   {contactPending ? "Saving…" : "Save contact"}
                 </Button>
@@ -946,11 +934,7 @@ export function BillingCockpit({
                   ) : null}
                 </div>
               ) : null}
-              {portalError ? (
-                <p aria-live="assertive" className="text-destructive text-sm">
-                  {portalError}
-                </p>
-              ) : null}
+              {portalError ? <ErrorToast message={portalError} /> : null}
             </CardContent>
           </Card>
         ) : null}
@@ -967,9 +951,7 @@ export function BillingCockpit({
             </CardHeader>
             <CardContent className="space-y-5">
               {offersError ? (
-                <p aria-live="assertive" className="text-destructive text-sm">
-                  {offersError}
-                </p>
+                <ErrorToast message={offersError} />
               ) : offers?.[0] ? (
                 <div className="border-primary bg-primary/5 rounded-xl border p-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -1026,11 +1008,7 @@ export function BillingCockpit({
                   </p>
                 )}
               </div>
-              {checkoutError ? (
-                <p aria-live="assertive" className="text-destructive text-sm">
-                  {checkoutError}
-                </p>
-              ) : null}
+              {checkoutError ? <ErrorToast message={checkoutError} /> : null}
             </CardContent>
           </Card>
         ) : null}

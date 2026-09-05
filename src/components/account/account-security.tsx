@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -168,14 +169,7 @@ export function AccountSecurity() {
         </p>
       </div>
 
-      {error ? (
-        <p
-          aria-live="assertive"
-          className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
       {success ? (
         <p
           aria-live="polite"

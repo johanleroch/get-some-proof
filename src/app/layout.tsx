@@ -3,6 +3,7 @@ import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { productDescription, productName } from "@/lib/brand";
 import { getPublicEnvironment } from "@/lib/env/public-env";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             children
           )}
         </TooltipProvider>
+        <Toaster />
       </body>
     </html>
   );

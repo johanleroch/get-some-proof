@@ -23,6 +23,10 @@ import {
   undoSpamCollectionCredit,
 } from "./collectionQuotas";
 import { deleteTestimonialRecords } from "./testimonialDeletion";
+import {
+  testimonialCardValue,
+  testimonialCardValueValidator,
+} from "./testimonialCardValue";
 
 const inboxStatusValidator = v.union(
   v.literal("pending"),
@@ -33,17 +37,13 @@ const inboxStatusValidator = v.union(
 type InboxStatus = "pending" | "published" | "archived" | "spam";
 
 const inboxIdentityValidator = {
-  avatarUrl: v.union(v.null(), v.string()),
-  company: v.optional(v.string()),
   consentAcceptedAt: v.number(),
   createdAt: v.number(),
   moderationStatus: inboxStatusValidator,
   quarantineExpiresAt: v.optional(v.number()),
   spamCreditRestored: v.optional(v.boolean()),
-  rating: v.optional(v.number()),
-  role: v.optional(v.string()),
-  submitterEmail: v.string(),
   submitterName: v.string(),
+  submitterEmail: v.string(),
   testimonialId: v.id("testimonials"),
   publicVisibilityOverrides: v.optional(
     v.object({
@@ -58,19 +58,18 @@ const inboxIdentityValidator = {
 const inboxItemValidator = v.union(
   v.object({
     ...inboxIdentityValidator,
+    card: testimonialCardValueValidator,
     submissionType: v.literal("text"),
-    text: v.string(),
   }),
   v.object({
     ...inboxIdentityValidator,
+    card: v.union(v.null(), testimonialCardValueValidator),
     canDownload: v.boolean(),
     captionsStatus: v.union(
       v.literal("requested"),
       v.literal("ready"),
       v.literal("failed"),
     ),
-    durationSeconds: v.optional(v.number()),
-    playbackId: v.optional(v.string()),
     submissionType: v.literal("video"),
     videoStatus: v.union(
       v.literal("awaiting_upload"),
@@ -185,34 +184,52 @@ export const listInbox = query({
         ]);
         if (!consent) testimonialUnavailable();
         const identity = {
-          avatarUrl,
-          company: testimonial.company,
           consentAcceptedAt: consent.acceptedAt,
           createdAt: testimonial.createdAt,
           moderationStatus: testimonial.moderationStatus,
           quarantineExpiresAt: quarantine?.expiresAt,
-          rating: testimonial.rating,
-          role: testimonial.role,
+          spamCreditRestored: quarantine?.creditRestored,
           submitterEmail: testimonial.submitterEmail,
           submitterName: testimonial.submitterName,
-          spamCreditRestored: quarantine?.creditRestored,
           testimonialId: testimonial._id,
           publicVisibilityOverrides: testimonial.publicVisibilityOverrides,
+        };
+        const cardIdentity = {
+          avatarUrl,
+          company: testimonial.company,
+          id: testimonial._id,
+          name: testimonial.submitterName,
+          publishedAt: testimonial.createdAt,
+          rating: testimonial.rating,
+          role: testimonial.role,
         };
         if (testimonial.submissionType === "text") {
           return {
             ...identity,
+            card: testimonialCardValue(cardIdentity, {
+              text: testimonial.text,
+              type: "text" as const,
+            }),
             submissionType: "text" as const,
-            text: testimonial.text,
           };
         }
         if (!videoAsset) testimonialUnavailable();
         return {
           ...identity,
           canDownload: entitlement.effectivePlan === "premium",
+          card:
+            videoAsset.status === "ready" && videoAsset.playbackId
+              ? testimonialCardValue(cardIdentity, {
+                  aspectRatio: videoAsset.aspectRatio,
+                  captionsAvailable: videoAsset.captionsStatus === "ready",
+                  playbackId: videoAsset.playbackId,
+                  posterTimeSeconds: videoAsset.durationSeconds
+                    ? videoAsset.durationSeconds / 2
+                    : 0.5,
+                  type: "video" as const,
+                })
+              : null,
           captionsStatus: videoAsset.captionsStatus,
-          durationSeconds: videoAsset.durationSeconds,
-          playbackId: videoAsset.playbackId,
           submissionType: "video" as const,
           videoStatus: videoAsset.status,
         };
