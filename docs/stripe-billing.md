@@ -86,6 +86,23 @@ terms and Product presentation, but never prints credentials or provider IDs:
 STRIPE_SECRET_KEY='sk_test_...' pnpm stripe:verify-catalog
 ```
 
+For operational inspection and test-event fixtures, install Stripe CLI on
+macOS with `brew install stripe/stripe-cli/stripe`. Do not persist the account
+secret in the CLI profile. Load the Convex Development value into the process
+environment only for the command session, verify the active context, and clear
+it afterwards:
+
+```bash
+export STRIPE_API_KEY="$(pnpm convex env get STRIPE_SECRET_KEY)"
+stripe products list --active=true --limit=10
+unset STRIPE_API_KEY
+```
+
+Stripe CLI API commands default to test mode. Never add `--live` during this
+rehearsal. `stripe trigger` creates real sandbox fixtures; use it to test signed
+delivery, not as evidence that the application Checkout and Customer Portal
+journey works end to end.
+
 Start Convex and Next.js in separate terminals:
 
 ```bash
