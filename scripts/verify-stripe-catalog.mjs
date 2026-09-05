@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
 const lookupKey = "pro_monthly";
+const managedPaymentsTaxCode = "txcd_10103001";
 const secretKey = process.env.STRIPE_SECRET_KEY;
 
 function fail(message) {
@@ -33,9 +34,12 @@ if (!secretKey?.startsWith("sk_test_")) {
     !product.active ||
     price.currency !== "eur" ||
     price.recurring?.interval !== "month" ||
+    product.tax_code !== managedPaymentsTaxCode ||
     price.unit_amount === null
   ) {
-    fail(`${lookupKey} must be an active EUR monthly recurring Price.`);
+    fail(
+      `${lookupKey} must be an active EUR monthly recurring Price whose Product uses the SaaS business tax code required by Managed Payments.`,
+    );
   } else {
     console.log(
       JSON.stringify({
@@ -48,6 +52,7 @@ if (!secretKey?.startsWith("sk_test_")) {
         lookupKey,
         name: product.name,
         status: "ok",
+        taxCode: product.tax_code,
       }),
     );
   }

@@ -26,11 +26,12 @@ In the Platform Stripe Account's sandbox or test mode:
 
 1. Create one recurring Product named `Get Some Proof Pro`.
 2. Create one active EUR 29 recurring monthly Price with lookup key `pro_monthly`.
-3. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, or non-monthly offers. Stripe owns the amount: future price changes use a new Price and transfer the stable lookup key without a code deployment.
-4. Populate the Product name, description, and marketing features used by the Billing upgrade card and Stripe-hosted surfaces. These presentation fields never grant entitlements.
-5. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
+3. Set the Product tax code to `txcd_10103001` (`Software as a service (SaaS) - business use`). Managed Payments is enabled by default on some new Stripe accounts and rejects Checkout until the Product has an eligible tax code.
+4. Keep exactly one active Price for that lookup key. The server rejects missing, duplicate, inactive, non-recurring, non-EUR, non-monthly, or incorrectly classified offers. Stripe owns the amount: future price changes use a new Price and transfer the stable lookup key without a code deployment.
+5. Populate the Product name, description, and marketing features used by the Billing upgrade card and Stripe-hosted surfaces. These presentation fields never grant entitlements.
+6. Do not create an annual Price, trial, coupon, or alternate application plan for the MVP.
 
-Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>
+Stripe lookup-key guidance: <https://docs.stripe.com/products-prices/manage-prices>. Managed Payments setup and eligible tax codes: <https://docs.stripe.com/payments/managed-payments/set-up> and <https://docs.stripe.com/payments/managed-payments/how-it-works>.
 
 ## 2. Configure hosted Checkout and the Customer Portal
 

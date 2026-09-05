@@ -54,11 +54,14 @@ Le Dashboard convient ici. La Stripe CLI est utile ensuite pour les webhooks loc
 Dans le sandbox :
 
 - Product : `Get Some Proof Pro` ;
+- code fiscal Product : `txcd_10103001` (`Software as a service (SaaS) - business use`), admissible pour Managed Payments ;
 - Price : récurrent mensuel, devise par défaut EUR, montant commercial courant ;
 - lookup key stable : `pro_monthly` ;
 - un seul Price actif résolu par cette lookup key.
 
 Stripe recommande les lookup keys précisément pour éviter de coder un Price ID ou un montant dans le frontend : l'application récupère le Price par clé, l'affiche, puis facture ce même Price. Lors d'un changement de tarif, Stripe recommande de créer un nouveau Price — le montant d'un Price existant n'est pas modifiable — puis de transférer la lookup key avec `transfer_lookup_key=true`. Les anciens abonnements restent associés à leur Price historique ([gestion des Products et Prices](https://docs.stripe.com/products-prices/manage-prices)).
+
+Les nouveaux comptes peuvent aussi avoir Managed Payments activé par défaut. Stripe exige alors un code fiscal Product admissible avant de créer Checkout ; `txcd_10103001` correspond au SaaS cloud destiné à un usage professionnel ([configuration Managed Payments](https://docs.stripe.com/payments/managed-payments/set-up), [codes admissibles](https://docs.stripe.com/payments/managed-payments/how-it-works)).
 
 Conséquence pour Get Some Proof :
 
@@ -214,6 +217,7 @@ Pour un catalogue d'un seul plan, une checklist Dashboard vérifiée est suffisa
 ### Catalogue
 
 - [ ] Le Product `Get Some Proof Pro` existe et est actif.
+- [ ] Le Product utilise `txcd_10103001`, code fiscal SaaS business admissible pour Managed Payments.
 - [ ] `pro_monthly` résout exactement un Price actif, récurrent, mensuel et EUR.
 - [ ] Le montant affiché dans Get Some Proof correspond au Price Stripe observé.
 - [ ] Le `priceId` n'est ni fourni par le navigateur ni exposé dans l'offre publique.
