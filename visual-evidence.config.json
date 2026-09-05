@@ -38,6 +38,14 @@
       "theme": "light"
     },
     {
+      "slug": "toast-success",
+      "title": "Success notification toast",
+      "path": "/visual-evidence/toast-success",
+      "fixturePath": "/visual-evidence/toast-success",
+      "heading": "Success notification",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in-dark",
       "title": "Sign in - dark",
       "path": "/sign-in",

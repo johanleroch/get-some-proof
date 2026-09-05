@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Dialog,
   DialogClose,
@@ -231,14 +231,7 @@ export function ProjectManager({
       ) : null}
 
       {error ? <ErrorToast message={error} /> : null}
-      {success ? (
-        <p
-          aria-live="polite"
-          className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-        >
-          {success}
-        </p>
-      ) : null}
+      {success ? <SuccessToast message={success} /> : null}
 
       {projects.length === 0 ? (
         <section className="bg-card mt-6 rounded-xl border border-dashed p-10 text-center shadow-xs">

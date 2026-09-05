@@ -27,6 +27,8 @@ describe("BrandDashboardView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     expect(copyCollectionUrl).toHaveBeenCalledOnce();
-    expect(await screen.findByText("Copied")).toBeVisible();
+    expect(
+      await screen.findByTestId("success-toast-message"),
+    ).toHaveTextContent("Collection link copied.");
   });
 });

@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import { PublishedCuration } from "@/components/testimonials/published-curation";
 import {
@@ -293,13 +293,11 @@ export function InboxFeedback({
 }) {
   return (
     <>
-      {message ? (
+      {message && tone === "success" ? (
+        <SuccessToast message={message} />
+      ) : message ? (
         <p
-          className={
-            tone === "processing"
-              ? "rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300"
-              : "rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-          }
+          className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300"
           role="status"
         >
           {message}

@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -39,12 +40,7 @@ export function ForgotPasswordForm() {
         />
       </div>
       {sent ? (
-        <p
-          aria-live="polite"
-          className="text-muted-foreground text-sm leading-6"
-        >
-          If an account matches that address, a reset link is on its way.
-        </p>
+        <SuccessToast message="If an account matches that address, a reset link is on its way." />
       ) : null}
       <Button className="w-full" disabled={pending} type="submit">
         {pending ? "Sending…" : "Send reset link"}

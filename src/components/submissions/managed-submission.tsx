@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, Play, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Play, RefreshCw, Trash2, Upload } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react/lazy";
 import Image from "next/image";
 
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -468,11 +468,7 @@ export function ManagedSubmissionView({
             </label>
           </div>
           {error ? <ErrorToast message={error} /> : null}
-          {notice ? (
-            <p className="flex items-center gap-2 text-sm" role="status">
-              <CheckCircle2 className="size-4" /> {notice}
-            </p>
-          ) : null}
+          {notice ? <SuccessToast message={notice} /> : null}
           <Button disabled={!consentAccepted || saving} type="submit">
             {saving ? "Confirming…" : "Confirm revision"}
           </Button>

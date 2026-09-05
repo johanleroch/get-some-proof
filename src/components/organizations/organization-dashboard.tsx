@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  IconCheck,
   IconCopy,
   IconExternalLink,
   IconInbox,
@@ -14,6 +13,7 @@ import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -34,12 +34,19 @@ export function BrandDashboardView({
   pendingCount: number;
   publicSlug: string;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const collectionPath = `/c/${publicSlug}` as Route;
 
   async function copyLink() {
-    await copyCollectionUrl();
-    setCopied(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await copyCollectionUrl();
+      setSuccess("Collection link copied.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Copy failed.");
+    }
   }
 
   return (
@@ -86,12 +93,8 @@ export function BrandDashboardView({
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button onClick={copyLink} type="button">
-              {copied ? (
-                <IconCheck aria-hidden="true" />
-              ) : (
-                <IconCopy aria-hidden="true" />
-              )}
-              {copied ? "Copied" : "Copy link"}
+              <IconCopy aria-hidden="true" />
+              Copy link
             </Button>
             <Button asChild variant="outline">
               <Link href={collectionPath} target="_blank">
@@ -102,6 +105,8 @@ export function BrandDashboardView({
           </CardContent>
         </Card>
       </section>
+      {error ? <ErrorToast message={error} /> : null}
+      {success ? <SuccessToast message={success} /> : null}
     </div>
   );
 }

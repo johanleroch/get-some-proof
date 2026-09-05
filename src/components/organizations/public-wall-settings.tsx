@@ -3,6 +3,7 @@
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -30,12 +31,14 @@ export function PublicWallSettings({
   settings: PublicWallSettingsValue;
 }) {
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    setMessage(null);
+    setError(null);
+    setSuccess(null);
     try {
       const form = new FormData(event.currentTarget);
       await onSave({
@@ -50,9 +53,9 @@ export function PublicWallSettings({
           role: form.has("visibility.role"),
         },
       });
-      setMessage("Public Wall settings saved.");
+      setSuccess("Public Wall settings saved.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Update failed.");
+      setError(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setPending(false);
     }
@@ -133,11 +136,8 @@ export function PublicWallSettings({
           automatically while Pro is active.
         </p>
       </div>
-      {message ? (
-        <p className="text-sm" role="status">
-          {message}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
+      {success ? <SuccessToast message={success} /> : null}
       <Button disabled={pending} type="submit">
         {pending ? "Saving…" : "Save Public Wall"}
       </Button>

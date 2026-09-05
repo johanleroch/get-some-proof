@@ -7,6 +7,7 @@ import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 
 type VisibilityField = "avatar" | "company" | "rating" | "role";
 type CuratedTestimonial = {
@@ -76,7 +77,8 @@ export function PublishedCurationView({
 }) {
   const draggedId = useRef<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   if (!testimonials || testimonials.length === 0) return null;
 
@@ -86,12 +88,13 @@ export function PublishedCurationView({
     afterTestimonialId: Id<"testimonials"> | undefined,
   ) {
     setPending(true);
-    setMessage(null);
+    setError(null);
+    setSuccess(null);
     try {
       await onMove(testimonialId, beforeTestimonialId, afterTestimonialId);
-      setMessage("Public Wall order saved.");
+      setSuccess("Public Wall order saved.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Reorder failed.");
+      setError(error instanceof Error ? error.message : "Reorder failed.");
     } finally {
       setPending(false);
     }
@@ -112,15 +115,16 @@ export function PublishedCurationView({
     value: string,
   ) {
     setPending(true);
-    setMessage(null);
+    setError(null);
+    setSuccess(null);
     try {
       await onSetVisibility(testimonialId, {
         ...current,
         [field]: value === "inherit" ? undefined : value === "show",
       });
-      setMessage("Testimonial visibility saved.");
+      setSuccess("Testimonial visibility saved.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Update failed.");
+      setError(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setPending(false);
     }
@@ -241,11 +245,8 @@ export function PublishedCurationView({
           {loadingMore ? "Loading…" : "Load more Published Testimonials"}
         </Button>
       ) : null}
-      {message ? (
-        <p className="text-sm" role="status">
-          {message}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
+      {success ? <SuccessToast message={success} /> : null}
     </section>
   );
 }

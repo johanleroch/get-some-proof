@@ -43,7 +43,9 @@ describe("OrganizationSettingsView", () => {
     await waitFor(() => {
       expect(baseProps.onChangePublicSlug).toHaveBeenCalledWith("acme-stories");
     });
-    expect(screen.getByText("Public slug changed permanently.")).toBeVisible();
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
+      "Public slug changed permanently.",
+    );
   });
 
   it("makes the Public Slug read-only after the change was used", () => {
@@ -140,7 +142,7 @@ describe("OrganizationSettingsView", () => {
         '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://proof.example/embed/v1.js" data-api-origin="https://proof.example"></script>',
       );
     });
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
       "Embed snippet copied.",
     );
   });

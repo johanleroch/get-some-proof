@@ -62,6 +62,9 @@ describe("PublishedCuration", () => {
         testimonialId: "testimonial-1",
       }),
     );
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
+      "Public Wall order saved.",
+    );
 
     fireEvent.change(screen.getByLabelText("Second Person role"), {
       target: { value: "hide" },
@@ -72,6 +75,9 @@ describe("PublishedCuration", () => {
         overrides: { role: false },
         testimonialId: "testimonial-2",
       }),
+    );
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
+      "Testimonial visibility saved.",
     );
     expect(
       screen.getByRole("button", { name: "Move First Person up" }),

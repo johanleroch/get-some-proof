@@ -27,7 +27,7 @@ import {
 import { videoDownloadFeedback } from "@/components/testimonials/video-download-feedback";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -60,6 +60,19 @@ export function ToastErrorScreenFixture() {
         layout.
       </p>
       <ErrorToast message="Unable to save your changes. Please try again." />
+    </section>
+  );
+}
+
+export function ToastSuccessScreenFixture() {
+  return (
+    <section className="bg-card min-h-64 rounded-xl border p-6 shadow-xs">
+      <h1 className="text-2xl font-semibold">Success notification</h1>
+      <p className="text-muted-foreground mt-2 max-w-xl text-sm leading-6">
+        Completed actions now appear as dismissible notifications without
+        shifting the page layout.
+      </p>
+      <SuccessToast message="Testimonial permanently deleted." />
     </section>
   );
 }

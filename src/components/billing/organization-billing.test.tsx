@@ -146,7 +146,9 @@ describe("OrganizationBilling", () => {
         email: "new@acme.example",
       });
     });
-    expect(await screen.findByText("Billing Contact updated.")).toBeVisible();
+    expect(
+      await screen.findByTestId("success-toast-message"),
+    ).toHaveTextContent("Billing Contact updated.");
   });
 
   it("gives an Admin a read-only Billing cockpit", () => {
@@ -273,7 +275,9 @@ describe("OrganizationBilling", () => {
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith([], ["video-1", "video-2"]),
     );
-    expect(await screen.findByText("Downgrade selection saved.")).toBeVisible();
+    expect(
+      await screen.findByTestId("success-toast-message"),
+    ).toHaveTextContent("Downgrade selection saved.");
   });
 
   it.each([
@@ -287,7 +291,13 @@ describe("OrganizationBilling", () => {
 
       render(<OrganizationBilling slug="acme-1234" />);
 
-      expect(screen.getByRole("status")).toHaveTextContent(copy);
+      expect(
+        screen.getByTestId(
+          checkoutReturn === "success"
+            ? "success-toast-message"
+            : "info-toast-message",
+        ),
+      ).toHaveTextContent(copy);
       expect(screen.getByText("Free", { selector: "span" })).toBeVisible();
     },
   );

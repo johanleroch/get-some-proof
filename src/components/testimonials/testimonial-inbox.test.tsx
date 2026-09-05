@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Id } from "@convex/_generated/dataModel";
 import {
+  InboxFeedback,
   TestimonialDeleteDialog,
   TestimonialInbox,
   TestimonialInboxView,
@@ -135,7 +136,7 @@ describe("TestimonialInboxView", () => {
       expect(inboxMocks.requestDownload).toHaveBeenCalledTimes(2),
     );
     expect(click).toHaveBeenCalledOnce();
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
       "Your MP4 download is ready.",
     );
     click.mockRestore();
@@ -400,5 +401,19 @@ describe("TestimonialInboxView", () => {
     );
     expect(onAction).toHaveBeenNthCalledWith(1, published, "unpublish");
     expect(onAction).toHaveBeenNthCalledWith(2, published, "delete");
+  });
+});
+
+describe("InboxFeedback", () => {
+  beforeEach(cleanup);
+
+  it("shows completed inbox actions in a success toast", () => {
+    render(
+      <InboxFeedback error={null} message="Testimonial permanently deleted." />,
+    );
+
+    expect(screen.getByTestId("success-toast-message")).toHaveTextContent(
+      "Testimonial permanently deleted.",
+    );
   });
 });

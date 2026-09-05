@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Dialog,
   DialogContent,
@@ -154,15 +154,7 @@ export function InvitationManager({
   return (
     <section aria-label="Pending invitations">
       {showList && error ? <ErrorToast message={error} /> : null}
-      {showList && success ? (
-        <div
-          aria-live="polite"
-          className="mb-4 rounded-md border border-emerald-500/25 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300"
-          role="status"
-        >
-          {success}
-        </div>
-      ) : null}
+      {showList && success ? <SuccessToast message={success} /> : null}
 
       {!showList ? null : filteredInvitations === undefined ? (
         <div aria-label="Loading Pending Invitations" role="status">

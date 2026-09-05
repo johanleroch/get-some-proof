@@ -13,7 +13,7 @@ import {
   type PublicWallSettingsValue,
 } from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,14 +45,21 @@ function EmbeddedWallSnippet({
   embedOrigin: string;
   publicSlug: string;
 }) {
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const snippet = embedOrigin
     ? `<div data-gsp-wall data-public-slug="${publicSlug}" data-theme="system"></div>\n<script async src="${embedOrigin}/embed/v1.js" data-api-origin="${embedOrigin}"></script>`
     : "";
 
   async function copy() {
-    await navigator.clipboard.writeText(snippet);
-    setMessage("Embed snippet copied.");
+    setError(null);
+    setSuccess(null);
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setSuccess("Embed snippet copied.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Copy failed.");
+    }
   }
 
   return (
@@ -73,11 +80,8 @@ function EmbeddedWallSnippet({
           value={snippet}
         />
       </div>
-      {message ? (
-        <p className="text-sm" role="status">
-          {message}
-        </p>
-      ) : null}
+      {error ? <ErrorToast message={error} /> : null}
+      {success ? <SuccessToast message={success} /> : null}
       <Button
         disabled={!snippet}
         onClick={() => void copy()}
@@ -299,9 +303,11 @@ export function OrganizationSettingsView({
   };
 }) {
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSuccess, setNameSuccess] = useState<string | null>(null);
   const [slugPending, setSlugPending] = useState(false);
-  const [slugMessage, setSlugMessage] = useState<string | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugSuccess, setSlugSuccess] = useState<string | null>(null);
   const [nextPublicSlug, setNextPublicSlug] = useState(publicSlug);
   const displayedPublicSlug = publicSlugCanChange ? nextPublicSlug : publicSlug;
 
@@ -309,12 +315,13 @@ export function OrganizationSettingsView({
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    setMessage(null);
+    setNameError(null);
+    setNameSuccess(null);
     try {
       await onRename(String(new FormData(form).get("name")));
-      setMessage("Brand name updated.");
+      setNameSuccess("Brand name updated.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Update failed.");
+      setNameError(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setPending(false);
     }
@@ -323,12 +330,13 @@ export function OrganizationSettingsView({
   async function updatePublicSlug(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSlugPending(true);
-    setSlugMessage(null);
+    setSlugError(null);
+    setSlugSuccess(null);
     try {
       await onChangePublicSlug(nextPublicSlug);
-      setSlugMessage("Public slug changed permanently.");
+      setSlugSuccess("Public slug changed permanently.");
     } catch (error) {
-      setSlugMessage(error instanceof Error ? error.message : "Update failed.");
+      setSlugError(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setSlugPending(false);
     }
@@ -372,11 +380,8 @@ export function OrganizationSettingsView({
               required
             />
           </div>
-          {message ? (
-            <p aria-live="polite" className="text-sm">
-              {message}
-            </p>
-          ) : null}
+          {nameError ? <ErrorToast message={nameError} /> : null}
+          {nameSuccess ? <SuccessToast message={nameSuccess} /> : null}
           <Button disabled={pending} type="submit">
             {pending ? "Saving…" : "Save settings"}
           </Button>
@@ -415,11 +420,8 @@ export function OrganizationSettingsView({
                 : "Your one Public Slug change has been used."}
             </p>
           </div>
-          {slugMessage ? (
-            <p aria-live="polite" className="text-sm">
-              {slugMessage}
-            </p>
-          ) : null}
+          {slugError ? <ErrorToast message={slugError} /> : null}
+          {slugSuccess ? <SuccessToast message={slugSuccess} /> : null}
           {publicSlugCanChange ? (
             <Button
               disabled={slugPending || nextPublicSlug === publicSlug}

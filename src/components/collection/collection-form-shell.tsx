@@ -19,7 +19,7 @@ import { TurnstileChallenge } from "@/components/collection/turnstile-challenge"
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -113,15 +113,24 @@ function ReplacementLinkRequest({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function requestLink() {
     if (!email || submitting) return;
     setSubmitting(true);
+    setAccepted(false);
+    setError(null);
     try {
       if (requestReplacementLink) {
         await requestReplacementLink({ email, publicSlug });
       }
       setAccepted(true);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to request a new management link.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -153,10 +162,9 @@ function ReplacementLinkRequest({
           {submitting ? "Requesting…" : "Email new link"}
         </Button>
       </div>
+      {error ? <ErrorToast message={error} /> : null}
       {accepted ? (
-        <p className="text-muted-foreground text-xs" role="status">
-          If that email matches a submission, a new link is on its way.
-        </p>
+        <SuccessToast message="If that email matches a submission, a new link is on its way." />
       ) : null}
     </div>
   );

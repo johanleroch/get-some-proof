@@ -63,7 +63,9 @@ describe("AccountProfile", () => {
       });
     });
     expect(mocks.refetch).toHaveBeenCalledOnce();
-    expect(await screen.findByText("Profile updated.")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("success-toast-message"),
+    ).toHaveTextContent("Profile updated.");
   });
 
   it("keeps the verified email read-only", () => {

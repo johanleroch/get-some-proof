@@ -119,6 +119,12 @@ for (const screen of config.screens) {
       ).toContainText("Unable to save your changes. Please try again.");
     }
 
+    if (fixtureMode && screen.slug === "toast-success") {
+      await expect(
+        page.locator('[data-sonner-toast][data-type="success"]'),
+      ).toContainText("Testimonial permanently deleted.");
+    }
+
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );

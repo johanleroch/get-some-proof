@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -119,17 +120,19 @@ export function AccountProfileView({
 }) {
   const [name, setName] = useState(initialName);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function updateProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    setMessage(null);
+    setError(null);
+    setSuccess(null);
     try {
       await onSaveName(name.trim());
-      setMessage("Profile updated.");
+      setSuccess("Profile updated.");
     } catch (error) {
-      setMessage(
+      setError(
         error instanceof Error
           ? error.message
           : "Unable to update your profile.",
@@ -196,11 +199,8 @@ export function AccountProfileView({
                 </p>
               </div>
             </div>
-            {message ? (
-              <p aria-live="polite" className="text-sm">
-                {message}
-              </p>
-            ) : null}
+            {error ? <ErrorToast message={error} /> : null}
+            {success ? <SuccessToast message={success} /> : null}
             <Button disabled={pending || !name.trim()} type="submit">
               {pending ? "Saving…" : "Save changes"}
             </Button>

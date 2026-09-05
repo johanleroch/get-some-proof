@@ -13,7 +13,11 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import {
+  ErrorToast,
+  InfoToast,
+  SuccessToast,
+} from "@/components/ui/error-toast";
 import {
   Card,
   CardContent,
@@ -534,14 +538,7 @@ function DowngradeSelectionCard({
           Extra text is archived. Extra video is unpublished and remains
           downloadable for 30 days before its Mux media is permanently deleted.
         </p>
-        {message ? (
-          <p
-            aria-live="polite"
-            className="text-sm text-emerald-700 dark:text-emerald-300"
-          >
-            {message}
-          </p>
-        ) : null}
+        {message ? <SuccessToast message={message} /> : null}
         {error ? <ErrorToast message={error} /> : null}
         {plan.canManage ? (
           <Button disabled={pending} onClick={() => void save()} type="button">
@@ -661,20 +658,6 @@ export function BillingCockpit({
     }
   }
 
-  const returnMessage =
-    checkoutReturn === "success"
-      ? {
-          title: "Payment received",
-          description:
-            "We’re confirming your Pro subscription with Stripe. Your plan will update automatically after confirmation.",
-        }
-      : checkoutReturn === "canceled"
-        ? {
-            title: "Checkout canceled",
-            description:
-              "No billing change was made. You can choose a plan and try again whenever you’re ready.",
-          }
-        : null;
   const lifecycle = billingLifecycleCopy(overview);
 
   return (
@@ -691,6 +674,12 @@ export function BillingCockpit({
           sent.
         </p>
       </div>
+
+      {checkoutReturn === "success" ? (
+        <SuccessToast message="Payment received. We’re confirming your Pro subscription with Stripe. Your plan will update automatically after confirmation." />
+      ) : checkoutReturn === "canceled" ? (
+        <InfoToast message="Checkout canceled. No billing change was made. You can choose a plan and try again whenever you’re ready." />
+      ) : null}
 
       <div
         className={
@@ -712,12 +701,8 @@ export function BillingCockpit({
           <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         )}
         <div>
-          <p className="font-medium">
-            {returnMessage?.title ?? lifecycle.title}
-          </p>
-          <p className="mt-1 text-current/75">
-            {returnMessage?.description ?? lifecycle.description}
-          </p>
+          <p className="font-medium">{lifecycle.title}</p>
+          <p className="mt-1 text-current/75">{lifecycle.description}</p>
         </div>
       </div>
 
@@ -843,14 +828,7 @@ export function BillingCockpit({
                     type="email"
                   />
                 </div>
-                {message ? (
-                  <p
-                    aria-live="polite"
-                    className="text-sm text-emerald-700 dark:text-emerald-300"
-                  >
-                    {message}
-                  </p>
-                ) : null}
+                {message ? <SuccessToast message={message} /> : null}
                 {error ? <ErrorToast message={error} /> : null}
                 <Button disabled={contactPending} type="submit">
                   {contactPending ? "Saving…" : "Save contact"}

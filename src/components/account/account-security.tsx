@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ErrorToast } from "@/components/ui/error-toast";
+import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -170,14 +170,7 @@ export function AccountSecurity() {
       </div>
 
       {error ? <ErrorToast message={error} /> : null}
-      {success ? (
-        <p
-          aria-live="polite"
-          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
-        >
-          {success}
-        </p>
-      ) : null}
+      {success ? <SuccessToast message={success} /> : null}
 
       <section className="bg-card rounded-xl border p-6 shadow-xs">
         <div className="flex items-start gap-4">

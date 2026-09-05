@@ -20,6 +20,7 @@ import {
   TestimonialInboxDownloadProcessingScreenFixture,
   TestimonialInboxScreenFixture,
   ToastErrorScreenFixture,
+  ToastSuccessScreenFixture,
   VideoRetryScreenFixture,
   VideoUploadProgressScreenFixture,
   WorkspaceDeletionScreenFixture,
@@ -40,6 +41,7 @@ const screens = {
   "public-wall-pro": ProPublicWallScreenFixture,
   "testimonial-inbox": TestimonialInboxScreenFixture,
   "toast-error": ToastErrorScreenFixture,
+  "toast-success": ToastSuccessScreenFixture,
   "testimonial-inbox-download-processing":
     TestimonialInboxDownloadProcessingScreenFixture,
   "testimonial-delete": TestimonialDeleteScreenFixture,
