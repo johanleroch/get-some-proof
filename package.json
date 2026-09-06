@@ -10,6 +10,8 @@
   "scripts": {
     "predev": "node scripts/copy-mux-player.mjs",
     "dev": "next dev",
+    "predev:https": "node scripts/copy-mux-player.mjs",
+    "dev:https": "bash scripts/dev-https.sh",
     "dev:convex": "convex dev",
     "prebuild": "node scripts/copy-mux-player.mjs",
     "build": "next build",

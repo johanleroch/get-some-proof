@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.DEV_ALLOWED_ORIGIN
+    ? [process.env.DEV_ALLOWED_ORIGIN]
+    : undefined,
   devIndicators:
     process.env.VISUAL_EVIDENCE_MODE === "true" ? false : undefined,
   async headers() {

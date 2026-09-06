@@ -109,7 +109,7 @@ A private, single-use link sent after a post-submission video failure so the Sub
 _Avoid_: Collection Form, Account link
 
 **Generated Captions**:
-The optional public text track generated from the Submitter-selected spoken language of a Video Asset. Caption failure does not prevent a Ready video from being Published.
+The optional public text track generated from the automatically detected spoken language of a Video Asset. The Submitter does not select a language. Caption failure does not prevent a Ready video from being Published.
 _Avoid_: Testimonial text, Transcript
 
 ## Publication

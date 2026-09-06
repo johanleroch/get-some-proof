@@ -5,12 +5,40 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionFormShellView } from "./collection-form-shell";
 
 describe("CollectionFormShellView", () => {
   beforeEach(cleanup);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("renders when randomUUID is unavailable in an insecure browser context", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.fill(7);
+        return bytes;
+      },
+    });
+
+    render(
+      <CollectionFormShellView
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Acme story",
+          logoUrl: null,
+          name: "Acme Studio",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-studio",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Share your Acme story" }),
+    ).toBeVisible();
+  });
 
   it("renders the configured public Brand identity without private workspace data", () => {
     render(
@@ -260,9 +288,7 @@ describe("CollectionFormShellView", () => {
     fireEvent.change(screen.getByLabelText("Upload a video"), {
       target: { files: [file] },
     });
-    fireEvent.change(screen.getByLabelText("Spoken language"), {
-      target: { value: "fr" },
-    });
+    expect(screen.queryByLabelText("Spoken language")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByText("About you")).toBeVisible();
@@ -282,7 +308,7 @@ describe("CollectionFormShellView", () => {
         dimensions: { height: 1920, width: 1080 },
         fileSizeBytes: file.size,
         mimeType: "video/mp4",
-        spokenLanguage: "fr",
+        spokenLanguage: "en",
       }),
     );
     expect(uploadVideo).toHaveBeenCalledWith(

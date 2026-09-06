@@ -452,20 +452,22 @@ function RecorderView({
 }) {
   return (
     <div className="bg-card space-y-4 rounded-2xl border p-3 shadow-sm">
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-950">
+      <div
+        className={`relative mx-auto overflow-hidden rounded-xl bg-slate-950 ${previewReady || recordedFile ? "aspect-9/16 w-full max-w-[calc(65svh*9/16)] sm:aspect-video sm:max-w-none" : ""}`}
+      >
         <video
           aria-label={
             recordedFile ? "Recorded video preview" : "Camera preview"
           }
           autoPlay={!recordedFile}
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain"
           controls={Boolean(recordedFile)}
           muted={!recordedFile}
           playsInline
           ref={videoRef}
         />
         {!previewReady && !recordedFile ? (
-          <div className="absolute inset-0 grid place-items-center p-6 text-center">
+          <div className="relative grid aspect-video place-items-center p-6 text-center">
             <div className="space-y-3">
               <div className="mx-auto grid size-12 place-items-center rounded-full bg-white/10 text-white">
                 <Camera aria-hidden="true" className="size-5" />

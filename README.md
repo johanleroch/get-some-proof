@@ -56,6 +56,23 @@ pnpm dev
 
 Open `http://localhost:3000`, create a verified Owner, then configure the one Brand and its Collection Form. No production provider is required or configured by this setup.
 
+### Camera recording from an iPhone
+
+Camera and microphone access is unavailable when an iPhone opens the local
+server over plain HTTP. Run the guided one-time certificate setup, then start
+the HTTPS development server:
+
+```bash
+bash scripts/setup-ios-https.sh
+pnpm dev:https
+```
+
+The setup keeps the certificate authority and private key on the development
+Mac. It guides you through installing only the public authority certificate on
+the iPhone and enabling full trust for it. Re-run `pnpm dev:https` after a Wi-Fi
+address change; the certificate and Next.js origin are regenerated for the
+current address.
+
 ## Optional providers
 
 - Google sign-in requires development OAuth credentials.

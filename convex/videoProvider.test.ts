@@ -62,7 +62,7 @@ describe("video upload provider", () => {
       new_asset_settings: {
         inputs: [
           {
-            generated_subtitles: [{ language_code: "fr", name: "FR captions" }],
+            generated_subtitles: [{ language_code: "auto", name: "Captions" }],
           },
         ],
         passthrough: "reservation-1",
