@@ -1,3 +1,4 @@
+import { deleteTestimonialImages } from "./testimonialImages";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -237,6 +238,7 @@ export async function deleteTestimonialRecords(
     testimonial.submissionType === "video",
     reason !== "permanentDeletion",
   );
+  await deleteTestimonialImages(ctx, testimonial._id);
   if (testimonial.avatarStorageId)
     await ctx.storage.delete(testimonial.avatarStorageId);
   await ctx.db.delete(testimonial._id);

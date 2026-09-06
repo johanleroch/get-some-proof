@@ -1,3 +1,4 @@
+import { resolveTestimonialImages } from "./testimonialImages";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -111,6 +112,10 @@ export const list = query({
             })
           : testimonialCardValue(identity, {
               text: projection.text,
+              richText: projection.richText,
+              images: projection.imageIds?.length
+                ? await resolveTestimonialImages(ctx, projection.imageIds)
+                : undefined,
               type: "text" as const,
             });
       }),

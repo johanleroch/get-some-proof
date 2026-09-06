@@ -12,6 +12,8 @@ import {
   useQuery,
 } from "convex/react";
 
+import { HighlightTestimonialDialog } from "./highlight-testimonial-dialog";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -407,6 +409,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     { initialNumItems: 20 },
   );
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
+  const saveHighlights = useMutation(api.testimonialModeration.setHighlights);
+  const [highlightTarget, setHighlightTarget] =
+    useState<InboxTestimonial | null>(null);
   const wallSettings = useQuery(
     api.wallCustomization.getSettings,
     organization ? { organizationId: organization.id } : "skip",
@@ -512,6 +517,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     action: InboxTestimonialAction,
   ) {
     switch (action) {
+      case "highlight":
+        setHighlightTarget(testimonial);
+        return;
       case "delete":
         setDeleteTarget(testimonial);
         return;
@@ -585,6 +593,20 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         pending={pending}
       />
 
+      {highlightTarget?.card?.type === "text" ? (
+        <HighlightTestimonialDialog
+          key={highlightTarget.testimonialId}
+          testimonial={highlightTarget.card}
+          onClose={() => setHighlightTarget(null)}
+          onSave={(richText) =>
+            saveHighlights({
+              organizationId: activeOrganization.id,
+              testimonialId: highlightTarget.testimonialId,
+              richText,
+            })
+          }
+        />
+      ) : null}
       <TestimonialDeleteDialog
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}

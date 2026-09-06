@@ -1,4 +1,16 @@
 import {
+  imageIdsValidator,
+  imageValueValidator,
+} from "./domain/testimonialImage";
+import {
+  resolveTestimonialImages,
+  setTestimonialImages,
+} from "./testimonialImages";
+import {
+  richTextValidator,
+  normalizeRichText,
+} from "./domain/testimonialRichText";
+import {
   deleteTestimonialRecords,
   enqueueAssetCleanup,
   enqueueVideoAssetCleanup,
@@ -162,6 +174,8 @@ export const get = query({
       submitterEmail: v.string(),
       submitterName: v.string(),
       text: v.string(),
+      richText: v.optional(richTextValidator),
+      images: v.optional(v.array(imageValueValidator)),
     }),
   ),
   handler: async (ctx, args) => {
@@ -243,11 +257,16 @@ export const get = query({
       submitterEmail: testimonial.submitterEmail,
       submitterName: testimonial.submitterName,
       text: testimonial.text,
+      richText: testimonial.richText,
+      images: testimonial.imageIds?.length
+        ? await resolveTestimonialImages(ctx, testimonial.imageIds)
+        : undefined,
     };
   },
 });
 
 const revisionArgs = {
+  imageIds: imageIdsValidator,
   avatarReservationId: v.optional(v.id("submissionAvatarUploads")),
   avatarStorageId: v.optional(v.id("_storage")),
   company: v.optional(v.string()),
@@ -261,6 +280,7 @@ const revisionArgs = {
   role: v.optional(v.string()),
   submitterName: v.string(),
   text: v.string(),
+  richText: v.optional(richTextValidator),
   token: v.string(),
 };
 
@@ -342,7 +362,14 @@ export const confirmRevision = mutation({
       });
       nextAvatarStorageId = args.avatarStorageId;
     }
+    if (
+      testimonial.submissionType === "video" &&
+      (args.richText !== undefined || args.imageIds !== undefined)
+    )
+      unavailable("Images and formatting require a text testimonial.");
+    const nextImageIds = args.imageIds ?? testimonial.imageIds ?? [];
     const nextConsent = buildPublicationConsent({
+      imageCount: nextImageIds.length,
       brandName: brand.name,
       privacyContact: brand.privacyContact,
       suppliedIdentity: {
@@ -406,6 +433,8 @@ export const confirmRevision = mutation({
       if (oldReservation) await ctx.db.delete(oldReservation._id);
     }
 
+    if (testimonial.submissionType === "text")
+      await setTestimonialImages(ctx, testimonial, nextImageIds);
     if (projection) await ctx.db.delete(projection._id);
     const now = Date.now();
     await ctx.db.patch(consent._id, {
@@ -424,6 +453,10 @@ export const confirmRevision = mutation({
       role: identity.role,
       submitterName: identity.submitterName,
       text: testimonial.submissionType === "text" ? text : "",
+      richText:
+        testimonial.submissionType === "text"
+          ? normalizeRichText(args.richText, text)
+          : undefined,
       updatedAt: now,
     });
     if (args.avatarReservationId) await ctx.db.delete(args.avatarReservationId);

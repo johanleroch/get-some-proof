@@ -68,6 +68,14 @@ _Avoid_: Archived, Trash
 A collected text or video Submission held by the Brand as private proof or selected for public display.
 _Avoid_: Review, Quote, Proof when referring to one record
 
+**Testimonial Image**:
+An optional image supplied alongside a text Testimonial and covered by its Publication Consent. It follows the Testimonial through revision, publication, withdrawal and deletion.
+_Avoid_: Avatar, Video Asset
+
+**Highlight**:
+Visual emphasis applied to existing Testimonial words by the Submitter or Owner, without changing those words.
+_Avoid_: Owner edit, Rewrite
+
 **Pending**:
 The moderation state of a newly collected Testimonial that has never been public.
 _Avoid_: Unapproved, Draft

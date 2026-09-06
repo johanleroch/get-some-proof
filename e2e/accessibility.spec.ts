@@ -32,6 +32,8 @@ async function expectNoWcagViolations(page: Page) {
 
 const canonicalScreens = [
   "/visual-evidence/collection-form",
+  "/visual-evidence/collection-form-write",
+  "/visual-evidence/rich-testimonial",
   "/visual-evidence/collection-form-video",
   "/visual-evidence/collection-form-details",
   "/visual-evidence/testimonial-inbox",
@@ -64,9 +66,11 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
   ).toBeVisible();
   const testimonial = page.getByLabel("Your testimonial");
   await expect(testimonial).toBeFocused();
-  await testimonial.fill("Too short");
+  await testimonial.pressSequentially("Too short");
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
-  await testimonial.fill(
+  await testimonial.press("ControlOrMeta+A");
+  await testimonial.press("Backspace");
+  await testimonial.pressSequentially(
     "This deterministic testimonial is long enough to continue safely.",
   );
   await page.getByRole("button", { name: "Continue" }).click();

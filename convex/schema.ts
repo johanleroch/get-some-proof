@@ -1,3 +1,4 @@
+import { richTextValidator } from "./domain/testimonialRichText";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -324,6 +325,18 @@ export default defineSchema({
       "targetType",
       "targetId",
     ]),
+  testimonialImages: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    managementTestimonialId: v.optional(v.id("testimonials")),
+    testimonialId: v.optional(v.id("testimonials")),
+    storageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_storage_id", ["storageId"])
+    .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"]),
   testimonials: defineTable({
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
@@ -335,6 +348,8 @@ export default defineSchema({
       v.literal("spam"),
     ),
     text: v.string(),
+    richText: v.optional(richTextValidator),
+    imageIds: v.optional(v.array(v.id("testimonialImages"))),
     submitterName: v.string(),
     submitterEmail: v.string(),
     avatarStorageId: v.optional(v.id("_storage")),
@@ -416,6 +431,8 @@ export default defineSchema({
         testimonialId: v.id("testimonials"),
         type: v.literal("text"),
         text: v.string(),
+        richText: v.optional(richTextValidator),
+        imageIds: v.optional(v.array(v.id("testimonialImages"))),
         name: v.string(),
         avatarStorageId: v.optional(v.id("_storage")),
         role: v.optional(v.string()),

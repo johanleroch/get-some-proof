@@ -1,3 +1,7 @@
+import {
+  clearTestimonialImageLimit,
+  resolveTestimonialImages,
+} from "./testimonialImages";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -34,6 +38,7 @@ const purgePhases = [
   "publicationConsents",
   "submissionDeliveries",
   "avatarUploads",
+  "testimonialImages",
   "testimonials",
   "videoReservations",
   "publicProjections",
@@ -180,7 +185,12 @@ export const readExportData = internalQuery({
         exportedAt: new Date().toISOString(),
         organization: access.organization,
         projects,
-        testimonials,
+        testimonials: await Promise.all(
+          testimonials.map(async (testimonial) => ({
+            ...testimonial,
+            images: await resolveTestimonialImages(ctx, testimonial.imageIds),
+          })),
+        ),
         consents,
         memberships,
       },
@@ -508,6 +518,22 @@ async function deletePhaseBatch(
         if (record.storageId)
           await ctx.storage.delete(record.storageId as Id<"_storage">);
       }
+      break;
+    case "testimonialImages":
+      await clearTestimonialImageLimit(ctx, organizationId);
+      records = await ctx.db
+        .query("testimonialImages")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.map((record) =>
+          record.storageId
+            ? ctx.storage.delete(record.storageId as Id<"_storage">)
+            : Promise.resolve(),
+        ),
+      );
       break;
     case "testimonials":
       records = await ctx.db

@@ -86,6 +86,12 @@ for (const screen of config.screens) {
           .every((image) => image.complete && image.naturalWidth > 0),
       );
     }
+    if (screen.slug === "rich-testimonial-highlight") {
+      await page
+        .getByRole("button", { name: "Highlight a phrase", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+    }
     if (fixtureMode && screen.slug === "testimonial-inbox-player") {
       await page
         .getByRole("button", { name: "Play Remy Jupille's testimonial" })
@@ -133,7 +139,7 @@ for (const screen of config.screens) {
 
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
-      fullPage: true,
+      fullPage: screen.slug !== "rich-testimonial-highlight",
       animations: "disabled",
       caret: "initial",
       scale: "css",

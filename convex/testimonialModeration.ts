@@ -1,3 +1,8 @@
+import {
+  richTextValidator,
+  normalizeRichText,
+} from "./domain/testimonialRichText";
+import { resolveTestimonialImages } from "./testimonialImages";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -204,6 +209,10 @@ export const listInbox = query({
             ...identity,
             card: testimonialCardValue(cardIdentity, {
               text: testimonial.text,
+              richText: testimonial.richText,
+              images: testimonial.imageIds?.length
+                ? await resolveTestimonialImages(ctx, testimonial.imageIds)
+                : undefined,
               type: "text" as const,
             }),
             submissionType: "text" as const,
@@ -693,5 +702,48 @@ export const remove = mutation({
       deletionEventId,
     );
     return { deleted: true };
+  },
+});
+
+export const setHighlights = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+    richText: richTextValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const testimonial = await findTestimonial(
+      ctx,
+      access.organization._id,
+      args.testimonialId,
+    );
+    if (
+      testimonial.submissionType !== "text" ||
+      testimonial.moderationStatus === "spam"
+    )
+      testimonialUnavailable();
+    const richText = normalizeRichText(args.richText, testimonial.text);
+    await ctx.db.patch(testimonial._id, { richText, updatedAt: Date.now() });
+    if (testimonial.moderationStatus === "published") {
+      const projection = await ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (!projection) testimonialUnavailable();
+      await upsertPublicProjection(
+        ctx,
+        { ...testimonial, richText },
+        projection.publishedAt,
+      );
+    }
+    return null;
   },
 });

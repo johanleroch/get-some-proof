@@ -27,6 +27,16 @@ export async function validateExclusiveStoredImage(
     });
   }
 
+  const attachment = await ctx.db
+    .query("testimonialImages")
+    .withIndex("by_storage_id", (q) => q.eq("storageId", storageId))
+    .first();
+  if (attachment)
+    throw new ConvexError({
+      code: "STORED_IMAGE_UNAVAILABLE",
+      message: "That image is already in use.",
+    });
+
   const [profile, organization, testimonial] = await Promise.all([
     ctx.db
       .query("userProfiles")
