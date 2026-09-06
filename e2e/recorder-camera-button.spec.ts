@@ -3,6 +3,22 @@ import { expect, test } from "@playwright/test";
 for (const width of [320, 390, 1280]) {
   test(`camera button is not clipped at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
+    // This is a layout test, independent of camera support on the CI host.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          getUserMedia: async () => new MediaStream(),
+          enumerateDevices: async () => [],
+        },
+      });
+      if (typeof MediaRecorder === "undefined") {
+        Object.defineProperty(window, "MediaRecorder", {
+          configurable: true,
+          value: class {},
+        });
+      }
+    });
     await page.goto("/visual-evidence/collection-form");
     await page
       .getByRole("button", { name: /Record or upload a video/ })
@@ -28,17 +44,6 @@ for (const width of [320, 390, 1280]) {
       false,
     );
     await expect(page.getByLabel("Spoken language")).toHaveCount(0);
-    await page.evaluate(() => {
-      const prototype = Object.getPrototypeOf(navigator.mediaDevices);
-      Object.defineProperty(prototype, "getUserMedia", {
-        configurable: true,
-        value: async () => new MediaStream(),
-      });
-      Object.defineProperty(prototype, "enumerateDevices", {
-        configurable: true,
-        value: async () => [],
-      });
-    });
     await button.click();
     await expect(
       page.getByRole("button", { name: "Start recording" }),
