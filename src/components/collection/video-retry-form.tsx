@@ -16,6 +16,7 @@ import { ErrorToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
+import { createClientSubmissionId } from "@/lib/client-submission-id";
 import { inspectVideoFile } from "@/lib/video-file";
 import { useVideoUpload } from "@/hooks/use-video-upload";
 import { uploadDirectVideo } from "@/lib/video-upload";
@@ -65,7 +66,6 @@ export function VideoRetryFormView({
   uploadVideo?: typeof uploadDirectVideo;
 }) {
   const [file, setFile] = useState<File>();
-  const [language, setLanguage] = useState<"en" | "fr">();
   const videoUpload = useVideoUpload();
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
@@ -106,7 +106,7 @@ export function VideoRetryFormView({
     );
   }
 
-  const spokenLanguage = language ?? activeContext.spokenLanguage;
+  const spokenLanguage = activeContext.spokenLanguage;
   async function submitReplacement() {
     if (!file) return;
     setError(null);
@@ -117,7 +117,7 @@ export function VideoRetryFormView({
     }
     setSubmitting(true);
     setClaimedContext(activeContext);
-    const clientSubmissionId = crypto.randomUUID();
+    const clientSubmissionId = createClientSubmissionId();
     try {
       const completed = await videoUpload.run({
         file,
@@ -192,18 +192,6 @@ export function VideoRetryFormView({
           {file ? (
             <p className="text-muted-foreground text-xs">{file.name}</p>
           ) : null}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="replacement-language">Spoken language</Label>
-          <select
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-3"
-            id="replacement-language"
-            onChange={(event) => setLanguage(event.target.value as "en" | "fr")}
-            value={spokenLanguage}
-          >
-            <option value="en">English</option>
-            <option value="fr">French</option>
-          </select>
         </div>
         {videoUpload.phase !== "idle" ? (
           <VideoUploadProgress

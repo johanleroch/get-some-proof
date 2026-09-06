@@ -46,8 +46,10 @@ export async function createVideoDirectUpload(input: {
           {
             generated_subtitles: [
               {
-                language_code: input.spokenLanguage,
-                name: `${input.spokenLanguage.toUpperCase()} captions`,
+                // The form no longer asks for a language. Legacy language
+                // metadata must not override detection of the actual audio.
+                language_code: "auto",
+                name: "Captions",
               },
             ],
           },

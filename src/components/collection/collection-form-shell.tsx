@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClientSubmissionId } from "@/lib/client-submission-id";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
 import {
@@ -218,12 +219,10 @@ function VideoStep({
   onBack,
   onContinue,
   onFileChange,
-  onLanguageChange,
   onRecordingChange,
   recorderVisualFixture,
   recording,
   recordingSupported,
-  spokenLanguage,
   validating,
   videoFile,
 }: {
@@ -231,12 +230,10 @@ function VideoStep({
   onBack: () => void;
   onContinue: () => void;
   onFileChange: (file: File | undefined) => void;
-  onLanguageChange: (language: "en" | "fr") => void;
   onRecordingChange: (recording: boolean) => void;
   recorderVisualFixture?: boolean;
   recording: boolean;
   recordingSupported: boolean;
-  spokenLanguage: "en" | "fr";
   validating: boolean;
   videoFile: File | undefined;
 }) {
@@ -247,18 +244,19 @@ function VideoStep({
           Record your story
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Take up to 2 minutes. You can check your camera and microphone, review
-          the result, and record again before continuing.
+          Up to 2 minutes. Review or retake before sending.
         </p>
       </div>
-      <div className="bg-muted/45 rounded-xl border p-4 text-sm">
-        <p className="font-medium">A simple story works best</p>
+      <details className="text-sm">
+        <summary className="text-muted-foreground cursor-pointer">
+          Need inspiration?
+        </summary>
         <ul className="text-muted-foreground mt-2 space-y-1 text-xs leading-5">
           <li>What was happening before?</li>
           <li>What changed after working with us?</li>
           <li>What would you tell someone considering it?</li>
         </ul>
-      </div>
+      </details>
       {recordingSupported ? (
         <BrowserVideoRecorder
           onFileChange={onFileChange}
@@ -293,23 +291,6 @@ function VideoStep({
         {videoFile ? (
           <p className="text-xs font-medium">Selected: {videoFile.name}</p>
         ) : null}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="spoken-language">Spoken language</Label>
-        <select
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-3"
-          id="spoken-language"
-          onChange={(event) =>
-            onLanguageChange(event.target.value as "en" | "fr")
-          }
-          value={spokenLanguage}
-        >
-          <option value="en">English</option>
-          <option value="fr">French</option>
-        </select>
-        <p className="text-muted-foreground text-xs">
-          Used to generate captions. Caption failure will not block your video.
-        </p>
       </div>
       {error ? <ErrorToast message={error} /> : null}
       <div className="flex gap-3">
@@ -1047,7 +1028,7 @@ export function CollectionFormShellView({
   const [proofType, setProofType] = useState<"text" | "video">(
     initialProofType,
   );
-  const [clientSubmissionId] = useState(() => crypto.randomUUID());
+  const [clientSubmissionId] = useState(createClientSubmissionId);
   const [text, setText] = useState(normalizedInitialValues.text);
   const [submitterName, setSubmitterName] = useState(
     normalizedInitialValues.submitterName,
@@ -1069,7 +1050,7 @@ export function CollectionFormShellView({
   const videoDimensionsRef = useRef<
     { height: number; width: number } | undefined
   >(undefined);
-  const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
+  const spokenLanguage = "en";
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
   const flowRef = useRef<HTMLElement | null>(null);
@@ -1167,12 +1148,10 @@ export function CollectionFormShellView({
                 videoDimensionsRef.current = undefined;
                 setError(null);
               }}
-              onLanguageChange={setSpokenLanguage}
               onRecordingChange={setRecording}
               recorderVisualFixture={recorderVisualFixture}
               recording={recording}
               recordingSupported={recordingSupported}
-              spokenLanguage={spokenLanguage}
               validating={validatingVideo}
               videoFile={videoFile}
             />

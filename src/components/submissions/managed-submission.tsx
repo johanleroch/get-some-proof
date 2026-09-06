@@ -163,7 +163,7 @@ export function ManagedSubmissionView({
   const [avatarFile, setAvatarFile] = useState<File>();
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [videoFile, setVideoFile] = useState<File>();
-  const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
+  const spokenLanguage = "en";
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const videoUpload = useVideoUpload();
@@ -406,24 +406,13 @@ export function ManagedSubmissionView({
                   </span>
                 </p>
               ) : null}
-              <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
+              <div>
                 <Input
                   accept="video/mp4,video/quicktime,video/webm"
                   aria-label="Replacement video"
                   onChange={(event) => setVideoFile(event.target.files?.[0])}
                   type="file"
                 />
-                <select
-                  aria-label="Spoken language"
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-                  onChange={(event) =>
-                    setSpokenLanguage(event.target.value as "en" | "fr")
-                  }
-                  value={spokenLanguage}
-                >
-                  <option value="en">English</option>
-                  <option value="fr">French</option>
-                </select>
               </div>
               <Button
                 disabled={
