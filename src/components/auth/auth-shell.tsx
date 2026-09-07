@@ -18,17 +18,19 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <ThemeToggle />
       </div>
       <section className="flex flex-col px-5 py-10 sm:px-8 lg:px-14 lg:py-12">
-        <div className="mb-10 flex items-center gap-2.5">
-          <BrandMark className="hidden lg:block" />
-          <ScribbleStar className="text-brand size-8 lg:hidden" />
-          <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
-            {productName}
-          </span>
+        <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col">
+          <div className="mb-10 flex items-center gap-2.5">
+            <BrandMark className="hidden lg:block" />
+            <ScribbleStar className="text-brand size-8 lg:hidden" />
+            <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
+              {productName}
+            </span>
+          </div>
+          <div className="my-auto w-full">{children}</div>
+          <p className="type-small text-ink-2 mt-10 hidden lg:block">
+            Secure Owner access to your Brand.
+          </p>
         </div>
-        <div className="my-auto w-full max-w-[400px]">{children}</div>
-        <p className="type-small text-ink-2 mt-10 hidden lg:block">
-          Secure Owner access to your Brand.
-        </p>
       </section>
       <aside className="bg-surface-2 hidden flex-col justify-center border-l p-12 lg:flex xl:p-20">
         <div className="mx-auto w-full max-w-xl space-y-10">

@@ -265,7 +265,8 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
   lists and tables with `--surface-2` row hover, not in stacks of cards.
   Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
 - Authentication: split screen from 1024px, form first. Left column holds the
-  product name and the form at max 400px, left-aligned; right panel on
+  product name, the form and the footer line in one 400px block centered in
+  the column, so wide screens never leave the form stuck to the edge; right panel on
   `--surface-2` carries one spot illustration and one sentence of copy. The
   two columns follow the golden ratio (1 : 1.618, so 38.2% / 61.8%) as soon
   as the form column can keep 28rem; below that width the columns share the
