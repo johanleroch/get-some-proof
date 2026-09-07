@@ -270,8 +270,8 @@ Rules:
 
 - Stroke 2px (1.5px under 20px), round caps and joins, paths slightly
   irregular. Color is `--ink` by default; `--brand` is reserved for stars,
-  sparkles and one accent dot, `--surface` for the fill of overlapping
-  shapes. No other color, ever.
+  sparkles, the circle-around ring and one accent dot, `--surface` for the
+  fill of overlapping shapes. No other color, ever.
 - Maximum one hand-drawn element per screen region (header, main, sidebar,
   dialog). Empty states and success steps may combine one illustration and
   one arrow note.
@@ -337,19 +337,24 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
 - Empty states: one shared component: spot illustration (max 160px tall),
   `subheading` title, one sentence, one primary action. Never a dashed box
   with a lone sentence.
-- Templates gallery (our public page at `/templates`): the layouts a Brand
-  can pick for its proof, Senja's grammar (a gallery you can try) in our
-  voice. Public header with the mark, the name, sign in and one primary
-  action; left-aligned hero with a wavy underline and the facts as a list,
-  never cards; category chips, a Brand accent picker and a wall theme
-  switch; then one framed live preview per template on a two-column grid
-  where walls and sliders span both columns. Every preview is the real React
-  component fed with sample Testimonials, so nothing is a screenshot, and it
-  renders on the wall theme with the sample accent (never our amber inside
-  the frame). One closing call to action on `--ink` with the blob. The
-  catalog is `src/lib/templates-catalog.ts`, one file per template under
-  `src/components/templates/`, reviewed in `/kit/templates` where a template
-  stays a draft until its `status` is `public`.
+- Templates browser (our public page at `/templates`): the layouts a Brand
+  can pick for its proof, Senja's idea (a gallery you can try) in our
+  grammar. Public header with the logo, sign in and one primary action; a
+  short left-aligned hero with a wavy underline and one call to action; then
+  a browser, not a wall of cards: the templates listed by family in a left
+  rail (sidebar items, `--brand-soft` active state with the 3px bar) and one
+  template rendered live on the right. Above the stage: the name at
+  `heading`, one sentence, the actions, then a toolbar with the preview
+  width (desktop, tablet, phone), the Brand accent swatches and the wall
+  theme. One arrow note ("this is what your visitors see") is the region's
+  hand-drawn element. The stage is a CSS container on the wall theme with
+  the sample accent (never our amber inside the frame), so a 390px preview
+  really shows the phone layout; the arrow keys move through the list and
+  the choice lives in the URL (`?template=`). Below 1024px the rail becomes
+  a strip of chips. The catalog is `src/lib/templates-catalog.ts`, one file
+  per template under `src/components/templates/`, reviewed in
+  `/kit/templates` where a template stays a draft until its `status` is
+  `public`.
 
 Responsive: every multi-column layout collapses to one column below 768px, no
 horizontal page scroll ever, headlines scale with `clamp()`, body text never
@@ -401,8 +406,10 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   speech bubble: `--surface`, `--line` border, `--radius-lg`,
   `--shadow-float`, a small tail towards the blob, title at `ui` 600,
   description at `small` in `--ink-2`, one optional text action in
-  `--brand-text`, a dismiss cross. Sonner stays the engine (position,
-  stacking, timing); `richColors` and its icons are retired.
+  `--brand-text`, a dismiss cross. Toasts appear top right, 20px from the edges (16px on mobile). Sonner
+  stays the engine (stacking, timing, swipe to dismiss); `richColors` and
+  its icons are retired. The designer menu (⌘.) has a "Test toast" entry to
+  check placement on any screen.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
