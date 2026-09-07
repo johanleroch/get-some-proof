@@ -2,12 +2,17 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Label above, control, helper below, error below: the one form layout. */
+/**
+ * Label above, control, helper below, error below: the one form layout.
+ * Rows pack to the top (`content-start`) so a field placed next to a taller
+ * one in a grid keeps its label and control on the same line as its neighbor
+ * instead of being spread over the row height.
+ */
 function Field({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="field"
-      className={cn("group/field grid gap-2", className)}
+      className={cn("group/field grid content-start gap-2", className)}
       {...props}
     />
   );
