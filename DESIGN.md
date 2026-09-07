@@ -368,15 +368,23 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   quote at `body` in `--ink`. Video cards keep the source ratio, the play
   button is 48px round on `--surface` with `--shadow-float`.
 - Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
-  on `--surface` with a hairline and `--ink` text. A status is carried by
-  its 6px dot and its hairline, both in the full status color, never by a
-  pastel fill with colored text (the generic "AI pill"). `brand`
+  on `--surface` with a `--line` hairline and `--ink` text. A status is
+  carried by its 6px dot alone, never by a pastel fill with colored text
+  (the generic "AI pill") and not by the hairline either. `brand`
   is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
   max 480px (560px for content-heavy). Destructive confirmations keep no close
   icon and require the typed name where they do today.
-- Toasts: sonner themed through its CSS variables to `--surface`, `--ink`,
-  `--line`, `--shadow-float` and the semantic tokens; `richColors` is retired.
+- Toasts: the mascot tells them. `blobToast.success|info|warning|error|
+loading` (`src/components/brand/blob-toast.tsx`, same call shape as
+  sonner, rendered through `toast.custom`) shows the blob at 48px on the
+  left, appearing neutral and blinking into the message's mood (happy,
+  neutral, worried, sad; the loader for loading), and the message in a
+  speech bubble: `--surface`, `--line` border, `--radius-lg`,
+  `--shadow-float`, a small tail towards the blob, title at `ui` 600,
+  description at `small` in `--ink-2`, one optional text action in
+  `--brand-text`, a dismiss cross. Sonner stays the engine (position,
+  stacking, timing); `richColors` and its icons are retired.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route

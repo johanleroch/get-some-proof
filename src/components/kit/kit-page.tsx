@@ -930,7 +930,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Tags on paper. The status lives in the dot and the hairline, both in the status color; the label stays ink."
+            description="Tags on paper with a hairline. The status lives in the dot; the label stays ink."
             id="status"
             title="Status and badges"
           >
