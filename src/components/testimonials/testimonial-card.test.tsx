@@ -156,7 +156,7 @@ describe("TestimonialCard", () => {
     );
     expect(screen.getByLabelText("5 out of 5 stars")).toBeInTheDocument();
     expect(container.querySelector(".video-accent")).toBeNull();
-    expect(play).toHaveClass("size-11");
+    expect(play).toHaveClass("size-12");
     expect(screen.queryByRole("status", { name: "Loading video" })).toBeNull();
 
     fireEvent.pointerEnter(play.closest(".video-shell")!);

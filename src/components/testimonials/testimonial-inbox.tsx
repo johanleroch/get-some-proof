@@ -18,6 +18,7 @@ import {
 } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { defaultPrimaryColor } from "@convex/domain/brand";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -133,7 +134,7 @@ function VideoAssetPlaceholder({
   }
   return (
     <section
-      className="relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-lg border border-white/10 bg-black px-6 py-10 text-center text-white"
+      className="bg-ink text-paper border-ink relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-lg border px-6 py-10 text-center"
       data-testid="processing-video-placeholder"
       data-video-aspect-ratio={testimonial.aspectRatio ?? "9:16"}
       style={{ aspectRatio: videoAspectRatioStyle(testimonial.aspectRatio) }}
@@ -147,7 +148,7 @@ function VideoAssetPlaceholder({
         <p className="mt-4 font-medium">
           {videoStatusLabel(testimonial.videoStatus)}
         </p>
-        <p className="mt-1 text-sm leading-6 text-white/70">
+        <p className="text-paper/70 mt-1 text-sm leading-6">
           This video was just submitted. Playback will be available shortly.
         </p>
       </div>
@@ -156,7 +157,7 @@ function VideoAssetPlaceholder({
 }
 
 export function TestimonialInboxView({
-  accentColor = "#6d5dfc",
+  accentColor = defaultPrimaryColor,
   actionsDisabled = false,
   onAction,
   testimonials,

@@ -25,7 +25,7 @@ describe("Stripe webhook synchronization", () => {
         createdAt: Date.now(),
         createdByUserId: "owner_1",
         name: "Acme",
-        primaryColor: "#6d5dfc",
+        primaryColor: "#ffbb16",
         privacyContact: "privacy@example.invalid",
         publicSlug: "acme",
         slug: "acme",

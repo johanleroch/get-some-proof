@@ -140,7 +140,7 @@ export const demo = internalMutation({
         collectionFormDescription: "Tell us what changed for you.",
         collectionFormTitle: "Share your experience with Demo Company",
         name: "Demo Company",
-        primaryColor: "#6d5dfc",
+        primaryColor: "#ffbb16",
         privacyContact: "privacy@example.com",
         publicSlug: "demo-company",
         slug: demoSlug,

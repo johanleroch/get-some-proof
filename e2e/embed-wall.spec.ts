@@ -270,7 +270,7 @@ test("applies the configured theme and transparent embed background", async ({
   await expect(wall).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(wall.locator("article").first()).toHaveCSS(
     "background-color",
-    "rgb(24, 24, 27)",
+    "rgb(33, 28, 24)",
   );
 });
 

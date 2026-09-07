@@ -1,4 +1,5 @@
-const defaultPrimaryColor = "#6d5dfc";
+/** Proof Amber, the star logo. Seeded when a Brand picks no color. */
+export const defaultPrimaryColor = "#ffbb16";
 
 export function normalizeBrandName(name: string) {
   const normalized = name.trim().replaceAll(/\s+/g, " ");
