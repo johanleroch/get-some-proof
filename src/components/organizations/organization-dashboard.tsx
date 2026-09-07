@@ -90,25 +90,29 @@ export function BrandDashboardView({
         <Card>
           <CardHeader>
             <CardDescription>Your Collection Form</CardDescription>
-            <CardTitle className="flex items-center gap-2">
-              <IconLink aria-hidden="true" className="text-ink-2 size-4" />
-              <span className="font-mono text-base font-medium tracking-normal">
-                /c/{publicSlug}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline">
-                <Link href={collectionPath} target="_blank">
-                  Open Collection Form
-                  <IconExternalLink aria-hidden="true" />
-                </Link>
-              </Button>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <CardTitle className="flex items-center gap-2">
+                <IconLink aria-hidden="true" className="text-ink-2 size-4" />
+                <span className="font-mono text-base font-medium tracking-normal">
+                  /c/{publicSlug}
+                </span>
+              </CardTitle>
+              <ArrowNote
+                arrow="flat"
+                className="hidden sm:inline-flex"
+                direction="left"
+              >
+                share this to start collecting
+              </ArrowNote>
             </div>
-            <ArrowNote className="hidden sm:inline-flex" direction="left">
-              share this to start collecting
-            </ArrowNote>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href={collectionPath} target="_blank">
+                Open Collection Form
+                <IconExternalLink aria-hidden="true" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </section>

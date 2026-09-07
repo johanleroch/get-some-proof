@@ -37,8 +37,23 @@ export function CircleAround(props: DoodleProps) {
   );
 }
 
-/** Curved arrow used with a handwritten caption. */
-export function SketchArrow(props: DoodleProps) {
+/**
+ * Arrow used with a handwritten caption. `curve` dives from the caption down
+ * to something below it; `flat` runs sideways to something on the same line.
+ * Both point right; mirror with `-scale-x-100` to point left.
+ */
+export function SketchArrow({
+  shape = "curve",
+  ...props
+}: DoodleProps & { shape?: "curve" | "flat" }) {
+  if (shape === "flat") {
+    return (
+      <svg {...doodleProps(props, "0 0 80 24")}>
+        <path {...strokeAttributes} d="M4 15c12-7 26-9 40-6 11 2 20 3 30 2" />
+        <path {...strokeAttributes} d="M65 4l9 7-10 5" />
+      </svg>
+    );
+  }
   return (
     <svg {...doodleProps(props, "0 0 80 60")}>
       <path {...strokeAttributes} d="M5 8c14 2 33 6 46 22 4 5 7 10 9 16" />

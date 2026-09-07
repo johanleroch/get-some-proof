@@ -1352,7 +1352,13 @@ function DoodleShowcase() {
         </div>
         <div className="space-y-2">
           <ArrowNote draw>this is what your customers see</ArrowNote>
-          <p className="text-ink-2 type-small">ArrowNote</p>
+          <p className="text-ink-2 type-small">ArrowNote · curve</p>
+        </div>
+        <div className="space-y-2">
+          <ArrowNote arrow="flat" direction="left" draw>
+            share this to start collecting
+          </ArrowNote>
+          <p className="text-ink-2 type-small">ArrowNote · flat</p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
