@@ -6,7 +6,7 @@
 // module that loads Gelica when the five files are present and falls back to
 // Figtree (the body face) when they are not, with a warning. CI and fresh
 // clones build either way.
-import { access, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 
 const faces = [
   ["Gelica-Regular.otf", "400"],
@@ -57,6 +57,8 @@ const withoutGelica = `${header}
 export const displayFont = { variable: "" };
 `;
 
+// A fresh checkout has no src/app/fonts/ at all: its only content is ignored.
+await mkdir(new URL("./", destination), { recursive: true });
 await writeFile(destination, present ? withGelica : withoutGelica);
 if (!present) {
   console.warn(
