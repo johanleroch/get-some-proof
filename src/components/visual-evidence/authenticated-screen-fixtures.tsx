@@ -2,7 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
-import { IconMenu2 } from "@tabler/icons-react";
+import { IconExternalLink, IconMenu2 } from "@tabler/icons-react";
+import type { Route } from "next";
+import Link from "next/link";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
@@ -23,10 +25,13 @@ import { ManagedSubmissionView } from "@/components/submissions/managed-submissi
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
   InboxFeedback,
+  InboxFilters,
   TestimonialDeleteDialog,
   TestimonialInboxView,
+  WallCurationPanel,
 } from "@/components/testimonials/testimonial-inbox";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
+import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
@@ -109,8 +114,8 @@ export function OnboardingScreenFixture() {
         <OrganizationOnboardingFormView
           createOrganization={async () => ({
             id: "fixture-organization" as Id<"organizations">,
-            publicSlug: "visual-studio",
-            slug: "visual-studio-l5pg",
+            publicSlug: "fernhill-studio",
+            slug: "fernhill-studio-l5pg",
           })}
           generateUploadUrl={async () => "fixture://upload"}
           navigate={() => undefined}
@@ -125,23 +130,23 @@ export function OnboardingScreenFixture() {
 const collectionFormFixtureBrand = {
   collectionFormDescription:
     "Tell us how our work changed your business. A few honest sentences are perfect.",
-  collectionFormTitle: "Share your Visual Studio story",
+  collectionFormTitle: "Share your Fernhill Studio story",
   logoUrl: null,
-  name: "Visual Studio",
-  primaryColor: "#6d5dfc",
+  name: "Fernhill Studio",
+  primaryColor: "#0f766e",
   privacyContact: "privacy@example.invalid",
-  publicSlug: "visual-studio",
+  publicSlug: "fernhill-studio",
 };
 
 const collectionFormFixtureValues = {
   ageConfirmed: true,
-  company: "North Star Co",
+  company: "Bellwether Coffee",
   consentAccepted: true,
   rating: 5,
   role: "Founder",
   submitterEmail: "alice@example.com",
   submitterName: "Alice Martin",
-  text: "Visual Studio helped us turn scattered customer stories into clear proof that wins trust.",
+  text: "Fernhill turned a folder of kind emails into proof we can actually show. Two new clients mentioned the wall on our first call.",
 };
 
 export function CollectionFormScreenFixture() {
@@ -286,7 +291,7 @@ export function ManagedSubmissionScreenFixture() {
 const testimonialFixture = {
   card: {
     avatarUrl: null,
-    company: "North Star Co",
+    company: "Bellwether Coffee",
     id: "fixture-testimonial",
     name: "Alice Martin",
     publishedAt: Date.UTC(2026, 8, 3),
@@ -361,32 +366,30 @@ const spamTestimonialFixture = {
 export function TestimonialInboxScreenFixture() {
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="dashboard-page-title">Inbox</h1>
-        <p className="dashboard-page-description mt-1">
-          Review private Submissions and choose what becomes public.
-        </p>
-      </div>
-      <div className="flex gap-3">
-        <select
-          aria-label="Status"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>All statuses</option>
-        </select>
-        <select
-          aria-label="Type"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>All types</option>
-        </select>
-        <select
-          aria-label="Sort"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>Newest first</option>
-        </select>
-      </div>
+      <PageHeader
+        actions={
+          <Button asChild variant="outline">
+            <Link
+              href={`/w/${collectionFormFixtureBrand.publicSlug}` as Route}
+              target="_blank"
+            >
+              Open Public Wall
+              <IconExternalLink aria-hidden="true" />
+            </Link>
+          </Button>
+        }
+        description="Review private Submissions and choose what becomes public."
+        eyebrow="Workspace"
+        title="Inbox"
+      />
+      <InboxFilters
+        moderationStatus="all"
+        onModerationStatusChange={() => undefined}
+        onSortChange={() => undefined}
+        onSubmissionTypeChange={() => undefined}
+        sort="newest"
+        submissionType="all"
+      />
       <InboxFeedback error={null} message={null} />
       <TestimonialInboxView
         accentColor={collectionFormFixtureBrand.primaryColor}
@@ -398,30 +401,25 @@ export function TestimonialInboxScreenFixture() {
           testimonialFixture,
         ]}
       />
-      <details className="bg-card rounded-xl border shadow-xs">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-          Wall order &amp; visibility
-        </summary>
-        <div className="border-t p-4 sm:p-5">
-          <PublishedCurationView
-            onMove={async () => undefined}
-            onSetVisibility={async () => undefined}
-            testimonials={[
-              {
-                submissionType: "video",
-                submitterName: "Remy Jupille",
-                testimonialId: "fixture-published-video" as Id<"testimonials">,
-              },
-              {
-                overrides: { company: false },
-                submissionType: "text",
-                submitterName: "Alice Martin",
-                testimonialId: "fixture-published-text" as Id<"testimonials">,
-              },
-            ]}
-          />
-        </div>
-      </details>
+      <WallCurationPanel>
+        <PublishedCurationView
+          onMove={async () => undefined}
+          onSetVisibility={async () => undefined}
+          testimonials={[
+            {
+              submissionType: "video",
+              submitterName: "Remy Jupille",
+              testimonialId: "fixture-published-video" as Id<"testimonials">,
+            },
+            {
+              overrides: { company: false },
+              submissionType: "text",
+              submitterName: "Alice Martin",
+              testimonialId: "fixture-published-text" as Id<"testimonials">,
+            },
+          ]}
+        />
+      </WallCurationPanel>
     </section>
   );
 }
@@ -464,7 +462,7 @@ const wallFixture = {
       aspectRatio: "3:4",
       avatarUrl: null,
       captionsAvailable: true,
-      company: "Northstar Labs",
+      company: "Tidewater Apps",
       id: "fixture-public-video-2",
       name: "Maya Chen",
       playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
@@ -490,7 +488,7 @@ const wallFixture = {
       id: "fixture-public-testimonial-2",
       name: "Jordan Lee",
       publishedAt: Date.UTC(2026, 8, 2),
-      text: "The collection flow felt calm, trustworthy, and refreshingly simple for our customers.",
+      text: "Our customers finished the form in two minutes. Nobody asked us what they were supposed to write.",
       type: "text" as const,
     },
     {
@@ -500,7 +498,7 @@ const wallFixture = {
       name: "Morgan Reed",
       publishedAt: Date.UTC(2026, 8, 1),
       rating: 4,
-      text: "We went from scattered quotes to a clean public wall in one afternoon.",
+      text: "We went from screenshots in a shared doc to a public wall in one afternoon.",
       type: "text" as const,
     },
   ],
@@ -512,7 +510,11 @@ export function PublicWallScreenFixture() {
 }
 
 export function ProPublicWallScreenFixture() {
-  return <HostedWall wall={{ ...wallFixture, attributionRequired: false }} />;
+  return (
+    <HostedWall
+      wall={{ ...wallFixture, attributionRequired: false, theme: "light" }}
+    />
+  );
 }
 
 export function EmptyPublicWallScreenFixture() {
@@ -528,16 +530,16 @@ export function OrganizationSettingsScreenFixture() {
       canUpdate
       embedOrigin="https://proof.example"
       logoUrl={image.imageUrl}
-      name="Visual Studio"
+      name="Fernhill Studio"
       onChangePublicSlug={async () => undefined}
       onRemoveLogo={image.remove}
       onRename={async () => undefined}
       onUploadLogo={image.upload}
       onUpdateWallSettings={async () => undefined}
-      publicSlug="visual-studio"
+      publicSlug="fernhill-studio"
       publicSlugCanChange
       wallSettings={{
-        accentColor: "#6d5dfc",
+        accentColor: "#0f766e",
         canHideAttribution: true,
         hideAttribution: false,
         theme: "system",
@@ -563,8 +565,8 @@ export function WorkspaceDeletionScreenFixture() {
         </p>
       </div>
       <WorkspaceDeletionSection
-        brandName="Visual Studio"
-        initialConfirmation="Visual Studio"
+        brandName="Fernhill Studio"
+        initialConfirmation="Fernhill Studio"
         initialDialogOpen
         onDelete={async () => undefined}
         onExport={async () => undefined}
@@ -576,7 +578,7 @@ export function WorkspaceDeletionScreenFixture() {
 export function WorkspaceDeletionProgressScreenFixture() {
   return (
     <WorkspaceDeletionProgress
-      brandName="Visual Studio"
+      brandName="Fernhill Studio"
       lastError="Mux asset deletion failed (503)"
       onRetry={async () => undefined}
       phase="providerCleanup"
@@ -602,10 +604,10 @@ export function DashboardBackgroundScreenFixture() {
               <BrandMark />
               <span className="min-w-0">
                 <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
-                  Visual Studio
+                  Fernhill Studio
                 </span>
                 <span className="text-ink-2 block truncate font-mono text-[11px]">
-                  /c/visual-studio
+                  /c/fernhill-studio
                 </span>
               </span>
             </div>
@@ -660,9 +662,9 @@ export function DashboardBackgroundScreenFixture() {
           <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
             <BrandDashboardView
               copyCollectionUrl={async () => undefined}
-              name="Visual Studio"
+              name="Fernhill Studio"
               pendingCount={0}
-              publicSlug="visual-studio"
+              publicSlug="fernhill-studio"
             />
           </div>
         </div>

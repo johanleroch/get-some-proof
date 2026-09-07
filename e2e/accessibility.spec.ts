@@ -111,7 +111,7 @@ test("dark theme destructive text retains AA contrast", async ({ page }) => {
   });
   await page.goto("/visual-evidence/collection-form");
   await expect(
-    page.getByRole("heading", { name: "Share your Visual Studio story" }),
+    page.getByRole("heading", { name: "Share your Fernhill Studio story" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.waitForLoadState("networkidle");

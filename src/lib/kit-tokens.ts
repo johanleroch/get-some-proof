@@ -265,7 +265,7 @@ export const typeStyles: TypeStyle[] = [
     weight: 800,
     tracking: -0.035,
     use: "Public Wall and Collection Form titles",
-    sample: "Share your Visual Studio story",
+    sample: "Share your Fernhill Studio story",
   },
   {
     name: "display",

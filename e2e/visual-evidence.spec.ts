@@ -38,7 +38,7 @@ for (const screen of config.screens) {
     const configuredOrganizationSlug =
       process.env.VISUAL_EVIDENCE_ORGANIZATION_SLUG;
     const organizationSlug = fixtureMode
-      ? (configuredOrganizationSlug ?? "visual-studio-l5pg")
+      ? (configuredOrganizationSlug ?? "fernhill-studio-l5pg")
       : configuredOrganizationSlug;
     if (screen.requiresAuth && !fixtureMode) {
       const email = process.env.VISUAL_EVIDENCE_EMAIL;
