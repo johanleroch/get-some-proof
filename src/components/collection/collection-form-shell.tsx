@@ -1225,7 +1225,8 @@ export function CollectionFormShellView({
           // Shared controls resolve these tokens within the customer surface.
           "--brand": brand.primaryColor,
           "--brand-ink": accentInk(brand.primaryColor),
-          "--brand-strong": brand.primaryColor,
+          "--brand-strong":
+            "oklch(from var(--brand-accent) calc(l - 0.08) c h)",
           "--brand-soft":
             "color-mix(in srgb, var(--brand-accent) 12%, var(--surface))",
           "--brand-soft-2":
