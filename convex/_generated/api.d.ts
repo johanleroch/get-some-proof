@@ -24,6 +24,7 @@ import type * as collectionQuotas from "../collectionQuotas.js";
 import type * as collectionRateLimit from "../collectionRateLimit.js";
 import type * as dashboard from "../dashboard.js";
 import type * as domain_brand from "../domain/brand.js";
+import type * as domain_colorContrast from "../domain/colorContrast.js";
 import type * as domain_invitation from "../domain/invitation.js";
 import type * as domain_muxWebhook from "../domain/muxWebhook.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
@@ -95,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   collectionRateLimit: typeof collectionRateLimit;
   dashboard: typeof dashboard;
   "domain/brand": typeof domain_brand;
+  "domain/colorContrast": typeof domain_colorContrast;
   "domain/invitation": typeof domain_invitation;
   "domain/muxWebhook": typeof domain_muxWebhook;
   "domain/organizationSlug": typeof domain_organizationSlug;

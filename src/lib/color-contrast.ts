@@ -7,4 +7,4 @@ export {
   contrastRatio,
   hexToRgb,
   relativeLuminance,
-} from "@convex/domain/color-contrast";
+} from "@convex/domain/colorContrast";

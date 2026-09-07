@@ -300,7 +300,7 @@
     }
   `;
 
-  /** AA ink on a Brand accent; mirrors convex/domain/color-contrast. */
+  /** AA ink on a Brand accent; mirrors convex/domain/colorContrast. */
   function accentInk(hex) {
     const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
     if (!match) return "#2e2a25";

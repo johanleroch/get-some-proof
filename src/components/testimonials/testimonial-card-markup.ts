@@ -3,7 +3,7 @@ import type {
   TestimonialCardValue,
   TestimonialCardVideoValue,
 } from "@convex/testimonialCardValue";
-import { accentInk } from "@convex/domain/color-contrast";
+import { accentInk } from "@convex/domain/colorContrast";
 
 export type {
   TestimonialCardTextValue,
