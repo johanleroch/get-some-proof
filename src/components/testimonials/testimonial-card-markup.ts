@@ -102,12 +102,16 @@ export function testimonialCardHtml({
     : "";
   const text =
     testimonial.type === "text"
-      ? `<blockquote class="text-[15px] leading-7 font-medium tracking-[-0.01em]">${escapeHtml(testimonial.text)}</blockquote>`
+      ? `<blockquote style="white-space:pre-wrap" class="text-[15px] leading-7 font-medium tracking-[-0.01em]">${testimonial.richText ? testimonial.richText.map((block) => block.children.map((leaf) => (leaf.highlight ? `<mark style="background:#fef08a;color:#1c1917;border-radius:2px">${escapeHtml(leaf.text)}</mark>` : escapeHtml(leaf.text))).join("")).join("<br>") : escapeHtml(testimonial.text).replace(/\n/g, "<br>")}</blockquote>`
+      : "";
+  const attachments =
+    testimonial.type === "text" && testimonial.images?.length
+      ? `<div class="testimonial-images" style="margin-top:20px;display:grid;grid-template-columns:repeat(${Math.min(testimonial.images.length, 3)},minmax(0,1fr));gap:8px">${testimonial.images.map((image, index) => `<img alt="Image ${index + 1} from ${escapeHtml(testimonial.name)}" src="${escapeHtml(image.url)}" loading="lazy" style="width:100%;height:auto;max-height:320px;object-fit:contain;border-radius:8px">`).join("")}</div>`
       : "";
   const body =
     testimonial.type === "video"
       ? video
-      : `<div class="content space-y-5 p-5 sm:p-6"><div class="identity flex items-center gap-3">${avatarMarkup(testimonial)}<div class="person min-w-0"><p class="name truncate font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div>${starsMarkup(testimonial.rating)}${text}</div>`;
+      : `<div class="content space-y-5 p-5 sm:p-6"><div class="identity flex items-center gap-3">${avatarMarkup(testimonial)}<div class="person min-w-0"><p class="name truncate font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div>${starsMarkup(testimonial.rating)}${text}${attachments}</div>`;
 
   const menu = menuMount
     ? '<span class="absolute right-3 top-3 z-20" data-gsp-card-menu=""></span>'

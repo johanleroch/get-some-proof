@@ -1,3 +1,4 @@
+import rateLimiter from "@convex-dev/rate-limiter/convex.config.js";
 import betterAuth from "@convex-dev/better-auth/convex.config";
 import stripe from "@convex-dev/stripe/convex.config.js";
 import authz from "@djpanda/convex-authz/convex.config";
@@ -28,5 +29,6 @@ const app = defineApp({
 app.use(betterAuth);
 app.use(authz);
 app.use(stripe);
+app.use(rateLimiter);
 
 export default app;

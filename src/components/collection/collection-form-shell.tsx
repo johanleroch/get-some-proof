@@ -11,6 +11,12 @@ import {
 } from "@tabler/icons-react";
 import Image from "next/image";
 
+import { uploadTestimonialImages } from "@/lib/upload-testimonial-images";
+import { TestimonialImagesInput } from "@/components/testimonials/testimonial-images-input";
+import type { TestimonialImage } from "@convex/domain/testimonialImage";
+import { TestimonialEditor } from "@/components/testimonials/testimonial-editor";
+import type { TestimonialRichText } from "@convex/domain/testimonialRichText";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { buildPublicationConsent } from "@convex/domain/submission";
@@ -29,14 +35,7 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { createClientSubmissionId } from "@/lib/client-submission-id";
 import { accentInk } from "@/lib/color-contrast";
 import { cn } from "@/lib/utils";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -75,8 +74,10 @@ type SubmissionIdentityInput = {
 };
 
 type TextSubmissionInput = SubmissionIdentityInput & {
+  imageIds?: Id<"testimonialImages">[];
   publicSlug: string;
   text: string;
+  richText?: TestimonialRichText;
   turnstileToken?: string;
 };
 
@@ -316,12 +317,10 @@ function VideoStep({
   onBack,
   onContinue,
   onFileChange,
-  onLanguageChange,
   onRecordingChange,
   recorderVisualFixture,
   recording,
   recordingSupported,
-  spokenLanguage,
   validating,
   videoFile,
 }: {
@@ -329,12 +328,10 @@ function VideoStep({
   onBack: () => void;
   onContinue: () => void;
   onFileChange: (file: File | undefined) => void;
-  onLanguageChange: (language: "en" | "fr") => void;
   onRecordingChange: (recording: boolean) => void;
   recorderVisualFixture?: boolean;
   recording: boolean;
   recordingSupported: boolean;
-  spokenLanguage: "en" | "fr";
   validating: boolean;
   videoFile: File | undefined;
 }) {
@@ -345,8 +342,7 @@ function VideoStep({
           Record your story
         </h2>
         <p className="text-ink-2 mt-1 text-sm">
-          Take up to 2 minutes. You can check your camera and microphone, review
-          the result, and record again before continuing.
+          Up to 2 minutes. Review or retake before sending.
         </p>
       </div>
       <div className="bg-surface-2 rounded-lg border p-4 text-sm">
@@ -391,24 +387,6 @@ function VideoStep({
         {videoFile ? (
           <p className="text-xs font-medium">Selected: {videoFile.name}</p>
         ) : null}
-      </Field>
-      <Field>
-        <Label htmlFor="spoken-language">Spoken language</Label>
-        <Select
-          onValueChange={(value) => onLanguageChange(value as "en" | "fr")}
-          value={spokenLanguage}
-        >
-          <SelectTrigger className="w-full" id="spoken-language">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="fr">French</SelectItem>
-          </SelectContent>
-        </Select>
-        <FieldDescription>
-          Used to generate captions. Caption failure will not block your video.
-        </FieldDescription>
       </Field>
       {error ? <ErrorToast message={error} /> : null}
       <div className="flex gap-3">
@@ -512,12 +490,18 @@ function TextStep({
   onContinue,
   text,
   textLength,
+  richText,
+  imageFiles,
+  onImageFilesChange,
   valid,
 }: {
   onBack: () => void;
-  onChange: (value: string) => void;
+  onChange: (value: string, richText: TestimonialRichText) => void;
+  imageFiles: File[];
+  onImageFilesChange: (files: File[]) => void;
   onContinue: () => void;
   text: string;
+  richText?: TestimonialRichText;
   textLength: number;
   valid: boolean;
 }) {
@@ -533,14 +517,16 @@ function TextStep({
       </div>
       <Field>
         <Label htmlFor="testimonial-text">Your testimonial</Label>
-        <Textarea
-          className="min-h-40 resize-y"
-          data-step-focus
+        <TestimonialEditor
+          autoFocus
           id="testimonial-text"
-          maxLength={2_000}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="What changed for you?"
-          value={text}
+          text={text}
+          richText={richText}
+          onChange={onChange}
+        />
+        <TestimonialImagesInput
+          files={imageFiles}
+          onFilesChange={onImageFilesChange}
         />
         <div className="flex justify-between text-xs">
           <span
@@ -863,7 +849,13 @@ async function submitCollectionForm(input: {
   submitterEmail: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
   textValid: boolean;
+  imageFiles: File[];
+  uploadImage?: (
+    file: File,
+    clientSubmissionId: string,
+  ) => Promise<TestimonialImage>;
   uploadAvatar?: (
     file: File,
     clientSubmissionId: string,
@@ -917,10 +909,18 @@ async function submitCollectionForm(input: {
       submitterName: input.submitterName.trim(),
     };
     if (input.proofType === "text") {
+      const images = await uploadTestimonialImages(
+        input.imageFiles,
+        input.uploadImage
+          ? (file) => input.uploadImage!(file, input.clientSubmissionId)
+          : undefined,
+      );
       await input.submitText({
+        imageIds: images.map((image) => image.id),
         ...identity,
         publicSlug: input.brand.publicSlug,
         text: input.text.trim(),
+        richText: input.richText,
         ...(input.botToken ? { turnstileToken: input.botToken } : {}),
       });
     } else if (input.videoFile && input.videoDurationSeconds) {
@@ -1022,6 +1022,7 @@ type InitialCollectionValues = Partial<{
   submitterEmail: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
 }>;
 
 function normalizeInitialValues(values?: InitialCollectionValues) {
@@ -1053,6 +1054,7 @@ function hasValidIdentity(name: string, email: string) {
 
 function buildConsentForForm(input: {
   avatar: File | undefined;
+  imageCount: number;
   brand: PublicBrand;
   company: string;
   name: string;
@@ -1061,6 +1063,7 @@ function buildConsentForForm(input: {
 }) {
   return buildPublicationConsent({
     brandName: input.brand.name,
+    imageCount: input.imageCount,
     privacyContact: input.brand.privacyContact,
     suppliedIdentity: {
       avatarSupplied: input.avatar !== undefined,
@@ -1090,6 +1093,7 @@ export function CollectionFormShellView({
     throw new Error("Video submission is unavailable in this preview.");
   },
   uploadAvatar,
+  uploadImage,
   uploadVideo = uploadDirectVideo,
   inspectVideo = inspectVideoFile,
   botChallenge,
@@ -1115,6 +1119,10 @@ export function CollectionFormShellView({
   }) => Promise<unknown>;
   submitText?: (input: TextSubmissionInput) => Promise<SubmissionResult>;
   submitVideo?: (input: VideoSubmissionInput) => Promise<VideoSubmissionResult>;
+  uploadImage?: (
+    file: File,
+    clientSubmissionId: string,
+  ) => Promise<TestimonialImage>;
   uploadAvatar?: (
     file: File,
     clientSubmissionId: string,
@@ -1146,8 +1154,10 @@ export function CollectionFormShellView({
   const [proofType, setProofType] = useState<"text" | "video">(
     initialProofType,
   );
-  const [clientSubmissionId] = useState(() => crypto.randomUUID());
+  const [clientSubmissionId] = useState(createClientSubmissionId);
   const [text, setText] = useState(normalizedInitialValues.text);
+  const [richText, setRichText] = useState<TestimonialRichText>();
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitterName, setSubmitterName] = useState(
     normalizedInitialValues.submitterName,
   );
@@ -1168,7 +1178,7 @@ export function CollectionFormShellView({
   const videoDimensionsRef = useRef<
     { height: number; width: number } | undefined
   >(undefined);
-  const [spokenLanguage, setSpokenLanguage] = useState<"en" | "fr">("en");
+  const spokenLanguage = "en";
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [recording, setRecording] = useState(false);
   const flowRef = useRef<HTMLElement | null>(null);
@@ -1195,6 +1205,7 @@ export function CollectionFormShellView({
   const textValid = textLength >= 20 && textLength <= 2_000;
   const identityValid = hasValidIdentity(submitterName, submitterEmail);
   const consent = buildConsentForForm({
+    imageCount: proofType === "text" ? imageFiles.length : 0,
     avatar,
     brand,
     company,
@@ -1237,7 +1248,13 @@ export function CollectionFormShellView({
           {step === 2 && proofType === "text" ? (
             <TextStep
               onBack={() => setStep(1)}
-              onChange={setText}
+              onChange={(text, content) => {
+                setText(text);
+                setRichText(content);
+              }}
+              richText={richText}
+              imageFiles={imageFiles}
+              onImageFilesChange={setImageFiles}
               onContinue={() => setStep(3)}
               text={text}
               textLength={textLength}
@@ -1270,12 +1287,10 @@ export function CollectionFormShellView({
                 videoDimensionsRef.current = undefined;
                 setError(null);
               }}
-              onLanguageChange={setSpokenLanguage}
               onRecordingChange={setRecording}
               recorderVisualFixture={recorderVisualFixture}
               recording={recording}
               recordingSupported={recordingSupported}
-              spokenLanguage={spokenLanguage}
               validating={validatingVideo}
               videoFile={videoFile}
             />
@@ -1333,6 +1348,9 @@ export function CollectionFormShellView({
                   submitterEmail,
                   submitterName,
                   text,
+                  richText,
+                  imageFiles,
+                  uploadImage,
                   textValid,
                   uploadAvatar,
                   uploadVideo,
@@ -1388,6 +1406,10 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
     publicSlug,
   });
   const submitText = useAction(api.submissions.submitText);
+  const generateImageUpload = useMutation(
+    api.testimonialImages.generateUploadUrl,
+  );
+  const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
   const createDirectUpload = useAction(api.video.createDirectUpload);
   const submitVideo = useAction(api.video.submit);
   const cancelVideo = useMutation(api.video.cancelUpload);
@@ -1444,6 +1466,12 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
       }}
       submitText={submitText}
       submitVideo={submitVideo}
+      uploadImage={async (file, clientSubmissionId) => {
+        const identity = { clientSubmissionId, publicSlug };
+        const { imageId, uploadUrl } = await generateImageUpload(identity);
+        const storageId = await uploadProfileImage(file, uploadUrl);
+        return registerImageUpload({ ...identity, imageId, storageId });
+      }}
       uploadAvatar={async (file, clientSubmissionId) => {
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
           clientSubmissionId,

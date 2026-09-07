@@ -5,12 +5,64 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionFormShellView } from "./collection-form-shell";
 
+// These tests exercise form orchestration. Plate selection and paste are covered in real browsers.
+vi.mock("@/components/testimonials/testimonial-editor", () => ({
+  TestimonialEditor: ({
+    id,
+    text,
+    onChange,
+  }: {
+    id: string;
+    text: string;
+    onChange: (text: string, value: unknown) => void;
+  }) => (
+    <textarea
+      data-step-focus
+      id={id}
+      value={text}
+      onChange={(event) =>
+        onChange(event.target.value, [
+          { type: "p", children: [{ text: event.target.value }] },
+        ])
+      }
+    />
+  ),
+}));
+
 describe("CollectionFormShellView", () => {
   beforeEach(cleanup);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("renders when randomUUID is unavailable in an insecure browser context", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.fill(7);
+        return bytes;
+      },
+    });
+
+    render(
+      <CollectionFormShellView
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Acme story",
+          logoUrl: null,
+          name: "Acme Studio",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-studio",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Share your Acme story" }),
+    ).toBeVisible();
+  });
 
   it("renders the configured public Brand identity without private workspace data", () => {
     render(
@@ -260,10 +312,7 @@ describe("CollectionFormShellView", () => {
     fireEvent.change(screen.getByLabelText("Upload a video"), {
       target: { files: [file] },
     });
-    fireEvent.keyDown(screen.getByLabelText("Spoken language"), {
-      key: "ArrowDown",
-    });
-    fireEvent.click(screen.getByRole("option", { name: "French" }));
+    expect(screen.queryByLabelText("Spoken language")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByText("About you")).toBeVisible();
@@ -283,7 +332,7 @@ describe("CollectionFormShellView", () => {
         dimensions: { height: 1920, width: 1080 },
         fileSizeBytes: file.size,
         mimeType: "video/mp4",
-        spokenLanguage: "fr",
+        spokenLanguage: "en",
       }),
     );
     expect(uploadVideo).toHaveBeenCalledWith(

@@ -1,3 +1,4 @@
+import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { notFound } from "next/navigation";
 
 import {
@@ -27,6 +28,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "rich-testimonial": RichTestimonialScreenFixture,
   "collection-form": CollectionFormScreenFixture,
   "collection-form-closed": CollectionFormClosedScreenFixture,
   "collection-form-details": CollectionFormDetailsScreenFixture,

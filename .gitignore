@@ -21,6 +21,7 @@
 
 /public/embed/mux-player.js
 /public/embed/video-player-policy.js
+/certificates
 /.scratch
 /output
 *.tsbuildinfo

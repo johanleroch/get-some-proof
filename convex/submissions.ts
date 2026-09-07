@@ -1,3 +1,10 @@
+import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
+import { imageIdsValidator } from "./domain/testimonialImage";
+import { setTestimonialImages } from "./testimonialImages";
+import {
+  richTextValidator,
+  normalizeRichText,
+} from "./domain/testimonialRichText";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -34,6 +41,7 @@ import { requireOrganizationPermission } from "./security/organizationAccess";
 import { verifyTurnstileToken } from "./turnstile";
 
 const textSubmissionArgs = {
+  imageIds: imageIdsValidator,
   ageConfirmed: v.boolean(),
   avatarReservationId: v.optional(v.id("submissionAvatarUploads")),
   avatarStorageId: v.optional(v.id("_storage")),
@@ -48,6 +56,7 @@ const textSubmissionArgs = {
   submitterEmail: v.string(),
   submitterName: v.string(),
   text: v.string(),
+  richText: v.optional(richTextValidator),
   turnstileToken: v.optional(v.string()),
 };
 
@@ -58,9 +67,7 @@ const submissionResult = v.object({
 
 const emailAttemptLeaseMs = 5 * 60 * 1_000;
 const avatarReservationTtlMs = 60 * 60 * 1_000;
-const orphanedStorageMinimumAgeMs = 2 * 60 * 60 * 1_000;
 const avatarCleanupDelayMs = 3 * 60 * 60 * 1_000;
-const storageCleanupLeaseMs = 60 * 60 * 1_000;
 const maximumActiveAvatarReservations = 50;
 const maximumAvatarUploadAttempts = 3;
 
@@ -251,103 +258,7 @@ export const expireAvatarUpload = internalMutation({
         await ctx.storage.delete(reservation.storageId);
       await ctx.db.delete(reservation._id);
     }
-    const cleanupKey = "submission-avatar-orphans" as const;
-    const existingCleanup = await ctx.db
-      .query("storageCleanupJobs")
-      .withIndex("by_key", (index) => index.eq("key", cleanupKey))
-      .unique();
-    if (existingCleanup && existingCleanup.leaseExpiresAt > now) return null;
-    const cleanupAttemptId = randomSubmissionManagementToken();
-    const cleanupJobId = existingCleanup
-      ? existingCleanup._id
-      : await ctx.db.insert("storageCleanupJobs", {
-          attemptId: cleanupAttemptId,
-          createdAt: now,
-          key: cleanupKey,
-          leaseExpiresAt: now + storageCleanupLeaseMs,
-          updatedAt: now,
-        });
-    if (existingCleanup) {
-      await ctx.db.patch(existingCleanup._id, {
-        attemptId: cleanupAttemptId,
-        leaseExpiresAt: now + storageCleanupLeaseMs,
-        updatedAt: now,
-      });
-    }
-    await ctx.scheduler.runAfter(
-      0,
-      internal.submissions.cleanupUnreferencedAvatarStorage,
-      { attemptId: cleanupAttemptId, cleanupJobId },
-    );
-    return null;
-  },
-});
-
-export const cleanupUnreferencedAvatarStorage = internalMutation({
-  args: {
-    attemptId: v.string(),
-    cleanupJobId: v.id("storageCleanupJobs"),
-    cursor: v.optional(v.string()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const cleanupJob = await ctx.db.get(args.cleanupJobId);
-    if (!cleanupJob || cleanupJob.attemptId !== args.attemptId) return null;
-    await ctx.db.patch(cleanupJob._id, {
-      leaseExpiresAt: Date.now() + storageCleanupLeaseMs,
-      updatedAt: Date.now(),
-    });
-    const storedFiles = await ctx.db.system
-      .query("_storage")
-      .order("asc")
-      .paginate({ cursor: args.cursor ?? null, numItems: 50 });
-    for (const storedFile of storedFiles.page) {
-      if (storedFile._creationTime > Date.now() - orphanedStorageMinimumAgeMs)
-        continue;
-      const [profile, organization, testimonial, uploadReservation] =
-        await Promise.all([
-          ctx.db
-            .query("userProfiles")
-            .withIndex("by_avatar_storage_id", (index) =>
-              index.eq("avatarStorageId", storedFile._id),
-            )
-            .first(),
-          ctx.db
-            .query("organizations")
-            .withIndex("by_logo_storage_id", (index) =>
-              index.eq("logoStorageId", storedFile._id),
-            )
-            .first(),
-          ctx.db
-            .query("testimonials")
-            .withIndex("by_avatar_storage_id", (index) =>
-              index.eq("avatarStorageId", storedFile._id),
-            )
-            .first(),
-          ctx.db
-            .query("submissionAvatarUploads")
-            .withIndex("by_storage_id", (index) =>
-              index.eq("storageId", storedFile._id),
-            )
-            .first(),
-        ]);
-      if (!profile && !organization && !testimonial && !uploadReservation) {
-        await ctx.storage.delete(storedFile._id);
-      }
-    }
-    if (!storedFiles.isDone) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.submissions.cleanupUnreferencedAvatarStorage,
-        {
-          attemptId: args.attemptId,
-          cleanupJobId: cleanupJob._id,
-          cursor: storedFiles.continueCursor,
-        },
-      );
-    } else {
-      await ctx.db.delete(cleanupJob._id);
-    }
+    await scheduleOrphanedStorageCleanup(ctx);
     return null;
   },
 });
@@ -497,6 +408,7 @@ export const createTextRecords = internalMutation({
 
     const consent = buildPublicationConsent({
       brandName: brand.name,
+      imageCount: args.imageIds?.length ?? 0,
       privacyContact: brand.privacyContact,
       suppliedIdentity: {
         avatarSupplied: args.avatarStorageId !== undefined,
@@ -536,9 +448,16 @@ export const createTextRecords = internalMutation({
       submitterEmail: submission.email,
       submitterName: submission.name,
       text: submission.text,
+      richText: normalizeRichText(args.richText, submission.text),
       createdAt: now,
       updatedAt: now,
     });
+    await setTestimonialImages(
+      ctx,
+      (await ctx.db.get(testimonialId))!,
+      args.imageIds ?? [],
+      clientSubmissionId,
+    );
     await consumeFreeCollectionCredit(ctx, {
       organizationId: brand._id,
       plan: entitlement.effectivePlan,
@@ -793,6 +712,7 @@ export const getPrivate = query({
     submitterName: v.string(),
     testimonialId: v.id("testimonials"),
     text: v.string(),
+    richText: v.optional(richTextValidator),
   }),
   handler: async (ctx, args) => {
     const access = await requireOrganizationPermission(
@@ -834,6 +754,7 @@ export const getPrivate = query({
       submitterName: testimonial.submitterName,
       testimonialId: testimonial._id,
       text: testimonial.text,
+      richText: testimonial.richText,
     };
   },
 });
@@ -857,6 +778,7 @@ export const getByManagementToken = query({
       submitterEmail: v.string(),
       submitterName: v.string(),
       text: v.string(),
+      richText: v.optional(richTextValidator),
     }),
   ),
   handler: async (ctx, args) => {
@@ -894,6 +816,7 @@ export const getByManagementToken = query({
       submitterEmail: testimonial.submitterEmail,
       submitterName: testimonial.submitterName,
       text: testimonial.text,
+      richText: testimonial.richText,
     };
   },
 });
@@ -918,3 +841,6 @@ export const pendingCount = query({
     return pending.length;
   },
 });
+
+/** Compatibility entrypoint for already scheduled storage cleanup jobs. */
+export { cleanupUnreferencedAvatarStorage } from "./storageCleanup";

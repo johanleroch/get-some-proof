@@ -17,14 +17,8 @@ import { ErrorToast } from "@/components/ui/error-toast";
 import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
+import { createClientSubmissionId } from "@/lib/client-submission-id";
 import { inspectVideoFile } from "@/lib/video-file";
 import { useVideoUpload } from "@/hooks/use-video-upload";
 import { uploadDirectVideo } from "@/lib/video-upload";
@@ -74,7 +68,6 @@ export function VideoRetryFormView({
   uploadVideo?: typeof uploadDirectVideo;
 }) {
   const [file, setFile] = useState<File>();
-  const [language, setLanguage] = useState<"en" | "fr">();
   const videoUpload = useVideoUpload();
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
@@ -112,7 +105,7 @@ export function VideoRetryFormView({
     );
   }
 
-  const spokenLanguage = language ?? activeContext.spokenLanguage;
+  const spokenLanguage = activeContext.spokenLanguage;
   async function submitReplacement() {
     if (!file) return;
     setError(null);
@@ -123,7 +116,7 @@ export function VideoRetryFormView({
     }
     setSubmitting(true);
     setClaimedContext(activeContext);
-    const clientSubmissionId = crypto.randomUUID();
+    const clientSubmissionId = createClientSubmissionId();
     try {
       const completed = await videoUpload.run({
         file,
@@ -194,21 +187,6 @@ export function VideoRetryFormView({
             type="file"
           />
           {file ? <FieldDescription>{file.name}</FieldDescription> : null}
-        </Field>
-        <Field>
-          <Label htmlFor="replacement-language">Spoken language</Label>
-          <Select
-            onValueChange={(value) => setLanguage(value as "en" | "fr")}
-            value={spokenLanguage}
-          >
-            <SelectTrigger className="w-full" id="replacement-language">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-            </SelectContent>
-          </Select>
         </Field>
         {videoUpload.phase !== "idle" ? (
           <VideoUploadProgress

@@ -1,3 +1,4 @@
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import authzTest from "@djpanda/convex-authz/test";
 import betterAuthTest from "@convex-dev/better-auth/test";
 import { convexTest } from "convex-test";
@@ -18,6 +19,7 @@ export function createConvexTest() {
   const t = convexTest(schema, modules);
   betterAuthTest.register(t);
   authzTest.register(t);
+  rateLimiterTest.register(t);
   t.registerComponent("stripe", stripeTestSchema, stripeTestModules);
   return t;
 }

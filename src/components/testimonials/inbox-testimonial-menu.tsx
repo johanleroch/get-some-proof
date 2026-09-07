@@ -3,6 +3,7 @@ import {
   IconArrowBackUp,
   IconDots,
   IconEyeOff,
+  IconHighlight,
   IconSend,
   IconShieldX,
   IconTrash,
@@ -19,7 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export type InboxTestimonialAction =
-  "archive" | "delete" | "publish" | "spam" | "undo-spam" | "unpublish";
+  | "highlight"
+  | "archive"
+  | "delete"
+  | "publish"
+  | "spam"
+  | "undo-spam"
+  | "unpublish";
 
 export type InboxTestimonialMenuValue = {
   moderationStatus: "pending" | "published" | "archived" | "spam";
@@ -67,6 +74,11 @@ export function InboxTestimonialMenu({
           </DropdownMenuItem>
         ) : (
           <>
+            {testimonial.submissionType === "text" ? (
+              <DropdownMenuItem onSelect={() => onAction("highlight")}>
+                <IconHighlight aria-hidden="true" /> Highlight a phrase
+              </DropdownMenuItem>
+            ) : null}
             {testimonial.moderationStatus === "published" ? (
               <DropdownMenuItem onSelect={() => onAction("unpublish")}>
                 <IconEyeOff aria-hidden="true" />

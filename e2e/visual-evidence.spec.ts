@@ -99,6 +99,25 @@ for (const screen of config.screens) {
           .every((image) => image.complete && image.naturalWidth > 0),
       );
     }
+    if (screen.slug === "collection-form-write-long") {
+      const editor = page.getByRole("textbox", { name: "Your testimonial" });
+      await editor.click();
+      await editor.press("ControlOrMeta+End");
+      for (let line = 0; line < 12; line++) {
+        await editor.press("Enter");
+        await editor.pressSequentially("More useful feedback.", { delay: 10 });
+      }
+      await editor.evaluate((el) => {
+        el.scrollTop = 0;
+      });
+      await page.getByRole("heading", { name: "Tell your story" }).click();
+    }
+    if (screen.slug === "rich-testimonial-highlight") {
+      await page
+        .getByRole("button", { name: "Highlight a phrase", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+    }
     if (fixtureMode && screen.slug === "testimonial-inbox-player") {
       await page
         .getByRole("button", { name: "Play Remy Jupille's testimonial" })
@@ -146,7 +165,7 @@ for (const screen of config.screens) {
 
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
-      fullPage: true,
+      fullPage: screen.slug !== "rich-testimonial-highlight",
       animations: "disabled",
       caret: "initial",
       scale: "css",

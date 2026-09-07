@@ -1,3 +1,5 @@
+import { imageValueValidator } from "./domain/testimonialImage";
+import { richTextValidator } from "./domain/testimonialRichText";
 import { type Infer, v } from "convex/values";
 
 export const testimonialCardIdentityValidator = {
@@ -17,6 +19,8 @@ export const testimonialCardValueValidator = v.union(
   v.object({
     ...testimonialCardIdentityValidator,
     text: v.string(),
+    richText: v.optional(richTextValidator),
+    images: v.optional(v.array(imageValueValidator)),
     type: v.literal("text"),
   }),
   v.object({
@@ -39,10 +43,13 @@ export type TestimonialCardVideoValue = Extract<
   { type: "video" }
 >;
 
-type TestimonialCardIdentity = Omit<TestimonialCardTextValue, "text" | "type">;
+type TestimonialCardIdentity = Omit<
+  TestimonialCardTextValue,
+  "text" | "type" | "richText" | "images"
+>;
 
 type TestimonialCardContent =
-  | Pick<TestimonialCardTextValue, "text" | "type">
+  | Pick<TestimonialCardTextValue, "text" | "type" | "richText" | "images">
   | Pick<
       TestimonialCardVideoValue,
       | "aspectRatio"
@@ -54,7 +61,10 @@ type TestimonialCardContent =
 
 export function testimonialCardValue(
   identity: TestimonialCardIdentity,
-  content: Pick<TestimonialCardTextValue, "text" | "type">,
+  content: Pick<
+    TestimonialCardTextValue,
+    "text" | "type" | "richText" | "images"
+  >,
 ): TestimonialCardTextValue;
 export function testimonialCardValue(
   identity: TestimonialCardIdentity,
