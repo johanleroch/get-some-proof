@@ -424,9 +424,11 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   left, appearing neutral and blinking into the message's mood (happy,
   neutral, worried, sad; the loader for loading), and the message in a
   speech bubble: `--surface`, `--line` border, `--radius-lg`,
-  `--shadow-float`, a small tail towards the blob, title at `ui` 600,
-  description at `small` in `--ink-2`, one optional text action in
-  `--brand-text`, a dismiss cross. Toasts appear top right, 20px from the edges (16px on mobile). Sonner
+  `--shadow-float`, a small tail towards the blob, title at `ui` 600 in the
+  status color (`--success`, `--info`, `--warning`, `--danger`; `--ink` while
+  loading), description at `small` in `--ink-2`, one optional text action in
+  the same status color, a dismiss cross. The bubble itself stays `--surface`,
+  never a tinted fill: like a badge, the status lives in the words. Toasts appear top right, 20px from the edges (16px on mobile). Sonner
   stays the engine (stacking, timing, swipe to dismiss); `richColors` and
   its icons are retired. The designer menu (⌘.) has a "Test toast" entry to
   check placement on any screen.
@@ -441,13 +443,58 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 
 ## 8. Motion
 
-- Durations: 150ms for color and opacity, 200ms for transforms, 250ms for
-  layout reveals. Easing `cubic-bezier(0.2, 0, 0, 1)` for CSS. Entrances that
-  use `motion/react` use a light spring, `stiffness 260, damping 28`, which
-  settles fast and never overshoots visibly.
+Nothing in this interface moves in a straight line at a constant rate. The
+mascot set the hand (`src/lib/blob-animations.ts`): things overshoot and
+settle, they squash when they land and stretch when they travel, and they
+never stop dead. The rest of the interface borrows that hand, in moderation.
+
+### 8.1 The curves
+
+Five tokens in `globals.css`, and nothing else. Never write a raw
+`cubic-bezier` in a component.
+
+| Token                | Value                               | Use                                                                                  |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| `--ease-out-soft`    | `cubic-bezier(0.2, 0, 0, 1)`        | Colour, opacity, hover, focus rings. No motion.                                      |
+| `--ease-settle`      | `cubic-bezier(0.34, 1.4, 0.64, 1)`  | Small things arriving: menus, tooltips, toasts, the switch thumb, the checkbox mark. |
+| `--ease-settle-soft` | `cubic-bezier(0.34, 1.15, 0.64, 1)` | Heavier surfaces: dialogs, sheets, preview frames.                                   |
+| `--ease-exit`        | `cubic-bezier(0.4, 0, 0.9, 0.6)`    | Anything leaving. It never overshoots.                                               |
+| `--ease-sine`        | `cubic-bezier(0.45, 0, 0.55, 1)`    | The only curve allowed to loop (the mascot).                                         |
+
+**Mass decides the overshoot.** A switch thumb may bounce; a dialog may not.
+The bigger the surface, the flatter the curve and the longer the settle. A
+sheet slides in with weight and no overshoot at all. Getting this backwards
+is what makes an interface feel like a toy.
+
+**Enter and exit are never symmetric.** Something arriving takes its time and
+settles (`--motion-settle`, 320ms); something leaving is gone in
+`--motion-exit`, 140ms. Durations: `--motion-fast` 150ms for colour and
+opacity, `--motion-base` 200ms for transforms, `--motion-settle` 320ms for
+entrances that overshoot, `--motion-exit` 140ms for exits.
+
+### 8.2 Squash and stretch
+
+The one ingredient that reads as alive rather than merely eased. An element
+travelling stretches along its axis of travel and squashes across it; landing
+inverts that, then it settles. Volume is preserved: `scale(1.06, 0.94)`, never
+`scale(1.06, 1.06)`. Amplitude stays between 4 and 8 percent outside the
+mascot, which is allowed more. The pivot is where the element is anchored:
+the base for the blob, the tail for a speech bubble, the trigger for a menu.
+
+### 8.3 Where it applies
+
+- Toasts: sonner places the toast and restacks the pile with `--ease-settle`;
+  inside, the bubble arrives stretched and squashes as it lands
+  (`.toast-bubble`) and the mascot hops in 70ms later, pivoting on its base
+  (`.toast-mascot`), then blinks into the expression of the message. Two
+  parts, two moments: that stagger is what makes it read as a character
+  speaking, not a box appearing.
+- Menus, popovers, selects and tooltips: fade and scale from 95 percent with
+  `--ease-settle`, from the trigger's origin.
+- Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
 - Lists and grids mount with a 30ms stagger, 12px upward travel, opacity from 0. Maximum 12 items staggered; the rest appear instantly.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
-  tint. Toasts slide 8px from the top-right. Dialogs fade and scale from 0.98.
+  tint.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
@@ -459,6 +506,9 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Animate `transform` and `opacity` only. The global
   `prefers-reduced-motion` rule in `globals.css` stays and every animation
   must look correct when it fires (final state, no draw-in).
+
+Review the curves and replay every entrance in the development `/kit` page,
+Motion section.
 
 ## 9. Voice
 

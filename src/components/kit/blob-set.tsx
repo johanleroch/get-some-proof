@@ -194,8 +194,9 @@ export function BlobSet() {
             <p className="text-muted-foreground type-body mt-1">
               Notifications are told by the mascot: the blob on the left, its
               message in a speech bubble. The blob appears neutral and blinks
-              into the mood of the message; loading uses the site loader.
-              Success, info, warning, error and loading, from{" "}
+              into the mood of the message; loading uses the site loader. The
+              status colors the title and the action, never the bubble. Success,
+              info, warning, error and loading, from{" "}
               <code className="font-mono text-[13px]">blobToast.*</code>, the
               same calls as sonner.
             </p>
