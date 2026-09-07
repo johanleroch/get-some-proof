@@ -74,9 +74,22 @@ for (const screen of config.screens) {
       page.getByRole("heading", { name: screen.heading, exact: true }),
     ).toBeVisible();
     await page.waitForTimeout(250);
+    if (fixtureMode && screen.slug.startsWith("template")) {
+      // The gallery is tall and its video posters load lazily: walk the page
+      // once so every poster below the fold requests its image.
+      await page.evaluate(async () => {
+        const step = window.innerHeight;
+        for (let y = 0; y < document.body.scrollHeight; y += step) {
+          window.scrollTo(0, y);
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        window.scrollTo(0, 0);
+      });
+    }
     if (
       fixtureMode &&
       (screen.slug.startsWith("testimonial-inbox") ||
+        screen.slug.startsWith("template") ||
         (screen.slug.startsWith("public-wall") &&
           screen.slug !== "public-wall-empty"))
     ) {

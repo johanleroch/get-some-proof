@@ -64,6 +64,14 @@ describe("DevQuickAccess", () => {
     expect(
       screen.getByRole("menuitem", { name: "Screens" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Templates" })).toHaveAttribute(
+      "href",
+      "/kit/templates",
+    );
+    expect(
+      screen.getByRole("menuitem", { name: "Templates gallery" }),
+    ).toHaveAttribute("href", "/templates");
     expect(screen.queryByRole("menuitem", { name: "Inbox" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Public Wall" })).toBeNull();
   });
 });

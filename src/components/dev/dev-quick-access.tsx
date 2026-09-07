@@ -12,6 +12,7 @@ import { IconDeviceLaptop, IconMoon, IconSun } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { blobToast } from "@/components/brand/blob-toast";
 import { Sparkle } from "@/components/doodles";
 import {
   DropdownMenu,
@@ -167,16 +168,19 @@ function QuickAccessMenu({
         { href: "/account/security", label: "Security" },
       ]
     : [];
-  const publicPages: QuickLink[] = organization
-    ? [
-        { href: `/c/${organization.publicSlug}`, label: "Collection Form" },
-        { href: `/w/${organization.publicSlug}`, label: "Public Wall" },
-        {
-          href: `/c/${organization.publicSlug}/privacy`,
-          label: "Privacy notice",
-        },
-      ]
-    : [];
+  const publicPages: QuickLink[] = [
+    { href: "/templates", label: "Templates gallery" },
+    ...(organization
+      ? [
+          { href: `/c/${organization.publicSlug}`, label: "Collection Form" },
+          { href: `/w/${organization.publicSlug}`, label: "Public Wall" },
+          {
+            href: `/c/${organization.publicSlug}/privacy`,
+            label: "Privacy notice",
+          },
+        ]
+      : []),
+  ];
   const auth: QuickLink[] = [
     { href: "/sign-in", label: "Sign in" },
     { href: "/sign-up", label: "Sign up" },
@@ -221,6 +225,21 @@ function QuickAccessMenu({
             <a href="/kit">Kit</a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <a href="/kit/blob">Blob expressions</a>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              blobToast.success("Testimonial published.", {
+                description: "A test toast, to check placement on this screen.",
+              })
+            }
+          >
+            Test toast
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="/kit/templates">Templates</a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <a href="/screens">Screens</a>
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -235,17 +254,17 @@ function QuickAccessMenu({
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Public</DropdownMenuLabel>
-              {publicPages.map((link) => (
-                <DropdownMenuItem asChild key={link.href}>
-                  <a href={link.href}>{link.label}</a>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
           </>
         ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Public</DropdownMenuLabel>
+          {publicPages.map((link) => (
+            <DropdownMenuItem asChild key={link.href}>
+              <a href={link.href}>{link.label}</a>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuLabel>Authentication</DropdownMenuLabel>

@@ -259,7 +259,10 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   the spot illustrations, at most one per screen, 96 to 200px tall, the
   expression chosen from the moment (happy on success, sad on errors,
   curious on empty states) and always said with the eyes alone, the blob has
-  no mouth; never in the embed and never next to the logo mark. In motion
+  no mouth; never in the embed and never next to the logo mark. One
+  exception, decided by the founder: the closing panel of `/templates`
+  shows it at 420px, cropped by the panel on three sides and tilted 8
+  degrees to the left, as a poster would. In motion
   (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
   amplitudes, volume kept in every squash, pivot on its base, frozen by
   reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or
@@ -340,22 +343,25 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
   with a lone sentence.
 - Templates browser (our public page at `/templates`): the layouts a Brand
   can pick for its proof, Senja's idea (a gallery you can try) in our
-  grammar. Public header with the logo, sign in and one primary action; a
-  short left-aligned hero with a wavy underline and one call to action; then
-  a browser, not a wall of cards: the templates listed by family in a left
-  rail (sidebar items, `--brand-soft` active state with the 3px bar) and one
-  template rendered live on the right. Above the stage: the name at
-  `heading`, one sentence, the actions, then a toolbar with the preview
-  width (desktop, tablet, phone), the Brand accent swatches and the wall
-  theme. One arrow note ("this is what your visitors see") is the region's
-  hand-drawn element. The stage is a CSS container on the wall theme with
-  the sample accent (never our amber inside the frame), so a 390px preview
-  really shows the phone layout; the arrow keys move through the list and
-  the choice lives in the URL (`?template=`). Below 1024px the rail becomes
-  a strip of chips. The catalog is `src/lib/templates-catalog.ts`, one file
-  per template under `src/components/templates/`, reviewed in
+  grammar, with nothing on the page that does not earn its place. Public
+  header with the logo, sign in and the one primary action; the title with a
+  marker highlight and one sentence, no eyebrow and no second button; then a
+  browser, not a wall of cards: the templates listed by family in a left
+  rail (sidebar items, `--brand-soft` active state with the 3px bar, no
+  tags) and one template rendered live on the right. Above the stage: the
+  name at `heading`, one sentence and a single action ("Use this template"),
+  then a toolbar with the preview width (desktop, tablet, phone), four
+  Brand accent swatches plus a custom picker, and the wall theme. One arrow
+  note ("this is what your visitors see") is the region's hand-drawn
+  element and the only caption. The stage is a CSS container on the wall
+  theme with the sample accent (never our amber inside the frame), so a
+  390px preview really shows the phone layout; the first preview is visible
+  without scrolling on a 1280 x 800 laptop; the arrow keys move through the
+  list and the choice lives in the URL (`?template=`). Below 1024px the rail
+  becomes a strip of chips. The catalog is `src/lib/templates-catalog.ts`,
+  one file per template under `src/components/templates/`, reviewed in
   `/kit/templates` where a template stays a draft until its `status` is
-  `public`.
+  `public` and where the full-page link and the file path live.
 
 Responsive: every multi-column layout collapses to one column below 768px, no
 horizontal page scroll ever, headlines scale with `clamp()`, body text never

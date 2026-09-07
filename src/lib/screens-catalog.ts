@@ -325,6 +325,26 @@ export const screenSections: ScreenSection[] = [
     ],
   },
   {
+    id: "templates",
+    title: "Templates (public)",
+    screens: [
+      {
+        slug: "templates",
+        title: "Templates gallery",
+        description:
+          "Public gallery of the layouts a Brand can pick, each rendered live with sample Testimonials. Drafts are reviewed in /kit/templates.",
+        livePath: "/templates",
+      },
+      {
+        slug: "template-preview",
+        title: "Template full preview",
+        description:
+          "One template at full width, with the accent and wall theme chosen in the gallery.",
+        livePath: "/templates/masonry-wall",
+      },
+    ],
+  },
+  {
     id: "private-links",
     title: "Private links",
     screens: [

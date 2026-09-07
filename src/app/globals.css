@@ -452,6 +452,14 @@
   letter-spacing: var(--type-hand-tracking);
 }
 
+/* Horizontal tracks (carousel, chip rows) scroll without a visible bar. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /*
  * Default border and outline colors live in the base layer so utilities such
  * as `border-danger`, `border-brand` or `aria-invalid:border-danger` can
@@ -590,6 +598,36 @@ select:disabled {
   .doodle-draw circle {
     stroke-dasharray: 0;
     stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+/*
+ * Templates: the marquee track holds its list twice and slides by half its
+ * width, so the loop never jumps. Hover or focus pauses it; reduced motion
+ * turns it into a plain scrollable row.
+ */
+.template-marquee-track {
+  animation: template-marquee 48s linear infinite;
+}
+
+.template-marquee:hover .template-marquee-track,
+.template-marquee:focus-within .template-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes template-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-marquee {
+    overflow-x: auto;
+  }
+
+  .template-marquee-track {
     animation: none;
   }
 }

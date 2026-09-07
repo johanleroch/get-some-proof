@@ -292,6 +292,27 @@
       "heading": "Fernhill Studio",
       "theme": "light",
       "requiresBackend": true
+    },
+    {
+      "slug": "templates",
+      "title": "Templates gallery",
+      "path": "/templates",
+      "heading": "Proof, laid out your way",
+      "theme": "light"
+    },
+    {
+      "slug": "templates-dark",
+      "title": "Templates gallery - dark",
+      "path": "/templates",
+      "heading": "Proof, laid out your way",
+      "theme": "dark"
+    },
+    {
+      "slug": "template-preview",
+      "title": "Template full preview",
+      "path": "/templates/masonry-wall",
+      "heading": "Masonry wall",
+      "theme": "light"
     }
   ]
 }
