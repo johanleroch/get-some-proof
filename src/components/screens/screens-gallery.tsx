@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  Component,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -120,21 +122,43 @@ export function ScreensGallery({
   liveEnabled,
   sections,
 }: ScreensGalleryProps) {
-  return liveEnabled ? (
-    <GalleryWithSession
-      fixturesEnabled={fixturesEnabled}
-      initialStatuses={initialStatuses}
-      sections={sections}
-    />
-  ) : (
+  const fallback = (
     <GalleryView
       fixturesEnabled={fixturesEnabled}
       initialStatuses={initialStatuses}
       organization={null}
       sections={sections}
-      sessionState="unavailable"
+      sessionState={liveEnabled ? "signed-out" : "unavailable"}
     />
   );
+  return liveEnabled ? (
+    <SessionErrorBoundary fallback={fallback}>
+      <GalleryWithSession
+        fixturesEnabled={fixturesEnabled}
+        initialStatuses={initialStatuses}
+        sections={sections}
+      />
+    </SessionErrorBoundary>
+  ) : (
+    fallback
+  );
+}
+
+// A stale session makes `organizations.listMine` throw inside render; the
+// gallery must keep working with sample screens in that case.
+class SessionErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
 }
 
 function GalleryWithSession({
