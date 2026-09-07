@@ -161,45 +161,65 @@ amber never appears there. Two fixes are mandatory:
 
 ## 3. Typography
 
-Three families plus a mono, all from Google Fonts through `next/font/google`:
+Three families plus a mono. The display face is a licensed font, self-hosted;
+the others come from Google Fonts through `next/font/google`. The
+founder chose Gelica on 2026-09-07, the same day Bricolage Grotesque and DM
+Sans were retired because that pair is the identity of the direct competitor
+(see section 10).
 
-- Display: **Bricolage Grotesque**, weights 600 to 800, optical size axis on.
-  Page titles, section titles, KPI numbers, the Wall header, the Collection
-  Form title, empty-state titles. Tracking -0.02em to -0.03em. Never below 18px.
-- Body and UI: **DM Sans**, weights 400, 500, 600. Everything else.
+- Display: **Gelica** (Dave Rowland Type), a soft slab with rounded, concave
+  serifs in the Cooper and Goudy Heavyface line: friendly without being cute.
+  Static weights 200 to 700 plus 900, with italics. We use 600 (Semi Bold)
+  and 700 (Bold); Black (900) is reserved for the wordmark and posters. Page
+  titles, section titles, KPI numbers, the Wall header, the Collection Form
+  title, empty-state titles. Tracking -0.005em to -0.02em: a slab needs less
+  squeeze than a grotesque. Never below 18px. Self-hosted through
+  `next/font/local` from `src/app/fonts/gelica/` (Regular, Medium, Semi Bold,
+  Bold, Black as OTF). Gelica is a licensed font from the founder's Monotype
+  Fonts subscription, and this repository is public, so the folder is in
+  `.gitignore`: every machine that builds the site (a teammate, CI, Vercel)
+  needs the five files put in place first, and `next build` fails loudly
+  without them. Confirm web use with the Monotype license before launch.
+- Body and UI: **Figtree** (Erik Kennedy, Google Fonts), variable 300 to 900,
+  used at 400, 500, 600. Everything else. A calm geometric with humanist
+  warmth: it lets Gelica carry the character and stays crisp at 13 to 15px.
+  Chosen over Funnel Sans on 2026-09-07 because Funnel's compact, large
+  x-height eye read "techy" next to a soft slab.
 - Handwriting: **Caveat**, weights 500 and 600. Only for hand-drawn
   annotations (see section 4). Never for labels, buttons, inputs, or data.
 - Mono: **Geist Mono** (already loaded). Public slugs, embed snippets, tokens,
   timestamps, and any number that must align (tabular figures).
 
-Scale (size / line-height, DM Sans unless noted):
+Scale (size / line-height, Figtree unless noted):
 
-| Name       | Size | Line | Weight | Tracking | Family    | Use                                    |
-| ---------- | ---- | ---- | ------ | -------- | --------- | -------------------------------------- |
-| display-xl | 40px | 44px | 800    | -0.035em | Bricolage | Public Wall and Collection Form titles |
-| display    | 32px | 36px | 700    | -0.03em  | Bricolage | Dashboard page titles                  |
-| heading    | 24px | 30px | 700    | -0.025em | Bricolage | Section titles, dialog titles          |
-| subheading | 18px | 26px | 600    | -0.015em | Bricolage | Card titles, empty-state titles        |
-| body       | 15px | 24px | 400    | -0.011em | DM Sans   | Paragraphs, testimonial quotes         |
-| ui         | 14px | 20px | 500    | -0.008em | DM Sans   | Buttons, inputs, navigation, table     |
-| small      | 13px | 18px | 400    | -0.004em | DM Sans   | Metadata, helper text                  |
-| micro      | 12px | 16px | 600    | +0.06em  | DM Sans   | Eyebrows and group labels, uppercase   |
-| kpi        | 40px | 44px | 700    | -0.03em  | Bricolage | Counts on the dashboard, tabular nums  |
-| hand       | 20px | 24px | 500    | 0        | Caveat    | Hand-drawn annotations only            |
+| Name       | Size | Line | Weight | Tracking | Family  | Use                                    |
+| ---------- | ---- | ---- | ------ | -------- | ------- | -------------------------------------- |
+| display-xl | 40px | 44px | 700    | -0.02em  | Gelica  | Public Wall and Collection Form titles |
+| display    | 32px | 36px | 700    | -0.015em | Gelica  | Dashboard page titles                  |
+| heading    | 24px | 30px | 600    | -0.01em  | Gelica  | Section titles, dialog titles          |
+| subheading | 18px | 26px | 600    | -0.005em | Gelica  | Card titles, empty-state titles        |
+| body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs, testimonial quotes         |
+| ui         | 14px | 20px | 500    | -0.008em | Figtree | Buttons, inputs, navigation, table     |
+| small      | 13px | 18px | 400    | -0.004em | Figtree | Metadata, helper text                  |
+| micro      | 12px | 16px | 600    | +0.06em  | Figtree | Eyebrows and group labels, uppercase   |
+| kpi        | 40px | 44px | 700    | -0.02em  | Gelica  | Counts on the dashboard, tabular nums  |
+| hand       | 20px | 24px | 500    | 0        | Caveat  | Hand-drawn annotations only            |
 
 Every style is four CSS variables (`--type-<name>-size|leading|weight|tracking`)
 in `globals.css` and one composite utility (`type-<name>`). Tracking is
-deliberately tight: DM Sans and Bricolage both set loose by default and the
-founder asked for less air between letters. Tune live in the development
-`/kit` page and paste the copied CSS back into `globals.css`.
+deliberately tight on the sans (Figtree sets loose by default and the founder
+asked for less air between letters) and only slightly negative on Gelica,
+whose serifs touch when squeezed. The Gelica values are provisional until the
+founder tunes them by eye. Tune live in the development `/kit` page and paste
+the copied CSS back into `globals.css`.
 
 Headlines get hierarchy from weight and color, not from size alone. Body copy
 never exceeds 65 characters per line. Page titles must be real `h1` elements
 at `display`: the current 20px page title is retired, as are the literal
 weights 510 and 590 and the `SF Pro Display` fallback stack.
 
-Fallback stacks: Bricolage falls back to `"DM Sans", system-ui, sans-serif`;
-DM Sans to `system-ui, sans-serif`; Caveat to `cursive`.
+Fallback stacks: Gelica falls back to `"Figtree", system-ui, sans-serif`;
+Figtree to `system-ui, sans-serif`; Caveat to `cursive`.
 
 ## 4. The hand-drawn signature
 
@@ -214,16 +234,33 @@ Vocabulary, shipped as React SVG components under `src/components/doodles/`:
 - `Circle around`: a loose ring around a number or a short label.
 - `Arrow note`: a curved arrow with a short Caveat caption ("this is what your
   customers see", "paste this on your site"). Caption max 6 words.
-- `Spot illustrations`: thin-line drawings, no fill except one amber area,
-  for empty states, onboarding, the 404, and the success step. Subjects come
-  from the domain: a speech bubble with stars, a camera on a tripod, an
-  envelope with a proof stamp, a wall with framed quotes.
+- `Spot illustrations`: thin-line drawings for empty states, onboarding, the
+  404, the success step and the authentication panel. Subjects come from the
+  domain: a speech bubble with stars, a camera on a tripod, an envelope with
+  a proof stamp, a wall of framed Testimonials. They share one grammar,
+  generated by `scripts/doodles/build.mjs` (`pnpm doodles:build`) and
+  enforced by `src/components/doodles/doodles.test.tsx`: a 320 x 220
+  artboard; subjects tilted 2 to 6 degrees; closed outlines whose sides bow
+  by at most one unit while corners land exactly, so strokes never step;
+  overlapping shapes filled with `--surface` so they occlude each other;
+  amber only on stars, sparkles and one accent dot; one to three four-point
+  sparkles of 4 to 7 units. Never edit `spots.tsx` by hand.
+- `The blob`: the mascot from the official icon, upright, rendered (amber
+  gradient, soft inner shadows, ink pill eyes), shipped as
+  `public/brand/blob.svg`, with eleven expressions in `public/brand/blob/`
+  (reviewed at `/kit/blob`, defined in `src/lib/blob-expressions.ts`). The
+  one element of the signature that is not a line drawing. Same places as
+  the spot illustrations, at most one per screen, 96 to 200px tall, the
+  expression chosen from the moment (happy on success, sad on errors,
+  curious on empty states) and always said with the eyes alone, the blob has
+  no mouth; never in the embed and never next to the logo mark.
 
 Rules:
 
 - Stroke 2px (1.5px under 20px), round caps and joins, paths slightly
-  irregular. Color is `--ink` by default; only the star and one accent area
-  may use `--brand`.
+  irregular. Color is `--ink` by default; `--brand` is reserved for stars,
+  sparkles and one accent dot, `--surface` for the fill of overlapping
+  shapes. No other color, ever.
 - Maximum one hand-drawn element per screen region (header, main, sidebar,
   dialog). Empty states and success steps may combine one illustration and
   one arrow note.
@@ -361,6 +398,9 @@ notes may be playful; the rest of the interface stays clear.
 ## 10. Banned
 
 - Emoji in the interface. Inter. Pure black `#000`. Neutral gray without warmth.
+- Bricolage Grotesque and DM Sans, in any role, even as fallbacks: they are
+  the direct competitor's pair (Senja). Before adopting any signature element
+  (font, accent, illustration style), check it is not already a competitor's.
 - Violet `#6d5dfc` as a default anywhere. White text on the amber accent.
 - A second accent color. Gradients on text or backgrounds. Neon or outer glows.
 - Shadows on resting cards. `shadow-xs` sprinkled on every surface.
@@ -377,7 +417,10 @@ notes may be playful; the rest of the interface stays clear.
 ## 11. Implementation map
 
 Token names above map to `src/app/globals.css`. Fonts load in
-`src/app/layout.tsx`. Doodles live in `src/components/doodles/`. Per-Brand
+`src/app/layout.tsx`. Doodles live in `src/components/doodles/`. The official
+logo and icon live in `public/brand/` (`logo.svg`, `logo-mark.svg`,
+`logo-type.svg`, `icon.svg`, `blob.svg`, see `docs/design/app-icons/DESIGN.md`
+10.1 and 10.2); `BrandMark` reads the app icon, which now shows the blob. Per-Brand
 accent contrast is computed next to `normalizePrimaryColor` in
 `convex/organizations.ts` and shipped in the public projections.
 
@@ -385,7 +428,7 @@ Order of work, each step verified in `/screens` (sample and live) and with
 `pnpm check`:
 
 1. Tokens and fonts: neutrals, brand derivation, semantic statuses, radius and
-   shadow scales, type scale as utilities, DM Sans and Bricolage loaded, Inter
+   shadow scales, type scale as utilities, Gelica and Figtree loaded, Inter
    removed. Retire the dark-only chrome and the `.dashboard-frame` literal
    sizes.
 2. Primitives: button (with loading), input, textarea, select, checkbox,
