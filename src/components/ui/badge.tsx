@@ -5,9 +5,9 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 /**
- * Tags on paper (DESIGN.md section 7): a `--line` hairline, ink text, 6px
- * radius. A status lives in its 6px dot alone, never in pastel fills with
- * colored text. `brand` is the one tinted tag.
+ * Tags on paper (DESIGN.md section 7): a `--line` hairline on `--surface`,
+ * 6px radius. A status shows in its 6px dot and its label color, never in a
+ * pastel fill. `brand` is the one tinted tag.
  */
 const badgeVariants = cva(
   "inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.5 rounded-md border px-2 text-[13px] leading-none font-medium tracking-[-0.004em] whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3.5",
@@ -15,12 +15,12 @@ const badgeVariants = cva(
     variants: {
       variant: {
         brand: "bg-brand-soft border-brand-soft-2 text-ink",
-        danger: "bg-surface text-ink border-line",
-        info: "bg-surface text-ink border-line",
+        danger: "bg-surface border-line text-danger",
+        info: "bg-surface border-line text-info",
         neutral: "bg-surface-2 text-ink-2 border-transparent",
         outline: "border-line-2 text-ink bg-transparent",
-        success: "bg-surface text-ink border-line",
-        warning: "bg-surface text-ink border-line",
+        success: "bg-surface border-line text-success",
+        warning: "bg-surface border-line text-warning",
       },
     },
     defaultVariants: {

@@ -368,9 +368,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   quote at `body` in `--ink`. Video cards keep the source ratio, the play
   button is 48px round on `--surface` with `--shadow-float`.
 - Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
-  on `--surface` with a `--line` hairline and `--ink` text. A status is
-  carried by its 6px dot alone, never by a pastel fill with colored text
-  (the generic "AI pill") and not by the hairline either. `brand`
+  on `--surface` with a `--line` hairline. A status colors its 6px dot and
+  its label (full-strength status color, AA on `--surface`); the fill stays
+  paper, never a pastel tint (the generic "AI pill"). `brand`
   is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
   max 480px (560px for content-heavy). Destructive confirmations keep no close
