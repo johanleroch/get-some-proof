@@ -399,11 +399,17 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   and a 3px `--brand` bar on the left edge. The three states must be
   distinguishable at a glance.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
-  (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow.
-  Avatar 44px round, name at `ui` weight 600, role and company at `small` in
-  `--ink-2`, stars at 16px in the Brand accent with unfilled stars at 25%,
-  quote at `body` in `--ink`. Video cards keep the source ratio, the play
-  button is 48px round on `--surface` with `--shadow-float`.
+  (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
+  20px padding. The quote leads at `body` in `--ink`, because the proof is
+  what was said; the signature follows 20px below on one row: avatar 32px
+  round, name at `small` weight 600, role and company at `small` in `--ink-2`,
+  and the stars pushed right at 14px in the Brand accent with unfilled stars
+  at 25%. Video cards keep the source ratio, the play button is 48px round on
+  `--surface` with `--shadow-float`. Reviewed at `/kit/testimonials`.
+- Highlighted words: the `MarkerHighlight` swash painted behind the phrase,
+  never a coloured box. `mark` carries it site-wide from `globals.css` in
+  amber; a Testimonial card overrides it with the customer Brand accent
+  through `src/lib/marker-highlight.ts`.
 - Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
   on `--surface` with a `--line` hairline. A status colors its 6px dot and
   its label (full-strength status color, AA on `--surface`); the fill stays

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { accentHighlight } from "@convex/domain/color-contrast";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { Sparkle } from "@/components/doodles";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -10,6 +11,7 @@ import {
   Stars,
   TemplateAvatar,
 } from "@/components/templates/template-primitives";
+import { markerHighlightImage } from "@/lib/marker-highlight";
 import { cn } from "@/lib/utils";
 
 /**
@@ -317,6 +319,7 @@ function HighlightCard({
 }) {
   const meta = identityLine(testimonial);
   const highlighted = highlights[testimonial.id];
+  const markerImage = markerHighlightImage(accentHighlight(sampleAccent));
   const [before, after] = highlighted
     ? testimonial.text.split(highlighted)
     : [testimonial.text, ""];
@@ -326,7 +329,10 @@ function HighlightCard({
         <blockquote className="type-body text-ink text-pretty">
           {before}
           {highlighted ? (
-            <mark className="text-ink rounded-[3px] bg-(--wall-accent-soft) px-0.5">
+            <mark
+              className="bg-transparent bg-[length:100%_100%] bg-no-repeat px-[0.14em] text-inherit"
+              style={{ backgroundImage: markerImage }}
+            >
               {highlighted}
             </mark>
           ) : null}
@@ -385,8 +391,8 @@ const variants = [
   {
     Render: HighlightCard,
     key: "highlight",
-    name: "E · Highlighted phrase",
-    note: "Clay's move: one phrase marked in the Brand accent so a long wall can be skimmed. The Collection Form already stores these marks; today they paint in a hard-coded yellow.",
+    name: "E · Highlighted phrase — shipped",
+    note: "Clay's move, with our own hand: the marked phrase carries the MarkerHighlight swash in the Brand accent. This is what the Wall, the Inbox and the embed now render.",
   },
 ] as const;
 

@@ -59,7 +59,9 @@ function testimonialHtml(testimonial: (typeof projection)[number]) {
     ? `<div aria-label="${testimonial.rating} out of 5 stars" class="stars" role="img">★★★★★</div>`
     : "";
 
-  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content"><div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div></div>${stars}${text}</div></article>`;
+  // Mirrors testimonialCardHtml: the quote leads, the signature row follows
+  // with the stars pushed right.
+  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content">${text}<div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div>${stars}</div></div></article>`;
 }
 
 function response(
