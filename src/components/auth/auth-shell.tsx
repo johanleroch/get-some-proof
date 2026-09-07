@@ -6,47 +6,41 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { productDescription, productName } from "@/lib/brand";
 
 /**
- * Authentication layout (DESIGN.md section 6): a split screen from 1024px
- * with one spot illustration on the left and a left-aligned form on the
- * right; a single column with the scribble star above the title below.
+ * Authentication layout (DESIGN.md section 6): from 1024px the form sits on
+ * the left and a spot illustration on the right, the two columns following
+ * the golden ratio (1 : 1.618) once the form column can keep 28rem. Below,
+ * a single column with the scribble star above the title.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <main className="bg-paper relative grid min-h-svh lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+    <main className="bg-paper relative grid min-h-svh lg:grid-cols-[minmax(28rem,1fr)_minmax(0,1.618fr)]">
       <div className="absolute top-5 right-5 z-10">
         <ThemeToggle />
       </div>
-      <aside className="bg-surface-2 hidden flex-col justify-between border-r p-10 lg:flex xl:p-14">
-        <div className="flex items-center gap-2.5">
-          <BrandMark />
-          <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
-            {productName}
-          </span>
-        </div>
-        <div className="max-w-md space-y-8">
-          <WallFrames className="text-ink w-full max-w-xs" draw />
-          <div className="space-y-3">
-            <p className="type-heading text-balance">
-              Proof your customers are proud to give.
-            </p>
-            <p className="type-body text-ink-2 max-w-prose">
-              {productDescription}
-            </p>
-          </div>
-        </div>
-        <p className="type-small text-ink-2">
-          Secure Owner access to your Brand.
-        </p>
-      </aside>
-      <section className="flex flex-col px-5 py-10 sm:px-8 lg:px-16 lg:py-14 xl:px-24">
-        <div className="mb-10 flex items-center gap-2.5 lg:hidden">
-          <ScribbleStar className="text-brand size-8" />
+      <section className="flex flex-col px-5 py-10 sm:px-8 lg:px-14 lg:py-12">
+        <div className="mb-10 flex items-center gap-2.5">
+          <BrandMark className="hidden lg:block" />
+          <ScribbleStar className="text-brand size-8 lg:hidden" />
           <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
             {productName}
           </span>
         </div>
         <div className="my-auto w-full max-w-[400px]">{children}</div>
+        <p className="type-small text-ink-2 mt-10 hidden lg:block">
+          Secure Owner access to your Brand.
+        </p>
       </section>
+      <aside className="bg-surface-2 hidden flex-col justify-center border-l p-12 lg:flex xl:p-20">
+        <div className="mx-auto w-full max-w-xl space-y-10">
+          <WallFrames className="text-ink w-full" draw />
+          <div className="max-w-md space-y-3">
+            <p className="type-heading text-balance">
+              Proof your customers are proud to give.
+            </p>
+            <p className="type-body text-ink-2">{productDescription}</p>
+          </div>
+        </div>
+      </aside>
     </main>
   );
 }

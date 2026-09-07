@@ -264,10 +264,13 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
   (micro), `display` title, one primary action on the right. Data lives in
   lists and tables with `--surface-2` row hover, not in stacks of cards.
   Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
-- Authentication: split screen from 1024px. Left panel on `--surface-2` with
-  one spot illustration, the product name and one sentence of copy. Right
-  panel holds the form at max 400px, left-aligned. Below 1024px, single
-  column with the illustration reduced to the scribble star above the title.
+- Authentication: split screen from 1024px, form first. Left column holds the
+  product name and the form at max 400px, left-aligned; right panel on
+  `--surface-2` carries one spot illustration and one sentence of copy. The
+  two columns follow the golden ratio (1 : 1.618, so 38.2% / 61.8%) as soon
+  as the form column can keep 28rem; below that width the columns share the
+  space. Below 1024px, single column with the illustration reduced to the
+  scribble star above the title.
 - Onboarding: two columns, the form on the left and a live preview card of
   the Collection Form on the right with an arrow note "this is what your
   customers see". Single column on mobile, preview after the form.
