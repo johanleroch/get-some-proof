@@ -1,13 +1,16 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { ScribbleStar } from "@/components/doodles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, FieldError } from "@/components/ui/field";
+import { PageHeader } from "@/components/page-header";
 
 describe("design primitives", () => {
+  afterEach(cleanup);
+
   it("keeps the label in the tree and blocks input while a button loads", () => {
     render(<Button loading>Save settings</Button>);
     const button = screen.getByRole("button", { name: "Save settings" });
@@ -65,5 +68,23 @@ describe("design primitives", () => {
       </Field>,
     );
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("renders the page header pattern with one action", () => {
+    render(
+      <PageHeader
+        actions={<Button>Copy collection link</Button>}
+        description="Review proof privately."
+        eyebrow="Workspace"
+        title="Northwind Bakery"
+      />,
+    );
+    expect(screen.getByText("Workspace")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Northwind Bakery" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy collection link" }),
+    ).toBeInTheDocument();
   });
 });

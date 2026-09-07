@@ -100,6 +100,12 @@ function Navigation({
                           aria-current={active ? "page" : undefined}
                           href={href}
                         >
+                          {active ? (
+                            <span
+                              aria-hidden="true"
+                              className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
+                            />
+                          ) : null}
                           <IconComponent aria-hidden="true" />
                           <span>{label}</span>
                         </Link>
@@ -184,16 +190,16 @@ export function AppShell({
       className="dashboard-frame h-svh overflow-hidden"
       style={
         {
-          "--sidebar-width": "18rem",
+          "--sidebar-width": "16.25rem",
           "--header-height": "3rem",
         } as CSSProperties
       }
     >
-      <Sidebar collapsible="offcanvas" variant="inset">
+      <Sidebar collapsible="offcanvas" variant="sidebar">
         <SidebarHeader>
           <Link
             aria-label={organizationName}
-            className="hover:bg-sidebar-accent flex min-w-0 items-center gap-3 rounded-lg p-2 transition-colors"
+            className="hover:bg-sidebar-accent flex min-w-0 items-center gap-3 rounded-md p-2 transition-colors"
             href={`/org/${organizationSlug}/dashboard` as Route}
           >
             {organizationLogoUrl ? (
@@ -209,10 +215,10 @@ export function AppShell({
               <BrandMark />
             )}
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">
+              <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
                 {organizationName}
               </span>
-              <span className="text-muted-foreground block truncate text-xs">
+              <span className="text-ink-2 block truncate font-mono text-[11px]">
                 /c/{organizationPublicSlug}
               </span>
             </span>
@@ -225,7 +231,7 @@ export function AppShell({
           <NavUser />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-view min-h-0 overflow-hidden border">
+      <SidebarInset className="dashboard-view min-h-0 overflow-hidden">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -235,7 +241,9 @@ export function AppShell({
                 orientation="vertical"
               />
               <div className="min-w-0">
-                <h1 className="type-ui text-foreground truncate">{title}</h1>
+                <p className="text-ink-2 truncate text-sm font-medium tracking-[-0.008em]">
+                  {title}
+                </p>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <ThemeToggle />
@@ -243,8 +251,8 @@ export function AppShell({
             </div>
           </header>
           <div className="flex flex-1 flex-col">
-            <div className="@container/main mx-auto flex w-full max-w-[1600px] flex-1 flex-col">
-              <div className="flex flex-1 flex-col gap-5 p-4 md:p-6 lg:p-8">
+            <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
+              <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
                 {children}
               </div>
             </div>

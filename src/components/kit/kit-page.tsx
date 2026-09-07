@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 
 import { BrandMark } from "@/components/brand-mark";
+import { PageHeader } from "@/components/page-header";
 import {
   ArrowNote,
   CameraTripod,
@@ -128,6 +129,7 @@ const sections = [
   { id: "doodles", title: "Doodles" },
   { id: "buttons", title: "Buttons" },
   { id: "forms", title: "Forms" },
+  { id: "shell", title: "Page header" },
   { id: "cards", title: "Cards and lists" },
   { id: "status", title: "Status and badges" },
   { id: "empty", title: "Empty states" },
@@ -781,6 +783,21 @@ export function KitPage() {
                   placeholder="Tell us what changed for you."
                 />
               </Field>
+            </div>
+          </KitSection>
+
+          <KitSection
+            description="Every dashboard page opens with this: an eyebrow, a display title, one sentence, and at most one primary action."
+            id="shell"
+            title="Page header"
+          >
+            <div className="bg-card rounded-lg border p-6">
+              <PageHeader
+                actions={<Button>Copy collection link</Button>}
+                description="Collect customer proof, review it privately, and publish only what you choose."
+                eyebrow="Workspace"
+                title="Northwind Bakery"
+              />
             </div>
           </KitSection>
 

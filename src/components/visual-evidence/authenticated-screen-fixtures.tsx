@@ -596,62 +596,59 @@ export function DashboardBackgroundScreenFixture() {
       className="dashboard-frame flex h-svh overflow-hidden"
       style={
         {
-          "--sidebar-width": "18rem",
+          "--sidebar-width": "16.25rem",
         } as CSSProperties
       }
     >
-      <aside className="relative z-10 hidden w-72 shrink-0 p-2 md:flex">
-        <div
-          className="bg-sidebar text-sidebar-foreground relative flex h-full w-full flex-col overflow-hidden"
-          data-slot="sidebar-inner"
-        >
-          <div className="flex flex-1 flex-col gap-6 p-3">
-            <div>
-              <p className="text-[13px] font-[510]">Visual Studio</p>
-              <p className="text-muted-foreground text-xs">/c/visual-studio</p>
+      <aside className="bg-sidebar text-sidebar-foreground relative z-10 hidden w-(--sidebar-width) shrink-0 flex-col border-r md:flex">
+        <div className="flex h-full w-full flex-col" data-slot="sidebar-inner">
+          <div className="flex flex-1 flex-col gap-4 p-2">
+            <div className="flex items-center gap-3 rounded-md p-2">
+              <BrandMark />
+              <span className="min-w-0">
+                <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
+                  Visual Studio
+                </span>
+                <span className="text-ink-2 block truncate font-mono text-[11px]">
+                  /c/visual-studio
+                </span>
+              </span>
             </div>
-            <nav className="space-y-5">
+            <nav className="space-y-5 p-2">
               <div>
                 <p className="mb-2 px-2" data-sidebar="group-label">
                   Workspace
                 </p>
                 <div className="space-y-1">
                   <button
-                    className="bg-sidebar-accent block rounded-lg p-2"
+                    className="bg-brand-soft text-ink relative flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold tracking-[-0.008em]"
                     data-active="true"
                     data-sidebar="menu-button"
                     type="button"
                   >
+                    <span
+                      aria-hidden="true"
+                      className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
+                    />
                     Overview
                   </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Inbox
-                  </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Public Wall
-                  </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Brand settings
-                  </button>
+                  {["Inbox", "Public Wall", "Brand settings"].map((label) => (
+                    <button
+                      className="hover:bg-sidebar-accent flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-medium tracking-[-0.008em]"
+                      data-sidebar="menu-button"
+                      key={label}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </nav>
           </div>
         </div>
       </aside>
-      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border md:m-2 md:ml-0 md:rounded-xl">
+      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
             <button
@@ -661,9 +658,11 @@ export function DashboardBackgroundScreenFixture() {
             >
               <IconMenu2 aria-hidden="true" className="size-4" />
             </button>
-            <p className="text-[13px] font-[510]">Overview</p>
+            <p className="text-ink-2 text-sm font-medium tracking-[-0.008em]">
+              Overview
+            </p>
           </header>
-          <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
+          <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h1 className="dashboard-page-title">Visual Studio</h1>
