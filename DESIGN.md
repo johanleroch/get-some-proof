@@ -177,9 +177,11 @@ Sans were retired because that pair is the identity of the direct competitor
   `next/font/local` from `src/app/fonts/gelica/` (Regular, Medium, Semi Bold,
   Bold, Black as OTF). Gelica is a licensed font from the founder's Monotype
   Fonts subscription, and this repository is public, so the folder is in
-  `.gitignore`: every machine that builds the site (a teammate, CI, Vercel)
-  needs the five files put in place first, and `next build` fails loudly
-  without them. Confirm web use with the Monotype license before launch.
+  `.gitignore`. `scripts/ensure-display-font.mjs` runs before dev, build and
+  typecheck and generates the module that loads the font: with the five files
+  in place the site gets Gelica, without them (CI, a fresh clone) every
+  display style falls back to Figtree and the script prints a warning, so a
+  build never breaks on the license. Confirm web use with the Monotype license before launch.
 - Body and UI: **Figtree** (Erik Kennedy, Google Fonts), variable 300 to 900,
   used at 400, 500, 600. Everything else. A calm geometric with humanist
   warmth: it lets Gelica carry the character and stays crisp at 13 to 15px.

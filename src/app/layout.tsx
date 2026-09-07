@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Caveat, Figtree, Geist_Mono } from "next/font/google";
-import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
@@ -11,24 +10,15 @@ import { productDescription, productName } from "@/lib/brand";
 import { getPublicEnvironment } from "@/lib/env/public-env";
 import { themeInitializationScript } from "@/lib/theme";
 
+import { displayFont } from "./fonts/display-font";
+
 import "./globals.css";
 
 // Typography per DESIGN.md: Gelica for display (licensed, self-hosted from
-// src/app/fonts/gelica, kept out of git: see DESIGN.md section 3), Figtree
-// for body and UI, Caveat only for hand-drawn annotations, Geist Mono for
-// code.
-const gelica = localFont({
-  display: "swap",
-  src: [
-    { path: "./fonts/gelica/Gelica-Regular.otf", weight: "400" },
-    { path: "./fonts/gelica/Gelica-Medium.otf", weight: "500" },
-    { path: "./fonts/gelica/Gelica-SemiBold.otf", weight: "600" },
-    { path: "./fonts/gelica/Gelica-Bold.otf", weight: "700" },
-    { path: "./fonts/gelica/Gelica-Black.otf", weight: "900" },
-  ],
-  variable: "--font-gelica",
-});
-
+// src/app/fonts/gelica and kept out of git, loaded through the module that
+// scripts/ensure-display-font.mjs generates: see DESIGN.md section 3),
+// Figtree for body and UI, Caveat only for hand-drawn annotations, Geist Mono
+// for code.
 const figtree = Figtree({
   subsets: ["latin"],
   variable: "--font-figtree",
@@ -67,7 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body
-        className={`${gelica.variable} ${figtree.variable} ${caveat.variable} ${geistMono.variable}`}
+        className={`${displayFont.variable} ${figtree.variable} ${caveat.variable} ${geistMono.variable}`}
       >
         <TooltipProvider>
           {environment.configured ? (
