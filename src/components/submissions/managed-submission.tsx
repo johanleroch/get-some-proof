@@ -25,7 +25,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { uploadTestimonialImages } from "@/lib/upload-testimonial-images";
+import { TestimonialImagesInput } from "@/components/testimonials/testimonial-images-input";
+import type { TestimonialImage } from "@convex/domain/testimonialImage";
+import { TestimonialEditor } from "@/components/testimonials/testimonial-editor";
+import type { TestimonialRichText } from "@convex/domain/testimonialRichText";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
 import {
@@ -36,6 +40,7 @@ import { uploadDirectVideo } from "@/lib/video-upload";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 
 type ManagedSubmissionValue = {
+  images?: TestimonialImage[];
   avatarUrl: string | null;
   brandName: string;
   company?: string;
@@ -58,9 +63,11 @@ type ManagedSubmissionValue = {
   submitterEmail: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
 };
 
 type RevisionInput = {
+  imageIds?: Id<"testimonialImages">[];
   avatarReservationId?: Id<"submissionAvatarUploads">;
   avatarStorageId?: Id<"_storage">;
   company?: string;
@@ -72,6 +79,7 @@ type RevisionInput = {
   role?: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
 };
 
 function errorMessage(error: unknown) {
@@ -139,6 +147,7 @@ export function ManagedSubmissionView({
   onWithdraw,
   submission,
   uploadAvatar,
+  uploadImage,
 }: {
   onConfirm?: (input: RevisionInput) => Promise<void>;
   prepareVideoUpload?: (
@@ -148,6 +157,7 @@ export function ManagedSubmissionView({
   uploadVideo?: typeof uploadDirectVideo;
   onWithdraw?: () => Promise<void>;
   submission: ManagedSubmissionValue;
+  uploadImage?: (file: File) => Promise<TestimonialImage>;
   uploadAvatar?: (file: File) => Promise<{
     reservationId: Id<"submissionAvatarUploads">;
     storageId: Id<"_storage">;
@@ -160,6 +170,9 @@ export function ManagedSubmissionView({
     () => submission.rating?.toString() ?? "",
   );
   const [text, setText] = useState(() => submission.text);
+  const [richText, setRichText] = useState(() => submission.richText);
+  const [images, setImages] = useState(() => submission.images ?? []);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [avatarFile, setAvatarFile] = useState<File>();
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [videoFile, setVideoFile] = useState<File>();
@@ -174,6 +187,7 @@ export function ManagedSubmissionView({
   const normalizedRating = rating ? Number(rating) : undefined;
   const consent = buildPublicationConsent({
     brandName: submission.brandName,
+    imageCount: images.length + imageFiles.length,
     privacyContact: submission.privacyContact,
     suppliedIdentity: {
       avatarSupplied:
@@ -194,7 +208,12 @@ export function ManagedSubmissionView({
     try {
       const avatar =
         avatarFile && uploadAvatar ? await uploadAvatar(avatarFile) : undefined;
+      const uploaded = await uploadTestimonialImages(imageFiles, uploadImage);
       await onConfirm({
+        imageIds:
+          submission.submissionType === "text"
+            ? [...images, ...uploaded].map((image) => image.id)
+            : undefined,
         avatarReservationId: avatar?.reservationId,
         avatarStorageId: avatar?.storageId,
         company: company.trim() || undefined,
@@ -209,7 +228,10 @@ export function ManagedSubmissionView({
         role: role.trim() || undefined,
         submitterName: name,
         text,
+        richText,
       });
+      setImages([...images, ...uploaded]);
+      setImageFiles([]);
       setConsentAccepted(false);
       setNotice("Your revision was sent for review.");
     } catch (caught) {
@@ -373,14 +395,21 @@ export function ManagedSubmissionView({
           {submission.submissionType === "text" ? (
             <div className="space-y-2">
               <Label htmlFor="managed-text">Your testimonial</Label>
-              <Textarea
+              <TestimonialEditor
                 id="managed-text"
-                maxLength={2_000}
-                minLength={20}
-                onChange={(event) => setText(event.target.value)}
-                required
-                rows={7}
-                value={text}
+                text={text}
+                richText={richText}
+                onChange={(text, content) => {
+                  setText(text);
+                  setRichText(content);
+                }}
+              />
+              <TestimonialImagesInput
+                disabled={saving}
+                files={imageFiles}
+                onFilesChange={setImageFiles}
+                images={images}
+                onImagesChange={setImages}
               />
               <p className="text-muted-foreground text-right text-xs">
                 {Array.from(text).length} / 2,000
@@ -517,6 +546,11 @@ export function ManagedSubmissionView({
 export function ManagedSubmission({ token }: { token: string }) {
   const submission = useQuery(api.submissionManagement.get, { token });
   const confirmRevision = useMutation(api.submissionManagement.confirmRevision);
+  const generateImageUpload = useMutation(
+    api.testimonialImages.generateUploadUrl,
+  );
+  const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
+  const [imageClientId] = useState(() => crypto.randomUUID());
   const withdrawConsent = useMutation(api.submissionManagement.withdrawConsent);
   const createVideoReplacement = useAction(
     api.submissionManagement.createVideoReplacementUpload,
@@ -590,6 +624,16 @@ export function ManagedSubmission({ token }: { token: string }) {
       onWithdraw={async () => {
         await withdrawConsent({ token });
         setWithdrawn(true);
+      }}
+      uploadImage={async (file) => {
+        const identity = {
+          clientSubmissionId: imageClientId,
+          publicSlug: submission.publicSlug,
+          token,
+        };
+        const { imageId, uploadUrl } = await generateImageUpload(identity);
+        const storageId = await uploadProfileImage(file, uploadUrl);
+        return registerImageUpload({ ...identity, imageId, storageId });
       }}
       uploadAvatar={async (file) => {
         const clientSubmissionId = `revision-${token.slice(0, 32)}`;

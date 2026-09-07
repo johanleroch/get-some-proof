@@ -283,6 +283,20 @@
       "heading": "Visual Studio",
       "theme": "light",
       "requiresBackend": true
+    },
+    {
+      "slug": "rich-testimonial",
+      "title": "Rich testimonial editor and images",
+      "path": "/visual-evidence/rich-testimonial",
+      "heading": "Your testimonial",
+      "theme": "light"
+    },
+    {
+      "slug": "rich-testimonial-highlight",
+      "title": "Owner phrase highlighting",
+      "path": "/visual-evidence/rich-testimonial",
+      "heading": "Your testimonial",
+      "theme": "light"
     }
   ]
 }

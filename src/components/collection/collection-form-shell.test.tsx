@@ -9,6 +9,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionFormShellView } from "./collection-form-shell";
 
+// These tests exercise form orchestration. Plate selection and paste are covered in real browsers.
+vi.mock("@/components/testimonials/testimonial-editor", () => ({
+  TestimonialEditor: ({
+    id,
+    text,
+    onChange,
+  }: {
+    id: string;
+    text: string;
+    onChange: (text: string, value: unknown) => void;
+  }) => (
+    <textarea
+      data-step-focus
+      id={id}
+      value={text}
+      onChange={(event) =>
+        onChange(event.target.value, [
+          { type: "p", children: [{ text: event.target.value }] },
+        ])
+      }
+    />
+  ),
+}));
+
 describe("CollectionFormShellView", () => {
   beforeEach(cleanup);
   afterEach(() => vi.unstubAllGlobals());

@@ -114,7 +114,13 @@ export async function upsertPublicProjection(
             : undefined,
           type: "video" as const,
         }
-      : { ...identity, text: testimonial.text, type: "text" as const };
+      : {
+          ...identity,
+          text: testimonial.text,
+          richText: testimonial.richText,
+          imageIds: testimonial.imageIds,
+          type: "text" as const,
+        };
   if (existingProjection) {
     await ctx.db.replace(existingProjection._id, projection);
     return existingProjection._id;

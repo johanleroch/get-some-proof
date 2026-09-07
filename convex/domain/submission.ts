@@ -143,10 +143,12 @@ function humanList(values: string[]) {
 export function buildPublicationConsent({
   brandName,
   privacyContact,
+  imageCount = 0,
   suppliedIdentity,
 }: {
   brandName: string;
   privacyContact: string;
+  imageCount?: number;
   suppliedIdentity: {
     avatarSupplied: boolean;
     company?: string;
@@ -164,7 +166,7 @@ export function buildPublicationConsent({
 
   return {
     identityFields,
-    text: `I authorize ${brandName} to publish this testimonial and my ${disclosedFields} on its website, hosted proof wall, and embedded proof wall, without compensation. I can withdraw this permission by contacting ${privacyContact}.`,
+    text: `I authorize ${brandName} to publish this testimonial${imageCount ? " including its attached images" : ""} and my ${disclosedFields} on its website, hosted proof wall, and embedded proof wall, without compensation. I can withdraw this permission by contacting ${privacyContact}.`,
     version: publicationConsentVersion,
   };
 }

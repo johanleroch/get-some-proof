@@ -6,6 +6,12 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, MessageSquareText, Star, Video } from "lucide-react";
 import Image from "next/image";
 
+import { uploadTestimonialImages } from "@/lib/upload-testimonial-images";
+import { TestimonialImagesInput } from "@/components/testimonials/testimonial-images-input";
+import type { TestimonialImage } from "@convex/domain/testimonialImage";
+import { TestimonialEditor } from "@/components/testimonials/testimonial-editor";
+import type { TestimonialRichText } from "@convex/domain/testimonialRichText";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { buildPublicationConsent } from "@convex/domain/submission";
@@ -59,8 +65,10 @@ type SubmissionIdentityInput = {
 };
 
 type TextSubmissionInput = SubmissionIdentityInput & {
+  imageIds?: Id<"testimonialImages">[];
   publicSlug: string;
   text: string;
+  richText?: TestimonialRichText;
   turnstileToken?: string;
 };
 
@@ -392,12 +400,18 @@ function TextStep({
   onContinue,
   text,
   textLength,
+  richText,
+  imageFiles,
+  onImageFilesChange,
   valid,
 }: {
   onBack: () => void;
-  onChange: (value: string) => void;
+  onChange: (value: string, richText: TestimonialRichText) => void;
+  imageFiles: File[];
+  onImageFilesChange: (files: File[]) => void;
   onContinue: () => void;
   text: string;
+  richText?: TestimonialRichText;
   textLength: number;
   valid: boolean;
 }) {
@@ -413,14 +427,16 @@ function TextStep({
       </div>
       <div className="space-y-2">
         <Label htmlFor="testimonial-text">Your testimonial</Label>
-        <textarea
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 min-h-40 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-          data-step-focus
+        <TestimonialEditor
+          autoFocus
           id="testimonial-text"
-          maxLength={2_000}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="What changed for you?"
-          value={text}
+          text={text}
+          richText={richText}
+          onChange={onChange}
+        />
+        <TestimonialImagesInput
+          files={imageFiles}
+          onFilesChange={onImageFilesChange}
         />
         <div className="flex justify-between text-xs">
           <span
@@ -745,7 +761,13 @@ async function submitCollectionForm(input: {
   submitterEmail: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
   textValid: boolean;
+  imageFiles: File[];
+  uploadImage?: (
+    file: File,
+    clientSubmissionId: string,
+  ) => Promise<TestimonialImage>;
   uploadAvatar?: (
     file: File,
     clientSubmissionId: string,
@@ -799,10 +821,18 @@ async function submitCollectionForm(input: {
       submitterName: input.submitterName.trim(),
     };
     if (input.proofType === "text") {
+      const images = await uploadTestimonialImages(
+        input.imageFiles,
+        input.uploadImage
+          ? (file) => input.uploadImage!(file, input.clientSubmissionId)
+          : undefined,
+      );
       await input.submitText({
+        imageIds: images.map((image) => image.id),
         ...identity,
         publicSlug: input.brand.publicSlug,
         text: input.text.trim(),
+        richText: input.richText,
         ...(input.botToken ? { turnstileToken: input.botToken } : {}),
       });
     } else if (input.videoFile && input.videoDurationSeconds) {
@@ -904,6 +934,7 @@ type InitialCollectionValues = Partial<{
   submitterEmail: string;
   submitterName: string;
   text: string;
+  richText?: TestimonialRichText;
 }>;
 
 function normalizeInitialValues(values?: InitialCollectionValues) {
@@ -935,6 +966,7 @@ function hasValidIdentity(name: string, email: string) {
 
 function buildConsentForForm(input: {
   avatar: File | undefined;
+  imageCount: number;
   brand: PublicBrand;
   company: string;
   name: string;
@@ -943,6 +975,7 @@ function buildConsentForForm(input: {
 }) {
   return buildPublicationConsent({
     brandName: input.brand.name,
+    imageCount: input.imageCount,
     privacyContact: input.brand.privacyContact,
     suppliedIdentity: {
       avatarSupplied: input.avatar !== undefined,
@@ -972,6 +1005,7 @@ export function CollectionFormShellView({
     throw new Error("Video submission is unavailable in this preview.");
   },
   uploadAvatar,
+  uploadImage,
   uploadVideo = uploadDirectVideo,
   inspectVideo = inspectVideoFile,
   botChallenge,
@@ -997,6 +1031,10 @@ export function CollectionFormShellView({
   }) => Promise<unknown>;
   submitText?: (input: TextSubmissionInput) => Promise<SubmissionResult>;
   submitVideo?: (input: VideoSubmissionInput) => Promise<VideoSubmissionResult>;
+  uploadImage?: (
+    file: File,
+    clientSubmissionId: string,
+  ) => Promise<TestimonialImage>;
   uploadAvatar?: (
     file: File,
     clientSubmissionId: string,
@@ -1030,6 +1068,8 @@ export function CollectionFormShellView({
   );
   const [clientSubmissionId] = useState(createClientSubmissionId);
   const [text, setText] = useState(normalizedInitialValues.text);
+  const [richText, setRichText] = useState<TestimonialRichText>();
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitterName, setSubmitterName] = useState(
     normalizedInitialValues.submitterName,
   );
@@ -1077,6 +1117,7 @@ export function CollectionFormShellView({
   const textValid = textLength >= 20 && textLength <= 2_000;
   const identityValid = hasValidIdentity(submitterName, submitterEmail);
   const consent = buildConsentForForm({
+    imageCount: proofType === "text" ? imageFiles.length : 0,
     avatar,
     brand,
     company,
@@ -1115,7 +1156,13 @@ export function CollectionFormShellView({
           {step === 2 && proofType === "text" ? (
             <TextStep
               onBack={() => setStep(1)}
-              onChange={setText}
+              onChange={(text, content) => {
+                setText(text);
+                setRichText(content);
+              }}
+              richText={richText}
+              imageFiles={imageFiles}
+              onImageFilesChange={setImageFiles}
               onContinue={() => setStep(3)}
               text={text}
               textLength={textLength}
@@ -1209,6 +1256,9 @@ export function CollectionFormShellView({
                   submitterEmail,
                   submitterName,
                   text,
+                  richText,
+                  imageFiles,
+                  uploadImage,
                   textValid,
                   uploadAvatar,
                   uploadVideo,
@@ -1264,6 +1314,10 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
     publicSlug,
   });
   const submitText = useAction(api.submissions.submitText);
+  const generateImageUpload = useMutation(
+    api.testimonialImages.generateUploadUrl,
+  );
+  const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
   const createDirectUpload = useAction(api.video.createDirectUpload);
   const submitVideo = useAction(api.video.submit);
   const cancelVideo = useMutation(api.video.cancelUpload);
@@ -1322,6 +1376,12 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
       }}
       submitText={submitText}
       submitVideo={submitVideo}
+      uploadImage={async (file, clientSubmissionId) => {
+        const identity = { clientSubmissionId, publicSlug };
+        const { imageId, uploadUrl } = await generateImageUpload(identity);
+        const storageId = await uploadProfileImage(file, uploadUrl);
+        return registerImageUpload({ ...identity, imageId, storageId });
+      }}
       uploadAvatar={async (file, clientSubmissionId) => {
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
           clientSubmissionId,

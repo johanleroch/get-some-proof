@@ -32,6 +32,8 @@ async function expectNoWcagViolations(page: Page) {
 
 const canonicalScreens = [
   "/visual-evidence/collection-form",
+  "/visual-evidence/collection-form-write",
+  "/visual-evidence/rich-testimonial",
   "/visual-evidence/collection-form-video",
   "/visual-evidence/collection-form-details",
   "/visual-evidence/testimonial-inbox",
@@ -53,6 +55,14 @@ for (const path of canonicalScreens) {
 test("Collection Form preserves keyboard focus, validation, and 44px targets", async ({
   page,
 }) => {
+  const renderErrors: string[] = [];
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      /Maximum update depth|Cannot update a component/.test(message.text())
+    )
+      renderErrors.push(message.text());
+  });
   await page.goto("/visual-evidence/collection-form");
   const textChoice = page.getByRole("button", {
     name: "Send a text testimonial",
@@ -64,10 +74,14 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
   ).toBeVisible();
   const testimonial = page.getByLabel("Your testimonial");
   await expect(testimonial).toBeFocused();
-  await testimonial.fill("Too short");
+  // A small key interval lets Slate and React flush between input events.
+  await testimonial.pressSequentially("Too short", { delay: 10 });
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
-  await testimonial.fill(
+  await testimonial.press("ControlOrMeta+A");
+  await testimonial.press("Backspace");
+  await testimonial.pressSequentially(
     "This deterministic testimonial is long enough to continue safely.",
+    { delay: 10 },
   );
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "About you" })).toBeVisible();
@@ -96,6 +110,7 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
         .filter(({ height, width }) => height < 44 || width < 44),
     );
   expect(undersized).toEqual([]);
+  expect(renderErrors).toEqual([]);
 });
 
 test("dark theme destructive text retains AA contrast", async ({ page }) => {
