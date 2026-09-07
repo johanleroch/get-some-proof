@@ -32,12 +32,14 @@ export function ArrowNote({
         className,
       )}
     >
-      <span className={cn("type-hand", arrow === "curve" && "pt-1")}>
-        {children}
-      </span>
+      <span className="type-hand">{children}</span>
+      {/* The curve starts 5px below the top of its 40px box: offset it so that
+          start sits on the caption's middle line before diving down. */}
       <SketchArrow
         className={cn(
-          arrow === "flat" ? "h-5 w-14" : "h-10 w-14",
+          arrow === "flat"
+            ? "h-5 w-14"
+            : "mt-[calc(var(--type-hand-leading)/2-5px)] h-10 w-14",
           direction === "left" && "-scale-x-100",
         )}
         draw={draw}
