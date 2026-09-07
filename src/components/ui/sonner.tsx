@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Toaster as SonnerToaster, type ToasterProps } from "sonner";
 
+// Toasts sit on --surface with the warm float shadow and use the semantic
+// status tokens for their icons, instead of sonner's built-in rich colors.
 export function Toaster(props: ToasterProps) {
   const [theme, setTheme] = useState<ToasterProps["theme"]>("system");
 
@@ -21,8 +23,26 @@ export function Toaster(props: ToasterProps) {
     <SonnerToaster
       closeButton
       position="top-right"
-      richColors
+      style={
+        {
+          "--normal-bg": "var(--surface)",
+          "--normal-border": "var(--line)",
+          "--normal-text": "var(--ink)",
+          "--border-radius": "var(--radius-lg)",
+        } as React.CSSProperties
+      }
       theme={theme}
+      toastOptions={{
+        classNames: {
+          description: "!text-ink-2",
+          error: "[&_[data-icon]]:text-danger",
+          info: "[&_[data-icon]]:text-info",
+          success: "[&_[data-icon]]:text-success",
+          title: "!font-semibold !tracking-[-0.008em]",
+          toast: "!shadow-float !font-sans",
+          warning: "[&_[data-icon]]:text-warning",
+        },
+      }}
       {...props}
     />
   );

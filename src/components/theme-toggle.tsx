@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Laptop, Moon, Sun } from "lucide-react";
+import { IconDeviceLaptop, IconMoon, IconSun } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +58,12 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event(themeChangeEvent));
   }
 
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Laptop;
+  const Icon =
+    theme === "light"
+      ? IconSun
+      : theme === "dark"
+        ? IconMoon
+        : IconDeviceLaptop;
 
   return (
     <DropdownMenu>
@@ -73,15 +78,15 @@ export function ThemeToggle() {
           value={theme}
         >
           <DropdownMenuRadioItem value="light">
-            <Sun aria-hidden="true" />
+            <IconSun aria-hidden="true" />
             Light
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
-            <Moon aria-hidden="true" />
+            <IconMoon aria-hidden="true" />
             Dark
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
-            <Laptop aria-hidden="true" />
+            <IconDeviceLaptop aria-hidden="true" />
             System
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
