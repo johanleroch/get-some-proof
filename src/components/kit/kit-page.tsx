@@ -7,9 +7,11 @@ import {
   IconLayoutGrid,
   IconRefresh,
   IconStar,
+  IconTemplate,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -326,6 +328,12 @@ export function KitPage() {
               only.
             </p>
           </div>
+          <Button asChild size="sm" variant="outline">
+            <a href="/kit/templates">
+              <IconTemplate aria-hidden="true" />
+              Templates
+            </a>
+          </Button>
           <Button asChild size="sm" variant="outline">
             <a href="/screens">
               <IconLayoutGrid aria-hidden="true" />
@@ -1054,18 +1062,29 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="The product pieces every screen reuses: the brand mark and the testimonial card shared by the Wall, the Inbox and the embed."
+            description="The product pieces every screen reuses: the official logo, its mark, and the testimonial card shared by the Wall, the Inbox and the embed."
             id="product"
             title="Product pieces"
           >
             <div className="grid gap-6 md:grid-cols-[auto_minmax(0,1fr)]">
-              <div className="bg-card flex items-center gap-3 self-start rounded-lg border p-4">
-                <BrandMark />
-                <div>
-                  <p className="type-ui">Brand mark</p>
-                  <p className="text-muted-foreground type-small">
-                    src/app/icon.svg
-                  </p>
+              <div className="space-y-3 self-start">
+                <div className="bg-card flex items-center gap-4 rounded-lg border p-4">
+                  <BrandLogo />
+                  <div>
+                    <p className="type-ui">Logo</p>
+                    <p className="text-muted-foreground type-small">
+                      public/brand/logo.svg, paper wordmark on dark
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-card flex items-center gap-4 rounded-lg border p-4">
+                  <BrandMark />
+                  <div>
+                    <p className="type-ui">Brand mark</p>
+                    <p className="text-muted-foreground type-small">
+                      public/brand/logo-mark.svg, for tight spots
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="max-w-sm">

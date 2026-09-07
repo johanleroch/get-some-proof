@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
+import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { BrandDashboardView } from "@/components/organizations/organization-dashboard";
 import { PageHeader } from "@/components/page-header";
@@ -100,12 +101,7 @@ export function OnboardingScreenFixture() {
   return (
     <main className="bg-paper min-h-svh px-5 py-8 md:px-8 md:py-10">
       <div className="mx-auto max-w-5xl space-y-10">
-        <div className="flex items-center gap-2.5">
-          <BrandMark />
-          <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
-            Get Some Proof
-          </span>
-        </div>
+        <BrandLogo />
         <PageHeader
           description="Set the public identity and Collection Form your customers will see."
           eyebrow="First step"

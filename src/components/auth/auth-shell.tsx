@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
-import { BrandMark } from "@/components/brand-mark";
-import { ScribbleStar, WallFrames } from "@/components/doodles";
+import { BrandLogo } from "@/components/brand-logo";
+import { WallFrames } from "@/components/doodles";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { productDescription, productName } from "@/lib/brand";
+import { productDescription } from "@/lib/brand";
 
 /**
  * Authentication layout (DESIGN.md section 6): from 1024px the form sits on
@@ -19,12 +19,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </div>
       <section className="flex flex-col px-5 py-10 sm:px-8 lg:px-14 lg:py-12">
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col">
-          <div className="mb-10 flex items-center gap-2.5">
-            <BrandMark className="hidden lg:block" />
-            <ScribbleStar className="text-brand size-8 lg:hidden" />
-            <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
-              {productName}
-            </span>
+          <div className="mb-10">
+            <BrandLogo />
           </div>
           <div className="my-auto w-full">{children}</div>
           <p className="type-small text-ink-2 mt-10 hidden lg:block">

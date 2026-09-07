@@ -332,6 +332,19 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
 - Empty states: one shared component: spot illustration (max 160px tall),
   `subheading` title, one sentence, one primary action. Never a dashed box
   with a lone sentence.
+- Templates gallery (our public page at `/templates`): the layouts a Brand
+  can pick for its proof, Senja's grammar (a gallery you can try) in our
+  voice. Public header with the mark, the name, sign in and one primary
+  action; left-aligned hero with a wavy underline and the facts as a list,
+  never cards; category chips, a Brand accent picker and a wall theme
+  switch; then one framed live preview per template on a two-column grid
+  where walls and sliders span both columns. Every preview is the real React
+  component fed with sample Testimonials, so nothing is a screenshot, and it
+  renders on the wall theme with the sample accent (never our amber inside
+  the frame). One closing call to action on `--ink` with the blob. The
+  catalog is `src/lib/templates-catalog.ts`, one file per template under
+  `src/components/templates/`, reviewed in `/kit/templates` where a template
+  stays a draft until its `status` is `public`.
 
 Responsive: every multi-column layout collapses to one column below 768px, no
 horizontal page scroll ever, headlines scale with `clamp()`, body text never
@@ -444,7 +457,9 @@ Token names above map to `src/app/globals.css`. Fonts load in
 `src/app/layout.tsx`. Doodles live in `src/components/doodles/`. The official
 logo and icon live in `public/brand/` (`logo.svg`, `logo-mark.svg`,
 `logo-type.svg`, `icon.svg`, `blob.svg`, see `docs/design/app-icons/DESIGN.md`
-10.1 and 10.2); `BrandMark` reads the app icon, which now shows the blob. Per-Brand
+10.1 and 10.2); `BrandLogo` renders the lockup (`logo-on-dark.svg` on dark
+surfaces) in the auth, onboarding and public headers, `BrandMark` the mark
+alone where only a tile fits. Per-Brand
 accent contrast is computed next to `normalizePrimaryColor` in
 `convex/organizations.ts` and shipped in the public projections.
 
