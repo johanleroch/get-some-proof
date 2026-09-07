@@ -1,11 +1,14 @@
 import { Fragment, type CSSProperties } from "react";
 import Link from "next/link";
 
+import { ScribbleStar, WallFrames } from "@/components/doodles";
 import {
   TestimonialCard,
   type PublicTestimonial,
 } from "@/components/testimonials/testimonial-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type PublicWallValue = {
   accentColor: string;
@@ -21,18 +24,19 @@ function FreeWallPromotion() {
   return (
     <aside
       aria-label="Get Some Proof"
-      className="mb-5 break-inside-avoid overflow-hidden rounded-xl bg-[#6d5dfc] p-6 text-white shadow-xs sm:p-8"
+      className="bg-ink text-paper mb-5 break-inside-avoid overflow-hidden rounded-lg p-6 sm:p-8"
       data-gsp-promotion=""
     >
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <ScribbleStar className="text-brand size-10" />
+      <h2 className="font-display mt-4 text-2xl leading-tight font-bold tracking-[-0.025em] sm:text-3xl">
         Testimonials made easy
       </h2>
-      <p className="mt-5 text-base leading-7 text-white sm:text-lg">
+      <p className="text-paper/80 mt-4 text-base leading-7 sm:text-lg">
         Collect text and video testimonials. Share them everywhere! Free,
         forever.
       </p>
       <Link
-        className="mt-7 flex min-h-12 w-full items-center justify-center rounded-lg bg-black px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-black/85 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white motion-reduce:transition-none"
+        className="bg-brand text-brand-ink hover:bg-brand-strong focus-visible:outline-brand mt-7 flex min-h-12 w-full items-center justify-center rounded-md px-5 py-3 text-center font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-offset-3 motion-reduce:transition-none"
         href="/sign-up?utm_source=public_wall&utm_medium=referral&utm_campaign=powered_by"
         rel="sponsored nofollow"
       >
@@ -59,28 +63,39 @@ export function HostedWall({
       data-wall-theme={wall.theme}
       style={{ "--wall-accent": wall.accentColor } as CSSProperties}
     >
-      <div className="mx-auto w-full max-w-6xl">
-        <header className="mx-auto mb-8 max-w-2xl text-center sm:mb-10">
-          <p className="text-muted-foreground text-sm font-medium">
-            Customer proof
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {wall.brandName}
-          </h1>
-          <div className="mx-auto mt-5 h-1 w-12 rounded-full bg-(--wall-accent)" />
+      <div className="mx-auto w-full max-w-7xl">
+        <header className="mb-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-12">
+          <div className="max-w-2xl space-y-3">
+            <p className="type-micro text-muted-foreground">Customer proof</p>
+            <h1 className="type-display-xl flex items-start gap-3 text-balance">
+              <span>{wall.brandName}</span>
+              <ScribbleStar
+                className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10"
+                draw
+              />
+            </h1>
+          </div>
+          {wall.testimonials.length > 0 ? (
+            <Badge variant="outline">
+              {wall.testimonials.length}
+              {canLoadMore ? "+" : ""} proofs
+            </Badge>
+          ) : null}
         </header>
 
         {wall.testimonials.length === 0 ? (
-          <section className="bg-card mx-auto max-w-xl rounded-xl border border-dashed px-6 py-12 text-center shadow-xs">
-            <h2 className="font-semibold">No public testimonials yet.</h2>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Published customer proof will appear here.
-            </p>
+          <section className="bg-card mx-auto max-w-xl rounded-lg border">
+            <EmptyState
+              description="Published customer proof will appear here."
+              headingLevel={2}
+              illustration={<WallFrames className="h-28" />}
+              title="No public testimonials yet."
+            />
           </section>
         ) : (
           <section
             aria-label={`${wall.brandName} testimonials`}
-            className="columns-1 gap-5 md:columns-2"
+            className="columns-1 gap-5 sm:columns-2 lg:columns-3"
             data-testid="public-wall-grid"
           >
             {wall.testimonials.map((testimonial, index) => (
@@ -99,12 +114,13 @@ export function HostedWall({
         {canLoadMore && onLoadMore ? (
           <div className="mt-8 flex justify-center">
             <Button
-              disabled={loadingMore}
+              loading={loadingMore}
               onClick={onLoadMore}
+              size="lg"
               type="button"
               variant="outline"
             >
-              {loadingMore ? "Loading…" : "Load more testimonials"}
+              Load more testimonials
             </Button>
           </div>
         ) : null}

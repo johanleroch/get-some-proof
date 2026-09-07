@@ -3,7 +3,11 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Play, RefreshCw, Trash2, Upload } from "lucide-react";
+import {
+  IconPlayerPlayFilled,
+  IconTrash,
+  IconUpload,
+} from "@tabler/icons-react";
 import MuxPlayer from "@mux/mux-player-react/lazy";
 import Image from "next/image";
 
@@ -20,8 +24,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Field, FieldDescription } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,7 +138,10 @@ function CurrentManagedVideo({
             unoptimized
           />
           <span className="bg-background/90 text-foreground absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105">
-            <Play aria-hidden="true" className="ml-0.5 size-5 fill-current" />
+            <IconPlayerPlayFilled
+              aria-hidden="true"
+              className="ml-0.5 size-5"
+            />
           </span>
         </button>
       )}
@@ -254,35 +271,31 @@ export function ManagedSubmissionView({
   }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <p className="text-muted-foreground text-sm font-medium">
-          {submission.brandName}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Manage your testimonial
-        </h1>
-        <p className="text-muted-foreground text-sm">
+    <section className="mx-auto w-full max-w-2xl space-y-8">
+      <header className="space-y-1.5">
+        <p className="type-micro text-ink-2">{submission.brandName}</p>
+        <h1 className="type-heading">Manage your testimonial</h1>
+        <p className="type-body text-ink-2">
           Current status:{" "}
           <span className="capitalize">{submission.moderationStatus}</span>
         </p>
-      </CardHeader>
-      <CardContent className="space-y-7">
+      </header>
+      <div className="space-y-7">
         <form className="space-y-6" onSubmit={confirm}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
+            <Field className="sm:col-span-2">
               <Label htmlFor="managed-email">Private email</Label>
               <Input
                 disabled
                 id="managed-email"
                 value={submission.submitterEmail}
               />
-              <p className="text-muted-foreground text-xs">
+              <FieldDescription>
                 This email identifies the original submission and cannot be
                 changed.
-              </p>
-            </div>
-            <div className="space-y-2">
+              </FieldDescription>
+            </Field>
+            <Field>
               <Label htmlFor="managed-name">Name</Label>
               <Input
                 id="managed-name"
@@ -291,8 +304,8 @@ export function ManagedSubmissionView({
                 required
                 value={name}
               />
-            </div>
-            <div className="space-y-2">
+            </Field>
+            <Field>
               <Label htmlFor="managed-role">Role</Label>
               <Input
                 id="managed-role"
@@ -300,8 +313,8 @@ export function ManagedSubmissionView({
                 onChange={(event) => setRole(event.target.value)}
                 value={role}
               />
-            </div>
-            <div className="space-y-2">
+            </Field>
+            <Field>
               <Label htmlFor="managed-company">Company</Label>
               <Input
                 id="managed-company"
@@ -309,23 +322,28 @@ export function ManagedSubmissionView({
                 onChange={(event) => setCompany(event.target.value)}
                 value={company}
               />
-            </div>
-            <div className="space-y-2">
+            </Field>
+            <Field>
               <Label htmlFor="managed-rating">Rating</Label>
-              <select
-                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs"
-                id="managed-rating"
-                onChange={(event) => setRating(event.target.value)}
-                value={rating}
+              <Select
+                onValueChange={(value) =>
+                  setRating(value === "none" ? "" : value)
+                }
+                value={rating || "none"}
               >
-                <option value="">No rating</option>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <option key={value} value={value}>
-                    {value} / 5
-                  </option>
-                ))}
-              </select>
-            </div>
+                <SelectTrigger className="w-full" id="managed-rating">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No rating</SelectItem>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <SelectItem key={value} value={String(value)}>
+                      {value} / 5
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
 
           <div className="space-y-3">
@@ -382,18 +400,18 @@ export function ManagedSubmissionView({
                 rows={7}
                 value={text}
               />
-              <p className="text-muted-foreground text-right text-xs">
+              <p className="text-ink-2 text-right text-xs tabular-nums">
                 {Array.from(text).length} / 2,000
               </p>
             </div>
           ) : (
-            <div className="space-y-4 rounded-xl border p-4">
+            <div className="bg-card space-y-4 rounded-lg border p-4">
               {submission.currentVideo ? (
                 <CurrentManagedVideo {...submission.currentVideo} />
               ) : null}
               <div>
-                <p className="font-medium">Replace your video</p>
-                <p className="text-muted-foreground mt-1 text-sm">
+                <p className="type-subheading">Replace your video</p>
+                <p className="text-ink-2 mt-1 text-sm">
                   Your current video stays unchanged unless a new one becomes
                   Ready and you confirm it.
                 </p>
@@ -413,37 +431,39 @@ export function ManagedSubmissionView({
                   onChange={(event) => setVideoFile(event.target.files?.[0])}
                   type="file"
                 />
-                <select
-                  aria-label="Spoken language"
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-                  onChange={(event) =>
-                    setSpokenLanguage(event.target.value as "en" | "fr")
+                <Select
+                  onValueChange={(value) =>
+                    setSpokenLanguage(value as "en" | "fr")
                   }
                   value={spokenLanguage}
                 >
-                  <option value="en">English</option>
-                  <option value="fr">French</option>
-                </select>
+                  <SelectTrigger
+                    aria-label="Spoken language"
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="fr">French</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button
                 disabled={
                   !videoFile ||
-                  videoUpload.uploading ||
                   Boolean(
                     submission.replacement &&
                     submission.replacement.status !== "failed",
                   )
                 }
+                loading={videoUpload.uploading}
                 onClick={replaceVideo}
                 type="button"
                 variant="outline"
               >
-                {videoUpload.uploading ? (
-                  <RefreshCw className="animate-spin" />
-                ) : (
-                  <Upload />
-                )}
-                {videoUpload.uploading ? "Uploading…" : "Upload replacement"}
+                <IconUpload aria-hidden="true" />
+                Upload replacement
               </Button>
               <VideoUploadProgress
                 onCancel={videoUpload.cancel}
@@ -453,14 +473,14 @@ export function ManagedSubmissionView({
             </div>
           )}
 
-          <div className="space-y-3 rounded-xl border p-4">
-            <p className="text-sm leading-6">{consent.text}</p>
-            <label className="flex items-start gap-3 text-sm">
-              <input
+          <div className="bg-surface-2 space-y-3 rounded-lg border p-4">
+            <p className="text-ink-2 text-sm leading-6">{consent.text}</p>
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+              <Checkbox
                 checked={consentAccepted}
-                className="mt-1 size-4"
-                onChange={(event) => setConsentAccepted(event.target.checked)}
-                type="checkbox"
+                onCheckedChange={(checked) =>
+                  setConsentAccepted(checked === true)
+                }
               />
               <span>
                 I confirm this revision and give fresh Publication Consent.
@@ -469,15 +489,20 @@ export function ManagedSubmissionView({
           </div>
           {error ? <ErrorToast message={error} /> : null}
           {notice ? <SuccessToast message={notice} /> : null}
-          <Button disabled={!consentAccepted || saving} type="submit">
-            {saving ? "Confirming…" : "Confirm revision"}
+          <Button
+            disabled={!consentAccepted}
+            loading={saving}
+            size="lg"
+            type="submit"
+          >
+            Confirm revision
           </Button>
         </form>
 
-        <div className="border-destructive/30 space-y-3 border-t pt-6">
+        <div className="border-danger/30 space-y-3 border-t pt-6">
           <div>
-            <h2 className="font-semibold">Withdraw Publication Consent</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <h2 className="type-subheading">Withdraw Publication Consent</h2>
+            <p className="text-ink-2 mt-1 text-sm">
               This immediately removes the testimonial from public pages and
               permanently deletes its content and media.
             </p>
@@ -487,10 +512,10 @@ export function ManagedSubmissionView({
             type="button"
             variant="destructive"
           >
-            <Trash2 /> Withdraw and delete
+            <IconTrash aria-hidden="true" /> Withdraw and delete
           </Button>
         </div>
-      </CardContent>
+      </div>
       <AlertDialog
         onOpenChange={setWithdrawDialogOpen}
         open={withdrawDialogOpen}
@@ -511,17 +536,17 @@ export function ManagedSubmissionView({
             </AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button
-                disabled={withdrawing}
+                loading={withdrawing}
                 onClick={withdraw}
                 variant="destructive"
               >
-                {withdrawing ? "Deleting…" : "Withdraw and delete"}
+                Withdraw and delete
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </section>
   );
 }
 
@@ -544,27 +569,23 @@ export function ManagedSubmission({ token }: { token: string }) {
   const [withdrawn, setWithdrawn] = useState(false);
   if (withdrawn)
     return (
-      <Card className="w-full max-w-xl text-center">
-        <CardHeader>
-          <h1 className="text-2xl font-semibold">Consent withdrawn</h1>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          The testimonial is no longer public and its content has been deleted.
-        </CardContent>
-      </Card>
+      <EmptyState
+        description="The testimonial is no longer public and its content has been deleted."
+        headingLevel={1}
+        illustration={<WallFrames className="h-28" />}
+        title="Consent withdrawn"
+      />
     );
   if (submission === undefined)
-    return <p className="text-muted-foreground text-sm">Loading submission…</p>;
+    return <p className="text-ink-2 text-sm">Loading submission…</p>;
   if (submission === null)
     return (
-      <Card className="w-full max-w-xl text-center">
-        <CardHeader>
-          <h1 className="text-2xl font-semibold">Private link unavailable</h1>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          This management link is invalid or no longer active.
-        </CardContent>
-      </Card>
+      <EmptyState
+        description="This management link is invalid or no longer active."
+        headingLevel={1}
+        illustration={<WallFrames className="h-28" />}
+        title="Private link unavailable"
+      />
     );
   return (
     <ManagedSubmissionView

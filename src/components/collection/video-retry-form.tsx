@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, RotateCcw } from "lucide-react";
+import { IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
 
 import { api } from "@convex/_generated/api";
@@ -10,11 +10,20 @@ import {
   normalizeVideoMimeType,
   supportedVideoMimeTypes,
 } from "@convex/domain/video";
+import { ScribbleStar, WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { inspectVideoFile } from "@/lib/video-file";
 import { useVideoUpload } from "@/hooks/use-video-upload";
@@ -76,33 +85,30 @@ export function VideoRetryFormView({
   const activeContext = context ?? claimedContext;
 
   if (context === undefined && !activeContext) {
-    return <p className="text-muted-foreground text-sm">Loading link…</p>;
+    return <p className="text-ink-2 text-sm">Loading link…</p>;
   }
   if (!activeContext) {
     return (
-      <Card className="w-full max-w-xl text-center">
-        <CardHeader>
-          <h1 className="text-2xl font-semibold">Replacement unavailable</h1>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          This private link is invalid, expired or has already been used.
-        </CardContent>
-      </Card>
+      <EmptyState
+        description="This private link is invalid, expired or has already been used."
+        headingLevel={1}
+        illustration={<WallFrames className="h-28" />}
+        title="Replacement unavailable"
+      />
     );
   }
   if (complete) {
     return (
-      <Card className="w-full max-w-xl text-center">
-        <CardContent className="space-y-3 py-6">
-          <CheckCircle2 className="text-success mx-auto size-12" />
-          <h1 className="text-2xl font-semibold">Replacement uploaded</h1>
-          <p className="text-muted-foreground text-sm leading-6">
+      <section className="mx-auto w-full max-w-xl space-y-5">
+        <ScribbleStar className="text-ink size-14" draw />
+        <div className="space-y-2">
+          <h1 className="type-heading">Replacement uploaded</h1>
+          <p className="type-body text-ink-2">
             Your new video is processing. It remains private until{" "}
-            {activeContext.brandName}
-            reviews it.
+            {activeContext.brandName} reviews it.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     );
   }
 
@@ -161,24 +167,22 @@ export function VideoRetryFormView({
   }
 
   return (
-    <Card className="w-full max-w-xl">
-      <CardHeader>
-        <div className="bg-muted grid size-11 place-items-center rounded-xl">
-          <RotateCcw className="size-5" />
+    <section className="mx-auto w-full max-w-xl space-y-6">
+      <header className="space-y-3">
+        <div className="bg-surface-2 text-ink grid size-11 place-items-center rounded-md">
+          <IconRefresh aria-hidden="true" className="size-5" />
         </div>
-        <p className="text-muted-foreground text-sm font-medium">
-          {activeContext.brandName}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Replace your video
-        </h1>
-        <p className="text-muted-foreground text-sm leading-6">
-          Upload one new MP4, MOV or WebM video, up to 2 minutes. This private
-          link works once and expires after 24 hours.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          <p className="type-micro text-ink-2">{activeContext.brandName}</p>
+          <h1 className="type-heading">Replace your video</h1>
+          <p className="type-body text-ink-2">
+            Upload one new MP4, MOV or WebM video, up to 2 minutes. This private
+            link works once and expires after 24 hours.
+          </p>
+        </div>
+      </header>
+      <div className="space-y-5">
+        <Field>
           <Label htmlFor="replacement-video">New video</Label>
           <Input
             accept="video/mp4,video/quicktime,video/webm"
@@ -189,22 +193,23 @@ export function VideoRetryFormView({
             }}
             type="file"
           />
-          {file ? (
-            <p className="text-muted-foreground text-xs">{file.name}</p>
-          ) : null}
-        </div>
-        <div className="space-y-2">
+          {file ? <FieldDescription>{file.name}</FieldDescription> : null}
+        </Field>
+        <Field>
           <Label htmlFor="replacement-language">Spoken language</Label>
-          <select
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-3"
-            id="replacement-language"
-            onChange={(event) => setLanguage(event.target.value as "en" | "fr")}
+          <Select
+            onValueChange={(value) => setLanguage(value as "en" | "fr")}
             value={spokenLanguage}
           >
-            <option value="en">English</option>
-            <option value="fr">French</option>
-          </select>
-        </div>
+            <SelectTrigger className="w-full" id="replacement-language">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="fr">French</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
         {videoUpload.phase !== "idle" ? (
           <VideoUploadProgress
             onCancel={
@@ -217,14 +222,16 @@ export function VideoRetryFormView({
         {error ? <ErrorToast message={error} /> : null}
         <Button
           className="w-full"
-          disabled={!file || submitting}
+          disabled={!file}
+          loading={submitting}
           onClick={() => void submitReplacement()}
+          size="lg"
           type="button"
         >
-          {submitting ? "Uploading…" : "Replace video"}
+          Replace video
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

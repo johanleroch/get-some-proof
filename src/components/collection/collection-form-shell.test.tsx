@@ -260,9 +260,10 @@ describe("CollectionFormShellView", () => {
     fireEvent.change(screen.getByLabelText("Upload a video"), {
       target: { files: [file] },
     });
-    fireEvent.change(screen.getByLabelText("Spoken language"), {
-      target: { value: "fr" },
+    fireEvent.keyDown(screen.getByLabelText("Spoken language"), {
+      key: "ArrowDown",
     });
+    fireEvent.click(screen.getByRole("option", { name: "French" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByText("About you")).toBeVisible();

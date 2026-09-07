@@ -48,7 +48,9 @@ describe("VideoRetryFormView", () => {
     fireEvent.change(screen.getByLabelText("New video"), {
       target: { files: [file] },
     });
-    expect(screen.getByLabelText("Spoken language")).toHaveValue("fr");
+    expect(screen.getByLabelText("Spoken language")).toHaveTextContent(
+      "French",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Replace video" }));
 
     await waitFor(() => expect(createRetryUpload).toHaveBeenCalledTimes(1));

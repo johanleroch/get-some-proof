@@ -3,7 +3,12 @@
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, MessageSquareText, Star, Video } from "lucide-react";
+import {
+  IconCheck,
+  IconMessage2,
+  IconStar,
+  IconVideo,
+} from "@tabler/icons-react";
 import Image from "next/image";
 
 import { api } from "@convex/_generated/api";
@@ -13,15 +18,27 @@ import {
   normalizeVideoMimeType,
   supportedVideoMimeTypes,
 } from "@convex/domain/video";
-import { BrandMark } from "@/components/brand-mark";
 import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
+import { ScribbleStar, WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { accentInk } from "@/lib/color-contrast";
+import { cn } from "@/lib/utils";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { inspectVideoFile } from "@/lib/video-file";
 import {
@@ -94,8 +111,19 @@ type VideoSubmissionResult = SubmissionResult & {
   processingStatus: "awaiting_upload" | "processing" | "ready" | "failed";
 };
 
-const fieldClassName =
-  "h-4 w-4 shrink-0 accent-(--brand-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent)";
+const accentButtonClassName =
+  "flex-1 bg-(--brand-accent) text-(--brand-accent-ink) hover:opacity-90";
+
+const stepTitles = ["Choose a format", "Your story", "About you", "Done"];
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
 
 function subscribeToBrowserCapabilities() {
   return () => undefined;
@@ -171,43 +199,113 @@ function ReplacementLinkRequest({
   );
 }
 
-function BrandHeader({ brand }: { brand: PublicBrand }) {
+function BrandPanel({ brand, step }: { brand: PublicBrand; step: number }) {
   return (
-    <CardHeader className="items-center text-center">
-      {brand.logoUrl ? (
-        <Image
-          alt={`${brand.name} logo`}
-          className="size-14 rounded-2xl object-cover"
-          height={56}
-          src={brand.logoUrl}
-          unoptimized
-          width={56}
-        />
-      ) : (
-        <BrandMark className="size-14 rounded-2xl" />
-      )}
-      <p className="text-muted-foreground text-sm font-medium">{brand.name}</p>
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        {brand.collectionFormTitle}
-      </h1>
-      <p className="text-muted-foreground max-w-md text-sm leading-6">
-        {brand.collectionFormDescription}
+    <aside
+      className="px-5 py-8 sm:px-8 lg:flex lg:min-h-svh lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16"
+      style={{
+        background: "color-mix(in srgb, var(--brand-accent) 8%, var(--paper))",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        {brand.logoUrl ? (
+          <Image
+            alt={`${brand.name} logo`}
+            className="size-12 rounded-xl object-cover"
+            height={48}
+            src={brand.logoUrl}
+            unoptimized
+            width={48}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-xl text-base font-semibold"
+            style={{
+              background: "var(--brand-accent)",
+              color: "var(--brand-accent-ink)",
+            }}
+          >
+            {initials(brand.name) || "GP"}
+          </span>
+        )}
+        <p className="text-ink text-sm font-semibold tracking-[-0.008em]">
+          {brand.name}
+        </p>
+      </div>
+      <div className="mt-6 max-w-md space-y-3 lg:mt-0">
+        <h1 className="font-display text-[2rem] leading-9 font-extrabold tracking-[-0.03em] text-balance lg:text-[2.5rem] lg:leading-[2.75rem]">
+          {brand.collectionFormTitle}
+        </h1>
+        <p className="type-body text-ink-2">
+          {brand.collectionFormDescription}
+        </p>
+        <ol aria-label="Steps" className="hidden pt-4 lg:block">
+          {stepTitles.map((title, index) => {
+            const number = index + 1;
+            const state =
+              number < step ? "done" : number === step ? "current" : "todo";
+            return (
+              <li
+                aria-current={state === "current" ? "step" : undefined}
+                className="flex items-center gap-3 py-1.5 text-sm"
+                key={title}
+              >
+                <span
+                  className={cn(
+                    "grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold",
+                    state === "todo" && "border-line-2 text-ink-3 border",
+                  )}
+                  style={
+                    state === "todo"
+                      ? undefined
+                      : {
+                          background: "var(--brand-accent)",
+                          color: "var(--brand-accent-ink)",
+                        }
+                  }
+                >
+                  {state === "done" ? (
+                    <IconCheck aria-hidden="true" className="size-3.5" />
+                  ) : (
+                    number
+                  )}
+                </span>
+                <span
+                  className={
+                    state === "current"
+                      ? "text-ink font-semibold"
+                      : "text-ink-2"
+                  }
+                >
+                  {title}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+      <p className="type-small text-ink-2 hidden lg:block">
+        Your details stay private. Nothing is published without your consent.
       </p>
-    </CardHeader>
+    </aside>
   );
 }
 
 function StepLabel({ step }: { step: number }) {
   return (
-    <div className="flex items-center gap-3" aria-label={`Step ${step} of 4`}>
-      <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
-        Step {step} of 4
-      </p>
-      <div className="bg-muted h-1 flex-1 overflow-hidden rounded-full">
-        <div
-          className="h-full rounded-full bg-(--brand-accent) transition-[width]"
-          style={{ width: `${step * 25}%` }}
-        />
+    <div aria-label={`Step ${step} of 4`} className="flex items-center gap-3">
+      <p className="type-micro text-ink-2 shrink-0">Step {step} of 4</p>
+      <div className="flex flex-1 items-center gap-1.5">
+        {[1, 2, 3, 4].map((number) => (
+          <span
+            className="bg-surface-2 h-1.5 flex-1 rounded-full transition-colors duration-200"
+            key={number}
+            style={
+              number <= step ? { background: "var(--brand-accent)" } : undefined
+            }
+          />
+        ))}
       </div>
     </div>
   );
@@ -243,17 +341,17 @@ function VideoStep({
   return (
     <section className="space-y-5" aria-labelledby="add-video">
       <div>
-        <h2 id="add-video" className="text-lg font-semibold">
+        <h2 className="type-subheading" id="add-video">
           Record your story
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-ink-2 mt-1 text-sm">
           Take up to 2 minutes. You can check your camera and microphone, review
           the result, and record again before continuing.
         </p>
       </div>
-      <div className="bg-muted/45 rounded-xl border p-4 text-sm">
+      <div className="bg-surface-2 rounded-lg border p-4 text-sm">
         <p className="font-medium">A simple story works best</p>
-        <ul className="text-muted-foreground mt-2 space-y-1 text-xs leading-5">
+        <ul className="text-ink-2 mt-2 space-y-1 text-xs leading-5">
           <li>What was happening before?</li>
           <li>What changed after working with us?</li>
           <li>What would you tell someone considering it?</li>
@@ -266,18 +364,18 @@ function VideoStep({
           visualFixture={recorderVisualFixture}
         />
       ) : (
-        <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
+        <p className="bg-surface-2 text-ink-2 rounded-lg border p-4 text-sm">
           Recording isn&apos;t supported here. You can still upload a video or
           go back and send text.
         </p>
       )}
       <div className="relative py-1" aria-hidden="true">
         <div className="border-t" />
-        <span className="bg-card text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 text-xs font-medium uppercase">
+        <span className="bg-background text-ink-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 text-xs font-semibold tracking-[0.06em] uppercase">
           or
         </span>
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="testimonial-video">Upload a video</Label>
         <Input
           accept="video/mp4,video/quicktime,video/webm"
@@ -286,43 +384,45 @@ function VideoStep({
           onChange={(event) => onFileChange(event.target.files?.[0])}
           type="file"
         />
-        <p className="text-muted-foreground text-xs">
+        <FieldDescription>
           MP4, MOV or WebM, up to 2 minutes. Your file uploads only after you
           confirm.
-        </p>
+        </FieldDescription>
         {videoFile ? (
           <p className="text-xs font-medium">Selected: {videoFile.name}</p>
         ) : null}
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <Label htmlFor="spoken-language">Spoken language</Label>
-        <select
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-3"
-          id="spoken-language"
-          onChange={(event) =>
-            onLanguageChange(event.target.value as "en" | "fr")
-          }
+        <Select
+          onValueChange={(value) => onLanguageChange(value as "en" | "fr")}
           value={spokenLanguage}
         >
-          <option value="en">English</option>
-          <option value="fr">French</option>
-        </select>
-        <p className="text-muted-foreground text-xs">
+          <SelectTrigger className="w-full" id="spoken-language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="en">English</SelectItem>
+            <SelectItem value="fr">French</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldDescription>
           Used to generate captions. Caption failure will not block your video.
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
       <div className="flex gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
         </Button>
         <Button
-          className="flex-1 bg-(--brand-accent) text-white hover:opacity-90"
-          disabled={!videoFile || validating || recording}
+          className={accentButtonClassName}
+          disabled={!videoFile || recording}
+          loading={validating}
           onClick={onContinue}
           type="button"
         >
-          {validating ? "Checking video…" : "Continue"}
+          Continue
         </Button>
       </div>
     </section>
@@ -342,40 +442,41 @@ function ProofTypeStep({
 }) {
   if (!textAvailable && !videoAvailable) {
     return (
-      <section className="space-y-2 text-center" aria-live="polite">
-        <h2 className="text-lg font-semibold">
-          Collection is temporarily closed
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          This Brand is not accepting new testimonials right now.
-        </p>
+      <section aria-live="polite">
+        <EmptyState
+          className="py-6"
+          description="This Brand is not accepting new testimonials right now."
+          illustration={<WallFrames className="h-28" draw />}
+          headingLevel={2}
+          title="Collection is temporarily closed"
+        />
       </section>
     );
   }
   return (
     <section className="space-y-4" aria-labelledby="choose-proof-type">
       <div>
-        <h2 id="choose-proof-type" className="text-lg font-semibold">
+        <h2 className="type-subheading" id="choose-proof-type">
           What would you like to share?
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-ink-2 mt-1 text-sm">
           Choose one format. Nothing is saved until you confirm.
         </p>
       </div>
       <button
         aria-label="Send a text testimonial"
         data-step-focus
-        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
+        className="bg-surface flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
         disabled={!textAvailable}
         onClick={onText}
         type="button"
       >
-        <span className="grid size-11 place-items-center rounded-xl bg-(--brand-accent) text-white">
-          <MessageSquareText className="size-5" />
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-(--brand-accent) text-(--brand-accent-ink)">
+          <IconMessage2 aria-hidden="true" className="size-5" />
         </span>
         <span>
           <span className="block font-medium">Send a text testimonial</span>
-          <span className="text-muted-foreground text-sm">
+          <span className="text-ink-2 text-sm">
             {textAvailable
               ? "Write 20 to 2,000 characters"
               : "Text testimonials are currently unavailable"}
@@ -384,17 +485,17 @@ function ProofTypeStep({
       </button>
       <button
         aria-label="Record or upload a video"
-        className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
+        className="bg-surface flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
         disabled={!videoAvailable}
         onClick={onVideo}
         type="button"
       >
-        <span className="grid size-11 place-items-center rounded-xl bg-(--brand-accent) text-white">
-          <Video className="size-5" />
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-(--brand-accent) text-(--brand-accent-ink)">
+          <IconVideo aria-hidden="true" className="size-5" />
         </span>
         <span>
           <span className="block font-medium">Record or upload a video</span>
-          <span className="text-muted-foreground text-sm">
+          <span className="text-ink-2 text-sm">
             {videoAvailable
               ? "Up to 2 minutes"
               : "Video testimonials are currently unavailable"}
@@ -423,17 +524,17 @@ function TextStep({
   return (
     <section className="space-y-4" aria-labelledby="write-testimonial">
       <div>
-        <h2 id="write-testimonial" className="text-lg font-semibold">
+        <h2 className="type-subheading" id="write-testimonial">
           Tell your story
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-ink-2 mt-1 text-sm">
           A specific outcome or before-and-after is most useful.
         </p>
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="testimonial-text">Your testimonial</Label>
-        <textarea
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 min-h-40 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+        <Textarea
+          className="min-h-40 resize-y"
           data-step-focus
           id="testimonial-text"
           maxLength={2_000}
@@ -444,22 +545,20 @@ function TextStep({
         <div className="flex justify-between text-xs">
           <span
             className={
-              textLength > 0 && textLength < 20
-                ? "text-destructive"
-                : "text-muted-foreground"
+              textLength > 0 && textLength < 20 ? "text-danger" : "text-ink-2"
             }
           >
             Minimum 20 characters
           </span>
-          <span className="text-muted-foreground">{textLength} / 2,000</span>
+          <span className="text-ink-2 tabular-nums">{textLength} / 2,000</span>
         </div>
-      </div>
+      </Field>
       <div className="flex gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
         </Button>
         <Button
-          className="flex-1 bg-(--brand-accent) text-white hover:opacity-90"
+          className={accentButtonClassName}
           disabled={!valid}
           onClick={onContinue}
           type="button"
@@ -483,13 +582,13 @@ function SuccessStep({
   videoUploaded: boolean;
 }) {
   return (
-    <section className="space-y-4 py-2 text-center">
-      <CheckCircle2 className="mx-auto size-12 text-(--brand-accent)" />
-      <div>
-        <h2 className="text-xl font-semibold" data-step-focus tabIndex={-1}>
+    <section className="space-y-5 py-2">
+      <ScribbleStar className="size-14 text-(--brand-accent)" draw />
+      <div className="space-y-2">
+        <h2 className="type-heading" data-step-focus tabIndex={-1}>
           Thank you for your proof
         </h2>
-        <p className="text-muted-foreground mt-2 text-sm leading-6">
+        <p className="type-body text-ink-2">
           {proofType === "video"
             ? `Your video is processing and remains Pending private review by ${brandName}.`
             : `Your testimonial is Pending private review by ${brandName}.`}{" "}
@@ -497,7 +596,7 @@ function SuccessStep({
           moment.
         </p>
         {proofType === "video" && videoUploaded ? (
-          <p className="text-muted-foreground mt-2 text-xs">
+          <p className="text-ink-2 type-small">
             Upload complete. Processing and captions continue in the background.
           </p>
         ) : null}
@@ -568,13 +667,13 @@ function IdentityStep({
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       <div>
-        <h2 className="text-lg font-semibold">About you</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h2 className="type-subheading">About you</h2>
+        <p className="text-ink-2 mt-1 text-sm">
           Your email stays private and is used for your management link.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+        <Field>
           <Label htmlFor="submitter-name">Your name</Label>
           <Input
             autoComplete="name"
@@ -584,8 +683,8 @@ function IdentityStep({
             required
             value={name}
           />
-        </div>
-        <div className="space-y-2">
+        </Field>
+        <Field>
           <Label htmlFor="submitter-email">Email address</Label>
           <Input
             autoComplete="email"
@@ -595,8 +694,8 @@ function IdentityStep({
             type="email"
             value={email}
           />
-        </div>
-        <div className="space-y-2">
+        </Field>
+        <Field>
           <Label htmlFor="submitter-role">Role</Label>
           <Input
             id="submitter-role"
@@ -605,8 +704,8 @@ function IdentityStep({
             placeholder="Optional"
             value={role}
           />
-        </div>
-        <div className="space-y-2">
+        </Field>
+        <Field>
           <Label htmlFor="submitter-company">Company</Label>
           <Input
             id="submitter-company"
@@ -615,9 +714,9 @@ function IdentityStep({
             placeholder="Optional"
             value={company}
           />
-        </div>
+        </Field>
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="submitter-avatar">Photo (optional)</Label>
         <Input
           accept="image/png,image/jpeg,image/webp"
@@ -628,12 +727,12 @@ function IdentityStep({
           }}
           type="file"
         />
-        {avatar ? (
-          <p className="text-muted-foreground text-xs">{avatar.name}</p>
-        ) : null}
-      </div>
+        {avatar ? <FieldDescription>{avatar.name}</FieldDescription> : null}
+      </Field>
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Rating (optional)</legend>
+        <legend className="text-sm font-medium tracking-[-0.008em]">
+          Rating (optional)
+        </legend>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((value) => (
             <label className="cursor-pointer p-2.5" key={value}>
@@ -646,38 +745,38 @@ function IdentityStep({
                 value={value}
               />
               <span className="sr-only">{value} stars</span>
-              <Star
+              <IconStar
                 aria-hidden="true"
                 className={
                   rating !== undefined && value <= rating
-                    ? "size-6 fill-amber-400 text-amber-400"
-                    : "text-muted-foreground size-6"
+                    ? "size-6 fill-current text-(--brand-accent)"
+                    : "text-ink-3 size-6"
                 }
               />
             </label>
           ))}
         </div>
       </fieldset>
-      <div className="bg-muted/50 space-y-4 rounded-xl border p-4">
-        <label className="flex min-h-11 items-center gap-3 text-sm">
-          <input
+      <div className="bg-surface-2 space-y-3 rounded-lg border p-4">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+          <Checkbox
             checked={ageConfirmed}
-            className={fieldClassName}
-            onChange={(event) => onAgeConfirmedChange(event.target.checked)}
-            type="checkbox"
+            onCheckedChange={(checked) =>
+              onAgeConfirmedChange(checked === true)
+            }
           />
           <span>I confirm that I am at least 18 years old.</span>
         </label>
-        <label className="flex min-h-11 items-center gap-3 text-sm">
-          <input
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+          <Checkbox
             checked={consentAccepted}
-            className={fieldClassName}
-            onChange={(event) => onConsentAcceptedChange(event.target.checked)}
-            type="checkbox"
+            onCheckedChange={(checked) =>
+              onConsentAcceptedChange(checked === true)
+            }
           />
           <span>I give Publication Consent.</span>
         </label>
-        <p className="text-muted-foreground text-xs leading-5">{consentText}</p>
+        <p className="text-ink-2 text-xs leading-5">{consentText}</p>
       </div>
       {botChallenge}
       {videoUploadPhase !== "idle" ? (
@@ -705,17 +804,17 @@ function IdentityStep({
           Back
         </Button>
         <Button
-          className="flex-1 bg-(--brand-accent) text-white hover:opacity-90"
+          className={accentButtonClassName}
           disabled={
             !identityValid ||
             !ageConfirmed ||
             !consentAccepted ||
-            !botVerificationReady ||
-            submitting
+            !botVerificationReady
           }
+          loading={submitting}
           type="submit"
         >
-          {submitting ? "Submitting…" : "Submit testimonial"}
+          Submit testimonial
         </Button>
       </div>
     </form>
@@ -1106,14 +1205,18 @@ export function CollectionFormShellView({
 
   return (
     <main
-      className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12 [&_button]:min-h-11 [&_input:not([type=checkbox]):not([type=radio])]:min-h-11"
+      className="bg-paper min-h-svh lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] [&_button:not([data-slot=checkbox])]:min-h-11 [&_input:not([type=checkbox]):not([type=radio])]:min-h-11"
       ref={flowRef}
-      style={{ "--brand-accent": brand.primaryColor } as CSSProperties}
+      style={
+        {
+          "--brand-accent": brand.primaryColor,
+          "--brand-accent-ink": accentInk(brand.primaryColor),
+        } as CSSProperties
+      }
     >
-      <Card className="w-full max-w-xl overflow-hidden shadow-xl shadow-black/5">
-        <div className="h-1.5 bg-(--brand-accent)" />
-        <BrandHeader brand={brand} />
-        <CardContent className="space-y-6">
+      <BrandPanel brand={brand} step={step} />
+      <section className="px-5 py-8 sm:px-8 lg:px-16 lg:py-12">
+        <div className="mx-auto w-full max-w-[520px] space-y-6 lg:mx-0">
           <StepLabel step={step} />
 
           {step === 1 ? (
@@ -1259,7 +1362,7 @@ export function CollectionFormShellView({
             />
           ) : null}
 
-          <p className="text-muted-foreground text-center text-xs">
+          <p className="text-ink-2 text-xs">
             Read the{" "}
             <a
               className="underline underline-offset-2"
@@ -1273,8 +1376,8 @@ export function CollectionFormShellView({
             publicSlug={brand.publicSlug}
             requestReplacementLink={requestReplacementLink}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </main>
   );
 }
@@ -1302,8 +1405,8 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
 
   if (brand === undefined || availability === undefined) {
     return (
-      <main className="bg-muted/30 grid min-h-svh place-items-center px-5">
-        <p className="text-muted-foreground text-sm" role="status">
+      <main className="bg-paper grid min-h-svh place-items-center px-5">
+        <p className="text-ink-2 text-sm" role="status">
           Loading Collection Form…
         </p>
       </main>
@@ -1311,15 +1414,13 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   }
   if (brand === null || availability === null) {
     return (
-      <main className="bg-muted/30 grid min-h-svh place-items-center px-5 text-center">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            Collection Form unavailable
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Check the address with the Brand that shared it.
-          </p>
-        </div>
+      <main className="bg-paper grid min-h-svh place-items-center px-5">
+        <EmptyState
+          description="Check the address with the Brand that shared it."
+          illustration={<WallFrames className="h-32" />}
+          headingLevel={1}
+          title="Collection Form unavailable"
+        />
       </main>
     );
   }

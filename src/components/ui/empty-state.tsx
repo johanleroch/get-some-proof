@@ -10,15 +10,19 @@ function EmptyState({
   action,
   className,
   description,
+  headingLevel = 3,
   illustration,
   title,
   ...props
 }: Omit<React.ComponentProps<"div">, "title"> & {
   action?: React.ReactNode;
   description?: React.ReactNode;
+  /** Heading level of the title; pick the one that fits the page outline. */
+  headingLevel?: 1 | 2 | 3;
   illustration?: React.ReactNode;
   title: React.ReactNode;
 }) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <div
       data-slot="empty-state"
@@ -37,7 +41,7 @@ function EmptyState({
         </div>
       ) : null}
       <div className="space-y-1.5">
-        <h3 className="type-subheading">{title}</h3>
+        <Heading className="type-subheading">{title}</Heading>
         {description ? (
           <p className="type-body text-ink-2 text-balance">{description}</p>
         ) : null}
