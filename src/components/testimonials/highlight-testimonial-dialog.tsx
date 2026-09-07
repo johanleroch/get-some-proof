@@ -61,7 +61,7 @@ export function HighlightTestimonialDialog({
             Cancel
           </Button>
           <Button
-            disabled={saving}
+            loading={saving}
             onClick={async () => {
               setSaving(true);
               setError(undefined);
@@ -79,7 +79,7 @@ export function HighlightTestimonialDialog({
               }
             }}
           >
-            {saving ? "Saving…" : "Save"}
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

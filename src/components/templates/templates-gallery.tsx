@@ -212,14 +212,7 @@ export function TemplatesGallery({
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {mode === "public" ? (
               <Button asChild size="sm">
-                <Link
-                  href={{
-                    pathname: "/sign-up",
-                    query: { template: template.slug },
-                  }}
-                >
-                  Use this template
-                </Link>
+                <Link href={previewHref}>Open preview</Link>
               </Button>
             ) : (
               <>

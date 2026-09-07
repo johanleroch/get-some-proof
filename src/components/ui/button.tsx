@@ -19,10 +19,10 @@ const buttonVariants = cva(
         link: "text-brand-text underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 has-[>svg]:px-3",
-        xs: "h-7 gap-1 rounded-sm px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-9 gap-1.5 px-3 has-[>svg]:px-2.5 [&_svg:not([class*='size-'])]:size-4",
-        lg: "h-11 px-6 text-[15px] has-[>svg]:px-5",
+        default: "h-10 px-4 has-[svg:not([data-slot=button-spinner])]:px-3",
+        xs: "h-7 gap-1 rounded-sm px-2 text-xs has-[svg:not([data-slot=button-spinner])]:px-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-9 gap-1.5 px-3 has-[svg:not([data-slot=button-spinner])]:px-2.5 [&_svg:not([class*='size-'])]:size-4",
+        lg: "h-11 px-6 text-[15px] has-[svg:not([data-slot=button-spinner])]:px-5",
         icon: "size-10",
         "icon-xs": "size-7 rounded-sm [&_svg:not([class*='size-'])]:size-3.5",
         "icon-sm": "size-9 [&_svg:not([class*='size-'])]:size-4",
@@ -73,9 +73,14 @@ function Button({
             aria-hidden="true"
             className="absolute inset-0 grid place-items-center"
           >
-            <IconLoader2 className="animate-spin motion-reduce:animate-none" />
+            <IconLoader2
+              data-slot="button-spinner"
+              className="animate-spin motion-reduce:animate-none"
+            />
           </span>
-          <span className="invisible contents">{children}</span>
+          <span className="inline-flex items-center gap-[inherit] opacity-0">
+            {children}
+          </span>
         </>
       ) : (
         children

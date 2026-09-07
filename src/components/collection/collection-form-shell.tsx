@@ -1222,6 +1222,17 @@ export function CollectionFormShellView({
         {
           "--brand-accent": brand.primaryColor,
           "--brand-accent-ink": accentInk(brand.primaryColor),
+          // Shared controls resolve these tokens within the customer surface.
+          "--brand": brand.primaryColor,
+          "--brand-ink": accentInk(brand.primaryColor),
+          "--brand-strong": brand.primaryColor,
+          "--brand-soft":
+            "color-mix(in srgb, var(--brand-accent) 12%, var(--surface))",
+          "--brand-soft-2":
+            "color-mix(in srgb, var(--brand-accent) 20%, var(--surface))",
+          "--brand-ring":
+            "color-mix(in srgb, var(--brand-accent) 50%, transparent)",
+          "--ring": "var(--brand-ring)",
         } as CSSProperties
       }
     >

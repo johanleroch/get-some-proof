@@ -6,7 +6,8 @@ import { z } from "zod";
 const loopbackHostnames = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
 function isConvexDeploymentUrl(value: string): boolean {
-  const url = new URL(value);
+  const url = URL.parse(value);
+  if (!url) return false;
 
   if (url.protocol === "https:") {
     return true;
@@ -56,7 +57,9 @@ export function readPublicEnvironment(
 
   return {
     configured: false,
-    missing: result.error.issues.map((issue) => issue.path.join(".")),
+    missing: [
+      ...new Set(result.error.issues.map((issue) => issue.path.join("."))),
+    ],
   };
 }
 

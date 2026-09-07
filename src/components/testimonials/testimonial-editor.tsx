@@ -10,7 +10,7 @@ import {
   useEditorRef,
   useEditorSelector,
 } from "platejs/react";
-import { Highlighter } from "lucide-react";
+import { IconHighlight } from "@tabler/icons-react";
 import {
   richTextFromPlain,
   richTextToPlain,
@@ -39,7 +39,7 @@ function HighlightButton() {
       type="button"
       variant="ghost"
     >
-      <Highlighter aria-hidden="true" /> Highlight
+      <IconHighlight aria-hidden="true" /> Highlight
     </Button>
   );
 }

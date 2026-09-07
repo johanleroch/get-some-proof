@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { useAction, useMutation, useQuery } from "convex/react";
 import { IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
@@ -78,7 +80,7 @@ export function VideoRetryFormView({
   const activeContext = context ?? claimedContext;
 
   if (context === undefined && !activeContext) {
-    return <p className="text-ink-2 text-sm">Loading link…</p>;
+    return <BlobLoader label="Loading link…" />;
   }
   if (!activeContext) {
     return (

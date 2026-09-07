@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
@@ -58,7 +60,7 @@ export function BrandPrivacyNotice({ publicSlug }: { publicSlug: string }) {
   const brand = useQuery(api.organizations.getByPublicSlug, { publicSlug });
 
   if (brand === undefined) {
-    return <p className="text-ink-2 text-sm">Loading notice…</p>;
+    return <BlobLoader label="Loading notice…" />;
   }
   if (brand === null) {
     return <p className="text-ink-2 text-sm">Notice unavailable.</p>;

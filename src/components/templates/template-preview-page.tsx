@@ -31,14 +31,7 @@ export function TemplatePreviewPage({
       <PublicSiteHeader
         action={
           <Button asChild size="sm">
-            <Link
-              href={{
-                pathname: "/sign-up",
-                query: { template: template.slug },
-              }}
-            >
-              Use this template
-            </Link>
+            <Link href="/sign-up">Get started free</Link>
           </Button>
         }
       />
@@ -74,8 +67,8 @@ export function TemplatePreviewPage({
           />
         </TemplateStage>
         <p className="type-small text-ink-2">
-          Shown with sample Testimonials from a fictional Brand. Yours will use
-          your name, your customers and your color.
+          Design preview with sample Testimonials from a fictional Brand. These
+          layouts cannot yet be applied to your Wall.
         </p>
       </main>
       <PublicSiteFooter />

@@ -71,9 +71,10 @@ describe("TemplatesGallery", () => {
       screen.getByRole("heading", { level: 2, name: "Rating badge" }),
     ).toBeInTheDocument();
     expect(window.location.search).toBe("?template=rating-badge");
-    expect(
-      screen.getByRole("link", { name: "Use this template" }),
-    ).toHaveAttribute("href", "/sign-up?template=rating-badge");
+    expect(screen.getByRole("link", { name: "Open preview" })).toHaveAttribute(
+      "href",
+      "/templates/rating-badge?accent=%230f766e&theme=light",
+    );
     expect(railButton("Rating badge")).toHaveAttribute("aria-current", "true");
   });
 

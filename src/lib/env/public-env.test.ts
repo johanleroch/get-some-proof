@@ -46,6 +46,19 @@ describe("public application environment", () => {
     });
   });
 
+  it.each(["", "not-a-url", "https://"])(
+    "returns diagnostics for malformed Convex URLs: %s",
+    (value) => {
+      expect(
+        readPublicEnvironment({
+          NEXT_PUBLIC_CONVEX_URL: value,
+          NEXT_PUBLIC_CONVEX_SITE_URL: "https://example.convex.site",
+          NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
+        }),
+      ).toEqual({ configured: false, missing: ["NEXT_PUBLIC_CONVEX_URL"] });
+    },
+  );
+
   it("returns actionable missing-variable diagnostics", () => {
     expect(readPublicEnvironment({})).toEqual({
       configured: false,

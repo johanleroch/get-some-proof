@@ -63,8 +63,8 @@ describe("TemplatePreviewPage", () => {
       "/templates",
     );
     expect(
-      screen.getByRole("link", { name: "Use this template" }),
-    ).toHaveAttribute("href", "/sign-up?template=hero-quote");
+      screen.getByRole("link", { name: "Get started free" }),
+    ).toHaveAttribute("href", "/sign-up");
     const stage = document.querySelector<HTMLElement>("[data-template-stage]");
     expect(stage?.dataset.wallTheme).toBe("dark");
     expect(stage?.style.getPropertyValue("--wall-accent")).toBe("#274690");

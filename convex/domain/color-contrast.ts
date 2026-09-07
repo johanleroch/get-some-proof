@@ -45,11 +45,14 @@ export function contrastRatio(foreground: string, background: string) {
   return (high + 0.05) / (low + 0.05);
 }
 
-/** Dark ink or white, whichever reads better on the accent. */
+/** Preserve warm ink where readable, with black as an AA fallback. */
 export function accentInk(accentHex: string): string {
   const luminance = relativeLuminance(accentHex);
   if (luminance === null) return darkInk;
-  const darkContrast = (luminance + 0.05) / (0.033 + 0.05);
+  const darkContrast =
+    (luminance + 0.05) / (relativeLuminance(darkInk)! + 0.05);
   const lightContrast = (1 + 0.05) / (luminance + 0.05);
-  return darkContrast >= lightContrast ? darkInk : lightInk;
+  if (darkContrast >= 4.5) return darkInk;
+  if (lightContrast >= 4.5) return lightInk;
+  return "#000000";
 }

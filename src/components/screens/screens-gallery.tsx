@@ -18,7 +18,6 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
-import { toast } from "sonner";
 
 import { api } from "@convex/_generated/api";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,6 +46,7 @@ import {
   themeChangeEvent,
 } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { useScreenStatuses } from "./use-screen-statuses";
 
 const artboardMaxHeight = 3200;
 const zoomLevels = ["fit", "50", "75", "100"] as const;
@@ -248,7 +248,7 @@ function GalleryView({
   );
   const device = deviceByKey(deviceKey);
   const [reloadKey, setReloadKey] = useState(0);
-  const [statuses, setStatuses] = useState<ScreenStatuses>(initialStatuses);
+  const { statuses, updateStatus } = useScreenStatuses(initialStatuses);
 
   useEffect(() => {
     const syncFrames = () => {
@@ -263,33 +263,6 @@ function GalleryView({
       window.removeEventListener("storage", syncFrames);
     };
   }, []);
-
-  const updateStatus = useCallback(
-    async (slug: string, status: ScreenStatus | null) => {
-      let previous: ScreenStatuses = {};
-      setStatuses((current) => {
-        previous = current;
-        const next = { ...current };
-        if (status) next[slug] = status;
-        else delete next[slug];
-        return next;
-      });
-      try {
-        const response = await fetch("/api/screens/status", {
-          body: JSON.stringify({ slug, status }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = (await response.json()) as { statuses: ScreenStatuses };
-        setStatuses(data.statuses);
-      } catch {
-        setStatuses(previous);
-        toast.error("Could not save the screen status.");
-      }
-    },
-    [],
-  );
 
   const numbers = useMemo(() => {
     const map = new Map<string, number>();

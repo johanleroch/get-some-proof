@@ -37,8 +37,9 @@ export function TemplatesPage() {
               </span>
             </h1>
             <p className="type-body text-ink-2 sm:text-[17px] sm:leading-7">
-              {publicTemplates.length} layouts for your Testimonials, from a
-              full Wall to a single line. Try one in your color.
+              {publicTemplates.length} design previews, from a full Wall to a
+              single line. Try a color; these layouts are not yet available for
+              your Wall.
             </p>
           </div>
         </section>
@@ -61,11 +62,11 @@ export function TemplatesPage() {
                 className="font-display text-3xl leading-tight font-bold tracking-[-0.02em] text-balance sm:text-4xl"
                 id="cta-title"
               >
-                Collect first. Choose the layout after.
+                Start collecting your customer stories.
               </h2>
               <p className="text-paper/80 text-base leading-7 sm:text-lg">
-                Start on the Free plan, collect text and video, then pick any
-                template above. Change your mind anytime: the proof stays.
+                Start on the Free plan, collect text and video Testimonials, and
+                share your published proof on your Wall.
               </p>
               <div className="pt-2">
                 <Link

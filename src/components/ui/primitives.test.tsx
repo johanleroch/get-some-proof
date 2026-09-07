@@ -32,6 +32,23 @@ describe("design primitives", () => {
     expect(container.querySelectorAll("span[aria-hidden]")).toHaveLength(1);
   });
 
+  it("preserves an explicit name on an icon-only loading button", () => {
+    const { rerender } = render(
+      <Button aria-label="Save settings" size="icon">
+        <svg aria-hidden="true" />
+      </Button>,
+    );
+    expect(screen.getByRole("button", { name: "Save settings" })).toBeEnabled();
+    rerender(
+      <Button aria-label="Save settings" loading size="icon">
+        <svg aria-hidden="true" />
+      </Button>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Save settings" }),
+    ).toBeDisabled();
+  });
+
   it("composes an empty state with illustration, copy and one action", () => {
     const { container } = render(
       <EmptyState

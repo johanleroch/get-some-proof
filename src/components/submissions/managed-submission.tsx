@@ -1,6 +1,8 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
@@ -594,7 +596,7 @@ export function ManagedSubmission({ token }: { token: string }) {
       />
     );
   if (submission === undefined)
-    return <p className="text-ink-2 text-sm">Loading submission…</p>;
+    return <BlobLoader label="Loading submission…" />;
   if (submission === null)
     return (
       <EmptyState

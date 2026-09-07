@@ -300,7 +300,7 @@
     }
   `;
 
-  /** Dark ink or white on a Brand accent; mirrors convex/domain/color-contrast. */
+  /** AA ink on a Brand accent; mirrors convex/domain/color-contrast. */
   function accentInk(hex) {
     const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
     if (!match) return "#2e2a25";
@@ -312,9 +312,11 @@
     };
     const luminance =
       0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
-    const darkContrast = (luminance + 0.05) / (0.033 + 0.05);
+    const darkContrast = (luminance + 0.05) / (0.023703424946320904 + 0.05);
     const lightContrast = 1.05 / (luminance + 0.05);
-    return darkContrast >= lightContrast ? "#2e2a25" : "#ffffff";
+    if (darkContrast >= 4.5) return "#2e2a25";
+    if (lightContrast >= 4.5) return "#ffffff";
+    return "#000000";
   }
 
   function element(tag, className, text) {

@@ -154,7 +154,9 @@ Brand's own color (`--brand-accent`, `--wall-accent`, `--gsp-accent`). Our
 amber never appears there. Two fixes are mandatory:
 
 - Ship a computed `accentInk` (dark or light) next to every Brand accent and
-  use it instead of the hard-coded white text on accent fills.
+  use it instead of the hard-coded white text on accent fills. Prefer warm
+  ink or white when either meets 4.5:1; use black only for customer colors
+  where neither does. This is the sole exception to the pure-black ban.
 - Change the default Brand color seeded at onboarding from violet `#6d5dfc` to
   Proof Amber, and derive the embed's neutral palette from the same warm values
   as `globals.css` so the three palettes become one.
@@ -343,15 +345,15 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
 - Empty states: one shared component: spot illustration (max 160px tall),
   `subheading` title, one sentence, one primary action. Never a dashed box
   with a lone sentence.
-- Templates browser (our public page at `/templates`): the layouts a Brand
-  can pick for its proof, Senja's idea (a gallery you can try) in our
+- Templates browser (our public page at `/templates`): design previews of
+  possible proof layouts, Senja's idea (a gallery you can try) in our
   grammar, with nothing on the page that does not earn its place. Public
   header with the logo, sign in and the one primary action; the title with a
   marker highlight and one sentence, no eyebrow and no second button; then a
   browser, not a wall of cards: the templates listed by family in a left
   rail (sidebar items, `--brand-soft` active state with the 3px bar, no
   tags) and one template rendered live on the right. Above the stage: the
-  name at `heading`, one sentence and a single action ("Use this template"),
+  name at `heading`, one sentence and a single action ("Open preview"),
   then a toolbar with the preview width (desktop, tablet, phone), four
   Brand accent swatches plus a custom picker, and the wall theme. One arrow
   note ("this is what your visitors see") is the region's hand-drawn
@@ -363,7 +365,10 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
   becomes a strip of chips. The catalog is `src/lib/templates-catalog.ts`,
   one file per template under `src/components/templates/`, reviewed in
   `/kit/templates` where a template stays a draft until its `status` is
-  `public` and where the full-page link and the file path live.
+  `public` and where the full-page link and the file path live. This is a
+  preview gallery only: multiple Wall templates remain outside product scope.
+  Explain that layouts cannot yet be applied; signup must not promise or
+  carry a template selection that the product does not support.
 
 Responsive: every multi-column layout collapses to one column below 768px, no
 horizontal page scroll ever, headlines scale with `clamp()`, body text never
@@ -440,7 +445,11 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
-  (`AnimatedBlob`), one per screen.
+  (`AnimatedBlob`), one per screen. The preview-only marquee is a narrow
+  exception: it may scroll continuously, with a visible Pause animation /
+  Resume animation control whose pause persists after focus and hover leave.
+  Reduced motion makes it a static, horizontally scrollable row and hides
+  the animation control. This does not add a marquee to live customer Walls.
 - Animate `transform` and `opacity` only. The global
   `prefers-reduced-motion` rule in `globals.css` stays and every animation
   must look correct when it fires (final state, no draw-in).
