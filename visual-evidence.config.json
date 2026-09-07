@@ -297,6 +297,13 @@
       "path": "/visual-evidence/rich-testimonial",
       "heading": "Your testimonial",
       "theme": "light"
+    },
+    {
+      "slug": "collection-form-write-long",
+      "title": "Collection Form - long text with fixed editor height",
+      "path": "/visual-evidence/collection-form-write",
+      "heading": "Tell your story",
+      "theme": "light"
     }
   ]
 }

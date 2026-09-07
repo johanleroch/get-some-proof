@@ -90,3 +90,42 @@ test("preserves pasted paragraphs and strips pasted HTML formatting", async ({
   await expect(page.locator("blockquote br")).toHaveCount(1);
   await expect(editor.locator("h1")).toHaveCount(0);
 });
+
+test("keeps the editor and following controls still as text grows", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/collection-form-write");
+  const editor = page.getByRole("textbox", { name: "Your testimonial" });
+  const initialHeight = (await editor.boundingBox())!.height;
+  const continueButton = page.getByRole("button", {
+    name: "Continue",
+    exact: true,
+  });
+  const initialTop = await continueButton.evaluate(
+    (el) => el.getBoundingClientRect().top + window.scrollY,
+  );
+  await editor.click();
+  await editor.press("ControlOrMeta+End");
+  for (let line = 0; line < 12; line++) {
+    await editor.press("Enter");
+    await editor.pressSequentially("More useful feedback.", { delay: 10 });
+  }
+  expect((await editor.boundingBox())!.height).toBe(initialHeight);
+  expect(
+    await continueButton.evaluate(
+      (el) => el.getBoundingClientRect().top + window.scrollY,
+    ),
+  ).toBe(initialTop);
+  const scroll = await editor.evaluate((el) => ({
+    height: el.clientHeight,
+    content: el.scrollHeight,
+  }));
+  expect(scroll.content).toBeGreaterThan(scroll.height);
+  await editor.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  expect(await editor.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  await expect(
+    page.getByRole("button", { name: "Highlight selected text" }),
+  ).toBeVisible();
+});
