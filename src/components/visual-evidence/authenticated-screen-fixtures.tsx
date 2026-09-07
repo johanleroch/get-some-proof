@@ -600,13 +600,11 @@ export function DashboardBackgroundScreenFixture() {
         } as CSSProperties
       }
     >
-      <div aria-hidden="true" className="dashboard-frame-background" />
       <aside className="relative z-10 hidden w-72 shrink-0 p-2 md:flex">
         <div
           className="bg-sidebar text-sidebar-foreground relative flex h-full w-full flex-col overflow-hidden"
           data-slot="sidebar-inner"
         >
-          <div aria-hidden="true" className="dashboard-sidebar-effects" />
           <div className="flex flex-1 flex-col gap-6 p-3">
             <div>
               <p className="text-[13px] font-[510]">Visual Studio</p>
@@ -653,8 +651,7 @@ export function DashboardBackgroundScreenFixture() {
           </div>
         </div>
       </aside>
-      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border shadow-2xl shadow-black/30 md:m-2 md:ml-0 md:rounded-xl">
-        <div aria-hidden="true" className="dashboard-view-effects" />
+      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border md:m-2 md:ml-0 md:rounded-xl">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
             <button
@@ -700,22 +697,6 @@ export function DashboardBackgroundScreenFixture() {
           </div>
         </div>
       </main>
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-body"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-body"
-      />
     </div>
   );
 }

@@ -3,9 +3,55 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  Design tokens follow DESIGN.md. The base tokens (paper, surface, ink, line,
+  brand, statuses) are the only places that hold color values; the shadcn
+  variables below them are aliases so every primitive keeps working.
+*/
+
+@theme {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
+}
+
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-display:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  --font-hand: var(--font-caveat), cursive;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-float: var(--shadow-float);
+
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-2: var(--brand-soft-2);
+  --color-brand-text: var(--brand-text);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-ring: var(--brand-ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -62,32 +108,67 @@
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(0.985 0.002 286);
-  --foreground: rgb(31 32 35);
-  --card: oklch(0.997 0.001 286);
-  --card-foreground: rgb(31 32 35);
-  --popover: oklch(1 0 0);
-  --popover-foreground: rgb(31 32 35);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: rgb(98 102 109);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: rgb(185 28 28);
-  --border: oklch(0.89 0.004 286);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --sidebar: oklch(0.965 0.004 286);
-  --sidebar-foreground: rgb(55 58 64);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.89 0.004 286);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Warm neutrals (light). */
+  --paper: oklch(0.985 0.005 85);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.965 0.008 85);
+  --ink: oklch(0.25 0.012 60);
+  --ink-2: oklch(0.48 0.015 60);
+  --ink-3: oklch(0.65 0.012 60);
+  --line: oklch(0.9 0.012 80);
+  --line-2: oklch(0.82 0.014 80);
+
+  /* Brand accent: Proof Amber from the star logo. Change only --brand. */
+  --brand: oklch(0.82 0.17 82);
+  --brand-strong: oklch(from var(--brand) calc(l - 0.08) c h);
+  --brand-soft: oklch(from var(--brand) 0.96 0.05 h);
+  --brand-soft-2: oklch(from var(--brand) 0.91 0.09 h);
+  --brand-text: oklch(from var(--brand) 0.48 0.13 h);
+  --brand-ink: var(--ink);
+  --brand-ring: oklch(from var(--brand) 0.7 0.15 h / 50%);
+
+  /* Semantic statuses. Warning is orange on purpose, away from the brand. */
+  --success: oklch(0.55 0.14 150);
+  --success-soft: oklch(from var(--success) 0.95 0.04 h);
+  --warning: oklch(0.6 0.16 45);
+  --warning-soft: oklch(from var(--warning) 0.95 0.05 h);
+  --danger: oklch(0.52 0.19 27);
+  --danger-soft: oklch(from var(--danger) 0.95 0.04 h);
+  --info: oklch(0.52 0.09 250);
+  --info-soft: oklch(from var(--info) 0.95 0.03 h);
+
+  /* Depth: only floating layers cast a shadow, warm-tinted. */
+  --shadow-float:
+    0 1px 2px oklch(0.25 0.02 60 / 6%), 0 12px 32px oklch(0.25 0.02 60 / 12%);
+
+  /* shadcn aliases. Point primitives at the tokens above; never at raw colors. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-ink);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-2);
+  --accent: oklch(from var(--surface-2) calc(l - 0.025) c h);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--brand-ring);
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-ink);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand-ring);
   --chart-1: oklch(0.205 0 0);
   --chart-2: oklch(0.38 0 0);
   --chart-3: oklch(0.52 0 0);
@@ -117,32 +198,32 @@
 }
 
 .dark {
-  --background: rgb(9 10 11);
-  --foreground: rgb(208 214 224);
-  --card: rgb(12 13 14);
-  --card-foreground: rgb(208 214 224);
-  --popover: rgb(14 15 17);
-  --popover-foreground: rgb(208 214 224);
-  --primary: rgb(247 248 248);
-  --primary-foreground: rgb(25 27 29);
-  --secondary: rgb(255 255 255 / 6%);
-  --secondary-foreground: rgb(208 214 224);
-  --muted: rgb(255 255 255 / 5%);
-  --muted-foreground: rgb(138 143 152);
-  --destructive: rgb(248 113 113);
-  --accent: rgb(255 255 255 / 2%);
-  --accent-foreground: rgb(247 248 248);
-  --border: rgb(255 255 255 / 8%);
-  --input: rgb(255 255 255 / 10%);
-  --ring: rgb(138 143 152);
-  --sidebar: rgb(9 10 11);
-  --sidebar-foreground: rgb(208 214 224);
-  --sidebar-primary: rgb(247 248 248);
-  --sidebar-primary-foreground: rgb(25 27 29);
-  --sidebar-accent: rgb(255 255 255 / 2%);
-  --sidebar-accent-foreground: rgb(247 248 248);
-  --sidebar-border: rgb(255 255 255 / 8%);
-  --sidebar-ring: rgb(138 143 152);
+  /* Warm neutrals (dark). Same structure as light, never blue-gray. */
+  --paper: oklch(0.19 0.01 60);
+  --surface: oklch(0.23 0.01 60);
+  --surface-2: oklch(0.27 0.01 60);
+  --ink: oklch(0.94 0.01 85);
+  --ink-2: oklch(0.72 0.012 80);
+  --ink-3: oklch(0.55 0.012 80);
+  --line: oklch(1 0 0 / 10%);
+  --line-2: oklch(1 0 0 / 18%);
+
+  --brand-soft: oklch(from var(--brand) 0.3 0.05 h);
+  --brand-soft-2: oklch(from var(--brand) 0.36 0.07 h);
+  --brand-text: oklch(from var(--brand) 0.85 0.15 h);
+
+  --success: oklch(0.75 0.14 150);
+  --success-soft: oklch(from var(--success) 0.3 0.05 h);
+  --warning: oklch(0.78 0.15 50);
+  --warning-soft: oklch(from var(--warning) 0.3 0.06 h);
+  --danger: oklch(0.72 0.17 25);
+  --danger-soft: oklch(from var(--danger) 0.3 0.06 h);
+  --info: oklch(0.75 0.09 250);
+  --info-soft: oklch(from var(--info) 0.3 0.04 h);
+
+  --shadow-float: 0 1px 2px oklch(0 0 0 / 30%), 0 12px 32px oklch(0 0 0 / 45%);
+
+  --accent: oklch(from var(--surface-2) calc(l + 0.03) c h);
   --chart-1: oklch(0.92 0 0);
   --chart-2: oklch(0.78 0 0);
   --chart-3: oklch(0.65 0 0);
@@ -166,27 +247,43 @@
   --chart-scale-pattern-color: oklch(0.145 0 0);
 }
 
+/*
+  Public Wall theme is independent from the dashboard theme. The aliases are
+  re-declared here because custom properties resolve where they are declared.
+*/
 .public-wall-theme[data-wall-theme="light"],
 .public-wall-theme[data-wall-theme="system"] {
   color-scheme: light;
-  --background: oklch(0.985 0.002 286);
-  --foreground: rgb(31 32 35);
-  --card: oklch(0.997 0.001 286);
-  --card-foreground: rgb(31 32 35);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: rgb(98 102 109);
-  --border: oklch(0.89 0.004 286);
+  --paper: oklch(0.985 0.005 85);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.965 0.008 85);
+  --ink: oklch(0.25 0.012 60);
+  --ink-2: oklch(0.48 0.015 60);
+  --line: oklch(0.9 0.012 80);
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-2);
+  --border: var(--line);
 }
 
 .public-wall-theme[data-wall-theme="dark"] {
   color-scheme: dark;
-  --background: rgb(9 10 11);
-  --foreground: rgb(208 214 224);
-  --card: rgb(12 13 14);
-  --card-foreground: rgb(208 214 224);
-  --muted: rgb(255 255 255 / 5%);
-  --muted-foreground: rgb(138 143 152);
-  --border: rgb(255 255 255 / 8%);
+  --paper: oklch(0.19 0.01 60);
+  --surface: oklch(0.23 0.01 60);
+  --surface-2: oklch(0.27 0.01 60);
+  --ink: oklch(0.94 0.01 85);
+  --ink-2: oklch(0.72 0.012 80);
+  --line: oklch(1 0 0 / 10%);
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-2);
+  --border: var(--line);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -206,14 +303,108 @@
 @media (prefers-color-scheme: dark) {
   .public-wall-theme[data-wall-theme="system"] {
     color-scheme: dark;
-    --background: rgb(9 10 11);
-    --foreground: rgb(208 214 224);
-    --card: rgb(12 13 14);
-    --card-foreground: rgb(208 214 224);
-    --muted: rgb(255 255 255 / 5%);
-    --muted-foreground: rgb(138 143 152);
-    --border: rgb(255 255 255 / 8%);
+    --paper: oklch(0.19 0.01 60);
+    --surface: oklch(0.23 0.01 60);
+    --surface-2: oklch(0.27 0.01 60);
+    --ink: oklch(0.94 0.01 85);
+    --ink-2: oklch(0.72 0.012 80);
+    --line: oklch(1 0 0 / 10%);
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --muted: var(--surface-2);
+    --muted-foreground: var(--ink-2);
+    --border: var(--line);
   }
+}
+
+/* Type scale (DESIGN.md section 3). Composite utilities: family, size, leading, weight, tracking. */
+@utility type-display-xl {
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 2.5rem;
+  line-height: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+@utility type-display {
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 2rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+@utility type-heading {
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+@utility type-subheading {
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@utility type-body {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@utility type-ui {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+@utility type-small {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@utility type-micro {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@utility type-kpi {
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 2.5rem;
+  line-height: 2.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-hand {
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 * {
@@ -225,20 +416,9 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    var(--font-inter),
-    "SF Pro Display",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
-  font-feature-settings: "cv01", "ss03";
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -248,79 +428,33 @@ body {
   position: relative;
   background: var(--background);
   color: var(--foreground);
-  font-size: 14px;
-  line-height: 21px;
 }
 
+/* Legacy page header classes, remapped to the type scale until every screen uses the utilities directly. */
 .dashboard-page-title {
   color: var(--foreground);
-  font-size: 20px;
-  font-weight: 590;
-  letter-spacing: -0.24px;
-  line-height: 26.6px;
+  font-family:
+    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 2rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .dashboard-page-description {
   color: var(--muted-foreground);
-  font-size: 14px;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
   font-weight: 400;
-  letter-spacing: -0.182px;
-  line-height: 21px;
-}
-
-.dashboard-frame [data-slot="card-title"] {
-  color: var(--card-foreground);
-  font-size: 16px;
-  font-weight: 590;
-  letter-spacing: normal;
-  line-height: 28px;
-}
-
-.dashboard-frame [data-slot="card-description"] {
-  color: var(--muted-foreground);
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: -0.182px;
-  line-height: 21px;
-}
-
-.dashboard-frame [data-slot="button"] {
-  font-size: 13px;
-  font-weight: 510;
-  letter-spacing: normal;
-  line-height: normal;
 }
 
 .dashboard-frame [data-sidebar="group-label"] {
-  color: rgb(98 102 109);
-  font-size: 12px;
-  font-weight: 510;
-  line-height: 14px;
-}
-
-.dashboard-frame [data-sidebar="menu-button"],
-.dashboard-frame [data-sidebar="menu-sub-button"] {
-  color: var(--sidebar-foreground);
-  font-size: 13px;
-  font-weight: 510;
-  letter-spacing: normal;
-  line-height: normal;
-}
-
-.dashboard-frame [data-sidebar="menu-button"][data-active="true"],
-.dashboard-frame [data-sidebar="menu-sub-button"][data-active="true"] {
-  color: var(--sidebar-foreground);
-}
-
-.dashboard-frame [data-sidebar="menu-button"]:hover,
-.dashboard-frame [data-sidebar="menu-sub-button"]:hover {
-  color: var(--sidebar-accent-foreground);
-}
-
-.dashboard-frame [data-sidebar="menu-button"].dashboard-primary-sidebar-action,
-.dashboard-frame
-  [data-sidebar="menu-button"].dashboard-primary-sidebar-action:hover {
-  color: var(--primary-foreground);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .dashboard-view {
@@ -330,131 +464,6 @@ body {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.dashboard-frame-background,
-.dashboard-sidebar-effects,
-.dashboard-view-effects,
-.dashboard-shine {
-  display: none;
-}
-
-.dark .dashboard-frame {
-  background: rgb(9 10 11);
-  border: 0;
-  border-radius: 12px;
-  box-shadow: none;
-}
-
-.dark .dashboard-frame-background {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: block;
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: 12px;
-  background: rgb(16 17 18);
-}
-
-.dark .dashboard-view {
-  background: rgb(255 255 255 / 1%);
-  border: 1px solid rgb(255 255 255 / 5%);
-  border-radius: 8px;
-  box-shadow: 0 0 0 2px rgb(0 0 0 / 20%);
-}
-
-.dark .dashboard-sidebar-effects,
-.dark .dashboard-view-effects {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: block;
-  overflow: hidden;
-  border-radius: inherit;
-}
-
-.dark .dashboard-sidebar-effects {
-  background:
-    radial-gradient(
-      240px 320px at 0% 0%,
-      rgb(255 255 255 / 5%) 0%,
-      rgb(255 255 255 / 0%) 76%
-    ),
-    radial-gradient(
-      220px 360px at 100% 100%,
-      rgb(255 255 255 / 2.5%) 0%,
-      rgb(255 255 255 / 0%) 78%
-    ),
-    rgb(9 10 11);
-}
-
-.dark .dashboard-view-effects {
-  background: radial-gradient(
-    200px 200px at 0% 0%,
-    rgb(255 255 255 / 4%) 0%,
-    rgb(255 255 255 / 0%) 90%
-  );
-}
-
-.dark .dashboard-view-effects::after {
-  pointer-events: none;
-  position: absolute;
-  inset: 0 0 0 auto;
-  z-index: 1;
-  width: min(360px, 28.125%);
-  background: linear-gradient(
-    90deg,
-    rgb(8 9 10 / 0%) 0%,
-    rgb(8 9 10 / 80%) 100%
-  );
-  content: "";
-}
-
-.dark .dashboard-view-content,
-.dark [data-slot="sidebar-inner"] > :not(.dashboard-sidebar-effects) {
-  position: relative;
-  z-index: 1;
-}
-
-.dark .dashboard-shine {
-  --dashboard-shine-x: 0px;
-
-  pointer-events: none;
-  position: absolute;
-  z-index: 11;
-  display: block;
-  border: 1px solid rgb(255 255 255 / 8%);
-  mask-image: radial-gradient(
-    200px 200px at var(--dashboard-shine-x) 0%,
-    rgb(0 0 0) 0%,
-    rgb(0 0 0 / 60%) 30%,
-    rgb(0 0 0 / 20%) 50%,
-    rgb(0 0 0 / 0%) 70%
-  );
-}
-
-.dark .dashboard-shine-frame {
-  inset: 0;
-  border-radius: 12px;
-}
-
-.dark .dashboard-shine-view {
-  top: 8px;
-  bottom: 8px;
-  left: 288px;
-  width: 100%;
-  border-radius: 8px;
-}
-
-.dark .dashboard-shine-body {
-  --dashboard-shine-x: 8%;
-}
-
-.dark [data-slot="sidebar-inner"] {
-  position: relative;
   overflow: hidden;
 }
 
@@ -473,10 +482,9 @@ select:disabled {
 }
 
 .dashboard-panel {
-  background: color-mix(in oklab, var(--card) 94%, transparent);
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 0.125rem);
-  box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 3%, transparent);
+  border-radius: var(--radius-lg);
 }
 
 .dashboard-skeleton {
@@ -521,6 +529,6 @@ select:disabled {
 }
 
 ::selection {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--brand-soft-2);
+  color: var(--ink);
 }

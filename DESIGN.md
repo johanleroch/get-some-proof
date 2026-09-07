@@ -141,9 +141,9 @@ at the tokens above: `--background: var(--paper)`, `--card: var(--surface)`,
 `--primary-foreground: var(--brand-ink)`, `--accent: var(--surface-2)`,
 `--ring: var(--brand-ring)`, `--destructive: var(--danger)`,
 `--sidebar: var(--paper)`, `--sidebar-accent: var(--brand-soft)`,
-`--sidebar-accent-foreground: var(--ink)`. `--secondary`, `--muted` and
-`--accent` must stop being the same value: secondary is `--surface-2`, accent
-is the hover tint, muted is the quiet fill.
+`--sidebar-accent-foreground: var(--ink)`. `--muted` and `--secondary` are
+the quiet fill (`--surface-2`); `--accent` is one step darker so hover rows
+read as hover, and the active sidebar item uses `--brand-soft` directly.
 
 ### 2.5 Customer Brand accent on public surfaces
 

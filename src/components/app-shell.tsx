@@ -189,9 +189,7 @@ export function AppShell({
         } as CSSProperties
       }
     >
-      <div aria-hidden="true" className="dashboard-frame-background" />
       <Sidebar collapsible="offcanvas" variant="inset">
-        <div aria-hidden="true" className="dashboard-sidebar-effects" />
         <SidebarHeader>
           <Link
             aria-label={organizationName}
@@ -227,8 +225,7 @@ export function AppShell({
           <NavUser />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-view border-border/70 min-h-0 overflow-hidden border shadow-2xl shadow-black/5 dark:shadow-black/30">
-        <div aria-hidden="true" className="dashboard-view-effects" />
+      <SidebarInset className="dashboard-view min-h-0 overflow-hidden border">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -238,9 +235,7 @@ export function AppShell({
                 orientation="vertical"
               />
               <div className="min-w-0">
-                <h1 className="text-foreground truncate text-[13px] leading-normal font-[510]">
-                  {title}
-                </h1>
+                <h1 className="type-ui text-foreground truncate">{title}</h1>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <ThemeToggle />
@@ -261,22 +256,6 @@ export function AppShell({
           </span>
         </div>
       </SidebarInset>
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-body"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-body"
-      />
     </SidebarProvider>
   );
 }

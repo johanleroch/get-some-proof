@@ -72,7 +72,7 @@ export function BrandDashboardView({
                 {pendingCount}
               </CardTitle>
             </div>
-            <span className="bg-primary/10 text-primary grid size-10 place-items-center rounded-xl">
+            <span className="bg-brand-soft text-brand-text grid size-10 place-items-center rounded-xl">
               <IconInbox aria-hidden="true" className="size-5" />
             </span>
           </CardHeader>

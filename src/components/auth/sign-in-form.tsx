@@ -84,7 +84,7 @@ export function SignInForm({
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="password">Password</Label>
           <Link
-            className="text-primary text-sm font-medium hover:underline"
+            className="text-brand-text text-sm font-medium hover:underline"
             href="/forgot-password"
           >
             Forgot password?
@@ -118,7 +118,7 @@ export function SignInForm({
       <p className="text-muted-foreground text-center text-sm">
         New to Get Some Proof?{" "}
         <Link
-          className="text-primary font-medium hover:underline"
+          className="text-brand-text font-medium hover:underline"
           href={`/sign-up?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Create an account

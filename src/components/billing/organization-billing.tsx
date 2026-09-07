@@ -931,7 +931,7 @@ export function BillingCockpit({
               {offersError ? (
                 <ErrorToast message={offersError} />
               ) : offers?.[0] ? (
-                <div className="border-primary bg-primary/5 rounded-xl border p-5">
+                <div className="border-brand bg-brand-soft rounded-xl border p-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <span className="text-sm font-medium">
                       {offers[0]!.name}

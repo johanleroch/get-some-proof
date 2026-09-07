@@ -51,7 +51,7 @@ export function SignUpForm({
           Brand.
         </p>
         <Link
-          className="text-primary text-sm font-medium hover:underline"
+          className="text-brand-text text-sm font-medium hover:underline"
           href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Return to sign in
@@ -97,7 +97,7 @@ export function SignUpForm({
       <p className="text-muted-foreground text-center text-sm">
         Already have an account?{" "}
         <Link
-          className="text-primary font-medium hover:underline"
+          className="text-brand-text font-medium hover:underline"
           href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Sign in

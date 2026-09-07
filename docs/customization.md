@@ -4,7 +4,7 @@
 
 - Change the product name and default description in `src/lib/brand.ts`.
 - Replace the icon implementation in `src/components/brand-mark.tsx`. Keep its accessible decorative behavior when the adjacent product or Organization name already identifies the application.
-- Replace the Geist font imports and `--font-sans` / `--font-mono` mappings in `src/app/layout.tsx` and `src/app/globals.css` to change typography.
+- Typography is defined in `DESIGN.md`: DM Sans (body and UI), Bricolage Grotesque (display), Caveat (hand-drawn annotations only), Geist Mono (code). Fonts load in `src/app/layout.tsx`; the `--font-sans`, `--font-display`, `--font-hand`, and `--font-mono` mappings and the `type-*` utilities live in `src/app/globals.css`.
 
 ## Colors and themes
 

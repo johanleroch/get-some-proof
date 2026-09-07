@@ -94,7 +94,7 @@ export function VideoRetryFormView({
     return (
       <Card className="w-full max-w-xl text-center">
         <CardContent className="space-y-3 py-6">
-          <CheckCircle2 className="text-primary mx-auto size-12" />
+          <CheckCircle2 className="text-success mx-auto size-12" />
           <h1 className="text-2xl font-semibold">Replacement uploaded</h1>
           <p className="text-muted-foreground text-sm leading-6">
             Your new video is processing. It remains private until{" "}

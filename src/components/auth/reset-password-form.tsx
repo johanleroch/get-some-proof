@@ -47,7 +47,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
           Existing sessions were revoked. Sign in again with your new password.
         </p>
         <Link
-          className="text-primary text-sm font-medium hover:underline"
+          className="text-brand-text text-sm font-medium hover:underline"
           href="/sign-in"
         >
           Continue to sign in

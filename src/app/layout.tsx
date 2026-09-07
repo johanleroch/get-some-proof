@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  Caveat,
+  DM_Sans,
+  Geist_Mono,
+} from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
@@ -11,14 +16,28 @@ import { themeInitializationScript } from "@/lib/theme";
 
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// Typography per DESIGN.md: DM Sans for body and UI, Bricolage Grotesque for
+// display, Caveat only for hand-drawn annotations, Geist Mono for code.
+const dmSans = DM_Sans({
+  axes: ["opsz"],
   subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
+
+const bricolage = Bricolage_Grotesque({
+  axes: ["opsz"],
+  subsets: ["latin"],
+  variable: "--font-bricolage",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -39,7 +58,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
         />
       </head>
-      <body className={`${inter.variable} ${geistMono.variable}`}>
+      <body
+        className={`${dmSans.variable} ${bricolage.variable} ${caveat.variable} ${geistMono.variable}`}
+      >
         <TooltipProvider>
           {environment.configured ? (
             <ConvexClientProvider url={environment.convexUrl}>
