@@ -1,10 +1,5 @@
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { AuthHeading } from "@/components/auth/auth-heading";
 import { safeInternalRoute } from "@/lib/safe-route";
 
 export default async function SignInPage({
@@ -17,15 +12,11 @@ export default async function SignInPage({
 
   return (
     <>
-      <CardHeader>
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to continue to your proof dashboard.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SignInForm callbackURL={destination} />
-      </CardContent>
+      <AuthHeading
+        description="Sign in to continue to your proof dashboard."
+        title="Welcome back"
+      />
+      <SignInForm callbackURL={destination} />
     </>
   );
 }

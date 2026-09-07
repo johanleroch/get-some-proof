@@ -1,10 +1,5 @@
 import { SignUpForm } from "@/components/auth/sign-up-form";
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthHeading } from "@/components/auth/auth-heading";
 import { safeInternalRoute } from "@/lib/safe-route";
 
 export default async function SignUpPage({
@@ -17,15 +12,11 @@ export default async function SignUpPage({
 
   return (
     <>
-      <CardHeader>
-        <CardTitle className="text-2xl">Create your account</CardTitle>
-        <CardDescription>
-          Verify your email before creating your Brand.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SignUpForm callbackURL={destination} />
-      </CardContent>
+      <AuthHeading
+        description="Verify your email before creating your Brand."
+        title="Create your account"
+      />
+      <SignUpForm callbackURL={destination} />
     </>
   );
 }
