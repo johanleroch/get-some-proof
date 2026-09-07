@@ -71,7 +71,9 @@ for (const screen of config.screens) {
       destination.replace(":organizationSlug", organizationSlug ?? ""),
     );
     if (screen.slug === "full-page-loading") {
-      await expect(page.getByRole("status")).toHaveText("Loading…");
+      await expect(
+        page.getByRole("status").getByText("Loading…", { exact: true }),
+      ).toBeVisible();
       await expect(page.getByRole("status").locator("svg")).toBeVisible();
     } else {
       await expect(
