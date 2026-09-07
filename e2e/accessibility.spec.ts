@@ -78,11 +78,17 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
     .evaluateAll((elements) =>
       elements
         .map((element) => {
-          const effectiveTarget =
-            element instanceof HTMLInputElement &&
-            ["checkbox", "radio"].includes(element.type)
-              ? (element.closest("label") ?? element)
-              : element;
+          // Native and ARIA toggles (Radix checkbox, radio, switch) count
+          // their wrapping label as the touch target, like WCAG 2.5.8 allows.
+          const isToggle =
+            (element instanceof HTMLInputElement &&
+              ["checkbox", "radio"].includes(element.type)) ||
+            ["checkbox", "radio", "switch"].includes(
+              element.getAttribute("role") ?? "",
+            );
+          const effectiveTarget = isToggle
+            ? (element.closest("label") ?? element)
+            : element;
           const box = effectiveTarget.getBoundingClientRect();
           return {
             height: box.height,
