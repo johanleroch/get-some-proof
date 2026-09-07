@@ -23,6 +23,13 @@ import { cn } from "@/lib/utils";
 
 const sampleAccent = "#0f766e";
 
+/** The phrase each sample quote highlights, for variant E. */
+const highlights: Record<string, string> = {
+  "variant-1": "proof we can actually show",
+  "variant-2": "finished the form in two minutes",
+  "variant-3": "in one afternoon",
+};
+
 const quotes: TestimonialCardValue[] = [
   {
     avatarUrl: null,
@@ -272,6 +279,78 @@ function CompactCard({
   );
 }
 
+/**
+ * D. What the premium set does (Cursor, Lemon Squeezy, Function, Midday): a
+ * quiet tinted fill instead of a card border, the quote first, a small
+ * signature, and no stars unless the Brand asks for them.
+ */
+function FilledCard({
+  testimonial,
+}: {
+  testimonial: TestimonialCardValue & { type: "text" };
+}) {
+  const meta = identityLine(testimonial);
+  return (
+    <article className="bg-surface-2 mb-5 break-inside-avoid rounded-lg p-5">
+      <blockquote className="type-body text-ink text-pretty">
+        {testimonial.text}
+      </blockquote>
+      <div className="mt-5 flex items-center gap-2.5">
+        <TemplateAvatar size={28} testimonial={testimonial} />
+        <p className="type-small min-w-0 truncate">
+          <span className="text-ink font-semibold">{testimonial.name}</span>
+          {meta ? <span className="text-ink-2">{`, ${meta}`}</span> : null}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * E. Clay's move: one phrase of the quote highlighted in the Brand accent, so
+ * a wall can be skimmed. The Collection Form already stores those marks.
+ */
+function HighlightCard({
+  testimonial,
+}: {
+  testimonial: TestimonialCardValue & { type: "text" };
+}) {
+  const meta = identityLine(testimonial);
+  const highlighted = highlights[testimonial.id];
+  const [before, after] = highlighted
+    ? testimonial.text.split(highlighted)
+    : [testimonial.text, ""];
+  return (
+    <Card>
+      <div className="p-5">
+        <blockquote className="type-body text-ink text-pretty">
+          {before}
+          {highlighted ? (
+            <mark className="text-ink rounded-[3px] bg-(--wall-accent-soft) px-0.5">
+              {highlighted}
+            </mark>
+          ) : null}
+          {after}
+        </blockquote>
+        <div className="mt-5 flex items-center gap-3">
+          <TemplateAvatar size={32} testimonial={testimonial} />
+          <div className="min-w-0 flex-1">
+            <p className="type-small text-ink truncate font-semibold">
+              {testimonial.name}
+            </p>
+            {meta ? (
+              <p className="type-small text-ink-2 truncate">{meta}</p>
+            ) : null}
+          </div>
+          {testimonial.rating ? (
+            <Stars className="shrink-0" rating={testimonial.rating} size={13} />
+          ) : null}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 const variants = [
   {
     Render: BaselineCard,
@@ -297,13 +376,30 @@ const variants = [
     name: "C · Compact",
     note: "One identity row with the stars on it, avatar 36px, then the quote. The densest: best for three-column Walls and the Inbox.",
   },
+  {
+    Render: FilledCard,
+    key: "filled",
+    name: "D · Filled, no border",
+    note: "What Cursor, Lemon Squeezy, Function and Midday ship: a quiet tinted fill instead of a border, quote first, a one-line signature at 28px, and no stars. The lightest wall.",
+  },
+  {
+    Render: HighlightCard,
+    key: "highlight",
+    name: "E · Highlighted phrase",
+    note: "Clay's move: one phrase marked in the Brand accent so a long wall can be skimmed. The Collection Form already stores these marks; today they paint in a hard-coded yellow.",
+  },
 ] as const;
 
 export function TestimonialCardVariants() {
   return (
     <div
       className="bg-background text-foreground min-h-svh"
-      style={{ "--wall-accent": sampleAccent } as CSSProperties}
+      style={
+        {
+          "--wall-accent": sampleAccent,
+          "--wall-accent-soft": `color-mix(in oklab, ${sampleAccent} 22%, var(--card))`,
+        } as CSSProperties
+      }
     >
       <header className="bg-background/85 sticky top-0 z-20 border-b backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3">
@@ -313,8 +409,8 @@ export function TestimonialCardVariants() {
               <Sparkle className="text-brand size-5" />
             </h1>
             <p className="text-muted-foreground type-small">
-              {variants.length - 1} variants against today&apos;s card.
-              Development only.
+              {variants.length - 1} variants against today&apos;s card, informed
+              by Mobbin. Development only.
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
