@@ -11,6 +11,16 @@ import {
 import { toast } from "sonner";
 
 import { BrandMark } from "@/components/brand-mark";
+import {
+  ArrowNote,
+  CameraTripod,
+  CircleAround,
+  EnvelopeStamp,
+  ScribbleStar,
+  SpeechBubbleStars,
+  WallFrames,
+  WavyUnderline,
+} from "@/components/doodles";
 import { TestimonialCard } from "@/components/testimonials/testimonial-card";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card-markup";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -25,7 +35,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -51,8 +63,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -62,6 +88,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -89,10 +125,12 @@ const sections = [
   { id: "fonts", title: "Fonts" },
   { id: "shape", title: "Shape and depth" },
   { id: "spacing", title: "Spacing" },
+  { id: "doodles", title: "Doodles" },
   { id: "buttons", title: "Buttons" },
   { id: "forms", title: "Forms" },
   { id: "cards", title: "Cards and lists" },
   { id: "status", title: "Status and badges" },
+  { id: "empty", title: "Empty states" },
   { id: "overlays", title: "Overlays" },
   { id: "feedback", title: "Feedback" },
   { id: "product", title: "Product pieces" },
@@ -633,7 +671,15 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Spec: 40px tall, weight 600, --radius-md, tactile press, a loading state with spinner. Current primitive is 36px and swaps its label; step 2 upgrades it."
+            description="The hand-drawn signature: one element per screen region, ink by default, the star may be amber. Decorative only, never an emoji."
+            id="doodles"
+            title="Doodles"
+          >
+            <DoodleShowcase />
+          </KitSection>
+
+          <KitSection
+            description="40px tall, weight 600, --radius-md, a 1px press, and a loading state that keeps the label width."
             id="buttons"
             title="Buttons"
           >
@@ -659,41 +705,74 @@ export function KitPage() {
                 With icon
               </Button>
             </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button loading>Save settings</Button>
+              <Button loading variant="outline">
+                Publishing
+              </Button>
+              <Button loading size="lg">
+                Submit your proof
+              </Button>
+            </div>
           </KitSection>
 
           <KitSection
-            description="Label above, helper below, error below in danger. Spec height 40px; current primitive is 36px."
+            description="Label above, helper below, error below in danger. Fields are 40px tall; native selects and checkboxes are retired."
             id="forms"
             title="Forms"
           >
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
+              <Field>
                 <Label htmlFor="kit-input">Brand name</Label>
                 <Input id="kit-input" placeholder="Northwind Bakery" />
-                <p className="text-muted-foreground type-small">
+                <FieldDescription>
                   Shown on your Collection Form and Wall.
-                </p>
-              </div>
-              <div className="space-y-2">
+                </FieldDescription>
+              </Field>
+              <Field>
                 <Label htmlFor="kit-input-filled">Public slug</Label>
                 <Input defaultValue="northwind-bakery" id="kit-input-filled" />
-              </div>
-              <div className="space-y-2">
+              </Field>
+              <Field>
                 <Label htmlFor="kit-input-error">Email</Label>
                 <Input
                   aria-invalid
                   defaultValue="alice@"
                   id="kit-input-error"
                 />
-                <p className="text-danger type-small">
-                  Enter a full email address.
-                </p>
-              </div>
-              <div className="space-y-2">
+                <FieldError>Enter a full email address.</FieldError>
+              </Field>
+              <Field>
                 <Label htmlFor="kit-input-disabled">Plan</Label>
-                <Input disabled id="kit-input-disabled" value="Free" readOnly />
+                <Input disabled id="kit-input-disabled" readOnly value="Free" />
+              </Field>
+              <Field>
+                <Label htmlFor="kit-select">Wall theme</Label>
+                <Select defaultValue="system">
+                  <SelectTrigger className="w-full" id="kit-select">
+                    <SelectValue placeholder="Choose a theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">Match the visitor</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Applies to the hosted Wall only.
+                </FieldDescription>
+              </Field>
+              <div className="space-y-4">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                  <Checkbox defaultChecked id="kit-checkbox" />
+                  <span className="type-ui">Show the star rating</span>
+                </label>
+                <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                  <Switch defaultChecked id="kit-switch" />
+                  <span className="type-ui">Collection open</span>
+                </label>
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <Field className="md:col-span-2">
                 <Label htmlFor="kit-textarea">
                   Collection Form description
                 </Label>
@@ -701,7 +780,7 @@ export function KitPage() {
                   id="kit-textarea"
                   placeholder="Tell us what changed for you."
                 />
-              </div>
+              </Field>
             </div>
           </KitSection>
 
@@ -750,8 +829,9 @@ export function KitPage() {
                             : "Customer"}
                         </p>
                       </div>
-                      <StatusPill
-                        tone={
+                      <Badge
+                        dot
+                        variant={
                           index === 0
                             ? "success"
                             : index === 1
@@ -764,26 +844,110 @@ export function KitPage() {
                           : index === 1
                             ? "Pending"
                             : "Draft"}
-                      </StatusPill>
+                      </Badge>
                     </div>
                   ),
                 )}
               </div>
             </div>
+            <Tabs defaultValue="all">
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="published">Published</TabsTrigger>
+              </TabsList>
+              <TabsContent value="all">
+                <div className="bg-card rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Format</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Received</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[
+                        ["Alice Martin", "Text", "Published", "3 Sep"],
+                        ["Jordan Lee", "Video", "Pending", "2 Sep"],
+                        ["Morgan Reed", "Text", "Draft", "1 Sep"],
+                      ].map(([author, format, status, received]) => (
+                        <TableRow key={author}>
+                          <TableCell className="font-medium">
+                            {author}
+                          </TableCell>
+                          <TableCell>{format}</TableCell>
+                          <TableCell>
+                            <Badge
+                              dot
+                              variant={
+                                status === "Published"
+                                  ? "success"
+                                  : status === "Pending"
+                                    ? "warning"
+                                    : "neutral"
+                              }
+                            >
+                              {status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-ink-2 text-right font-mono text-xs">
+                            {received}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              <TabsContent value="pending">
+                <p className="text-ink-2 type-body">One pending testimonial.</p>
+              </TabsContent>
+              <TabsContent value="published">
+                <p className="text-ink-2 type-body">
+                  One published testimonial.
+                </p>
+              </TabsContent>
+            </Tabs>
           </KitSection>
 
           <KitSection
-            description="Tonal pills: soft background, full-strength text, a 6px dot. Preview of the Badge primitive coming in step 2."
+            description="Tonal pills: soft background, full-strength text, an optional 6px dot."
             id="status"
             title="Status and badges"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <StatusPill tone="success">Published</StatusPill>
-              <StatusPill tone="warning">Pending</StatusPill>
-              <StatusPill tone="danger">Failed</StatusPill>
-              <StatusPill tone="info">Processing</StatusPill>
-              <StatusPill tone="brand">Pro</StatusPill>
-              <StatusPill tone="neutral">Draft</StatusPill>
+              <Badge dot variant="success">
+                Published
+              </Badge>
+              <Badge dot variant="warning">
+                Pending
+              </Badge>
+              <Badge dot variant="danger">
+                Failed
+              </Badge>
+              <Badge dot variant="info">
+                Processing
+              </Badge>
+              <Badge variant="brand">Pro</Badge>
+              <Badge variant="neutral">Draft</Badge>
+              <Badge variant="outline">12 proofs</Badge>
+            </div>
+          </KitSection>
+
+          <KitSection
+            description="One illustration, a title, one sentence, one action. The dashed box with a lone sentence is retired."
+            id="empty"
+            title="Empty states"
+          >
+            <div className="bg-card rounded-lg border">
+              <EmptyState
+                action={<Button>Copy collection link</Button>}
+                description="Share your Collection Form and the first proof lands here, ready to review."
+                illustration={<SpeechBubbleStars className="h-32" draw />}
+                title="No Testimonials yet"
+              />
             </div>
           </KitSection>
 
@@ -816,6 +980,17 @@ export function KitPage() {
                 </TooltipTrigger>
                 <TooltipContent>Copied to clipboard</TooltipContent>
               </Tooltip>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">Popover</Button>
+                </PopoverTrigger>
+                <PopoverContent align="start">
+                  <p className="type-subheading">Embed on your site</p>
+                  <p className="text-ink-2 type-small mt-1">
+                    Paste one script tag. The Wall inherits your font.
+                  </p>
+                </PopoverContent>
+              </Popover>
             </div>
           </KitSection>
 
@@ -1044,34 +1219,6 @@ function TypeRow({
   );
 }
 
-function StatusPill({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "brand" | "danger" | "info" | "neutral" | "success" | "warning";
-}) {
-  const tones = {
-    brand: "bg-brand-soft text-brand-text",
-    danger: "bg-danger-soft text-danger",
-    info: "bg-info-soft text-info",
-    neutral: "bg-surface-2 text-ink-2",
-    success: "bg-success-soft text-success",
-    warning: "bg-warning-soft text-warning",
-  } as const;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] leading-none font-semibold",
-        tones[tone],
-      )}
-    >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-      {children}
-    </span>
-  );
-}
-
 function DialogDemo() {
   const [open, setOpen] = useState(false);
   return (
@@ -1151,5 +1298,72 @@ function SheetDemo() {
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+function DoodleShowcase() {
+  const [drawKey, setDrawKey] = useState(0);
+  return (
+    <div className="space-y-6" key={drawKey}>
+      <div className="flex flex-wrap items-end gap-8">
+        <div className="space-y-2">
+          <ScribbleStar className="text-brand size-12" draw />
+          <p className="text-ink-2 type-small">ScribbleStar</p>
+        </div>
+        <div className="space-y-2">
+          <p className="type-display relative inline-block">
+            Get some{" "}
+            <span className="relative inline-block">
+              proof
+              <WavyUnderline
+                className="text-brand absolute -bottom-1 left-0 h-3 w-full"
+                draw
+              />
+            </span>
+          </p>
+          <p className="text-ink-2 type-small">WavyUnderline</p>
+        </div>
+        <div className="space-y-2">
+          <span className="relative inline-block px-4 py-1">
+            <span className="type-kpi">12</span>
+            <CircleAround
+              className="absolute -inset-x-2 -inset-y-1 h-[calc(100%+0.5rem)] w-[calc(100%+1rem)]"
+              draw
+            />
+          </span>
+          <p className="text-ink-2 type-small">CircleAround</p>
+        </div>
+        <div className="space-y-2">
+          <ArrowNote draw>this is what your customers see</ArrowNote>
+          <p className="text-ink-2 type-small">ArrowNote</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          ["SpeechBubbleStars", <SpeechBubbleStars draw key="bubble" />],
+          ["CameraTripod", <CameraTripod draw key="camera" />],
+          ["EnvelopeStamp", <EnvelopeStamp draw key="envelope" />],
+          ["WallFrames", <WallFrames draw key="wall" />],
+        ].map(([name, element]) => (
+          <div
+            className="bg-card space-y-2 rounded-lg border p-4"
+            key={String(name)}
+          >
+            <div className="text-ink [&>svg]:h-auto [&>svg]:w-full">
+              {element}
+            </div>
+            <p className="text-ink-2 type-small">{String(name)}</p>
+          </div>
+        ))}
+      </div>
+      <Button
+        onClick={() => setDrawKey((key) => key + 1)}
+        size="sm"
+        variant="outline"
+      >
+        <IconRefresh aria-hidden="true" />
+        Replay draw-in
+      </Button>
+    </div>
   );
 }
