@@ -6,8 +6,30 @@
  * Owner's Brand, and routes that need a private token have no live preview.
  */
 
-export const artboardWidth = 1440;
-export const artboardMinHeight = 900;
+/**
+ * Artboard sizes the gallery can render. The width drives the responsive
+ * layout inside each frame; the height is the floor a page gets before its
+ * content makes it taller (pages using `min-h-svh` fill exactly this).
+ */
+export const devices = [
+  { key: "desktop", label: "Desktop", minHeight: 900, width: 1440 },
+  { key: "laptop", label: "Laptop", minHeight: 800, width: 1280 },
+  { key: "tablet", label: "Tablet", minHeight: 1112, width: 834 },
+  { key: "phone", label: "Phone", minHeight: 844, width: 390 },
+] as const;
+
+export type DeviceKey = (typeof devices)[number]["key"];
+export type Device = (typeof devices)[number];
+
+export const deviceKeys = devices.map((device) => device.key) as DeviceKey[];
+
+export function deviceByKey(key: DeviceKey): Device {
+  return devices.find((device) => device.key === key) ?? devices[0];
+}
+
+/** Default artboard: the desktop preset. */
+export const artboardWidth: number = devices[0].width;
+export const artboardMinHeight: number = devices[0].minHeight;
 
 /** Review status a screen can carry in the gallery; absent means untouched. */
 export const screenStatuses = ["todo", "ok"] as const;

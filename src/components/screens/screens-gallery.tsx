@@ -29,8 +29,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  artboardMinHeight,
-  artboardWidth,
+  type Device,
+  type DeviceKey,
+  deviceByKey,
+  deviceKeys,
+  devices,
   resolveLivePath,
   type ScreenDefinition,
   type ScreenOrganization,
@@ -46,8 +49,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const artboardMaxHeight = 3200;
-const zoomStorageKey = "get-some-proof-screens-zoom";
-const zoomChangeEvent = "get-some-proof-screens-zoom-change";
 const zoomLevels = ["fit", "50", "75", "100"] as const;
 
 type ZoomLevel = (typeof zoomLevels)[number];
@@ -55,36 +56,55 @@ type ScreenSource = "fixture" | "live";
 type SessionState =
   "loading" | "no-brand" | "ready" | "signed-out" | "unavailable";
 
-function isZoomLevel(value: string | null): value is ZoomLevel {
-  return zoomLevels.includes(value as ZoomLevel);
-}
-
-function readZoom(): ZoomLevel {
-  try {
-    const stored = localStorage.getItem(zoomStorageKey);
-    return isZoomLevel(stored) ? stored : "fit";
-  } catch {
-    return "fit";
-  }
-}
-
-function subscribeToZoom(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener(zoomChangeEvent, onStoreChange);
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener(zoomChangeEvent, onStoreChange);
+/**
+ * A choice remembered in localStorage and shared across the page through a
+ * custom event, so `useSyncExternalStore` can read it without effects.
+ */
+function storedChoice<T extends string>(
+  storageKey: string,
+  values: readonly T[],
+  fallback: T,
+) {
+  const changeEvent = `${storageKey}-change`;
+  return {
+    fallback,
+    read(): T {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        return values.includes(stored as T) ? (stored as T) : fallback;
+      } catch {
+        return fallback;
+      }
+    },
+    subscribe(onStoreChange: () => void) {
+      window.addEventListener("storage", onStoreChange);
+      window.addEventListener(changeEvent, onStoreChange);
+      return () => {
+        window.removeEventListener("storage", onStoreChange);
+        window.removeEventListener(changeEvent, onStoreChange);
+      };
+    },
+    write(next: T) {
+      try {
+        localStorage.setItem(storageKey, next);
+      } catch {
+        // Storage can be unavailable; the event still updates this visit.
+      }
+      window.dispatchEvent(new Event(changeEvent));
+    },
   };
 }
 
-function writeZoom(next: ZoomLevel) {
-  try {
-    localStorage.setItem(zoomStorageKey, next);
-  } catch {
-    // Storage can be unavailable; the event still updates this visit.
-  }
-  window.dispatchEvent(new Event(zoomChangeEvent));
-}
+const zoomStore = storedChoice<ZoomLevel>(
+  "get-some-proof-screens-zoom",
+  zoomLevels,
+  "fit",
+);
+const deviceStore = storedChoice<DeviceKey>(
+  "get-some-proof-screens-device",
+  deviceKeys,
+  "desktop",
+);
 
 function applyThemeToFrame(frame: HTMLIFrameElement) {
   try {
@@ -217,10 +237,16 @@ function GalleryView({
   sessionState,
 }: GalleryViewProps) {
   const zoom = useSyncExternalStore(
-    subscribeToZoom,
-    readZoom,
-    (): ZoomLevel => "fit",
+    zoomStore.subscribe,
+    zoomStore.read,
+    () => zoomStore.fallback,
   );
+  const deviceKey = useSyncExternalStore(
+    deviceStore.subscribe,
+    deviceStore.read,
+    () => deviceStore.fallback,
+  );
+  const device = deviceByKey(deviceKey);
   const [reloadKey, setReloadKey] = useState(0);
   const [statuses, setStatuses] = useState<ScreenStatuses>(initialStatuses);
 
@@ -290,7 +316,7 @@ function GalleryView({
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-semibold">Screens</h1>
             <p className="text-muted-foreground text-xs">
-              {numbers.size} screens · {artboardWidth}px artboards · development
+              {numbers.size} screens · {device.width}px artboards · development
               only
             </p>
           </div>
@@ -300,9 +326,18 @@ function GalleryView({
             total={numbers.size}
           />
           <SessionStatus organization={organization} state={sessionState} />
+          <SegmentedControl<DeviceKey>
+            ariaLabel="Device"
+            onChange={deviceStore.write}
+            options={devices.map((preset) => ({
+              label: preset.label,
+              value: preset.key,
+            }))}
+            value={deviceKey}
+          />
           <SegmentedControl
             ariaLabel="Zoom"
-            onChange={writeZoom}
+            onChange={zoomStore.write}
             options={zoomLevels.map((level) => ({
               label: level === "fit" ? "Fit" : `${level}%`,
               value: level,
@@ -402,6 +437,7 @@ function GalleryView({
               <div className="space-y-12">
                 {section.screens.map((screen) => (
                   <ScreenPanel
+                    device={device}
                     fixturesEnabled={fixturesEnabled}
                     key={screen.slug}
                     number={numbers.get(screen.slug) ?? 0}
@@ -573,6 +609,7 @@ function StatusPills({
 }
 
 type ScreenPanelProps = {
+  device: Device;
   fixturesEnabled: boolean;
   number: number;
   onStatusChange: (slug: string, status: ScreenStatus | null) => void;
@@ -585,6 +622,7 @@ type ScreenPanelProps = {
 };
 
 function ScreenPanel({
+  device,
   fixturesEnabled,
   number,
   onStatusChange,
@@ -620,7 +658,7 @@ function ScreenPanel({
   const [panelReload, setPanelReload] = useState(0);
   const [measured, setMeasured] = useState<{ key: string; value: number }>({
     key: "",
-    value: artboardMinHeight,
+    value: device.minHeight,
   });
   const [areaWidth, setAreaWidth] = useState<number | null>(null);
   const areaRef = useRef<HTMLDivElement>(null);
@@ -635,8 +673,8 @@ function ScreenPanel({
         ? (screen.fixturePath ?? null)
         : null
       : livePath;
-  const frameKey = `${screen.slug}:${activeSource}:${reloadKey}:${panelReload}`;
-  const height = measured.key === frameKey ? measured.value : artboardMinHeight;
+  const frameKey = `${screen.slug}:${activeSource}:${device.key}:${reloadKey}:${panelReload}`;
+  const height = measured.key === frameKey ? measured.value : device.minHeight;
 
   useEffect(() => {
     const area = areaRef.current;
@@ -665,7 +703,7 @@ function ScreenPanel({
         const next = Math.max(root.scrollHeight, body.scrollHeight);
         setMeasured({
           key: frameKey,
-          value: Math.min(artboardMaxHeight, Math.max(artboardMinHeight, next)),
+          value: Math.min(artboardMaxHeight, Math.max(device.minHeight, next)),
         });
       };
       measure();
@@ -675,7 +713,7 @@ function ScreenPanel({
     } catch {
       // Same-origin frames only; keep the default artboard height otherwise.
     }
-  }, [frameKey]);
+  }, [device.minHeight, frameKey]);
 
   // "Fit" scales the artboard to the frame's inner width so nothing overflows;
   // fixed zoom levels may overflow and scroll inside their own frame.
@@ -683,9 +721,9 @@ function ScreenPanel({
     zoom === "fit"
       ? areaWidth === null
         ? null
-        : Math.floor(Math.min(areaWidth, artboardWidth))
-      : Math.round((artboardWidth * Number(zoom)) / 100);
-  const scale = scaledWidth === null ? null : scaledWidth / artboardWidth;
+        : Math.floor(Math.min(areaWidth, device.width))
+      : Math.round((device.width * Number(zoom)) / 100);
+  const scale = scaledWidth === null ? null : scaledWidth / device.width;
   const scaledHeight = scale === null ? null : Math.round(height * scale);
   const displayPath = src ?? screen.fixturePath ?? screen.livePath ?? "";
   const unavailableReason =
@@ -787,7 +825,7 @@ function ScreenPanel({
             <div
               aria-hidden="true"
               className="bg-background w-full rounded-md border"
-              style={{ height: artboardMinHeight / 2 }}
+              style={{ height: device.minHeight / 2 }}
             />
           ) : (
             <div
@@ -807,7 +845,7 @@ function ScreenPanel({
                     height,
                     transform: `scale(${scale})`,
                     transformOrigin: "top left",
-                    width: artboardWidth,
+                    width: device.width,
                   }}
                   title={screen.title}
                 />
