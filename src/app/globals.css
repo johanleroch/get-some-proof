@@ -554,17 +554,37 @@ select:disabled {
   animation: dashboard-shimmer 1.6s ease-in-out infinite;
 }
 
-/* Hand-drawn strokes may draw themselves in once (DESIGN.md section 4). */
+/*
+ * Hand-drawn strokes may draw themselves in once (DESIGN.md section 4).
+ * Paths carry pathLength="1" and a non-scaling stroke; Chromium measures the
+ * dash in user units but strokes in screen space, so a dash of 1 only covers
+ * 1/scale of an enlarged doodle. The dash is 2 (whole up to 2x) and the last
+ * frame drops dashing entirely so every size ends solid.
+ */
 .doodle-draw path,
 .doodle-draw circle {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
+  stroke-dasharray: 2;
+  stroke-dashoffset: 2;
   animation: doodle-draw 600ms cubic-bezier(0.2, 0, 0, 1) forwards;
 }
 
 @keyframes doodle-draw {
-  to {
+  99% {
+    stroke-dasharray: 2;
     stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dasharray: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doodle-draw path,
+  .doodle-draw circle {
+    stroke-dasharray: 0;
+    stroke-dashoffset: 0;
+    animation: none;
   }
 }
 
