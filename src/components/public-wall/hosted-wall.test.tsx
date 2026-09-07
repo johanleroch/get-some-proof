@@ -59,8 +59,8 @@ describe("HostedWall", () => {
     );
 
     const grid = screen.getByTestId("public-wall-grid");
-    expect(grid).toHaveClass("columns-1", "md:columns-2");
-    expect(grid.parentElement).toHaveClass("max-w-6xl");
+    expect(grid).toHaveClass("columns-1", "sm:columns-2", "lg:columns-3");
+    expect(grid.parentElement).toHaveClass("max-w-7xl");
     expect(screen.getByText("A clear customer outcome.")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Testimonials made easy" }),

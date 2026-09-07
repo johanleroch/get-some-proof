@@ -16,7 +16,7 @@ export function VideoUploadProgress({
   const uploading = phase === "uploading";
 
   return (
-    <div className="bg-muted/40 space-y-3 rounded-xl border p-4">
+    <div className="bg-surface-2 space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between gap-4 text-sm">
         <p className="font-medium" role={uploading ? undefined : "status"}>
           {uploading
@@ -34,17 +34,17 @@ export function VideoUploadProgress({
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={uploading ? percentage : 100}
-        className="bg-muted h-2 overflow-hidden rounded-full"
+        className="bg-line h-2 overflow-hidden rounded-full"
         role="progressbar"
       >
         <div
           className={`h-full rounded-full transition-[width] duration-200 ${
-            uploading ? "bg-(--brand-accent)" : "bg-emerald-500"
+            uploading ? "bg-(--brand-accent)" : "bg-success"
           }`}
           style={{ width: `${uploading ? percentage : 100}%` }}
         />
       </div>
-      <p className="text-muted-foreground text-xs">
+      <p className="text-ink-2 text-xs">
         {uploading
           ? "Keep this page open until the upload reaches 100%."
           : "Processing and captions continue in the background."}

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { ImagePlus, X } from "lucide-react";
+import { IconPhotoPlus, IconX } from "@tabler/icons-react";
 import {
   type TestimonialImage,
   maximumTestimonialImages,
@@ -75,7 +75,7 @@ export function TestimonialImagesInput({
                 type="button"
                 variant="secondary"
               >
-                <X />
+                <IconX />
               </Button>
             </div>
           ))}
@@ -96,7 +96,7 @@ export function TestimonialImagesInput({
                 type="button"
                 variant="secondary"
               >
-                <X />
+                <IconX />
               </Button>
             </div>
           ))}
@@ -145,7 +145,7 @@ export function TestimonialImagesInput({
         type="button"
         variant="ghost"
       >
-        <ImagePlus aria-hidden="true" /> Add images{" "}
+        <IconPhotoPlus aria-hidden="true" /> Add images{" "}
         <span className="text-muted-foreground text-xs">
           {count ? `${count}/3` : "Optional"}
         </span>

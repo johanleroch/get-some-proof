@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -47,7 +48,7 @@ export function TwoFactorChallenge() {
 
   return (
     <form className="space-y-5" onSubmit={verify}>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="two-factor-code">
           {mode === "totp" ? "Authenticator code" : "Recovery code"}
         </Label>
@@ -58,10 +59,10 @@ export function TwoFactorChallenge() {
           name="code"
           required
         />
-      </div>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? "Verifying…" : "Verify"}
+      <Button className="w-full" loading={pending} type="submit">
+        Verify
       </Button>
       <Button
         className="w-full"

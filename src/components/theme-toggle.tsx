@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Laptop, Moon, Sun } from "lucide-react";
+import { IconDeviceLaptop, IconMoon, IconSun } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,28 +12,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  resolvedTheme,
+  applyThemePreference,
+  readThemePreference,
+  themeChangeEvent,
   themeStorageKey,
   type ThemePreference,
 } from "@/lib/theme";
 
-const themeChangeEvent = "get-some-proof-theme-change";
-
-function storedTheme(): ThemePreference {
-  const stored = localStorage.getItem(themeStorageKey);
-  return stored === "light" || stored === "dark" || stored === "system"
-    ? stored
-    : "system";
+function systemPrefersDark() {
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
 function applyTheme(preference: ThemePreference) {
-  const dark = resolvedTheme(
+  applyThemePreference(
+    document.documentElement,
     preference,
-    window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
+    systemPrefersDark(),
   );
-  document.documentElement.classList.toggle("dark", dark === "dark");
-  document.documentElement.style.colorScheme = dark;
-  document.documentElement.dataset.theme = preference;
 }
 
 export function ThemeToggle() {
@@ -41,7 +36,7 @@ export function ThemeToggle() {
     (onStoreChange) => {
       const media = window.matchMedia?.("(prefers-color-scheme: dark)");
       const updateSystemTheme = () => {
-        if (storedTheme() === "system") applyTheme("system");
+        if (readThemePreference() === "system") applyTheme("system");
         onStoreChange();
       };
       window.addEventListener("storage", onStoreChange);
@@ -53,7 +48,7 @@ export function ThemeToggle() {
         media?.removeEventListener("change", updateSystemTheme);
       };
     },
-    storedTheme,
+    readThemePreference,
     () => "system",
   );
 
@@ -63,7 +58,12 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event(themeChangeEvent));
   }
 
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Laptop;
+  const Icon =
+    theme === "light"
+      ? IconSun
+      : theme === "dark"
+        ? IconMoon
+        : IconDeviceLaptop;
 
   return (
     <DropdownMenu>
@@ -78,15 +78,15 @@ export function ThemeToggle() {
           value={theme}
         >
           <DropdownMenuRadioItem value="light">
-            <Sun aria-hidden="true" />
+            <IconSun aria-hidden="true" />
             Light
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
-            <Moon aria-hidden="true" />
+            <IconMoon aria-hidden="true" />
             Dark
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
-            <Laptop aria-hidden="true" />
+            <IconDeviceLaptop aria-hidden="true" />
             System
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>

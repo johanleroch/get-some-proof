@@ -20,7 +20,7 @@ export default async function ManagedSubmissionPage({
   }
   const { token } = await params;
   return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-4 py-8 sm:px-5 sm:py-12">
+    <main className="bg-paper grid min-h-svh place-items-center px-5 py-10 sm:px-8 sm:py-14">
       <ManagedSubmission token={token} />
     </main>
   );

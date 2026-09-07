@@ -1,9 +1,10 @@
 "use client";
 
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 type PrivacyBrand = {
   name: string;
@@ -12,16 +13,12 @@ type PrivacyBrand = {
 
 export function BrandPrivacyNoticeView({ brand }: { brand: PrivacyBrand }) {
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <p className="text-muted-foreground text-sm font-medium">
-          {brand.name}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Testimonial privacy notice
-        </h1>
-      </CardHeader>
-      <CardContent className="text-muted-foreground space-y-5 text-sm leading-6">
+    <article className="mx-auto w-full max-w-2xl space-y-6">
+      <header className="space-y-1.5">
+        <p className="type-micro text-ink-2">{brand.name}</p>
+        <h1 className="type-heading">Testimonial privacy notice</h1>
+      </header>
+      <div className="type-body text-ink-2 space-y-5">
         <p>
           {brand.name} collects the testimonial content and identity details you
           choose to provide. Your name is public if the testimonial is
@@ -44,18 +41,18 @@ export function BrandPrivacyNoticeView({ brand }: { brand: PrivacyBrand }) {
           submission. To ask a privacy question or withdraw your publication
           permission, contact{" "}
           <a
-            className="text-foreground underline underline-offset-2"
+            className="text-ink underline underline-offset-2"
             href={`mailto:${brand.privacyContact}`}
           >
             {brand.privacyContact}
           </a>
           .
         </p>
-        <p className="text-xs">
+        <p className="type-small">
           This default notice requires legal review before launch.
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }
 
@@ -63,10 +60,10 @@ export function BrandPrivacyNotice({ publicSlug }: { publicSlug: string }) {
   const brand = useQuery(api.organizations.getByPublicSlug, { publicSlug });
 
   if (brand === undefined) {
-    return <p className="text-muted-foreground text-sm">Loading notice…</p>;
+    return <BlobLoader label="Loading notice…" />;
   }
   if (brand === null) {
-    return <p className="text-muted-foreground text-sm">Notice unavailable.</p>;
+    return <p className="text-ink-2 text-sm">Notice unavailable.</p>;
   }
 
   return <BrandPrivacyNoticeView brand={brand} />;

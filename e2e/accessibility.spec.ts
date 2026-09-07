@@ -41,6 +41,8 @@ const canonicalScreens = [
   "/visual-evidence/billing",
   "/visual-evidence/testimonial-delete",
   "/visual-evidence/workspace-delete",
+  "/templates",
+  "/templates/masonry-wall",
 ];
 
 for (const path of canonicalScreens) {
@@ -92,11 +94,17 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
     .evaluateAll((elements) =>
       elements
         .map((element) => {
-          const effectiveTarget =
-            element instanceof HTMLInputElement &&
-            ["checkbox", "radio"].includes(element.type)
-              ? (element.closest("label") ?? element)
-              : element;
+          // Native and ARIA toggles (Radix checkbox, radio, switch) count
+          // their wrapping label as the touch target, like WCAG 2.5.8 allows.
+          const isToggle =
+            (element instanceof HTMLInputElement &&
+              ["checkbox", "radio"].includes(element.type)) ||
+            ["checkbox", "radio", "switch"].includes(
+              element.getAttribute("role") ?? "",
+            );
+          const effectiveTarget = isToggle
+            ? (element.closest("label") ?? element)
+            : element;
           const box = effectiveTarget.getBoundingClientRect();
           return {
             height: box.height,
@@ -120,7 +128,7 @@ test("dark theme destructive text retains AA contrast", async ({ page }) => {
   });
   await page.goto("/visual-evidence/collection-form");
   await expect(
-    page.getByRole("heading", { name: "Share your Visual Studio story" }),
+    page.getByRole("heading", { name: "Share your Fernhill Studio story" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.waitForLoadState("networkidle");

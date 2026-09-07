@@ -2,9 +2,16 @@
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
+import {
+  IconDeviceLaptop,
+  IconDeviceMobile,
+  IconKey,
+  IconShieldCheck,
+} from "@tabler/icons-react";
 
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,24 +169,23 @@ export function AccountSecurity() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="dashboard-page-title">Security</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          These controls protect your Owner account and private Workspace.
-        </p>
-      </div>
+      <PageHeader
+        description="These controls protect your Owner account and private Workspace."
+        eyebrow="Account"
+        title="Security"
+      />
 
       {error ? <ErrorToast message={error} /> : null}
       {success ? <SuccessToast message={success} /> : null}
 
-      <section className="bg-card rounded-xl border p-6 shadow-xs">
+      <section className="bg-card rounded-lg border p-5">
         <div className="flex items-start gap-4">
-          <div className="bg-muted text-foreground grid size-10 place-items-center rounded-lg">
-            <ShieldCheck aria-hidden="true" className="size-5" />
+          <div className="bg-brand-soft text-brand-text grid size-10 place-items-center rounded-md">
+            <IconShieldCheck aria-hidden="true" className="size-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Authenticator app</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <h2 className="type-subheading">Authenticator app</h2>
+            <p className="text-ink-2 mt-1 text-sm">
               Status: {twoFactorEnabled ? "enabled" : "not enabled"}
             </p>
           </div>
@@ -190,7 +196,7 @@ export function AccountSecurity() {
             className="mt-6 flex max-w-md items-end gap-3"
             onSubmit={enableTwoFactor}
           >
-            <div className="flex-1 space-y-2">
+            <Field className="flex-1">
               <Label htmlFor="enable-2fa-password">Current password</Label>
               <Input
                 id="enable-2fa-password"
@@ -198,8 +204,8 @@ export function AccountSecurity() {
                 required
                 type="password"
               />
-            </div>
-            <Button disabled={pending} type="submit">
+            </Field>
+            <Button loading={pending} type="submit">
               Enable 2FA
             </Button>
           </form>
@@ -213,8 +219,8 @@ export function AccountSecurity() {
                 required
                 type="password"
               />
-              <Button disabled={pending} type="submit" variant="outline">
-                <KeyRound aria-hidden="true" className="size-4" />
+              <Button loading={pending} type="submit" variant="outline">
+                <IconKey aria-hidden="true" className="size-4" />
                 Generate new codes
               </Button>
             </form>
@@ -228,7 +234,7 @@ export function AccountSecurity() {
                 required
                 type="password"
               />
-              <Button disabled={pending} type="submit" variant="outline">
+              <Button loading={pending} type="submit" variant="outline">
                 Disable 2FA
               </Button>
             </form>
@@ -236,16 +242,16 @@ export function AccountSecurity() {
         )}
 
         {setup ? (
-          <div className="bg-muted/30 mt-6 rounded-xl border p-4">
+          <div className="bg-surface-2 mt-6 rounded-md border p-4">
             <p className="text-sm font-medium">Authenticator setup URI</p>
-            <code className="text-muted-foreground mt-2 block text-xs break-all">
+            <code className="text-ink-2 mt-2 block text-xs break-all">
               {setup.totpURI}
             </code>
           </div>
         ) : null}
 
         {visibleCodes ? (
-          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+          <div className="border-warning/30 bg-warning-soft text-ink mt-6 rounded-md border p-4">
             <h3 className="font-semibold">Save these recovery codes now</h3>
             <p className="mt-1 text-sm">
               Each code works once. They will not remain visible after you
@@ -271,11 +277,11 @@ export function AccountSecurity() {
         ) : null}
       </section>
 
-      <section className="bg-card rounded-xl border p-6 shadow-xs">
+      <section className="bg-card rounded-lg border p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Active Sessions</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <h2 className="type-subheading">Active Sessions</h2>
+            <p className="text-ink-2 mt-1 text-sm">
               Review devices and revoke access you no longer recognize.
             </p>
           </div>
@@ -284,7 +290,7 @@ export function AccountSecurity() {
           </Button>
         </div>
 
-        <div className="mt-5 divide-y rounded-xl border">
+        <div className="mt-5 divide-y rounded-lg border">
           {sessions === null ? (
             <p className="text-muted-foreground p-4 text-sm">
               Loading Sessions…
@@ -299,13 +305,13 @@ export function AccountSecurity() {
               const DeviceIcon = /iphone|android|mobile/i.test(
                 item.userAgent ?? "",
               )
-                ? Smartphone
-                : Laptop;
+                ? IconDeviceMobile
+                : IconDeviceLaptop;
               return (
                 <div className="flex items-center gap-4 p-4" key={item.id}>
                   <DeviceIcon
                     aria-hidden="true"
-                    className="text-muted-foreground size-5"
+                    className="text-ink-2 size-5"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">

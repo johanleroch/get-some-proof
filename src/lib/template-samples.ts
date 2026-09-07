@@ -1,0 +1,125 @@
+import type { TestimonialCardValue } from "@convex/testimonialCardValue";
+
+/**
+ * Sample proof for the template previews: the same fictional Brand as the
+ * visual-evidence fixtures (Fernhill Studio) with a few more voices, so every
+ * layout has enough to show. Videos come first, like on a fresh Wall.
+ */
+export const sampleBrandName = "Fernhill Studio";
+
+/** Public Mux demo asset, also used by the visual-evidence fixtures. */
+const samplePlaybackId = "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y";
+
+export const sampleTestimonials: TestimonialCardValue[] = [
+  {
+    aspectRatio: "9:16",
+    avatarUrl: null,
+    captionsAvailable: true,
+    id: "sample-video-1",
+    name: "Remy Jupille",
+    playbackId: samplePlaybackId,
+    posterTimeSeconds: 40,
+    publishedAt: Date.UTC(2026, 8, 4),
+    rating: 5,
+    role: "Founder",
+    type: "video",
+  },
+  {
+    avatarUrl: null,
+    company: "Bellwether Coffee",
+    id: "sample-text-1",
+    name: "Alice Martin",
+    publishedAt: Date.UTC(2026, 8, 3),
+    rating: 5,
+    role: "Founder",
+    text: "Fernhill turned a folder of kind emails into proof we can actually show. Two new clients mentioned the wall on our first call.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    id: "sample-text-2",
+    name: "Jordan Lee",
+    publishedAt: Date.UTC(2026, 8, 2),
+    rating: 5,
+    text: "Our customers finished the form in two minutes. Nobody asked us what they were supposed to write.",
+    type: "text",
+  },
+  {
+    aspectRatio: "3:4",
+    avatarUrl: null,
+    captionsAvailable: true,
+    company: "Tidewater Apps",
+    id: "sample-video-2",
+    name: "Maya Chen",
+    playbackId: samplePlaybackId,
+    posterTimeSeconds: 48,
+    publishedAt: Date.UTC(2026, 8, 1, 12),
+    rating: 5,
+    role: "Product lead",
+    type: "video",
+  },
+  {
+    avatarUrl: null,
+    company: "Signal Works",
+    id: "sample-text-3",
+    name: "Morgan Reed",
+    publishedAt: Date.UTC(2026, 8, 1),
+    rating: 4,
+    text: "We went from screenshots in a shared doc to a public wall in one afternoon.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    company: "Tidewater Apps",
+    id: "sample-text-4",
+    name: "Priya Natarajan",
+    publishedAt: Date.UTC(2026, 7, 29),
+    rating: 5,
+    role: "Head of growth",
+    text: "The embed took one line. Our designer did not have to touch a thing, and it still looks like us.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    company: "Herrera & Sons Plumbing",
+    id: "sample-text-5",
+    name: "Tomás Herrera",
+    publishedAt: Date.UTC(2026, 7, 27),
+    rating: 5,
+    role: "Owner",
+    text: "I asked five customers on a Friday. By Monday I had four videos and a wall I could send to new leads.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    id: "sample-text-6",
+    name: "Chloé Bernard",
+    publishedAt: Date.UTC(2026, 7, 25),
+    rating: 5,
+    role: "Coach",
+    text: "People say things on video they would never write. The recorder is simple enough that my clients actually press record.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    company: "Signal Works",
+    id: "sample-text-7",
+    name: "Sam Okafor",
+    publishedAt: Date.UTC(2026, 7, 22),
+    rating: 4,
+    role: "Product designer",
+    text: "The wall takes our colour and our font, so it never looks like a widget dropped on the page.",
+    type: "text",
+  },
+  {
+    avatarUrl: null,
+    company: "Lantern Books",
+    id: "sample-text-8",
+    name: "Hannah Weiss",
+    publishedAt: Date.UTC(2026, 7, 20),
+    rating: 5,
+    role: "Founder",
+    text: "Every testimonial arrives with consent already sorted. I publish without wondering whether I am allowed to.",
+    type: "text",
+  },
+];

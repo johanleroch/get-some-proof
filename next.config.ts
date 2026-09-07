@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: process.env.DEV_ALLOWED_ORIGIN
-    ? [process.env.DEV_ALLOWED_ORIGIN]
-    : undefined,
+  // Local Playwright runs reuse a dev server bound to localhost while their
+  // baseURL is 127.0.0.1; both origins must be able to load dev assets. A
+  // deployment can add its own origin through DEV_ALLOWED_ORIGIN.
+  allowedDevOrigins: [
+    "127.0.0.1",
+    "localhost",
+    ...(process.env.DEV_ALLOWED_ORIGIN ? [process.env.DEV_ALLOWED_ORIGIN] : []),
+  ],
   devIndicators:
     process.env.VISUAL_EVIDENCE_MODE === "true" ? false : undefined,
   async headers() {

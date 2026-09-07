@@ -2,11 +2,16 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
-import { IconMenu2 } from "@tabler/icons-react";
+import { IconExternalLink, IconMenu2 } from "@tabler/icons-react";
+import type { Route } from "next";
+import Link from "next/link";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
+import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
+import { BrandDashboardView } from "@/components/organizations/organization-dashboard";
+import { PageHeader } from "@/components/page-header";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { VideoRetryFormView } from "@/components/collection/video-retry-form";
@@ -21,8 +26,10 @@ import { ManagedSubmissionView } from "@/components/submissions/managed-submissi
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
   InboxFeedback,
+  InboxFilters,
   TestimonialDeleteDialog,
   TestimonialInboxView,
+  WallCurationPanel,
 } from "@/components/testimonials/testimonial-inbox";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
@@ -92,36 +99,25 @@ export function ProfileScreenFixture() {
 
 export function OnboardingScreenFixture() {
   return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-5 py-16">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 flex justify-center">
-          <BrandMark />
-        </div>
-        <Card className="shadow-xs">
-          <CardHeader>
-            <p className="text-muted-foreground text-sm font-medium">
-              First step
-            </p>
-            <CardTitle className="text-2xl">Create your Brand</CardTitle>
-            <CardDescription>
-              Set the public identity and Collection Form your customers will
-              see.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OrganizationOnboardingFormView
-              createOrganization={async () => ({
-                id: "fixture-organization" as Id<"organizations">,
-                publicSlug: "visual-studio",
-                slug: "visual-studio-l5pg",
-              })}
-              generateUploadUrl={async () => "fixture://upload"}
-              navigate={() => undefined}
-              setLogo={async () => null}
-              uploadImage={async () => "fixture-image" as Id<"_storage">}
-            />
-          </CardContent>
-        </Card>
+    <main className="bg-paper min-h-svh px-5 py-8 md:px-8 md:py-10">
+      <div className="mx-auto max-w-5xl space-y-10">
+        <BrandLogo />
+        <PageHeader
+          description="Set the public identity and Collection Form your customers will see."
+          eyebrow="First step"
+          title="Create your Brand"
+        />
+        <OrganizationOnboardingFormView
+          createOrganization={async () => ({
+            id: "fixture-organization" as Id<"organizations">,
+            publicSlug: "fernhill-studio",
+            slug: "fernhill-studio-l5pg",
+          })}
+          generateUploadUrl={async () => "fixture://upload"}
+          navigate={() => undefined}
+          setLogo={async () => null}
+          uploadImage={async () => "fixture-image" as Id<"_storage">}
+        />
       </div>
     </main>
   );
@@ -130,23 +126,23 @@ export function OnboardingScreenFixture() {
 const collectionFormFixtureBrand = {
   collectionFormDescription:
     "Tell us how our work changed your business. A few honest sentences are perfect.",
-  collectionFormTitle: "Share your Visual Studio story",
+  collectionFormTitle: "Share your Fernhill Studio story",
   logoUrl: null,
-  name: "Visual Studio",
-  primaryColor: "#6d5dfc",
+  name: "Fernhill Studio",
+  primaryColor: "#0f766e",
   privacyContact: "privacy@example.invalid",
-  publicSlug: "visual-studio",
+  publicSlug: "fernhill-studio",
 };
 
 const collectionFormFixtureValues = {
   ageConfirmed: true,
-  company: "North Star Co",
+  company: "Bellwether Coffee",
   consentAccepted: true,
   rating: 5,
   role: "Founder",
   submitterEmail: "alice@example.com",
   submitterName: "Alice Martin",
-  text: "Visual Studio helped us turn scattered customer stories into clear proof that wins trust.",
+  text: "Fernhill turned a folder of kind emails into proof we can actually show. Two new clients mentioned the wall on our first call.",
 };
 
 export function CollectionFormScreenFixture() {
@@ -291,7 +287,7 @@ export function ManagedSubmissionScreenFixture() {
 const testimonialFixture = {
   card: {
     avatarUrl: null,
-    company: "North Star Co",
+    company: "Bellwether Coffee",
     id: "fixture-testimonial",
     name: "Alice Martin",
     publishedAt: Date.UTC(2026, 8, 3),
@@ -366,32 +362,30 @@ const spamTestimonialFixture = {
 export function TestimonialInboxScreenFixture() {
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="dashboard-page-title">Inbox</h1>
-        <p className="dashboard-page-description mt-1">
-          Review private Submissions and choose what becomes public.
-        </p>
-      </div>
-      <div className="flex gap-3">
-        <select
-          aria-label="Status"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>All statuses</option>
-        </select>
-        <select
-          aria-label="Type"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>All types</option>
-        </select>
-        <select
-          aria-label="Sort"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option>Newest first</option>
-        </select>
-      </div>
+      <PageHeader
+        actions={
+          <Button asChild variant="outline">
+            <Link
+              href={`/w/${collectionFormFixtureBrand.publicSlug}` as Route}
+              target="_blank"
+            >
+              Open Public Wall
+              <IconExternalLink aria-hidden="true" />
+            </Link>
+          </Button>
+        }
+        description="Review private Submissions and choose what becomes public."
+        eyebrow="Workspace"
+        title="Inbox"
+      />
+      <InboxFilters
+        moderationStatus="all"
+        onModerationStatusChange={() => undefined}
+        onSortChange={() => undefined}
+        onSubmissionTypeChange={() => undefined}
+        sort="newest"
+        submissionType="all"
+      />
       <InboxFeedback error={null} message={null} />
       <TestimonialInboxView
         accentColor={collectionFormFixtureBrand.primaryColor}
@@ -403,30 +397,25 @@ export function TestimonialInboxScreenFixture() {
           testimonialFixture,
         ]}
       />
-      <details className="bg-card rounded-xl border shadow-xs">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-          Wall order &amp; visibility
-        </summary>
-        <div className="border-t p-4 sm:p-5">
-          <PublishedCurationView
-            onMove={async () => undefined}
-            onSetVisibility={async () => undefined}
-            testimonials={[
-              {
-                submissionType: "video",
-                submitterName: "Remy Jupille",
-                testimonialId: "fixture-published-video" as Id<"testimonials">,
-              },
-              {
-                overrides: { company: false },
-                submissionType: "text",
-                submitterName: "Alice Martin",
-                testimonialId: "fixture-published-text" as Id<"testimonials">,
-              },
-            ]}
-          />
-        </div>
-      </details>
+      <WallCurationPanel>
+        <PublishedCurationView
+          onMove={async () => undefined}
+          onSetVisibility={async () => undefined}
+          testimonials={[
+            {
+              submissionType: "video",
+              submitterName: "Remy Jupille",
+              testimonialId: "fixture-published-video" as Id<"testimonials">,
+            },
+            {
+              overrides: { company: false },
+              submissionType: "text",
+              submitterName: "Alice Martin",
+              testimonialId: "fixture-published-text" as Id<"testimonials">,
+            },
+          ]}
+        />
+      </WallCurationPanel>
     </section>
   );
 }
@@ -469,7 +458,7 @@ const wallFixture = {
       aspectRatio: "3:4",
       avatarUrl: null,
       captionsAvailable: true,
-      company: "Northstar Labs",
+      company: "Tidewater Apps",
       id: "fixture-public-video-2",
       name: "Maya Chen",
       playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
@@ -495,7 +484,7 @@ const wallFixture = {
       id: "fixture-public-testimonial-2",
       name: "Jordan Lee",
       publishedAt: Date.UTC(2026, 8, 2),
-      text: "The collection flow felt calm, trustworthy, and refreshingly simple for our customers.",
+      text: "Our customers finished the form in two minutes. Nobody asked us what they were supposed to write.",
       type: "text" as const,
     },
     {
@@ -505,7 +494,7 @@ const wallFixture = {
       name: "Morgan Reed",
       publishedAt: Date.UTC(2026, 8, 1),
       rating: 4,
-      text: "We went from scattered quotes to a clean public wall in one afternoon.",
+      text: "We went from screenshots in a shared doc to a public wall in one afternoon.",
       type: "text" as const,
     },
   ],
@@ -517,7 +506,11 @@ export function PublicWallScreenFixture() {
 }
 
 export function ProPublicWallScreenFixture() {
-  return <HostedWall wall={{ ...wallFixture, attributionRequired: false }} />;
+  return (
+    <HostedWall
+      wall={{ ...wallFixture, attributionRequired: false, theme: "light" }}
+    />
+  );
 }
 
 export function EmptyPublicWallScreenFixture() {
@@ -533,16 +526,16 @@ export function OrganizationSettingsScreenFixture() {
       canUpdate
       embedOrigin="https://proof.example"
       logoUrl={image.imageUrl}
-      name="Visual Studio"
+      name="Fernhill Studio"
       onChangePublicSlug={async () => undefined}
       onRemoveLogo={image.remove}
       onRename={async () => undefined}
       onUploadLogo={image.upload}
       onUpdateWallSettings={async () => undefined}
-      publicSlug="visual-studio"
+      publicSlug="fernhill-studio"
       publicSlugCanChange
       wallSettings={{
-        accentColor: "#6d5dfc",
+        accentColor: "#0f766e",
         canHideAttribution: true,
         hideAttribution: false,
         theme: "system",
@@ -568,8 +561,8 @@ export function WorkspaceDeletionScreenFixture() {
         </p>
       </div>
       <WorkspaceDeletionSection
-        brandName="Visual Studio"
-        initialConfirmation="Visual Studio"
+        brandName="Fernhill Studio"
+        initialConfirmation="Fernhill Studio"
         initialDialogOpen
         onDelete={async () => undefined}
         onExport={async () => undefined}
@@ -581,7 +574,7 @@ export function WorkspaceDeletionScreenFixture() {
 export function WorkspaceDeletionProgressScreenFixture() {
   return (
     <WorkspaceDeletionProgress
-      brandName="Visual Studio"
+      brandName="Fernhill Studio"
       lastError="Mux asset deletion failed (503)"
       onRetry={async () => undefined}
       phase="providerCleanup"
@@ -596,65 +589,59 @@ export function DashboardBackgroundScreenFixture() {
       className="dashboard-frame flex h-svh overflow-hidden"
       style={
         {
-          "--sidebar-width": "18rem",
+          "--sidebar-width": "16.25rem",
         } as CSSProperties
       }
     >
-      <div aria-hidden="true" className="dashboard-frame-background" />
-      <aside className="relative z-10 hidden w-72 shrink-0 p-2 md:flex">
-        <div
-          className="bg-sidebar text-sidebar-foreground relative flex h-full w-full flex-col overflow-hidden"
-          data-slot="sidebar-inner"
-        >
-          <div aria-hidden="true" className="dashboard-sidebar-effects" />
-          <div className="flex flex-1 flex-col gap-6 p-3">
-            <div>
-              <p className="text-[13px] font-[510]">Visual Studio</p>
-              <p className="text-muted-foreground text-xs">/c/visual-studio</p>
+      <aside className="bg-sidebar text-sidebar-foreground relative z-10 hidden w-(--sidebar-width) shrink-0 flex-col border-r md:flex">
+        <div className="flex h-full w-full flex-col" data-slot="sidebar-inner">
+          <div className="flex flex-1 flex-col gap-4 p-2">
+            <div className="flex items-center gap-3 rounded-md p-2">
+              <BrandMark />
+              <span className="min-w-0">
+                <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
+                  Fernhill Studio
+                </span>
+                <span className="text-ink-2 block truncate font-mono text-[11px]">
+                  /c/fernhill-studio
+                </span>
+              </span>
             </div>
-            <nav className="space-y-5">
+            <nav className="space-y-5 p-2">
               <div>
                 <p className="mb-2 px-2" data-sidebar="group-label">
                   Workspace
                 </p>
                 <div className="space-y-1">
                   <button
-                    className="bg-sidebar-accent block rounded-lg p-2"
+                    className="bg-brand-soft text-ink relative flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold tracking-[-0.008em]"
                     data-active="true"
                     data-sidebar="menu-button"
                     type="button"
                   >
+                    <span
+                      aria-hidden="true"
+                      className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
+                    />
                     Overview
                   </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Inbox
-                  </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Public Wall
-                  </button>
-                  <button
-                    className="block rounded-lg p-2"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    Brand settings
-                  </button>
+                  {["Inbox", "Public Wall", "Brand settings"].map((label) => (
+                    <button
+                      className="hover:bg-sidebar-accent flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-medium tracking-[-0.008em]"
+                      data-sidebar="menu-button"
+                      key={label}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </nav>
           </div>
         </div>
       </aside>
-      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border shadow-2xl shadow-black/30 md:m-2 md:ml-0 md:rounded-xl">
-        <div aria-hidden="true" className="dashboard-view-effects" />
+      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
             <button
@@ -664,58 +651,20 @@ export function DashboardBackgroundScreenFixture() {
             >
               <IconMenu2 aria-hidden="true" className="size-4" />
             </button>
-            <p className="text-[13px] font-[510]">Overview</p>
+            <p className="text-ink-2 text-sm font-medium tracking-[-0.008em]">
+              Overview
+            </p>
           </header>
-          <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h1 className="dashboard-page-title">Visual Studio</h1>
-                <p className="dashboard-page-description mt-1">
-                  Collect customer proof, review it privately, and publish only
-                  what you choose.
-                </p>
-              </div>
-              <Button>Copy collection link</Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <section className="dashboard-panel p-5">
-                <p className="text-muted-foreground text-[13px] font-[510]">
-                  Pending Testimonials
-                </p>
-                <p className="mt-6 text-[30px] font-[590]">0</p>
-                <p className="text-muted-foreground text-xs">
-                  Ready for your first Submission
-                </p>
-              </section>
-              <section className="dashboard-panel p-5">
-                <p className="text-muted-foreground text-[13px] font-[510]">
-                  Your Collection Form
-                </p>
-                <p className="mt-6 text-lg font-[590]">/c/visual-studio</p>
-                <p className="text-muted-foreground text-xs">
-                  Share this address to start collecting proof
-                </p>
-              </section>
-            </div>
+          <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
+            <BrandDashboardView
+              copyCollectionUrl={async () => undefined}
+              name="Fernhill Studio"
+              pendingCount={0}
+              publicSlug="fernhill-studio"
+            />
           </div>
         </div>
       </main>
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-sidebar"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-frame dashboard-shine-body"
-      />
-      <div
-        aria-hidden="true"
-        className="dashboard-shine dashboard-shine-view dashboard-shine-body"
-      />
     </div>
   );
 }

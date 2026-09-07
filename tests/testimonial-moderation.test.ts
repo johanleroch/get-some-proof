@@ -366,6 +366,7 @@ describe("Testimonial moderation and Public Projection", () => {
 
     expect(wall).toEqual({
       accentColor: "#123abc",
+      accentInk: "#ffffff",
       attributionRequired: true,
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,

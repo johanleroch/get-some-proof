@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { SuccessToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -29,7 +30,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form className="space-y-5" onSubmit={requestReset}>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="email">Email address</Label>
         <Input
           autoComplete="email"
@@ -38,16 +39,16 @@ export function ForgotPasswordForm() {
           required
           type="email"
         />
-      </div>
+      </Field>
       {sent ? (
         <SuccessToast message="If an account matches that address, a reset link is on its way." />
       ) : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? "Sending…" : "Send reset link"}
+      <Button className="w-full" loading={pending} type="submit">
+        Send reset link
       </Button>
       <p className="text-center text-sm">
         <Link
-          className="text-primary font-medium hover:underline"
+          className="text-brand-text font-medium hover:underline"
           href="/sign-in"
         >
           Return to sign in

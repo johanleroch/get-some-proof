@@ -1,23 +1,14 @@
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthHeading } from "@/components/auth/auth-heading";
 
 export default function ForgotPasswordPage() {
   return (
     <>
-      <CardHeader>
-        <CardTitle className="text-2xl">Reset your password</CardTitle>
-        <CardDescription>
-          We will send a secure link if the address matches an account.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ForgotPasswordForm />
-      </CardContent>
+      <AuthHeading
+        description="We will send a secure link if the address matches an account."
+        title="Reset your password"
+      />
+      <ForgotPasswordForm />
     </>
   );
 }

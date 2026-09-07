@@ -87,11 +87,20 @@
       "requiresAuth": true
     },
     {
+      "slug": "brand-dashboard",
+      "title": "Brand dashboard",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/dashboard",
+      "heading": "Fernhill Studio",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "brand-dashboard-dark",
       "title": "Brand dashboard - dark",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Visual Studio",
+      "heading": "Fernhill Studio",
       "theme": "dark",
       "requiresAuth": true
     },
@@ -118,7 +127,7 @@
       "title": "Collection Form - choose type",
       "path": "/c/:publicSlug",
       "fixturePath": "/visual-evidence/collection-form",
-      "heading": "Share your Visual Studio story",
+      "heading": "Share your Fernhill Studio story",
       "theme": "light",
       "requiresBackend": true
     },
@@ -244,7 +253,7 @@
       "title": "Permanent Workspace deletion confirmation",
       "path": "/org/:organizationSlug/settings",
       "fixturePath": "/visual-evidence/workspace-delete",
-      "heading": "Permanently delete Visual Studio?",
+      "heading": "Permanently delete Fernhill Studio?",
       "theme": "light",
       "requiresAuth": true
     },
@@ -253,7 +262,7 @@
       "title": "Workspace deletion retry",
       "path": "/org/:organizationSlug/settings",
       "fixturePath": "/visual-evidence/workspace-delete-progress",
-      "heading": "Deleting Visual Studio",
+      "heading": "Deleting Fernhill Studio",
       "theme": "light",
       "requiresAuth": true
     },
@@ -262,7 +271,7 @@
       "title": "Published Public Wall",
       "path": "/w/:publicSlug",
       "fixturePath": "/visual-evidence/public-wall",
-      "heading": "Visual Studio",
+      "heading": "Fernhill Studio",
       "theme": "light",
       "requiresBackend": true
     },
@@ -271,7 +280,7 @@
       "title": "Empty Public Wall",
       "path": "/w/:publicSlug",
       "fixturePath": "/visual-evidence/public-wall-empty",
-      "heading": "Visual Studio",
+      "heading": "Fernhill Studio",
       "theme": "light",
       "requiresBackend": true
     },
@@ -280,9 +289,30 @@
       "title": "Published Public Wall - Pro",
       "path": "/w/:publicSlug",
       "fixturePath": "/visual-evidence/public-wall-pro",
-      "heading": "Visual Studio",
+      "heading": "Fernhill Studio",
       "theme": "light",
       "requiresBackend": true
+    },
+    {
+      "slug": "templates",
+      "title": "Templates gallery",
+      "path": "/templates",
+      "heading": "Proof, laid out your way",
+      "theme": "light"
+    },
+    {
+      "slug": "templates-dark",
+      "title": "Templates gallery - dark",
+      "path": "/templates",
+      "heading": "Proof, laid out your way",
+      "theme": "dark"
+    },
+    {
+      "slug": "template-preview",
+      "title": "Template full preview",
+      "path": "/templates/masonry-wall",
+      "heading": "Masonry wall",
+      "theme": "light"
     },
     {
       "slug": "rich-testimonial",
@@ -303,6 +333,13 @@
       "title": "Collection Form - long text with fixed editor height",
       "path": "/visual-evidence/collection-form-write",
       "heading": "Tell your story",
+      "theme": "light"
+    },
+    {
+      "slug": "template-marquee",
+      "title": "Template marquee with pause control",
+      "path": "/templates/marquee",
+      "heading": "Marquee",
       "theme": "light"
     }
   ]

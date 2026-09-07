@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="722" height="656" viewBox="200 134 722 656" role="img" aria-label="Get Some Proof, quote marks">
+<defs>
+
+
+<linearGradient id="body" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="780"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EEE7DA"/></linearGradient><linearGradient id="starFill" gradientUnits="userSpaceOnUse" x1="0" y1="154" x2="0" y2="322"><stop offset="0" stop-color="#FFD24A"/><stop offset="1" stop-color="#F2A100"/></linearGradient>
+</defs>
+<g>
+
+
+<g ><path d="M220 452a148 148 0 1 0 296 0a148 148 0 1 0 -296 0Z" fill="url(#body)"/><path d="M513.04 422.4C523.4 585.2 449.4 711 331 770.2C397.6 681.4 419.8 607.4 353.2 592.6Z" fill="url(#body)"/><path d="M504 452a148 148 0 1 0 296 0a148 148 0 1 0 -296 0Z" fill="url(#body)"/><path d="M797.04 422.4C807.4 585.2 733.4 711 615 770.2C681.6 681.4 703.8 607.4 637.2 592.6Z" fill="url(#body)"/></g>
+<g ><path d="M825.06 169.03Q835.46 155.84 839.6 172.12L846.73 200.13Q849.21 209.9 858.67 213.39L885.78 223.4Q901.54 229.22 887.33 238.19L862.9 253.62Q854.37 259 853.97 269.07L852.83 297.95Q852.17 314.74 839.25 304L817.02 285.53Q809.27 279.08 799.57 281.82L771.75 289.65Q755.58 294.21 761.8 278.6L772.5 251.75Q776.23 242.39 770.63 234.01L754.58 209.97Q745.25 196 762.02 197.09L790.86 198.97Q800.92 199.63 807.16 191.72Z" fill="url(#starFill)"/></g>
+</g>
+</svg>

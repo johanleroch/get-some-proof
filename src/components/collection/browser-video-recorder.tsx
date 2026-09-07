@@ -7,7 +7,14 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { Camera, Check, Circle, Mic, RotateCcw, Square } from "lucide-react";
+import {
+  IconCamera,
+  IconCheck,
+  IconMicrophone,
+  IconPlayerRecordFilled,
+  IconPlayerStopFilled,
+  IconRefresh,
+} from "@tabler/icons-react";
 
 import { normalizeVideoMimeType } from "@convex/domain/video";
 import { Button } from "@/components/ui/button";
@@ -75,6 +82,12 @@ function formatElapsedTime(seconds: number) {
     .padStart(2, "0");
   return `${minutes}:${(seconds % 60).toString().padStart(2, "0")}`;
 }
+
+// Device pickers stay native: their option lists change while a stream is
+// live and the recorder tests drive them through change events. They wear
+// the same skin as the Select primitive.
+const deviceSelectClassName =
+  "border-input bg-surface text-ink focus-visible:border-brand focus-visible:ring-ring h-11 w-full cursor-pointer rounded-md border px-3 text-sm tracking-[-0.008em] outline-none focus-visible:ring-[3px]";
 
 export function BrowserVideoRecorder({
   onFileChange,
@@ -451,9 +464,9 @@ function RecorderView({
   videoRef: RefObject<HTMLVideoElement | null>;
 }) {
   return (
-    <div className="bg-card space-y-4 rounded-2xl border p-3 shadow-sm">
+    <div className="bg-card space-y-4 rounded-lg border p-3">
       <div
-        className={`relative mx-auto overflow-hidden rounded-xl bg-slate-950 ${previewReady || recordedFile ? "aspect-9/16 w-full max-w-[calc(65svh*9/16)] sm:aspect-video sm:max-w-none" : ""}`}
+        className={`relative mx-auto overflow-hidden rounded-md bg-black ${previewReady || recordedFile ? "aspect-9/16 w-full max-w-[calc(65svh*9/16)] sm:aspect-video sm:max-w-none" : ""}`}
       >
         <video
           aria-label={
@@ -470,7 +483,7 @@ function RecorderView({
           <div className="relative grid aspect-video place-items-center p-6 text-center">
             <div className="space-y-3">
               <div className="mx-auto grid size-12 place-items-center rounded-full bg-white/10 text-white">
-                <Camera aria-hidden="true" className="size-5" />
+                <IconCamera aria-hidden="true" className="size-5" />
               </div>
               <div>
                 <p className="font-medium text-white">Check your framing</p>
@@ -493,10 +506,10 @@ function RecorderView({
                 role="img"
                 title="Camera on"
               >
-                <Camera aria-hidden="true" className="size-4" />
+                <IconCamera aria-hidden="true" className="size-4" />
               </span>
               <span className="flex h-9 items-center gap-2 rounded-full bg-black/55 px-2.5">
-                <Mic aria-hidden="true" className="size-4" />
+                <IconMicrophone aria-hidden="true" className="size-4" />
                 <meter
                   aria-label={`Microphone level: ${audioLevel >= 0.08 ? "sound detected" : "quiet"}`}
                   className="sr-only"
@@ -517,8 +530,8 @@ function RecorderView({
                           className={`w-1 rounded-full transition-colors duration-100 ${
                             active
                               ? audioLevel >= 0.85
-                                ? "bg-orange-400"
-                                : "bg-emerald-400"
+                                ? "bg-warning"
+                                : "bg-success"
                               : "bg-white/25"
                           }`}
                           data-active={active}
@@ -542,15 +555,18 @@ function RecorderView({
               </span>
               <Button
                 aria-label={recording ? "Stop recording" : "Start recording"}
-                className="size-14 rounded-full border-4 border-white bg-red-500 p-0 text-white hover:bg-red-600"
+                className="bg-danger hover:bg-danger/90 size-14 rounded-full border-4 border-white p-0 text-white"
                 onClick={recording ? onStopRecording : onStartRecording}
                 size="icon-lg"
                 type="button"
               >
                 {recording ? (
-                  <Square aria-hidden="true" className="size-5 fill-current" />
+                  <IconPlayerStopFilled aria-hidden="true" className="size-5" />
                 ) : (
-                  <Circle aria-hidden="true" className="size-7 fill-current" />
+                  <IconPlayerRecordFilled
+                    aria-hidden="true"
+                    className="size-7"
+                  />
                 )}
               </Button>
               <span className="w-11 text-right text-xs text-white/70">
@@ -562,7 +578,7 @@ function RecorderView({
       </div>
 
       {previewReady && noSoundDetected ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300" role="status">
+        <p className="text-warning text-sm font-medium" role="status">
           No sound detected. Check your microphone.
         </p>
       ) : null}
@@ -571,10 +587,10 @@ function RecorderView({
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="flex items-center gap-2" htmlFor="video-camera">
-              <Camera aria-hidden="true" className="size-4" /> Camera
+              <IconCamera aria-hidden="true" className="size-4" /> Camera
             </Label>
             <select
-              className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+              className={deviceSelectClassName}
               id="video-camera"
               onChange={(event) => onCameraChange(event.target.value)}
               value={cameraId}
@@ -591,10 +607,11 @@ function RecorderView({
               className="flex items-center gap-2"
               htmlFor="video-microphone"
             >
-              <Mic aria-hidden="true" className="size-4" /> Microphone
+              <IconMicrophone aria-hidden="true" className="size-4" />{" "}
+              Microphone
             </Label>
             <select
-              className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+              className={deviceSelectClassName}
               id="video-microphone"
               onChange={(event) => onMicrophoneChange(event.target.value)}
               value={microphoneId}
@@ -617,14 +634,14 @@ function RecorderView({
             type="button"
             variant="outline"
           >
-            <RotateCcw aria-hidden="true" /> Record again
+            <IconRefresh aria-hidden="true" /> Record again
           </Button>
           <Button
-            className="flex-1 bg-(--brand-accent) text-white hover:opacity-90"
+            className="flex-1 bg-(--brand-accent) text-(--brand-accent-ink) hover:opacity-90"
             onClick={() => onFileChange(recordedFile)}
             type="button"
           >
-            <Check aria-hidden="true" /> Use this recording
+            <IconCheck aria-hidden="true" /> Use this recording
           </Button>
         </div>
       ) : null}

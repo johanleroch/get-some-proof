@@ -1,13 +1,26 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
+} from "@tabler/icons-react";
 import { useMutation, usePaginatedQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type VisibilityField = "avatar" | "company" | "rating" | "role";
 type CuratedTestimonial = {
@@ -133,7 +146,7 @@ export function PublishedCurationView({
   return (
     <section aria-labelledby="published-curation-heading" className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold" id="published-curation-heading">
+        <h2 className="type-subheading" id="published-curation-heading">
           Public Wall curation
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -144,7 +157,7 @@ export function PublishedCurationView({
       <ol className="space-y-3">
         {testimonials.map((testimonial, index) => (
           <li
-            className="bg-card rounded-xl border p-4 shadow-xs"
+            className="bg-card rounded-lg border p-4"
             draggable={!pending}
             key={testimonial.testimonialId}
             onDragEnd={() => {
@@ -164,7 +177,7 @@ export function PublishedCurationView({
             }}
           >
             <div className="flex items-start gap-3">
-              <GripVertical
+              <IconGripVertical
                 aria-hidden="true"
                 className="text-muted-foreground mt-1 size-5"
               />
@@ -184,7 +197,7 @@ export function PublishedCurationView({
                 type="button"
                 variant="outline"
               >
-                <ArrowUp aria-hidden="true" />
+                <IconArrowUp aria-hidden="true" />
               </Button>
               <Button
                 aria-label={`Move ${testimonial.submitterName} down`}
@@ -194,42 +207,53 @@ export function PublishedCurationView({
                 type="button"
                 variant="outline"
               >
-                <ArrowDown aria-hidden="true" />
+                <IconArrowDown aria-hidden="true" />
               </Button>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               {(["avatar", "role", "company", "rating"] as const).map(
-                (field) => (
-                  <label className="space-y-1 text-xs" key={field}>
-                    <span className="text-muted-foreground block capitalize">
-                      {field === "rating" ? "Stars" : field}
-                    </span>
-                    <select
-                      aria-label={`${testimonial.submitterName} ${field}`}
-                      className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
-                      disabled={pending}
-                      onChange={(event) =>
-                        void changeVisibility(
-                          testimonial.testimonialId,
-                          testimonial.overrides,
-                          field,
-                          event.target.value,
-                        )
-                      }
-                      value={
-                        testimonial.overrides?.[field] === undefined
-                          ? "inherit"
-                          : testimonial.overrides[field]
-                            ? "show"
-                            : "hide"
-                      }
-                    >
-                      <option value="inherit">Wall default</option>
-                      <option value="show">Show</option>
-                      <option value="hide">Hide</option>
-                    </select>
-                  </label>
-                ),
+                (field) => {
+                  const id = `${testimonial.testimonialId}-${field}`;
+                  return (
+                    <Field key={field}>
+                      <Label className="capitalize" htmlFor={id}>
+                        {field === "rating" ? "Stars" : field}
+                      </Label>
+                      <Select
+                        disabled={pending}
+                        onValueChange={(value) =>
+                          void changeVisibility(
+                            testimonial.testimonialId,
+                            testimonial.overrides,
+                            field,
+                            value,
+                          )
+                        }
+                        value={
+                          testimonial.overrides?.[field] === undefined
+                            ? "inherit"
+                            : testimonial.overrides[field]
+                              ? "show"
+                              : "hide"
+                        }
+                      >
+                        <SelectTrigger
+                          aria-label={`${testimonial.submitterName} ${field}`}
+                          className="w-full"
+                          id={id}
+                          size="sm"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="inherit">Wall default</SelectItem>
+                          <SelectItem value="show">Show</SelectItem>
+                          <SelectItem value="hide">Hide</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  );
+                },
               )}
             </div>
           </li>
@@ -237,12 +261,12 @@ export function PublishedCurationView({
       </ol>
       {canLoadMore ? (
         <Button
-          disabled={loadingMore}
+          loading={loadingMore}
           onClick={onLoadMore}
           type="button"
           variant="outline"
         >
-          {loadingMore ? "Loading…" : "Load more Published Testimonials"}
+          Load more Published Testimonials
         </Button>
       ) : null}
       {error ? <ErrorToast message={error} /> : null}

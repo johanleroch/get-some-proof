@@ -1,7 +1,12 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
-import { CircleAlert, CreditCard, ExternalLink, Mail } from "lucide-react";
+import {
+  IconAlertCircle,
+  IconCreditCard,
+  IconExternalLink,
+  IconMail,
+} from "@tabler/icons-react";
 import {
   useAction,
   useMutation,
@@ -12,7 +17,11 @@ import { useSearchParams } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { WallFrames } from "@/components/doodles";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ErrorToast,
   InfoToast,
@@ -344,13 +353,12 @@ export function OrganizationBilling({ slug }: { slug: string }) {
 
   if (organization === null) {
     return (
-      <section className="grid min-h-[50vh] place-items-center px-6 text-center">
-        <div>
-          <h1 className="dashboard-page-title">Organization unavailable</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            This Organization does not exist or your Membership is inactive.
-          </p>
-        </div>
+      <section className="grid min-h-[50vh] place-items-center px-6">
+        <EmptyState
+          description="This Organization does not exist or your Membership is inactive."
+          illustration={<WallFrames className="h-32" />}
+          title="Organization unavailable"
+        />
       </section>
     );
   }
@@ -484,18 +492,16 @@ function DowngradeSelectionCard({
                       const checked = selectedSet.has(testimonial.id);
                       return (
                         <label
-                          className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm"
+                          className="hover:bg-accent flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm"
                           key={testimonial.id}
                         >
-                          <input
+                          <Checkbox
                             checked={checked}
-                            className="accent-primary size-4"
                             disabled={
                               !plan.canManage ||
                               (!checked && selected.length >= limit)
                             }
-                            onChange={() => toggle(testimonial.id, type)}
-                            type="checkbox"
+                            onCheckedChange={() => toggle(testimonial.id, type)}
                           />
                           <span className="min-w-0 flex-1 truncate">
                             {testimonial.name}
@@ -521,7 +527,7 @@ function DowngradeSelectionCard({
         </div>
         {candidatesStatus !== "Exhausted" ? (
           <Button
-            disabled={
+            loading={
               candidatesStatus === "LoadingFirstPage" ||
               candidatesStatus === "LoadingMore"
             }
@@ -529,9 +535,7 @@ function DowngradeSelectionCard({
             type="button"
             variant="outline"
           >
-            {candidatesStatus === "CanLoadMore"
-              ? "Load more Published Testimonials"
-              : "Loading Published Testimonials…"}
+            Load more Published Testimonials
           </Button>
         ) : null}
         <p className="text-muted-foreground text-sm leading-6">
@@ -541,8 +545,8 @@ function DowngradeSelectionCard({
         {message ? <SuccessToast message={message} /> : null}
         {error ? <ErrorToast message={error} /> : null}
         {plan.canManage ? (
-          <Button disabled={pending} onClick={() => void save()} type="button">
-            {pending ? "Saving…" : "Save selection"}
+          <Button loading={pending} onClick={() => void save()} type="button">
+            Save selection
           </Button>
         ) : (
           <p className="text-muted-foreground text-xs">
@@ -665,15 +669,11 @@ export function BillingCockpit({
       aria-labelledby="billing-heading"
       className="mx-auto w-full max-w-5xl space-y-6"
     >
-      <div>
-        <h1 className="dashboard-page-title" id="billing-heading">
-          Billing
-        </h1>
-        <p className="dashboard-page-description mt-1 max-w-2xl">
-          Review this Workspace&apos;s plan and manage where billing notices are
-          sent.
-        </p>
-      </div>
+      <PageHeader
+        description="Review this Workspace's plan and manage where billing notices are sent."
+        eyebrow="Workspace"
+        title={<span id="billing-heading">Billing</span>}
+      />
 
       {checkoutReturn === "success" ? (
         <SuccessToast message="Payment received. We’re confirming your Pro subscription with Stripe. Your plan will update automatically after confirmation." />
@@ -684,10 +684,10 @@ export function BillingCockpit({
       <div
         className={
           lifecycle.tone === "danger"
-            ? "flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-950 dark:border-red-900 dark:bg-red-950/50 dark:text-red-100"
+            ? "border-danger/30 bg-danger-soft text-ink [&_svg]:text-danger flex gap-3 rounded-lg border p-4 text-sm"
             : lifecycle.tone === "warning"
-              ? "flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-100"
-              : "bg-muted/40 flex gap-3 rounded-xl border p-4 text-sm"
+              ? "border-warning/30 bg-warning-soft text-ink [&_svg]:text-warning flex gap-3 rounded-lg border p-4 text-sm"
+              : "bg-surface-2 text-ink [&_svg]:text-ink-2 flex gap-3 rounded-lg border p-4 text-sm"
         }
         role={
           overview.state === "past_due" || overview.state === "unpaid"
@@ -696,13 +696,19 @@ export function BillingCockpit({
         }
       >
         {lifecycle.tone === "neutral" ? (
-          <CreditCard aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <IconCreditCard
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
         ) : (
-          <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <IconAlertCircle
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
         )}
         <div>
           <p className="font-medium">{lifecycle.title}</p>
-          <p className="mt-1 text-current/75">{lifecycle.description}</p>
+          <p className="text-ink-2 mt-1">{lifecycle.description}</p>
         </div>
       </div>
 
@@ -721,8 +727,8 @@ export function BillingCockpit({
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="bg-muted grid size-9 place-items-center rounded-lg">
-                  <CreditCard aria-hidden="true" className="size-4" />
+                <span className="bg-brand-soft text-brand-text grid size-9 place-items-center rounded-md">
+                  <IconCreditCard aria-hidden="true" className="size-4" />
                 </span>
                 <div>
                   <CardTitle>Current plan</CardTitle>
@@ -802,8 +808,8 @@ export function BillingCockpit({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <span className="bg-muted grid size-9 place-items-center rounded-lg">
-                <Mail aria-hidden="true" className="size-4" />
+              <span className="bg-brand-soft text-brand-text grid size-9 place-items-center rounded-md">
+                <IconMail aria-hidden="true" className="size-4" />
               </span>
               <div>
                 <CardTitle>Billing Contact</CardTitle>
@@ -830,8 +836,8 @@ export function BillingCockpit({
                 </div>
                 {message ? <SuccessToast message={message} /> : null}
                 {error ? <ErrorToast message={error} /> : null}
-                <Button disabled={contactPending} type="submit">
-                  {contactPending ? "Saving…" : "Save contact"}
+                <Button loading={contactPending} type="submit">
+                  Save contact
                 </Button>
               </form>
             ) : (
@@ -873,13 +879,13 @@ export function BillingCockpit({
                 </div>
                 {overview.canManage ? (
                   <Button
-                    disabled={portalPending}
+                    loading={portalPending}
                     onClick={() => void beginPortal("manage")}
                     type="button"
                     variant="outline"
                   >
-                    <ExternalLink aria-hidden="true" className="size-4" />
-                    {portalPending ? "Opening Stripe…" : "Manage subscription"}
+                    <IconExternalLink aria-hidden="true" className="size-4" />
+                    Manage subscription
                   </Button>
                 ) : (
                   <p className="text-muted-foreground text-xs">
@@ -931,7 +937,7 @@ export function BillingCockpit({
               {offersError ? (
                 <ErrorToast message={offersError} />
               ) : offers?.[0] ? (
-                <div className="border-primary bg-primary/5 rounded-xl border p-5">
+                <div className="border-brand bg-brand-soft rounded-lg border p-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <span className="text-sm font-medium">
                       {offers[0]!.name}

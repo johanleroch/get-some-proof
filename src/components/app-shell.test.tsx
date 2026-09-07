@@ -166,7 +166,7 @@ describe("AppShell", () => {
     );
   });
 
-  it("applies the Linear background layers to the complete application frame", () => {
+  it("renders one flat frame without theme-only decorative layers", () => {
     const { container } = render(
       <AppShell
         organizationId={"organization-1" as never}
@@ -180,28 +180,15 @@ describe("AppShell", () => {
 
     const frame = container.querySelector(".dashboard-frame");
     const view = container.querySelector(".dashboard-view");
-    const frameBackground = container.querySelector(
-      ".dashboard-frame-background",
-    );
-    const sidebarEffects = container.querySelector(
-      ".dashboard-sidebar-effects",
-    );
-    const viewEffects = container.querySelector(".dashboard-view-effects");
     const viewContent = container.querySelector(".dashboard-view-content");
-    const shines = container.querySelectorAll(".dashboard-shine");
-    const sidebarInner = container.querySelector('[data-slot="sidebar-inner"]');
 
     expect(frame).toHaveAttribute("data-slot", "sidebar-wrapper");
     expect(view).toHaveAttribute("data-slot", "sidebar-inset");
-    expect(frameBackground?.parentElement).toBe(frame);
-    expect(sidebarEffects?.parentElement).toBe(sidebarInner);
-    expect(viewEffects?.parentElement).toBe(view);
     expect(viewContent?.parentElement).toBe(view);
-    expect(shines).toHaveLength(4);
-    expect([...shines].every((shine) => shine.parentElement === frame)).toBe(
-      true,
-    );
-    expect(viewContent?.contains(viewEffects)).toBe(false);
+    expect(container.querySelector(".dashboard-frame-background")).toBeNull();
+    expect(container.querySelector(".dashboard-sidebar-effects")).toBeNull();
+    expect(container.querySelector(".dashboard-view-effects")).toBeNull();
+    expect(container.querySelectorAll(".dashboard-shine")).toHaveLength(0);
   });
 
   it("opens and dismisses the native mobile sidebar", () => {

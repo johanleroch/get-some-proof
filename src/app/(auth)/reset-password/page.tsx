@@ -1,10 +1,5 @@
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthHeading } from "@/components/auth/auth-heading";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -15,15 +10,11 @@ export default async function ResetPasswordPage({
 
   return (
     <>
-      <CardHeader>
-        <CardTitle className="text-2xl">Choose a new password</CardTitle>
-        <CardDescription>
-          Updating your password will revoke your existing sessions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResetPasswordForm token={token} />
-      </CardContent>
+      <AuthHeading
+        description="Updating your password will revoke your existing sessions."
+        title="Choose a new password"
+      />
+      <ResetPasswordForm token={token} />
     </>
   );
 }

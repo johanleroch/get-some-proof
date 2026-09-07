@@ -6,3 +6,4 @@ pnpm-lock.yaml
 test-results
 output
 convex/_generated
+.convex

@@ -212,6 +212,7 @@ export async function GET(
   const projection = {
     brand: {
       accentColor: brand.accentColor,
+      accentInk: brand.accentInk,
       attributionRequired: brand.attributionRequired,
       name: brand.brandName,
       publicSlug: brand.publicSlug,

@@ -4,6 +4,7 @@ import { paginationOptsValidator } from "convex/server";
 
 import { query } from "./_generated/server";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
+import { accentInk } from "./domain/color-contrast";
 import { organizationPublicVisibility } from "./publicProjection";
 import { testimonialCardValue } from "./testimonialCardValue";
 
@@ -13,6 +14,7 @@ export const getBrand = query({
     v.null(),
     v.object({
       accentColor: v.string(),
+      accentInk: v.string(),
       attributionRequired: v.boolean(),
       brandName: v.string(),
       hasPublishedTestimonials: v.boolean(),
@@ -44,8 +46,10 @@ export const getBrand = query({
         .order("desc")
         .first(),
     ]);
+    const accentColor = brand.publicWallAccentColor ?? brand.primaryColor;
     return {
-      accentColor: brand.publicWallAccentColor ?? brand.primaryColor,
+      accentColor,
+      accentInk: accentInk(accentColor),
       attributionRequired: entitlement.effectivePlan === "free",
       brandName: brand.name,
       hasPublishedTestimonials: firstProjection !== null,

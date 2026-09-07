@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -68,7 +69,7 @@ export function SignInForm({
 
   return (
     <form className="space-y-5" onSubmit={signInWithEmail}>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="email">Email address</Label>
         <Input
           autoComplete="email"
@@ -79,12 +80,12 @@ export function SignInForm({
           type="email"
           value={email}
         />
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="password">Password</Label>
           <Link
-            className="text-primary text-sm font-medium hover:underline"
+            className="text-brand-text text-sm font-medium hover:underline"
             href="/forgot-password"
           >
             Forgot password?
@@ -98,13 +99,13 @@ export function SignInForm({
           required
           type="password"
         />
-      </div>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? "Signing in…" : "Sign in"}
+      <Button className="w-full" loading={pending} type="submit">
+        Sign in
       </Button>
-      <div className="text-muted-foreground before:border-border relative py-1 text-center text-xs uppercase before:absolute before:top-1/2 before:left-0 before:w-full before:border-t">
-        <span className="bg-card relative px-3">or</span>
+      <div className="text-ink-2 before:border-line relative py-1 text-center text-xs font-semibold tracking-[0.06em] uppercase before:absolute before:top-1/2 before:left-0 before:w-full before:border-t">
+        <span className="bg-background relative px-3">or</span>
       </div>
       <Button
         className="w-full"
@@ -115,10 +116,10 @@ export function SignInForm({
       >
         Continue with Google
       </Button>
-      <p className="text-muted-foreground text-center text-sm">
+      <p className="text-ink-2 text-center text-sm">
         New to Get Some Proof?{" "}
         <Link
-          className="text-primary font-medium hover:underline"
+          className="text-brand-text font-medium hover:underline"
           href={`/sign-up?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Create an account

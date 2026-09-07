@@ -4,8 +4,10 @@ import { type FormEvent, useState } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { EnvelopeStamp } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -44,14 +46,17 @@ export function SignUpForm({
 
   if (emailSent) {
     return (
-      <div className="space-y-4 text-center">
-        <h2 className="text-xl font-semibold">Check your email</h2>
-        <p className="text-muted-foreground text-sm leading-6">
-          We sent a verification link. Verify your address before creating your
-          Brand.
-        </p>
+      <div className="space-y-5">
+        <EnvelopeStamp className="text-ink h-28 w-auto" draw />
+        <div className="space-y-1.5">
+          <h2 className="type-heading">Check your email</h2>
+          <p className="type-body text-ink-2">
+            We sent a verification link. Verify your address before creating
+            your Brand.
+          </p>
+        </div>
         <Link
-          className="text-primary text-sm font-medium hover:underline"
+          className="text-brand-text text-sm font-medium hover:underline"
           href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Return to sign in
@@ -62,11 +67,11 @@ export function SignUpForm({
 
   return (
     <form className="space-y-5" onSubmit={signUp}>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="name">Full name</Label>
         <Input autoComplete="name" id="name" name="name" required />
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <Label htmlFor="email">Email address</Label>
         <Input
           autoComplete="email"
@@ -75,8 +80,8 @@ export function SignUpForm({
           required
           type="email"
         />
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <Label htmlFor="password">Password</Label>
         <Input
           autoComplete="new-password"
@@ -86,18 +91,16 @@ export function SignUpForm({
           required
           type="password"
         />
-        <p className="text-muted-foreground text-xs">
-          Use at least 8 characters.
-        </p>
-      </div>
+        <FieldDescription>Use at least 8 characters.</FieldDescription>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? "Creating account…" : "Create account"}
+      <Button className="w-full" loading={pending} type="submit">
+        Create account
       </Button>
-      <p className="text-muted-foreground text-center text-sm">
+      <p className="text-ink-2 text-center text-sm">
         Already have an account?{" "}
         <Link
-          className="text-primary font-medium hover:underline"
+          className="text-brand-text font-medium hover:underline"
           href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           Sign in

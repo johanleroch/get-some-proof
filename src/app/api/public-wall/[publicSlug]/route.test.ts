@@ -17,6 +17,7 @@ function mockProjection() {
   fetchQuery
     .mockResolvedValueOnce({
       accentColor: "#123abc",
+      accentInk: "#ffffff",
       attributionRequired: true,
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,
@@ -70,6 +71,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
     expect(body).toEqual({
       brand: {
         accentColor: "#123abc",
+        accentInk: "#ffffff",
         attributionRequired: true,
         name: "Acme Studio",
         publicSlug: "acme-proof",
@@ -99,6 +101,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
       .mockReset()
       .mockResolvedValueOnce({
         accentColor: "#123abc",
+        accentInk: "#ffffff",
         attributionRequired: false,
         brandName: "Acme Studio",
         hasPublishedTestimonials: true,
@@ -175,6 +178,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
     fetchQuery
       .mockResolvedValueOnce({
         accentColor: "#123abc",
+        accentInk: "#ffffff",
         attributionRequired: true,
         brandName: "Acme Studio",
         hasPublishedTestimonials: false,

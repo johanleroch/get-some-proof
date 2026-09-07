@@ -1,4 +1,5 @@
 export const themeStorageKey = "get-some-proof-theme";
+export const themeChangeEvent = "get-some-proof-theme-change";
 
 export type ThemePreference = "light" | "dark" | "system";
 
@@ -11,6 +12,26 @@ export function resolvedTheme(
       ? "dark"
       : "light"
     : preference;
+}
+
+export function readThemePreference(
+  storage: Pick<Storage, "getItem"> = localStorage,
+): ThemePreference {
+  const stored = storage.getItem(themeStorageKey);
+  return stored === "light" || stored === "dark" || stored === "system"
+    ? stored
+    : "system";
+}
+
+export function applyThemePreference(
+  root: HTMLElement,
+  preference: ThemePreference,
+  systemPrefersDark: boolean,
+) {
+  const theme = resolvedTheme(preference, systemPrefersDark);
+  root.classList.toggle("dark", theme === "dark");
+  root.style.colorScheme = theme;
+  root.dataset.theme = preference;
 }
 
 export const themeInitializationScript = `(() => {

@@ -1,8 +1,29 @@
 import { z } from "zod";
 
+// Cloud Convex deployments are always served over HTTPS. The only accepted
+// plain-HTTP origins are loopback hosts, which is where `npx convex dev`
+// runs an anonymous local backend (for example http://127.0.0.1:3210).
+const loopbackHostnames = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+function isConvexDeploymentUrl(value: string): boolean {
+  const url = URL.parse(value);
+  if (!url) return false;
+
+  if (url.protocol === "https:") {
+    return true;
+  }
+
+  return url.protocol === "http:" && loopbackHostnames.has(url.hostname);
+}
+
+const convexDeploymentUrlSchema = z.url().refine(isConvexDeploymentUrl, {
+  message:
+    "Convex URLs must use https://, except http:// on a loopback host for a local backend.",
+});
+
 const publicEnvironmentSchema = z.object({
-  NEXT_PUBLIC_CONVEX_URL: z.url().startsWith("https://"),
-  NEXT_PUBLIC_CONVEX_SITE_URL: z.url().startsWith("https://"),
+  NEXT_PUBLIC_CONVEX_URL: convexDeploymentUrlSchema,
+  NEXT_PUBLIC_CONVEX_SITE_URL: convexDeploymentUrlSchema,
   NEXT_PUBLIC_SITE_URL: z.url(),
 });
 
@@ -36,7 +57,9 @@ export function readPublicEnvironment(
 
   return {
     configured: false,
-    missing: result.error.issues.map((issue) => issue.path.join(".")),
+    missing: [
+      ...new Set(result.error.issues.map((issue) => issue.path.join("."))),
+    ],
   };
 }
 

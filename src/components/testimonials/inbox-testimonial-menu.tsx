@@ -1,13 +1,13 @@
 import {
-  Archive,
-  Ellipsis,
-  EyeOff,
-  Highlighter,
-  Send,
-  ShieldAlert,
-  Trash2,
-  Undo2,
-} from "lucide-react";
+  IconArchive,
+  IconArrowBackUp,
+  IconDots,
+  IconEyeOff,
+  IconHighlight,
+  IconSend,
+  IconShieldX,
+  IconTrash,
+} from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,12 +54,12 @@ export function InboxTestimonialMenu({
       <DropdownMenuTrigger asChild>
         <Button
           aria-label={`Options for ${testimonial.submitterName}'s Testimonial`}
-          className="bg-background/90 shadow-sm backdrop-blur-sm"
+          className="bg-surface/90 backdrop-blur-sm"
           disabled={disabled}
           size="icon"
           variant="outline"
         >
-          <Ellipsis aria-hidden="true" />
+          <IconDots aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
@@ -69,19 +69,19 @@ export function InboxTestimonialMenu({
         <DropdownMenuSeparator />
         {isSpam ? (
           <DropdownMenuItem onSelect={() => onAction("undo-spam")}>
-            <Undo2 aria-hidden="true" />
+            <IconArrowBackUp aria-hidden="true" />
             Undo Spam
           </DropdownMenuItem>
         ) : (
           <>
             {testimonial.submissionType === "text" ? (
               <DropdownMenuItem onSelect={() => onAction("highlight")}>
-                <Highlighter aria-hidden="true" /> Highlight a phrase
+                <IconHighlight aria-hidden="true" /> Highlight a phrase
               </DropdownMenuItem>
             ) : null}
             {testimonial.moderationStatus === "published" ? (
               <DropdownMenuItem onSelect={() => onAction("unpublish")}>
-                <EyeOff aria-hidden="true" />
+                <IconEyeOff aria-hidden="true" />
                 Unpublish
               </DropdownMenuItem>
             ) : (
@@ -89,18 +89,18 @@ export function InboxTestimonialMenu({
                 disabled={!videoReady}
                 onSelect={() => onAction("publish")}
               >
-                <Send aria-hidden="true" />
+                <IconSend aria-hidden="true" />
                 Publish
               </DropdownMenuItem>
             )}
             {testimonial.moderationStatus === "pending" ? (
               <DropdownMenuItem onSelect={() => onAction("archive")}>
-                <Archive aria-hidden="true" />
+                <IconArchive aria-hidden="true" />
                 Archive
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem onSelect={() => onAction("spam")}>
-              <ShieldAlert aria-hidden="true" />
+              <IconShieldX aria-hidden="true" />
               Mark as Spam
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -108,7 +108,7 @@ export function InboxTestimonialMenu({
               onSelect={() => onAction("delete")}
               variant="destructive"
             >
-              <Trash2 aria-hidden="true" />
+              <IconTrash aria-hidden="true" />
               Delete permanently
             </DropdownMenuItem>
           </>
