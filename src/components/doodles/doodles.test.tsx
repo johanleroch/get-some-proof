@@ -52,7 +52,8 @@ describe("hand-drawn signature grammar (DESIGN.md section 4)", () => {
       const shapes = renderSvg(Doodle).querySelectorAll("path, circle");
       expect(shapes.length).toBeGreaterThan(0);
       for (const shape of shapes) {
-        expect(shape.getAttribute("pathLength")).toBe("1");
+        // Dashed by its own length, so the draw-in is progressive.
+        expect(shape.getAttribute("style")).toMatch(/--draw-length:\s*\d+/);
         expect(shape.getAttribute("vector-effect")).toBe("non-scaling-stroke");
         const fill = shape.getAttribute("fill");
         if (fill !== null) expect(allowedFills.has(fill)).toBe(true);

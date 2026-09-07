@@ -283,6 +283,11 @@ Rules:
 - Maximum one hand-drawn element per screen region (header, main, sidebar,
   dialog). Empty states and success steps may combine one illustration and
   one arrow note.
+- Motion: `draw` inks a doodle in once on mount, object by object and stroke
+  by stroke (620ms each, staggered by the generator). `float` keeps each
+  object drifting 4 to 6px on its own slow loop, out of phase, for an
+  illustration that carries a screen (the authentication panel). Both stop
+  under reduced motion.
 - Doodles are decorative: `aria-hidden="true"`, never the only carrier of
   meaning, never overlapping interactive elements, never inside form fields.
 - No emoji anywhere in the interface, ever. The doodle vocabulary replaces
