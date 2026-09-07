@@ -88,7 +88,7 @@ export function EnvelopeStamp(props: DoodleProps) {
 /**
  * A wall of customer proof: a text Testimonial with its five stars, a video
  * Testimonial and a short quote, pinned at slight angles. Cards are filled
- * with `--surface` so they overlap cleanly; the stars are the one amber area.
+ * with `--surface` so they overlap cleanly; stars and sparkles are amber.
  */
 export function WallFrames(props: DoodleProps) {
   return (
@@ -176,14 +176,17 @@ export function WallFrames(props: DoodleProps) {
         <path
           {...strokeAttributes}
           d="M34 45c0 5.0 2.0 7 7 7c-5.0 0-7 2.0-7 7c0-5.0-2.0-7-7-7c5.0 0 7-2.0 7-7z"
+          fill="var(--brand)"
         />
         <path
           {...strokeAttributes}
           d="M186 23c0 3.6 1.4 5 5 5c-3.6 0-5 1.4-5 5c0-3.6-1.4-5-5-5c3.6 0 5-1.4 5-5z"
+          fill="var(--brand)"
         />
         <path
           {...strokeAttributes}
           d="M300 190c0 4.3 1.7 6 6 6c-4.3 0-6 1.7-6 6c0-4.3-1.7-6-6-6c4.3 0 6-1.7 6-6z"
+          fill="var(--brand)"
         />
       </g>
     </svg>
