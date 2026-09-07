@@ -20,9 +20,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, sans-serif;
   --font-display:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+    var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   --font-hand: var(--font-caveat), cursive;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
@@ -140,23 +140,28 @@
   --info: oklch(0.52 0.09 250);
   --info-soft: oklch(from var(--info) 0.95 0.03 h);
 
-  /* Type scale (DESIGN.md section 3). Tune live in /kit, then copy here. */
+  /* Display family: --font-gelica is set by next/font/local in layout.tsx
+     (self-hosted Gelica). The stacks below fall back to Figtree. */
+
+  /* Type scale (DESIGN.md section 3). Tune live in /kit, then copy here.
+     Gelica ships 200 to 700 then 900 (no 800), and a soft slab wants less
+     negative tracking than a grotesque: provisional values, tune in /kit. */
   --type-display-xl-size: 2.5rem;
   --type-display-xl-leading: 2.75rem;
-  --type-display-xl-weight: 800;
-  --type-display-xl-tracking: -0.035em;
+  --type-display-xl-weight: 700;
+  --type-display-xl-tracking: -0.02em;
   --type-display-size: 2rem;
   --type-display-leading: 2.25rem;
   --type-display-weight: 700;
-  --type-display-tracking: -0.03em;
+  --type-display-tracking: -0.015em;
   --type-heading-size: 1.5rem;
   --type-heading-leading: 1.875rem;
-  --type-heading-weight: 700;
-  --type-heading-tracking: -0.025em;
+  --type-heading-weight: 600;
+  --type-heading-tracking: -0.01em;
   --type-subheading-size: 1.125rem;
   --type-subheading-leading: 1.625rem;
   --type-subheading-weight: 600;
-  --type-subheading-tracking: -0.015em;
+  --type-subheading-tracking: -0.005em;
   --type-body-size: 0.9375rem;
   --type-body-leading: 1.5rem;
   --type-body-weight: 400;
@@ -176,7 +181,7 @@
   --type-kpi-size: 2.5rem;
   --type-kpi-leading: 2.75rem;
   --type-kpi-weight: 700;
-  --type-kpi-tracking: -0.03em;
+  --type-kpi-tracking: -0.02em;
   --type-hand-size: 1.25rem;
   --type-hand-leading: 1.5rem;
   --type-hand-weight: 500;
@@ -366,8 +371,7 @@
 
 /* Type scale utilities: family + the four tunable parameters per style. */
 @utility type-display-xl {
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-display-xl-size);
   line-height: var(--type-display-xl-leading);
   font-weight: var(--type-display-xl-weight);
@@ -375,8 +379,7 @@
 }
 
 @utility type-display {
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-display-size);
   line-height: var(--type-display-leading);
   font-weight: var(--type-display-weight);
@@ -384,8 +387,7 @@
 }
 
 @utility type-heading {
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-heading-size);
   line-height: var(--type-heading-leading);
   font-weight: var(--type-heading-weight);
@@ -393,8 +395,7 @@
 }
 
 @utility type-subheading {
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-subheading-size);
   line-height: var(--type-subheading-leading);
   font-weight: var(--type-subheading-weight);
@@ -402,7 +403,7 @@
 }
 
 @utility type-body {
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-body-size);
   line-height: var(--type-body-leading);
   font-weight: var(--type-body-weight);
@@ -410,7 +411,7 @@
 }
 
 @utility type-ui {
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-ui-size);
   line-height: var(--type-ui-leading);
   font-weight: var(--type-ui-weight);
@@ -418,7 +419,7 @@
 }
 
 @utility type-small {
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-small-size);
   line-height: var(--type-small-leading);
   font-weight: var(--type-small-weight);
@@ -426,7 +427,7 @@
 }
 
 @utility type-micro {
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-micro-size);
   line-height: var(--type-micro-leading);
   font-weight: var(--type-micro-weight);
@@ -435,8 +436,7 @@
 }
 
 @utility type-kpi {
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-kpi-size);
   line-height: var(--type-kpi-leading);
   font-weight: var(--type-kpi-weight);
@@ -452,16 +452,23 @@
   letter-spacing: var(--type-hand-tracking);
 }
 
-* {
-  border-color: var(--border);
-  outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+/*
+ * Default border and outline colors live in the base layer so utilities such
+ * as `border-danger`, `border-brand` or `aria-invalid:border-danger` can
+ * override them. Unlayered, this rule would beat every layered utility.
+ */
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
 }
 
 body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   font-size: var(--type-body-size);
   line-height: var(--type-body-leading);
   letter-spacing: var(--type-body-tracking);
@@ -479,8 +486,7 @@ body {
 /* Legacy page header classes, remapped to the type scale until every screen uses the utilities directly. */
 .dashboard-page-title {
   color: var(--foreground);
-  font-family:
-    var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
   font-size: 2rem;
   line-height: 2.25rem;
   font-weight: 700;
