@@ -12,6 +12,15 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type VisibilityField = "avatar" | "company" | "rating" | "role";
 type CuratedTestimonial = {
@@ -203,37 +212,48 @@ export function PublishedCurationView({
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               {(["avatar", "role", "company", "rating"] as const).map(
-                (field) => (
-                  <label className="space-y-1 text-xs" key={field}>
-                    <span className="text-muted-foreground block capitalize">
-                      {field === "rating" ? "Stars" : field}
-                    </span>
-                    <select
-                      aria-label={`${testimonial.submitterName} ${field}`}
-                      className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
-                      disabled={pending}
-                      onChange={(event) =>
-                        void changeVisibility(
-                          testimonial.testimonialId,
-                          testimonial.overrides,
-                          field,
-                          event.target.value,
-                        )
-                      }
-                      value={
-                        testimonial.overrides?.[field] === undefined
-                          ? "inherit"
-                          : testimonial.overrides[field]
-                            ? "show"
-                            : "hide"
-                      }
-                    >
-                      <option value="inherit">Wall default</option>
-                      <option value="show">Show</option>
-                      <option value="hide">Hide</option>
-                    </select>
-                  </label>
-                ),
+                (field) => {
+                  const id = `${testimonial.testimonialId}-${field}`;
+                  return (
+                    <Field key={field}>
+                      <Label className="capitalize" htmlFor={id}>
+                        {field === "rating" ? "Stars" : field}
+                      </Label>
+                      <Select
+                        disabled={pending}
+                        onValueChange={(value) =>
+                          void changeVisibility(
+                            testimonial.testimonialId,
+                            testimonial.overrides,
+                            field,
+                            value,
+                          )
+                        }
+                        value={
+                          testimonial.overrides?.[field] === undefined
+                            ? "inherit"
+                            : testimonial.overrides[field]
+                              ? "show"
+                              : "hide"
+                        }
+                      >
+                        <SelectTrigger
+                          aria-label={`${testimonial.submitterName} ${field}`}
+                          className="w-full"
+                          id={id}
+                          size="sm"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="inherit">Wall default</SelectItem>
+                          <SelectItem value="show">Show</SelectItem>
+                          <SelectItem value="hide">Hide</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  );
+                },
               )}
             </div>
           </li>

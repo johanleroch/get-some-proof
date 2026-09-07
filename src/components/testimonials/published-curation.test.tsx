@@ -66,9 +66,10 @@ describe("PublishedCuration", () => {
       "Public Wall order saved.",
     );
 
-    fireEvent.change(screen.getByLabelText("Second Person role"), {
-      target: { value: "hide" },
+    fireEvent.keyDown(screen.getByLabelText("Second Person role"), {
+      key: "ArrowDown",
     });
+    fireEvent.click(await screen.findByRole("option", { name: "Hide" }));
     await waitFor(() =>
       expect(setVisibility).toHaveBeenCalledWith({
         organizationId: "organization-1",

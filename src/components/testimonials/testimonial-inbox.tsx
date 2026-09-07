@@ -266,7 +266,7 @@ export function TestimonialDeleteDialog({
   );
 }
 
-function InboxFilters({
+export function InboxFilters({
   moderationStatus,
   onModerationStatusChange,
   onSortChange,
@@ -413,6 +413,49 @@ async function runInboxAction({
   }
 }
 
+/** Collapsible "Wall order & visibility" panel under the Inbox list. */
+export function WallCurationPanel({
+  children,
+  defaultOpen = false,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="bg-card rounded-lg border">
+      <button
+        aria-controls="wall-curation"
+        aria-expanded={open}
+        className="hover:bg-accent flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-5 py-4 text-left transition-colors"
+        onClick={() => setOpen((value) => !value)}
+        type="button"
+      >
+        <span>
+          <span className="type-subheading block">
+            Wall order &amp; visibility
+          </span>
+          <span className="text-ink-2 type-small block">
+            Reorder Published Testimonials and choose what each one shows.
+          </span>
+        </span>
+        <IconChevronDown
+          aria-hidden="true"
+          className={cn(
+            "text-ink-2 size-5 shrink-0 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open ? (
+        <div className="border-t p-5" id="wall-curation">
+          {children}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function TestimonialInbox({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const [moderationStatus, setModerationStatusFilter] =
@@ -448,7 +491,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
   );
-  const [curationOpen, setCurationOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -603,36 +645,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         />
       </div>
 
-      <section className="bg-card rounded-lg border">
-        <button
-          aria-controls="wall-curation"
-          aria-expanded={curationOpen}
-          className="hover:bg-accent flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-5 py-4 text-left transition-colors"
-          onClick={() => setCurationOpen((open) => !open)}
-          type="button"
-        >
-          <span>
-            <span className="type-subheading block">
-              Wall order &amp; visibility
-            </span>
-            <span className="text-ink-2 type-small block">
-              Reorder Published Testimonials and choose what each one shows.
-            </span>
-          </span>
-          <IconChevronDown
-            aria-hidden="true"
-            className={cn(
-              "text-ink-2 size-5 shrink-0 transition-transform duration-200",
-              curationOpen && "rotate-180",
-            )}
-          />
-        </button>
-        {curationOpen ? (
-          <div className="border-t p-5" id="wall-curation">
-            <PublishedCuration organizationId={activeOrganization.id} />
-          </div>
-        ) : null}
-      </section>
+      <WallCurationPanel>
+        <PublishedCuration organizationId={activeOrganization.id} />
+      </WallCurationPanel>
 
       <InboxLoadMore
         onLoadMore={() => loadMore(20)}
