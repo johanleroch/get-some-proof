@@ -31,7 +31,7 @@ function EmptyState({
       {illustration ? (
         <div
           aria-hidden="true"
-          className="text-ink [&>svg]:h-auto [&>svg]:max-h-40 [&>svg]:w-auto"
+          className="text-ink [&>svg]:max-h-40 [&>svg]:w-auto"
         >
           {illustration}
         </div>

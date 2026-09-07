@@ -17,9 +17,8 @@ describe("PublicWallSettings", () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<PublicWallSettings onSave={onSave} settings={settings} />);
 
-    fireEvent.change(screen.getByLabelText("Theme"), {
-      target: { value: "dark" },
-    });
+    fireEvent.keyDown(screen.getByLabelText("Theme"), { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("option", { name: "Dark" }));
     fireEvent.change(screen.getByLabelText("Accent color"), {
       target: { value: "#f97316" },
     });

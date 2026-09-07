@@ -2,7 +2,12 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { ExternalLink, LoaderCircle, TriangleAlert } from "lucide-react";
+import {
+  IconAlertTriangle,
+  IconChevronDown,
+  IconExternalLink,
+  IconLoader2,
+} from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
 import {
@@ -24,8 +29,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { SpeechBubbleStars } from "@/components/doodles";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import { PublishedCuration } from "@/components/testimonials/published-curation";
 import {
@@ -94,7 +112,7 @@ function VideoAssetPlaceholder({
   ) {
     return (
       <section
-        className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-xl border px-6 py-10 text-center shadow-xs"
+        className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-lg border px-6 py-10 text-center"
         data-testid={`${testimonial.videoStatus}-video-placeholder`}
       >
         <div className="absolute top-3 right-3">{menu}</div>
@@ -115,14 +133,14 @@ function VideoAssetPlaceholder({
   }
   return (
     <section
-      className="relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-xl border border-white/10 bg-black px-6 py-10 text-center text-white shadow-xs"
+      className="relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-lg border border-white/10 bg-black px-6 py-10 text-center text-white"
       data-testid="processing-video-placeholder"
       data-video-aspect-ratio={testimonial.aspectRatio ?? "9:16"}
       style={{ aspectRatio: videoAspectRatioStyle(testimonial.aspectRatio) }}
     >
       <div className="absolute top-3 right-3">{menu}</div>
       <div className="max-w-64">
-        <LoaderCircle
+        <IconLoader2
           aria-hidden="true"
           className="mx-auto size-8 animate-spin motion-reduce:animate-none"
         />
@@ -153,11 +171,12 @@ export function TestimonialInboxView({
 }) {
   if (testimonials.length === 0) {
     return (
-      <section className="bg-card rounded-xl border border-dashed p-10 text-center shadow-xs">
-        <h2 className="font-semibold">No Testimonials match these filters.</h2>
-        <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
-          New Submissions appear here as Pending before anything becomes public.
-        </p>
+      <section className="bg-card rounded-lg border">
+        <EmptyState
+          description="New Submissions appear here as Pending before anything becomes public."
+          illustration={<SpeechBubbleStars className="h-28" draw />}
+          title="No Testimonials match these filters."
+        />
       </section>
     );
   }
@@ -208,8 +227,8 @@ export function TestimonialDeleteDialog({
     <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
       <AlertDialogContent className="max-w-lg">
         <div className="flex items-start gap-4">
-          <div className="bg-destructive/10 text-destructive flex size-10 shrink-0 items-center justify-center rounded-full">
-            <TriangleAlert aria-hidden="true" className="size-5" />
+          <div className="bg-danger-soft text-danger flex size-10 shrink-0 items-center justify-center rounded-full">
+            <IconAlertTriangle aria-hidden="true" className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
             <AlertDialogHeader>
@@ -231,11 +250,11 @@ export function TestimonialDeleteDialog({
               </AlertDialogCancel>
               <AlertDialogAction asChild>
                 <Button
-                  disabled={pending}
+                  loading={pending}
                   onClick={onDelete}
                   variant="destructive"
                 >
-                  {pending ? "Deleting…" : "Delete"}
+                  Delete
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -263,48 +282,59 @@ function InboxFilters({
 }) {
   return (
     <div className="flex flex-wrap gap-3" aria-label="Inbox filters">
-      <label className="space-y-1 text-sm">
-        <span className="text-muted-foreground block text-xs">Status</span>
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-          onChange={(event) =>
-            onModerationStatusChange(event.target.value as ModerationFilter)
+      <Field className="w-44">
+        <Label htmlFor="inbox-status">Status</Label>
+        <Select
+          onValueChange={(value) =>
+            onModerationStatusChange(value as ModerationFilter)
           }
           value={moderationStatus}
         >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="published">Published</option>
-          <option value="archived">Archived</option>
-          <option value="spam">Spam quarantine</option>
-        </select>
-      </label>
-      <label className="space-y-1 text-sm">
-        <span className="text-muted-foreground block text-xs">Type</span>
-        <select
-          aria-label="Type"
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-          onChange={(event) =>
-            onSubmissionTypeChange(event.target.value as SubmissionTypeFilter)
+          <SelectTrigger className="w-full" id="inbox-status" size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="spam">Spam quarantine</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="w-36">
+        <Label htmlFor="inbox-type">Type</Label>
+        <Select
+          onValueChange={(value) =>
+            onSubmissionTypeChange(value as SubmissionTypeFilter)
           }
           value={submissionType}
         >
-          <option value="all">All types</option>
-          <option value="text">Text</option>
-          <option value="video">Video</option>
-        </select>
-      </label>
-      <label className="space-y-1 text-sm">
-        <span className="text-muted-foreground block text-xs">Sort</span>
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-          onChange={(event) => onSortChange(event.target.value as InboxSort)}
+          <SelectTrigger className="w-full" id="inbox-type" size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="text">Text</SelectItem>
+            <SelectItem value="video">Video</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="w-40">
+        <Label htmlFor="inbox-sort">Sort</Label>
+        <Select
+          onValueChange={(value) => onSortChange(value as InboxSort)}
           value={sort}
         >
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-        </select>
-      </label>
+          <SelectTrigger className="w-full" id="inbox-sort" size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
     </div>
   );
 }
@@ -341,14 +371,13 @@ function InboxLoadMore({
   }
   return (
     <Button
-      disabled={paginationStatus === "LoadingMore" || pending}
+      disabled={pending}
+      loading={paginationStatus === "LoadingMore"}
       onClick={onLoadMore}
       type="button"
       variant="outline"
     >
-      {paginationStatus === "LoadingMore"
-        ? "Loading…"
-        : "Load more Testimonials"}
+      Load more Testimonials
     </Button>
   );
 }
@@ -418,6 +447,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
   );
+  const [curationOpen, setCurationOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -535,20 +565,22 @@ export function TestimonialInbox({ slug }: { slug: string }) {
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="dashboard-page-title">Inbox</h1>
-          <p className="dashboard-page-description mt-1 max-w-2xl">
-            Review private Submissions and choose what becomes public.
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href={`/w/${organization.publicSlug}` as Route} target="_blank">
-            Open Public Wall
-            <ExternalLink aria-hidden="true" />
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        actions={
+          <Button asChild variant="outline">
+            <Link
+              href={`/w/${organization.publicSlug}` as Route}
+              target="_blank"
+            >
+              Open Public Wall
+              <IconExternalLink aria-hidden="true" />
+            </Link>
+          </Button>
+        }
+        description="Review private Submissions and choose what becomes public."
+        eyebrow="Workspace"
+        title="Inbox"
+      />
 
       <InboxFilters
         moderationStatus={moderationStatus}
@@ -570,14 +602,36 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         />
       </div>
 
-      <details className="bg-card rounded-xl border shadow-xs">
-        <summary className="marker:text-muted-foreground cursor-pointer px-4 py-3 text-sm font-medium">
-          Wall order &amp; visibility
-        </summary>
-        <div className="border-t p-4 sm:p-5">
-          <PublishedCuration organizationId={activeOrganization.id} />
-        </div>
-      </details>
+      <section className="bg-card rounded-lg border">
+        <button
+          aria-controls="wall-curation"
+          aria-expanded={curationOpen}
+          className="hover:bg-accent flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-5 py-4 text-left transition-colors"
+          onClick={() => setCurationOpen((open) => !open)}
+          type="button"
+        >
+          <span>
+            <span className="type-subheading block">
+              Wall order &amp; visibility
+            </span>
+            <span className="text-ink-2 type-small block">
+              Reorder Published Testimonials and choose what each one shows.
+            </span>
+          </span>
+          <IconChevronDown
+            aria-hidden="true"
+            className={cn(
+              "text-ink-2 size-5 shrink-0 transition-transform duration-200",
+              curationOpen && "rotate-180",
+            )}
+          />
+        </button>
+        {curationOpen ? (
+          <div className="border-t p-5" id="wall-curation">
+            <PublishedCuration organizationId={activeOrganization.id} />
+          </div>
+        ) : null}
+      </section>
 
       <InboxLoadMore
         onLoadMore={() => loadMore(20)}

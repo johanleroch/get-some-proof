@@ -13,7 +13,9 @@ import {
   type PublicWallSettingsValue,
 } from "@/components/organizations/public-wall-settings";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,15 +65,18 @@ function EmbeddedWallSnippet({
   }
 
   return (
-    <div className="bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs">
+    <div
+      className="bg-card scroll-mt-24 space-y-4 rounded-lg border p-5"
+      id="embed"
+    >
       <div>
-        <h2 className="font-semibold">Embedded Wall</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h2 className="type-subheading">Embedded Wall</h2>
+        <p className="text-ink-2 mt-1 text-sm">
           Paste this snippet where your website accepts custom HTML. It inherits
           the host font and never uses an iframe.
         </p>
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="embed-snippet">Embed snippet</Label>
         <Textarea
           className="min-h-28 font-mono text-xs"
@@ -79,7 +84,7 @@ function EmbeddedWallSnippet({
           readOnly
           value={snippet}
         />
-      </div>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
       {success ? <SuccessToast message={success} /> : null}
       <Button
@@ -341,117 +346,162 @@ export function OrganizationSettingsView({
   }
 
   return (
-    <section aria-labelledby="settings-heading" className="space-y-6">
-      <div>
-        <h1 className="dashboard-page-title" id="settings-heading">
-          Brand settings
-        </h1>
-        <p className="dashboard-page-description mt-1">
-          Update the identity shared across your public proof surfaces.
-        </p>
-      </div>
-
-      <div className="bg-card max-w-2xl rounded-xl border p-6 shadow-xs">
-        <ProfileImageControl
-          alt={`${name} logo`}
-          cropShape="rect"
-          fallback={initials(name) || "OR"}
-          imageUrl={logoUrl}
-          label="Brand logo"
-          onRemove={onRemoveLogo}
-          onUpload={onUploadLogo}
-          readOnly={!canUpdate}
-        />
-      </div>
-
-      {canUpdate ? (
-        <form
-          className="bg-card max-w-2xl space-y-5 rounded-xl border p-6 shadow-xs"
-          onSubmit={updateName}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="organization-name">Brand name</Label>
-            <Input
-              defaultValue={name}
-              id="organization-name"
-              name="name"
-              required
-            />
-          </div>
-          {nameError ? <ErrorToast message={nameError} /> : null}
-          {nameSuccess ? <SuccessToast message={nameSuccess} /> : null}
-          <Button disabled={pending} type="submit">
-            {pending ? "Saving…" : "Save settings"}
-          </Button>
-        </form>
-      ) : (
-        <div className="bg-card max-w-2xl rounded-xl border p-6 shadow-xs">
-          <p className="font-medium">Settings are read-only</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Only the Owner can update Brand settings.
-          </p>
-        </div>
-      )}
-
-      {canChangePublicSlug ? (
-        <form
-          className="bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs"
-          onSubmit={updatePublicSlug}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="public-slug">Public slug</Label>
-            <Input
-              aria-describedby="public-slug-help"
-              disabled={!publicSlugCanChange}
-              id="public-slug"
-              maxLength={48}
-              minLength={2}
-              onChange={(event) =>
-                setNextPublicSlug(publicSlugFromBrandName(event.target.value))
-              }
-              required
-              value={displayedPublicSlug}
-            />
-            <p className="text-muted-foreground text-xs" id="public-slug-help">
-              {publicSlugCanChange
-                ? "You can change this once. Old collection, wall, and embed links will stop working immediately."
-                : "Your one Public Slug change has been used."}
-            </p>
-          </div>
-          {slugError ? <ErrorToast message={slugError} /> : null}
-          {slugSuccess ? <SuccessToast message={slugSuccess} /> : null}
-          {publicSlugCanChange ? (
-            <Button
-              disabled={slugPending || nextPublicSlug === publicSlug}
-              type="submit"
-              variant="destructive"
-            >
-              {slugPending ? "Changing…" : "Change public slug permanently"}
-            </Button>
-          ) : null}
-        </form>
-      ) : null}
-
-      <PublicWallSettingsSection
-        canUpdate={canManageWall}
-        onSave={onUpdateWallSettings}
-        settings={wallSettings}
+    <section aria-labelledby="settings-heading" className="space-y-8">
+      <PageHeader
+        description="Update the identity shared across your public proof surfaces."
+        eyebrow="Workspace"
+        title={<span id="settings-heading">Brand settings</span>}
       />
 
-      {canUpdate ? (
-        <EmbeddedWallSnippet
-          embedOrigin={embedOrigin}
-          publicSlug={publicSlug}
-        />
-      ) : null}
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:items-start">
+        <div className="space-y-6">
+          <div className="bg-card scroll-mt-24 rounded-lg border p-5" id="logo">
+            <ProfileImageControl
+              alt={`${name} logo`}
+              cropShape="rect"
+              fallback={initials(name) || "OR"}
+              imageUrl={logoUrl}
+              label="Brand logo"
+              onRemove={onRemoveLogo}
+              onUpload={onUploadLogo}
+              readOnly={!canUpdate}
+            />
+          </div>
 
-      {workspaceDeletion ? (
-        <WorkspaceDeletionSection
-          brandName={name}
-          onDelete={workspaceDeletion.onDelete}
-          onExport={workspaceDeletion.onExport}
-        />
-      ) : null}
+          {canUpdate ? (
+            <form
+              className="bg-card scroll-mt-24 space-y-5 rounded-lg border p-5"
+              id="identity"
+              onSubmit={updateName}
+            >
+              <div>
+                <h2 className="type-subheading">Identity</h2>
+                <p className="text-ink-2 mt-1 text-sm">
+                  The name shown on your Collection Form and Wall.
+                </p>
+              </div>
+              <Field>
+                <Label htmlFor="organization-name">Brand name</Label>
+                <Input
+                  defaultValue={name}
+                  id="organization-name"
+                  name="name"
+                  required
+                />
+              </Field>
+              {nameError ? <ErrorToast message={nameError} /> : null}
+              {nameSuccess ? <SuccessToast message={nameSuccess} /> : null}
+              <Button loading={pending} type="submit">
+                Save settings
+              </Button>
+            </form>
+          ) : (
+            <div className="bg-card rounded-lg border p-5">
+              <p className="font-medium">Settings are read-only</p>
+              <p className="text-ink-2 mt-1 text-sm">
+                Only the Owner can update Brand settings.
+              </p>
+            </div>
+          )}
+
+          {canChangePublicSlug ? (
+            <form
+              className="bg-card scroll-mt-24 space-y-4 rounded-lg border p-5"
+              id="address"
+              onSubmit={updatePublicSlug}
+            >
+              <div>
+                <h2 className="type-subheading">Public address</h2>
+                <p className="text-ink-2 mt-1 text-sm">
+                  Used by your Collection Form, Wall and embed links.
+                </p>
+              </div>
+              <Field>
+                <Label htmlFor="public-slug">Public slug</Label>
+                <Input
+                  aria-describedby="public-slug-help"
+                  disabled={!publicSlugCanChange}
+                  id="public-slug"
+                  maxLength={48}
+                  minLength={2}
+                  onChange={(event) =>
+                    setNextPublicSlug(
+                      publicSlugFromBrandName(event.target.value),
+                    )
+                  }
+                  required
+                  value={displayedPublicSlug}
+                />
+                <FieldDescription id="public-slug-help">
+                  {publicSlugCanChange
+                    ? "You can change this once. Old collection, wall, and embed links will stop working immediately."
+                    : "Your one Public Slug change has been used."}
+                </FieldDescription>
+              </Field>
+              {slugError ? <ErrorToast message={slugError} /> : null}
+              {slugSuccess ? <SuccessToast message={slugSuccess} /> : null}
+              {publicSlugCanChange ? (
+                <Button
+                  disabled={nextPublicSlug === publicSlug}
+                  loading={slugPending}
+                  type="submit"
+                  variant="destructive"
+                >
+                  Change public slug permanently
+                </Button>
+              ) : null}
+            </form>
+          ) : null}
+
+          <PublicWallSettingsSection
+            canUpdate={canManageWall}
+            onSave={onUpdateWallSettings}
+            settings={wallSettings}
+          />
+
+          {canUpdate ? (
+            <EmbeddedWallSnippet
+              embedOrigin={embedOrigin}
+              publicSlug={publicSlug}
+            />
+          ) : null}
+
+          {workspaceDeletion ? (
+            <WorkspaceDeletionSection
+              brandName={name}
+              onDelete={workspaceDeletion.onDelete}
+              onExport={workspaceDeletion.onExport}
+            />
+          ) : null}
+        </div>
+        <nav
+          aria-label="Settings sections"
+          className="hidden lg:sticky lg:top-24 lg:block"
+        >
+          <p className="type-micro text-ink-2 mb-2 px-2">On this page</p>
+          <ul className="space-y-0.5">
+            {[
+              ["logo", "Brand logo"],
+              ...(canUpdate ? [["identity", "Identity"]] : []),
+              ...(canChangePublicSlug ? [["address", "Public address"]] : []),
+              ...(canManageWall && wallSettings
+                ? [["wall", "Public Wall"]]
+                : []),
+              ...(canUpdate ? [["embed", "Embedded Wall"]] : []),
+              ...(workspaceDeletion ? [["danger", "Delete Workspace"]] : []),
+            ].map(([id, label]) => (
+              <li key={id}>
+                <a
+                  className="text-ink-2 hover:text-ink hover:bg-accent block rounded-md px-2 py-1.5 text-sm transition-colors"
+                  href={`#${id}`}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </section>
   );
 }
@@ -495,13 +545,13 @@ export function WorkspaceDeletionProgress({
   return (
     <section className="mx-auto max-w-2xl space-y-4 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold">Deleting {brandName}</h1>
-        <p className="text-muted-foreground mt-2 text-sm">
+        <h1 className="type-heading">Deleting {brandName}</h1>
+        <p className="type-body text-ink-2 mt-2">
           Public access is disabled and will not be restored. You may leave this
           page; deletion continues in the background.
         </p>
       </div>
-      <div className="bg-card space-y-3 rounded-xl border p-6 shadow-xs">
+      <div className="bg-card space-y-3 rounded-lg border p-5">
         <p className="font-medium" role="status">
           {status === "failed" ? "Cleanup needs another attempt" : phaseLabel}
         </p>
@@ -514,12 +564,8 @@ export function WorkspaceDeletionProgress({
           <ErrorToast message={(retryError ?? lastError)!} />
         ) : null}
         {status === "failed" ? (
-          <Button
-            disabled={retrying}
-            onClick={() => void retry()}
-            type="button"
-          >
-            {retrying ? "Retrying cleanup…" : "Retry cleanup now"}
+          <Button loading={retrying} onClick={() => void retry()} type="button">
+            Retry cleanup now
           </Button>
         ) : null}
       </div>
@@ -570,25 +616,29 @@ export function WorkspaceDeletionSection({
   }
 
   return (
-    <div className="border-destructive/40 bg-card max-w-2xl space-y-4 rounded-xl border p-6 shadow-xs">
+    <div
+      className="border-danger/40 bg-card scroll-mt-24 space-y-4 rounded-lg border p-5"
+      id="danger"
+    >
       <div>
-        <h2 className="font-semibold">Delete Workspace</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h2 className="type-subheading">Delete Workspace</h2>
+        <p className="text-ink-2 mt-1 text-sm">
           This permanently removes the Collection Form, Public Wall, Embed,
           private data, and every hosted video. There is no recovery window.
         </p>
       </div>
       <div>
         <Button
-          disabled={pending !== null}
+          disabled={pending === "delete"}
+          loading={pending === "export"}
           onClick={() => void download()}
           type="button"
           variant="outline"
         >
-          {pending === "export" ? "Preparing export…" : "Download data first"}
+          Download data first
         </Button>
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="delete-workspace-name">
           Type <span className="font-semibold">{brandName}</span> to continue
         </Label>
@@ -598,7 +648,7 @@ export function WorkspaceDeletionSection({
           onChange={(event) => setConfirmation(event.target.value)}
           value={confirmation}
         />
-      </div>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
       <Button
         disabled={confirmation !== brandName || pending !== null}
@@ -625,13 +675,11 @@ export function WorkspaceDeletionSection({
             </AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button
-                disabled={pending === "delete"}
+                loading={pending === "delete"}
                 onClick={() => void remove()}
                 variant="destructive"
               >
-                {pending === "delete"
-                  ? "Deleting Workspace…"
-                  : "Delete Workspace permanently"}
+                Delete Workspace permanently
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

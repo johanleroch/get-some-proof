@@ -12,7 +12,10 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { ArrowNote, WallFrames } from "@/components/doodles";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
@@ -50,58 +53,62 @@ export function BrandDashboardView({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-muted-foreground text-sm font-medium">Workspace</p>
-        <h1 className="dashboard-page-title mt-1">{name}</h1>
-        <p className="dashboard-page-description mt-1 max-w-2xl">
-          Collect customer proof, review it privately, and publish only what you
-          choose.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        actions={
+          <Button onClick={copyLink} type="button">
+            <IconCopy aria-hidden="true" />
+            Copy link
+          </Button>
+        }
+        description="Collect customer proof, review it privately, and publish only what you choose."
+        eyebrow="Workspace"
+        title={name}
+      />
 
       <section
         aria-label="Brand overview"
-        className="grid gap-4 lg:grid-cols-[0.7fr_1.3fr]"
+        className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
       >
-        <Card className="shadow-xs">
-          <CardHeader className="flex-row items-center justify-between">
-            <div>
+        <Card>
+          <CardHeader className="flex-row items-start justify-between">
+            <div className="space-y-2">
               <CardDescription>Pending Testimonials</CardDescription>
-              <CardTitle className="mt-2 text-3xl tabular-nums">
-                {pendingCount}
-              </CardTitle>
+              <CardTitle className="type-kpi">{pendingCount}</CardTitle>
             </div>
-            <span className="bg-brand-soft text-brand-text grid size-10 place-items-center rounded-xl">
+            <span className="bg-brand-soft text-brand-text grid size-10 shrink-0 place-items-center rounded-md">
               <IconInbox aria-hidden="true" className="size-5" />
             </span>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-ink-2 type-small">
               New Submissions will arrive here for review before publication.
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card>
           <CardHeader>
             <CardDescription>Your Collection Form</CardDescription>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <IconLink aria-hidden="true" className="size-4" />
-              <span>/c/{publicSlug}</span>
+            <CardTitle className="flex items-center gap-2">
+              <IconLink aria-hidden="true" className="text-ink-2 size-4" />
+              <span className="font-mono text-base font-medium tracking-normal">
+                /c/{publicSlug}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button onClick={copyLink} type="button">
-              <IconCopy aria-hidden="true" />
-              Copy link
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={collectionPath} target="_blank">
-                Open Collection Form
-                <IconExternalLink aria-hidden="true" />
-              </Link>
-            </Button>
+          <CardContent className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link href={collectionPath} target="_blank">
+                  Open Collection Form
+                  <IconExternalLink aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+            <ArrowNote className="hidden sm:inline-flex" direction="left">
+              share this to start collecting
+            </ArrowNote>
           </CardContent>
         </Card>
       </section>
@@ -123,12 +130,11 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   if (organization === null) {
     return (
       <section className="grid min-h-[50vh] place-items-center px-6">
-        <div className="max-w-md text-center">
-          <h1 className="dashboard-page-title">Brand unavailable</h1>
-          <p className="dashboard-page-description mt-2">
-            This Brand does not exist or you no longer have access to it.
-          </p>
-        </div>
+        <EmptyState
+          description="This Brand does not exist or you no longer have access to it."
+          illustration={<WallFrames className="h-32" />}
+          title="Brand unavailable"
+        />
       </section>
     );
   }

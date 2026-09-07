@@ -7,6 +7,7 @@ import { IconMenu2 } from "@tabler/icons-react";
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandMark } from "@/components/brand-mark";
+import { BrandDashboardView } from "@/components/organizations/organization-dashboard";
 import { PageHeader } from "@/components/page-header";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
@@ -26,7 +27,6 @@ import {
   TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
-import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   Card,
@@ -658,36 +658,12 @@ export function DashboardBackgroundScreenFixture() {
             </p>
           </header>
           <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h1 className="dashboard-page-title">Visual Studio</h1>
-                <p className="dashboard-page-description mt-1">
-                  Collect customer proof, review it privately, and publish only
-                  what you choose.
-                </p>
-              </div>
-              <Button>Copy collection link</Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <section className="dashboard-panel p-5">
-                <p className="text-muted-foreground text-[13px] font-[510]">
-                  Pending Testimonials
-                </p>
-                <p className="mt-6 text-[30px] font-[590]">0</p>
-                <p className="text-muted-foreground text-xs">
-                  Ready for your first Submission
-                </p>
-              </section>
-              <section className="dashboard-panel p-5">
-                <p className="text-muted-foreground text-[13px] font-[510]">
-                  Your Collection Form
-                </p>
-                <p className="mt-6 text-lg font-[590]">/c/visual-studio</p>
-                <p className="text-muted-foreground text-xs">
-                  Share this address to start collecting proof
-                </p>
-              </section>
-            </div>
+            <BrandDashboardView
+              copyCollectionUrl={async () => undefined}
+              name="Visual Studio"
+              pendingCount={0}
+              publicSlug="visual-studio"
+            />
           </div>
         </div>
       </main>

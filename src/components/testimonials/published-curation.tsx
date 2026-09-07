@@ -1,7 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
+} from "@tabler/icons-react";
 import { useMutation, usePaginatedQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
@@ -133,7 +137,7 @@ export function PublishedCurationView({
   return (
     <section aria-labelledby="published-curation-heading" className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold" id="published-curation-heading">
+        <h2 className="type-subheading" id="published-curation-heading">
           Public Wall curation
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -144,7 +148,7 @@ export function PublishedCurationView({
       <ol className="space-y-3">
         {testimonials.map((testimonial, index) => (
           <li
-            className="bg-card rounded-xl border p-4 shadow-xs"
+            className="bg-card rounded-lg border p-4"
             draggable={!pending}
             key={testimonial.testimonialId}
             onDragEnd={() => {
@@ -164,7 +168,7 @@ export function PublishedCurationView({
             }}
           >
             <div className="flex items-start gap-3">
-              <GripVertical
+              <IconGripVertical
                 aria-hidden="true"
                 className="text-muted-foreground mt-1 size-5"
               />
@@ -184,7 +188,7 @@ export function PublishedCurationView({
                 type="button"
                 variant="outline"
               >
-                <ArrowUp aria-hidden="true" />
+                <IconArrowUp aria-hidden="true" />
               </Button>
               <Button
                 aria-label={`Move ${testimonial.submitterName} down`}
@@ -194,7 +198,7 @@ export function PublishedCurationView({
                 type="button"
                 variant="outline"
               >
-                <ArrowDown aria-hidden="true" />
+                <IconArrowDown aria-hidden="true" />
               </Button>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
@@ -237,12 +241,12 @@ export function PublishedCurationView({
       </ol>
       {canLoadMore ? (
         <Button
-          disabled={loadingMore}
+          loading={loadingMore}
           onClick={onLoadMore}
           type="button"
           variant="outline"
         >
-          {loadingMore ? "Loading…" : "Load more Published Testimonials"}
+          Load more Published Testimonials
         </Button>
       ) : null}
       {error ? <ErrorToast message={error} /> : null}
