@@ -3,8 +3,10 @@
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
 
+import { ScribbleStar } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -41,11 +43,15 @@ export function ResetPasswordForm({ token }: { token?: string }) {
 
   if (complete) {
     return (
-      <div className="space-y-4 text-center">
-        <h2 className="text-xl font-semibold">Password updated</h2>
-        <p className="text-muted-foreground text-sm">
-          Existing sessions were revoked. Sign in again with your new password.
-        </p>
+      <div className="space-y-5">
+        <ScribbleStar className="text-brand size-12" draw />
+        <div className="space-y-1.5">
+          <h2 className="type-heading">Password updated</h2>
+          <p className="type-body text-ink-2">
+            Existing sessions were revoked. Sign in again with your new
+            password.
+          </p>
+        </div>
         <Link
           className="text-brand-text text-sm font-medium hover:underline"
           href="/sign-in"
@@ -58,7 +64,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
 
   return (
     <form className="space-y-5" onSubmit={resetPassword}>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="password">New password</Label>
         <Input
           autoComplete="new-password"
@@ -68,10 +74,10 @@ export function ResetPasswordForm({ token }: { token?: string }) {
           required
           type="password"
         />
-      </div>
+      </Field>
       {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? "Updating…" : "Update password"}
+      <Button className="w-full" loading={pending} type="submit">
+        Update password
       </Button>
     </form>
   );
