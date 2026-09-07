@@ -334,6 +334,13 @@
       "path": "/visual-evidence/collection-form-write",
       "heading": "Tell your story",
       "theme": "light"
+    },
+    {
+      "slug": "template-marquee",
+      "title": "Template marquee with pause control",
+      "path": "/templates/marquee",
+      "heading": "Marquee",
+      "theme": "light"
     }
   ]
 }
