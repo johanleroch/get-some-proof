@@ -7,6 +7,7 @@ import { IconMenu2 } from "@tabler/icons-react";
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandMark } from "@/components/brand-mark";
+import { PageHeader } from "@/components/page-header";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
 import { CollectionFormShellView } from "@/components/collection/collection-form-shell";
 import { VideoRetryFormView } from "@/components/collection/video-retry-form";
@@ -92,36 +93,30 @@ export function ProfileScreenFixture() {
 
 export function OnboardingScreenFixture() {
   return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-5 py-16">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 flex justify-center">
+    <main className="bg-paper min-h-svh px-5 py-8 md:px-8 md:py-10">
+      <div className="mx-auto max-w-5xl space-y-10">
+        <div className="flex items-center gap-2.5">
           <BrandMark />
+          <span className="text-ink text-sm font-semibold tracking-[-0.008em]">
+            Get Some Proof
+          </span>
         </div>
-        <Card className="shadow-xs">
-          <CardHeader>
-            <p className="text-muted-foreground text-sm font-medium">
-              First step
-            </p>
-            <CardTitle className="text-2xl">Create your Brand</CardTitle>
-            <CardDescription>
-              Set the public identity and Collection Form your customers will
-              see.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OrganizationOnboardingFormView
-              createOrganization={async () => ({
-                id: "fixture-organization" as Id<"organizations">,
-                publicSlug: "visual-studio",
-                slug: "visual-studio-l5pg",
-              })}
-              generateUploadUrl={async () => "fixture://upload"}
-              navigate={() => undefined}
-              setLogo={async () => null}
-              uploadImage={async () => "fixture-image" as Id<"_storage">}
-            />
-          </CardContent>
-        </Card>
+        <PageHeader
+          description="Set the public identity and Collection Form your customers will see."
+          eyebrow="First step"
+          title="Create your Brand"
+        />
+        <OrganizationOnboardingFormView
+          createOrganization={async () => ({
+            id: "fixture-organization" as Id<"organizations">,
+            publicSlug: "visual-studio",
+            slug: "visual-studio-l5pg",
+          })}
+          generateUploadUrl={async () => "fixture://upload"}
+          navigate={() => undefined}
+          setLogo={async () => null}
+          uploadImage={async () => "fixture-image" as Id<"_storage">}
+        />
       </div>
     </main>
   );

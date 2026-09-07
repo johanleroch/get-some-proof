@@ -11,11 +11,15 @@ import {
   defaultCollectionFormTitle,
   publicSlugFromBrandName,
 } from "@convex/domain/brand";
+import { ArrowNote } from "@/components/doodles";
+import { CollectionFormPreview } from "@/components/organizations/collection-form-preview";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 
 type CreateBrandArgs = {
@@ -76,7 +80,7 @@ export function OrganizationOnboardingFormView({
     "Tell us what changed for you.",
   );
   const [privacyContact, setPrivacyContact] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#6d5dfc");
+  const [primaryColor, setPrimaryColor] = useState("#FFBB16");
   const [logoBlob, setLogoBlob] = useState<Blob | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [createdOrganization, setCreatedOrganization] = useState<{
@@ -162,133 +166,142 @@ export function OrganizationOnboardingFormView({
   }
 
   return (
-    <form className="space-y-6" onSubmit={submit}>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="brand-name">Brand name</Label>
-          <Input
-            autoComplete="organization"
-            id="brand-name"
-            maxLength={80}
-            minLength={2}
-            name="name"
-            onChange={(event) => updateName(event.target.value)}
-            placeholder="Acme Studio"
-            required
-            value={name}
-          />
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start">
+      <form className="space-y-6" onSubmit={submit}>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <Label htmlFor="brand-name">Brand name</Label>
+            <Input
+              autoComplete="organization"
+              id="brand-name"
+              maxLength={80}
+              minLength={2}
+              name="name"
+              onChange={(event) => updateName(event.target.value)}
+              placeholder="Northwind Bakery"
+              required
+              value={name}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="public-slug">Public slug</Label>
+            <Input
+              aria-describedby="public-slug-help"
+              id="public-slug"
+              maxLength={48}
+              minLength={2}
+              name="publicSlug"
+              onChange={(event) => {
+                setSlugWasEdited(true);
+                setPublicSlug(publicSlugFromBrandName(event.target.value));
+              }}
+              placeholder="northwind-bakery"
+              required
+              value={publicSlug}
+            />
+            <FieldDescription id="public-slug-help">
+              Your public address will be /c/{publicSlug || "your-brand"}.
+            </FieldDescription>
+          </Field>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="public-slug">Public slug</Label>
+
+        <Field>
+          <Label htmlFor="collection-form-title">Collection Form title</Label>
           <Input
-            aria-describedby="public-slug-help"
-            id="public-slug"
-            maxLength={48}
-            minLength={2}
-            name="publicSlug"
+            id="collection-form-title"
+            maxLength={100}
+            name="collectionFormTitle"
             onChange={(event) => {
-              setSlugWasEdited(true);
-              setPublicSlug(publicSlugFromBrandName(event.target.value));
+              setTitleWasEdited(true);
+              setCollectionFormTitle(event.target.value);
             }}
-            placeholder="acme-studio"
             required
-            value={publicSlug}
+            value={collectionFormTitle}
           />
-          <p className="text-muted-foreground text-xs" id="public-slug-help">
-            Your public address will be /c/{publicSlug || "your-brand"}.
-          </p>
-        </div>
-      </div>
+        </Field>
 
-      <div className="space-y-2">
-        <Label htmlFor="collection-form-title">Collection Form title</Label>
-        <Input
-          id="collection-form-title"
-          maxLength={100}
-          name="collectionFormTitle"
-          onChange={(event) => {
-            setTitleWasEdited(true);
-            setCollectionFormTitle(event.target.value);
-          }}
-          required
-          value={collectionFormTitle}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="collection-form-description">
-          Collection Form description
-        </Label>
-        <textarea
-          className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-          id="collection-form-description"
-          maxLength={500}
-          name="collectionFormDescription"
-          onChange={(event) => setCollectionFormDescription(event.target.value)}
-          value={collectionFormDescription}
-        />
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-[1fr_7rem]">
-        <div className="space-y-2">
-          <Label htmlFor="privacy-contact">Privacy contact</Label>
-          <Input
-            autoComplete="email"
-            id="privacy-contact"
-            name="privacyContact"
-            onChange={(event) => setPrivacyContact(event.target.value)}
-            placeholder="privacy@yourbrand.com"
-            required
-            type="email"
-            value={privacyContact}
+        <Field>
+          <Label htmlFor="collection-form-description">
+            Collection Form description
+          </Label>
+          <Textarea
+            id="collection-form-description"
+            maxLength={500}
+            name="collectionFormDescription"
+            onChange={(event) =>
+              setCollectionFormDescription(event.target.value)
+            }
+            value={collectionFormDescription}
           />
+        </Field>
+
+        <div className="grid gap-5 sm:grid-cols-[1fr_7rem]">
+          <Field>
+            <Label htmlFor="privacy-contact">Privacy contact</Label>
+            <Input
+              autoComplete="email"
+              id="privacy-contact"
+              name="privacyContact"
+              onChange={(event) => setPrivacyContact(event.target.value)}
+              placeholder="privacy@yourbrand.com"
+              required
+              type="email"
+              value={privacyContact}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="primary-color">Primary color</Label>
+            <Input
+              className="h-10 cursor-pointer p-1"
+              id="primary-color"
+              name="primaryColor"
+              onChange={(event) => setPrimaryColor(event.target.value)}
+              type="color"
+              value={primaryColor}
+            />
+          </Field>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="primary-color">Primary color</Label>
-          <Input
-            className="h-9 p-1"
-            id="primary-color"
-            name="primaryColor"
-            onChange={(event) => setPrimaryColor(event.target.value)}
-            type="color"
-            value={primaryColor}
+
+        <div className="border-t pt-5">
+          <ProfileImageControl
+            alt={`${name || "New Brand"} logo`}
+            cropShape="rect"
+            fallback={(name.trim().slice(0, 2) || "GP").toUpperCase()}
+            imageUrl={logoPreview}
+            label="Brand logo (optional)"
+            onRemove={removeStagedLogo}
+            onUpload={stageLogo}
           />
         </div>
-      </div>
 
-      <div className="border-t pt-5">
-        <ProfileImageControl
-          alt={`${name || "New Brand"} logo`}
-          cropShape="rect"
-          fallback={(name.trim().slice(0, 2) || "GP").toUpperCase()}
-          imageUrl={logoPreview}
-          label="Brand logo (optional)"
-          onRemove={removeStagedLogo}
-          onUpload={stageLogo}
-        />
-      </div>
-
-      {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending
-          ? createdOrganization
-            ? "Uploading logo…"
-            : "Creating Brand…"
-          : createdOrganization
-            ? "Retry logo and continue"
-            : "Create Brand"}
-      </Button>
-      {createdOrganization ? (
-        <Button
-          className="w-full"
-          disabled={pending}
-          onClick={() => navigate(`/org/${createdOrganization.slug}/dashboard`)}
-          type="button"
-          variant="ghost"
-        >
-          Continue without logo
+        {error ? <ErrorToast message={error} /> : null}
+        <Button className="w-full" loading={pending} type="submit">
+          {createdOrganization ? "Retry logo and continue" : "Create Brand"}
         </Button>
-      ) : null}
-    </form>
+        {createdOrganization ? (
+          <Button
+            className="w-full"
+            disabled={pending}
+            onClick={() =>
+              navigate(`/org/${createdOrganization.slug}/dashboard`)
+            }
+            type="button"
+            variant="ghost"
+          >
+            Continue without logo
+          </Button>
+        ) : null}
+      </form>
+      <aside className="space-y-3 lg:sticky lg:top-8">
+        <ArrowNote>this is what your customers see</ArrowNote>
+        <CollectionFormPreview
+          accentColor={primaryColor}
+          description={collectionFormDescription}
+          logoUrl={logoPreview}
+          name={name}
+          title={collectionFormTitle}
+        />
+      </aside>
+    </div>
   );
 }

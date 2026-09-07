@@ -84,7 +84,7 @@ describe("OrganizationOnboardingForm", () => {
         collectionFormDescription: "A short description",
         collectionFormTitle: "Share your Visual Studio story",
         name: "Visual Studio",
-        primaryColor: "#6d5dfc",
+        primaryColor: "#FFBB16",
         privacyContact: "privacy@visual.example",
         publicSlug: "visual-studio",
       });

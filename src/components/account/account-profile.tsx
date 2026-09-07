@@ -4,9 +4,11 @@ import { type FormEvent, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { PageHeader } from "@/components/page-header";
 import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { Field, FieldDescription } from "@/components/ui/field";
 import {
   Card,
   CardContent,
@@ -144,12 +146,11 @@ export function AccountProfileView({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="dashboard-page-title">Profile</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Update the identity used for your Owner account.
-        </p>
-      </div>
+      <PageHeader
+        description="Update the identity used for your Owner account."
+        eyebrow="Account"
+        title="Profile"
+      />
 
       <Card>
         <CardHeader>
@@ -181,7 +182,7 @@ export function AccountProfileView({
         <CardContent>
           <form className="space-y-6" onSubmit={updateProfile}>
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
+              <Field>
                 <Label htmlFor="profile-name">Full name</Label>
                 <Input
                   autoComplete="name"
@@ -190,19 +191,19 @@ export function AccountProfileView({
                   required
                   value={name}
                 />
-              </div>
-              <div className="space-y-2">
+              </Field>
+              <Field>
                 <Label htmlFor="profile-email">Email address</Label>
                 <Input disabled id="profile-email" type="email" value={email} />
-                <p className="text-muted-foreground text-xs">
+                <FieldDescription>
                   Email changes require a verified email workflow.
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
             </div>
             {error ? <ErrorToast message={error} /> : null}
             {success ? <SuccessToast message={success} /> : null}
-            <Button disabled={pending || !name.trim()} type="submit">
-              {pending ? "Saving…" : "Save changes"}
+            <Button disabled={!name.trim()} loading={pending} type="submit">
+              Save changes
             </Button>
           </form>
         </CardContent>
