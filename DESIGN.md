@@ -96,7 +96,9 @@ brand color later is one edit:
   --brand-text: oklch(
     from var(--brand) 0.48 0.13 h
   ); /* links and text on paper, AA */
-  --brand-ink: var(--ink); /* text and icons on a --brand fill */
+  --brand-ink: oklch(
+    0.25 0.012 60
+  ); /* text on a --brand fill, dark in both themes */
   --brand-ring: oklch(from var(--brand) 0.7 0.15 h / 50%); /* focus rings */
 }
 
@@ -109,8 +111,8 @@ brand color later is one edit:
 
 Rules:
 
-- Text on a `--brand` fill is always `--brand-ink` (dark). Amber with white
-  text fails contrast and is banned.
+- Text on a `--brand` fill is always `--brand-ink`, which stays dark in both
+  themes. Amber with white or light text fails contrast and is banned.
 - Amber text on paper always uses `--brand-text`, never `--brand`.
 - Stars (ratings) and the star logo use `--brand`. Nothing else in the
   dashboard uses raw `--brand` as a fill except primary buttons, the active
@@ -122,8 +124,8 @@ Rules:
 
 | Token       | Light                  | Dark                   | Role                       |
 | ----------- | ---------------------- | ---------------------- | -------------------------- |
-| `--success` | `oklch(0.55 0.14 150)` | `oklch(0.75 0.14 150)` | Published, verified, saved |
-| `--warning` | `oklch(0.60 0.16 45)`  | `oklch(0.78 0.15 50)`  | Pending, processing, quota |
+| `--success` | `oklch(0.50 0.14 150)` | `oklch(0.75 0.14 150)` | Published, verified, saved |
+| `--warning` | `oklch(0.52 0.16 45)`  | `oklch(0.78 0.15 50)`  | Pending, processing, quota |
 | `--danger`  | `oklch(0.52 0.19 27)`  | `oklch(0.72 0.17 25)`  | Destructive, errors        |
 | `--info`    | `oklch(0.52 0.09 250)` | `oklch(0.75 0.09 250)` | Neutral notices            |
 
@@ -172,17 +174,24 @@ Three families plus a mono, all from Google Fonts through `next/font/google`:
 
 Scale (size / line-height, DM Sans unless noted):
 
-| Name       | Size | Line | Weight | Family    | Use                                                   |
-| ---------- | ---- | ---- | ------ | --------- | ----------------------------------------------------- |
-| display-xl | 40px | 44px | 800    | Bricolage | Public Wall and Collection Form titles                |
-| display    | 32px | 36px | 700    | Bricolage | Dashboard page titles                                 |
-| heading    | 24px | 30px | 700    | Bricolage | Section titles, dialog titles                         |
-| subheading | 18px | 26px | 600    | Bricolage | Card titles, empty-state titles                       |
-| body       | 15px | 24px | 400    | DM Sans   | Paragraphs, testimonial quotes                        |
-| ui         | 14px | 20px | 500    | DM Sans   | Buttons, inputs, navigation, table                    |
-| small      | 13px | 18px | 400    | DM Sans   | Metadata, helper text                                 |
-| micro      | 12px | 16px | 600    | DM Sans   | Eyebrows and group labels, uppercase, tracking 0.06em |
-| kpi        | 40px | 44px | 700    | Bricolage | Counts on the dashboard, tabular nums                 |
+| Name       | Size | Line | Weight | Tracking | Family    | Use                                    |
+| ---------- | ---- | ---- | ------ | -------- | --------- | -------------------------------------- |
+| display-xl | 40px | 44px | 800    | -0.035em | Bricolage | Public Wall and Collection Form titles |
+| display    | 32px | 36px | 700    | -0.03em  | Bricolage | Dashboard page titles                  |
+| heading    | 24px | 30px | 700    | -0.025em | Bricolage | Section titles, dialog titles          |
+| subheading | 18px | 26px | 600    | -0.015em | Bricolage | Card titles, empty-state titles        |
+| body       | 15px | 24px | 400    | -0.011em | DM Sans   | Paragraphs, testimonial quotes         |
+| ui         | 14px | 20px | 500    | -0.008em | DM Sans   | Buttons, inputs, navigation, table     |
+| small      | 13px | 18px | 400    | -0.004em | DM Sans   | Metadata, helper text                  |
+| micro      | 12px | 16px | 600    | +0.06em  | DM Sans   | Eyebrows and group labels, uppercase   |
+| kpi        | 40px | 44px | 700    | -0.03em  | Bricolage | Counts on the dashboard, tabular nums  |
+| hand       | 20px | 24px | 500    | 0        | Caveat    | Hand-drawn annotations only            |
+
+Every style is four CSS variables (`--type-<name>-size|leading|weight|tracking`)
+in `globals.css` and one composite utility (`type-<name>`). Tracking is
+deliberately tight: DM Sans and Bricolage both set loose by default and the
+founder asked for less air between letters. Tune live in the development
+`/kit` page and paste the copied CSS back into `globals.css`.
 
 Headlines get hierarchy from weight and color, not from size alone. Body copy
 never exceeds 65 characters per line. Page titles must be real `h1` elements

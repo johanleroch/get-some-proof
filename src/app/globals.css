@@ -125,18 +125,62 @@
   --brand-soft: oklch(from var(--brand) 0.96 0.05 h);
   --brand-soft-2: oklch(from var(--brand) 0.91 0.09 h);
   --brand-text: oklch(from var(--brand) 0.48 0.13 h);
-  --brand-ink: var(--ink);
+  --brand-ink: oklch(
+    0.25 0.012 60
+  ); /* dark ink in both themes: amber needs dark text */
   --brand-ring: oklch(from var(--brand) 0.7 0.15 h / 50%);
 
   /* Semantic statuses. Warning is orange on purpose, away from the brand. */
-  --success: oklch(0.55 0.14 150);
+  --success: oklch(0.5 0.14 150);
   --success-soft: oklch(from var(--success) 0.95 0.04 h);
-  --warning: oklch(0.6 0.16 45);
+  --warning: oklch(0.52 0.16 45);
   --warning-soft: oklch(from var(--warning) 0.95 0.05 h);
   --danger: oklch(0.52 0.19 27);
   --danger-soft: oklch(from var(--danger) 0.95 0.04 h);
   --info: oklch(0.52 0.09 250);
   --info-soft: oklch(from var(--info) 0.95 0.03 h);
+
+  /* Type scale (DESIGN.md section 3). Tune live in /kit, then copy here. */
+  --type-display-xl-size: 2.5rem;
+  --type-display-xl-leading: 2.75rem;
+  --type-display-xl-weight: 800;
+  --type-display-xl-tracking: -0.035em;
+  --type-display-size: 2rem;
+  --type-display-leading: 2.25rem;
+  --type-display-weight: 700;
+  --type-display-tracking: -0.03em;
+  --type-heading-size: 1.5rem;
+  --type-heading-leading: 1.875rem;
+  --type-heading-weight: 700;
+  --type-heading-tracking: -0.025em;
+  --type-subheading-size: 1.125rem;
+  --type-subheading-leading: 1.625rem;
+  --type-subheading-weight: 600;
+  --type-subheading-tracking: -0.015em;
+  --type-body-size: 0.9375rem;
+  --type-body-leading: 1.5rem;
+  --type-body-weight: 400;
+  --type-body-tracking: -0.011em;
+  --type-ui-size: 0.875rem;
+  --type-ui-leading: 1.25rem;
+  --type-ui-weight: 500;
+  --type-ui-tracking: -0.008em;
+  --type-small-size: 0.8125rem;
+  --type-small-leading: 1.125rem;
+  --type-small-weight: 400;
+  --type-small-tracking: -0.004em;
+  --type-micro-size: 0.75rem;
+  --type-micro-leading: 1rem;
+  --type-micro-weight: 600;
+  --type-micro-tracking: 0.06em;
+  --type-kpi-size: 2.5rem;
+  --type-kpi-leading: 2.75rem;
+  --type-kpi-weight: 700;
+  --type-kpi-tracking: -0.03em;
+  --type-hand-size: 1.25rem;
+  --type-hand-leading: 1.5rem;
+  --type-hand-weight: 500;
+  --type-hand-tracking: 0;
 
   /* Depth: only floating layers cast a shadow, warm-tinted. */
   --shadow-float:
@@ -211,6 +255,7 @@
   --brand-soft: oklch(from var(--brand) 0.3 0.05 h);
   --brand-soft-2: oklch(from var(--brand) 0.36 0.07 h);
   --brand-text: oklch(from var(--brand) 0.85 0.15 h);
+  --brand-ink: oklch(0.25 0.012 60);
 
   --success: oklch(0.75 0.14 150);
   --success-soft: oklch(from var(--success) 0.3 0.05 h);
@@ -319,92 +364,92 @@
   }
 }
 
-/* Type scale (DESIGN.md section 3). Composite utilities: family, size, leading, weight, tracking. */
+/* Type scale utilities: family + the four tunable parameters per style. */
 @utility type-display-xl {
   font-family:
     var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 2.5rem;
-  line-height: 2.75rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: var(--type-display-xl-size);
+  line-height: var(--type-display-xl-leading);
+  font-weight: var(--type-display-xl-weight);
+  letter-spacing: var(--type-display-xl-tracking);
 }
 
 @utility type-display {
   font-family:
     var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 2rem;
-  line-height: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  font-size: var(--type-display-size);
+  line-height: var(--type-display-leading);
+  font-weight: var(--type-display-weight);
+  letter-spacing: var(--type-display-tracking);
 }
 
 @utility type-heading {
   font-family:
     var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 1.5rem;
-  line-height: 1.875rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: var(--type-heading-size);
+  line-height: var(--type-heading-leading);
+  font-weight: var(--type-heading-weight);
+  letter-spacing: var(--type-heading-tracking);
 }
 
 @utility type-subheading {
   font-family:
     var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 1.125rem;
-  line-height: 1.625rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: var(--type-subheading-size);
+  line-height: var(--type-subheading-leading);
+  font-weight: var(--type-subheading-weight);
+  letter-spacing: var(--type-subheading-tracking);
 }
 
 @utility type-body {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 0.9375rem;
-  line-height: 1.5rem;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+  font-weight: var(--type-body-weight);
+  letter-spacing: var(--type-body-tracking);
 }
 
 @utility type-ui {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: var(--type-ui-size);
+  line-height: var(--type-ui-leading);
+  font-weight: var(--type-ui-weight);
+  letter-spacing: var(--type-ui-tracking);
 }
 
 @utility type-small {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-size: var(--type-small-size);
+  line-height: var(--type-small-leading);
+  font-weight: var(--type-small-weight);
+  letter-spacing: var(--type-small-tracking);
 }
 
 @utility type-micro {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--type-micro-size);
+  line-height: var(--type-micro-leading);
+  font-weight: var(--type-micro-weight);
+  letter-spacing: var(--type-micro-tracking);
   text-transform: uppercase;
 }
 
 @utility type-kpi {
   font-family:
     var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 2.5rem;
-  line-height: 2.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: var(--type-kpi-size);
+  line-height: var(--type-kpi-leading);
+  font-weight: var(--type-kpi-weight);
+  letter-spacing: var(--type-kpi-tracking);
   font-variant-numeric: tabular-nums;
 }
 
 @utility type-hand {
   font-family: var(--font-caveat), cursive;
-  font-size: 1.25rem;
-  line-height: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: var(--type-hand-size);
+  line-height: var(--type-hand-leading);
+  font-weight: var(--type-hand-weight);
+  letter-spacing: var(--type-hand-tracking);
 }
 
 * {
@@ -417,8 +462,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-dm-sans), system-ui, sans-serif;
-  font-size: 0.9375rem;
-  line-height: 1.5rem;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+  letter-spacing: var(--type-body-tracking);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -443,17 +489,18 @@ body {
 
 .dashboard-page-description {
   color: var(--muted-foreground);
-  font-size: 0.9375rem;
-  line-height: 1.5rem;
-  font-weight: 400;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+  font-weight: var(--type-body-weight);
+  letter-spacing: var(--type-body-tracking);
 }
 
 .dashboard-frame [data-sidebar="group-label"] {
   color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--type-micro-size);
+  line-height: var(--type-micro-leading);
+  font-weight: var(--type-micro-weight);
+  letter-spacing: var(--type-micro-tracking);
   text-transform: uppercase;
 }
 
