@@ -11,11 +11,13 @@ export function BlobLoader({
   className,
   label = "Loading",
   size = 64,
+  showLabel = false,
 }: {
   className?: string;
   /** Read by assistive tech and, when `showLabel`, shown under the blob. */
   label?: string;
   size?: number;
+  showLabel?: boolean;
 }) {
   return (
     <div
@@ -26,13 +28,19 @@ export function BlobLoader({
       )}
       role="status"
     >
-      <AnimatedBlob label={label} size={size} variant="look" />
-      <span className="sr-only">{label}</span>
+      <AnimatedBlob size={size} variant="look" />
+      <span className={showLabel ? "text-ink-2 text-sm" : "sr-only"}>
+        {label}
+      </span>
     </div>
   );
 }
 
 /** Full-height variant for route transitions and blocking loads. */
 export function BlobLoaderScreen({ label }: { label?: string }) {
-  return <BlobLoader className="min-h-svh w-full" label={label} size={72} />;
+  return (
+    <main className="bg-paper grid min-h-svh place-items-center px-5">
+      <BlobLoader label={label ?? "Loading…"} size={72} showLabel />
+    </main>
+  );
 }

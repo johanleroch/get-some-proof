@@ -1,3 +1,4 @@
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { notFound } from "next/navigation";
 
@@ -28,6 +29,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "full-page-loading": BlobLoaderScreen,
   "rich-testimonial": RichTestimonialScreenFixture,
   "collection-form": CollectionFormScreenFixture,
   "collection-form-closed": CollectionFormClosedScreenFixture,
@@ -70,7 +72,8 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "onboarding" ||
+  return screen === "full-page-loading" ||
+    screen === "onboarding" ||
     screen === "dashboard" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||

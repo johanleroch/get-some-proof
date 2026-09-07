@@ -5,20 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { AppShell } from "@/components/app-shell";
 
 function organizationSlugFromPathname(pathname: string) {
   return pathname.match(/^\/org\/([^/]+)/)?.[1] ?? null;
-}
-
-function WorkspaceLoading() {
-  return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
-      <p className="text-muted-foreground text-sm" role="status">
-        Loading your workspace…
-      </p>
-    </main>
-  );
 }
 
 export function AuthenticatedApplicationShell({
@@ -56,11 +47,11 @@ export function AuthenticatedApplicationShell({
   }, [organizations, pathname, router]);
 
   if (pathname === "/onboarding") {
-    return organizations?.length === 0 ? children : <WorkspaceLoading />;
+    return organizations?.length === 0 ? children : <BlobLoaderScreen />;
   }
 
   if (!organizations) {
-    return <WorkspaceLoading />;
+    return <BlobLoaderScreen />;
   }
 
   const preferredSlug =

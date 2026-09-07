@@ -2,6 +2,13 @@
   "project": "get-some-proof",
   "screens": [
     {
+      "slug": "full-page-loading",
+      "title": "Full-page loading",
+      "path": "/visual-evidence/full-page-loading",
+      "heading": "Loading\u2026",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in",
       "title": "Sign in",
       "path": "/sign-in",

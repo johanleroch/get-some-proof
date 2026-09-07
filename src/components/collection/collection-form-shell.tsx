@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
+
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -1437,13 +1439,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>();
 
   if (brand === undefined || availability === undefined) {
-    return (
-      <main className="bg-paper grid min-h-svh place-items-center px-5">
-        <p className="text-ink-2 text-sm" role="status">
-          Loading Collection Form…
-        </p>
-      </main>
-    );
+    return <BlobLoaderScreen />;
   }
   if (brand === null || availability === null) {
     return (
