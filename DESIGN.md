@@ -253,7 +253,13 @@ Vocabulary, shipped as React SVG components under `src/components/doodles/`:
   the spot illustrations, at most one per screen, 96 to 200px tall, the
   expression chosen from the moment (happy on success, sad on errors,
   curious on empty states) and always said with the eyes alone, the blob has
-  no mouth; never in the embed and never next to the logo mark.
+  no mouth; never in the embed and never next to the logo mark. In motion
+  (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
+  amplitudes, volume kept in every squash, pivot on its base, frozen by
+  reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or
+  `blink`, success `pop`, once. A blob whose face can change is a `Blob`
+  component: it blinks between expressions (380ms) rather than swapping
+  images.
 
 Rules:
 
@@ -362,9 +368,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   quote at `body` in `--ink`. Video cards keep the source ratio, the play
   button is 48px round on `--surface` with `--shadow-float`.
 - Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
-  on `--surface` with a `--line` hairline and `--ink` text. A status is
-  carried by its 6px dot and a hairline tinted 35% toward the status color,
-  never by a pastel fill with colored text (the generic "AI pill"). `brand`
+  on `--surface` with a hairline and `--ink` text. A status is carried by
+  its 6px dot and its hairline, both in the full status color, never by a
+  pastel fill with colored text (the generic "AI pill"). `brand`
   is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
   max 480px (560px for content-heavy). Destructive confirmations keep no close
@@ -372,6 +378,11 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Toasts: sonner themed through its CSS variables to `--surface`, `--ink`,
   `--line`, `--shadow-float` and the semantic tokens; `richColors` is retired.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
+- Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
+  72px full screen) for every indeterminate wait without a skeleton: route
+  transitions through the root `loading.tsx`, a form submitting, a video
+  processing. Never a spinner, except the inline one inside a loading
+  button.
 - Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
   1.75. Lucide is removed once the last usages are migrated.
 
@@ -385,7 +396,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
   tint. Toasts slide 8px from the top-right. Dialogs fade and scale from 0.98.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
-  on empty states and the success step. They never loop.
+  on empty states and the success step. They never loop. The only looping
+  motion in the product is the blob mascot as a loader or on an idle screen
+  (`AnimatedBlob`), one per screen.
 - Animate `transform` and `opacity` only. The global
   `prefers-reduced-motion` rule in `globals.css` stays and every animation
   must look correct when it fires (final state, no draw-in).

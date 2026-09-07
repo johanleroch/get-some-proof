@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Tags on paper (DESIGN.md section 7): a hairline, ink text, 6px radius. A
- * status lives in its dot and a faint tint of the hairline, never in pastel
- * fills with colored text. `brand` is the one tinted tag, for the plan.
+ * status lives in its dot and its hairline, both in the status color, never
+ * in pastel fills with colored text. `brand` is the one tinted tag.
  */
 const badgeVariants = cva(
   "inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.5 rounded-md border px-2 text-[13px] leading-none font-medium tracking-[-0.004em] whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3.5",
@@ -15,15 +15,12 @@ const badgeVariants = cva(
     variants: {
       variant: {
         brand: "bg-brand-soft border-brand-soft-2 text-ink",
-        danger:
-          "bg-surface text-ink border-[color-mix(in_srgb,var(--danger)_35%,var(--line))]",
-        info: "bg-surface text-ink border-[color-mix(in_srgb,var(--info)_35%,var(--line))]",
+        danger: "bg-surface text-ink border-danger",
+        info: "bg-surface text-ink border-info",
         neutral: "bg-surface-2 text-ink-2 border-transparent",
         outline: "border-line-2 text-ink bg-transparent",
-        success:
-          "bg-surface text-ink border-[color-mix(in_srgb,var(--success)_35%,var(--line))]",
-        warning:
-          "bg-surface text-ink border-[color-mix(in_srgb,var(--warning)_35%,var(--line))]",
+        success: "bg-surface text-ink border-success",
+        warning: "bg-surface text-ink border-warning",
       },
     },
     defaultVariants: {
