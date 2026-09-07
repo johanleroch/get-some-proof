@@ -26,6 +26,8 @@ When finishing implementation, a bug fix, an issue, or a pull request, follow `d
 
 For every issue, implementation, bug fix, or pull request that changes or diagnoses user-visible behavior, use `.agents/skills/visual-evidence/SKILL.md` automatically. Capture the current commit and publish its screenshots to the issue or pull request before delivery, even when the user does not explicitly ask for screenshots.
 
+When setting up a contributor's machine or troubleshooting failed screenshot publication (including missing `GH_SESSION_TOKEN` in Actions), follow `docs/agents/visual-evidence.md`. It covers local setup, publication and the separate CI runtime.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

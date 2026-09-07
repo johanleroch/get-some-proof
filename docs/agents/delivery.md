@@ -28,6 +28,8 @@ For user-visible work, also follow `.agents/skills/visual-evidence/SKILL.md`: up
 
 Use `/code-review` against the pull request's base. Resolve every Standards or Spec finding that affects correctness or an acceptance criterion. Re-run the affected local checks after review changes.
 
+Run this review as part of the authorized delivery work, without asking whether to start it. If `/code-review` is unavailable on the contributor's machine, perform and record both axes directly: Standards against the repository's documented rules, and Spec against the source issue and acceptance criteria. Record the reviewed base and head SHA, findings and their resolution. Screenshot publication failures do not block this independent review.
+
 Completion criterion: the review has no unresolved correctness or specification findings.
 
 ## 4. Pass the remote gate
