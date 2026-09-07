@@ -146,9 +146,9 @@ type TypeValues = Record<
 type Rgb = [number, number, number];
 
 const fontStacks = {
-  display: "var(--font-bricolage), var(--font-dm-sans), system-ui, sans-serif",
+  display: "var(--font-gelica), var(--font-figtree), system-ui, sans-serif",
   hand: "var(--font-caveat), cursive",
-  sans: "var(--font-dm-sans), system-ui, sans-serif",
+  sans: "var(--font-figtree), system-ui, sans-serif",
 } as const;
 
 const sampleTestimonial: TestimonialCardValue = {
@@ -568,7 +568,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Four families, all self-hosted through next/font. Inter is gone."
+            description="Four families, all self-hosted through next/font. Gelica is licensed and lives outside git (DESIGN.md section 3). Inter is gone."
             id="fonts"
             title="Fonts"
           >
@@ -930,7 +930,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Tonal pills: soft background, full-strength text, an optional 6px dot."
+            description="Tags on paper with a hairline. The status lives in the dot and a faint tint of the border; the label stays ink."
             id="status"
             title="Status and badges"
           >
@@ -1172,10 +1172,10 @@ function TypeRow({
 }) {
   const family =
     style.family === "display"
-      ? "Bricolage Grotesque"
+      ? "Gelica"
       : style.family === "hand"
         ? "Caveat"
-        : "DM Sans";
+        : "Figtree";
   return (
     <div className="bg-card grid gap-4 rounded-lg border p-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-2">
