@@ -14,6 +14,10 @@ The project uses the default Matt Pocock triage vocabulary. See `docs/agents/tri
 
 This is a single-context repository using a root `CONTEXT.md` and ADRs under `docs/adr/`. See `docs/agents/domain.md`.
 
+### Design system
+
+Every user-visible change follows `DESIGN.md` (tokens, typography, hand-drawn signature, layouts, motion, banned patterns). Review screens in the development gallery at `/screens` and keep its review statuses current.
+
 ### Delivery gate
 
 When finishing implementation, a bug fix, an issue, or a pull request, follow `docs/agents/delivery.md`. A change is complete only after its remote CI checks succeed and its issue and pull-request checklists match the verified evidence.
