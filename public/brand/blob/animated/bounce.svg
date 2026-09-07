@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="blob-anim-bounce" viewBox="176 140 648 648" overflow="visible" fill="none" role="img" aria-label="Get Some Proof mascot, bounce">
+<style>
+#blob-anim-bounce .body, #blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { transform-box: fill-box; will-change: transform; }
+#blob-anim-bounce .body { transform-origin: 50% 100%; }
+#blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { transform-origin: 50% 50%; }
+#blob-anim-bounce .arches { opacity: 0; }
+
+#blob-anim-bounce .body { animation: bounce 1.1s infinite; }
+@keyframes bounce {
+  0% { transform: translateY(0) scale(1.06, 0.94); animation-timing-function: cubic-bezier(0.2, 0, 0.3, 1); }
+  38% { transform: translateY(-48px) scale(0.965, 1.04); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  52% { transform: translateY(-54px) scale(1, 1); animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.6); }
+  88% { transform: translateY(0) scale(1.08, 0.92); animation-timing-function: cubic-bezier(0.2, 0, 0.4, 1); }
+  100% { transform: translateY(0) scale(1.06, 0.94); }
+}
+
+#blob-anim-bounce .eye { animation: blink 4s cubic-bezier(0.4, 0, 0.2, 1) -2.2s infinite; }
+@keyframes blink {
+  0%, 91%, 97%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #blob-anim-bounce .body, #blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { animation: none !important; }
+}
+</style>
+<g class="body">
+<path d="M224 552C224 318 348 228 500 228C652 228 776 318 776 552C776 644 740 712 700 742C662 770 618 718 576 746C540 772 460 772 424 746C382 718 338 770 300 742C260 712 224 644 224 552Z" fill="black"/>
+<g filter="url(#blob-shade-bounce)"><path d="M224 552C224 318 348 228 500 228C652 228 776 318 776 552C776 644 740 712 700 742C662 770 618 718 576 746C540 772 460 772 424 746C382 718 338 770 300 742C260 712 224 644 224 552Z" fill="url(#blob-fill-bounce)"/></g>
+<g class="eyes">
+<path class="eye" d="M395 458A27 27 0 0 1 449 458V530A27 27 0 0 1 395 530Z" fill="#2E2A25"/>
+<path class="eye" d="M551 458A27 27 0 0 1 605 458V530A27 27 0 0 1 551 530Z" fill="#2E2A25"/>
+<g class="arches"><path d="M388 511A34 34 0 0 1 456 511" fill="none" stroke="#2E2A25" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><path d="M544 511A34 34 0 0 1 612 511" fill="none" stroke="#2E2A25" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/></g>
+</g>
+</g>
+<defs>
+<filter id="blob-shade-bounce" x="217" y="212.5" width="574.5" height="563" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="-7" dy="15"/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.36 0"/>
+<feBlend mode="normal" in2="shape" result="effect1"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="22" dy="-42"/>
+<feGaussianBlur stdDeviation="7.75"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.952017 0 0 0 0 0.658791 0 0 0 0 0.0595905 0 0 0 1 0"/>
+<feBlend mode="normal" in2="effect1" result="effect2"/>
+</filter>
+<linearGradient id="blob-fill-bounce" x1="0" y1="194" x2="0" y2="817" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFD24A"/>
+<stop offset="1" stop-color="#F2A100"/>
+</linearGradient>
+</defs>
+</svg>

@@ -4,7 +4,7 @@
 
 - Change the product name and default description in `src/lib/brand.ts`.
 - Replace the icon implementation in `src/components/brand-mark.tsx`. Keep its accessible decorative behavior when the adjacent product or Organization name already identifies the application.
-- Typography is defined in `DESIGN.md`: DM Sans (body and UI), Bricolage Grotesque (display), Caveat (hand-drawn annotations only), Geist Mono (code). Fonts load in `src/app/layout.tsx`; the `--font-sans`, `--font-display`, `--font-hand`, and `--font-mono` mappings and the `type-*` utilities live in `src/app/globals.css`.
+- Typography is defined in `DESIGN.md`: Figtree (body and UI), Gelica (display, licensed and self-hosted from `src/app/fonts/gelica/`, not in git), Caveat (hand-drawn annotations only), Geist Mono (code). Fonts load in `src/app/layout.tsx`; the `--font-sans`, `--font-display`, `--font-hand`, and `--font-mono` mappings and the `type-*` utilities live in `src/app/globals.css`.
 
 ## Colors and themes
 

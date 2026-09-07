@@ -6,10 +6,13 @@ tiles). It extends the product design system in `DESIGN.md` (tokens, voice,
 banned patterns) and never contradicts it. Read both before drawing a new
 icon.
 
-Status: first family delivered on 2026-09-07, ten candidates. The founder
-chose **03 quote marks** as the flagship the same day; it is installed as the
-site favicon, the Apple touch icon and the in-app brand mark. The other nine
-stay as alternates for seasonal, marketing and sub-product uses.
+Status: the founder delivered the **official app icon** on 2026-09-07 (the
+upright blob on a paper tile, section 10.2); it is installed as the site
+favicon, the Apple touch icon and the in-app brand mark, and it is the only
+icon that ships. The generated family below (ten subjects, then ten mascots)
+was the exploration that led there, and 03 quote marks was the interim
+flagship for a few hours. The family stays as a bank of alternates for
+stickers, seasonal tiles, sub-products and social posts.
 
 Reference grammar: [appicons.store](https://www.appicons.store/), a shop of
 64 single-subject app icons (mascots, blobs, speech bubbles, tools, letters).
@@ -72,22 +75,23 @@ All values derive from `DESIGN.md` section 2. The icons are the one place
 where hex values are written directly, because icon files cannot read CSS
 tokens. If `--brand` changes, update `C.amber*` in `build.mjs` and rebuild.
 
-| Name        | Hex       | Role                                               |
-| ----------- | --------- | -------------------------------------------------- |
-| amber       | `#FFBB16` | Brand source token. Flat fills, the sticker ground |
-| amber light | `#FFD24A` | Top of every amber gradient                        |
-| amber deep  | `#F2A100` | Bottom of every amber gradient                     |
-| amber shade | `#8F5A00` | Shadows and bottom shade on amber subjects         |
-| paper       | `#FDFBF7` | Top of the paper background                        |
-| paper deep  | `#F1EBE0` | Bottom of the paper background                     |
-| paper shade | `#7A6A54` | Shadows cast on paper                              |
-| ink         | `#2E2A25` | Eyes, smiles, sticker outlines, the check mark     |
-| ink light   | `#4A433C` | Top of ink subjects                                |
-| ink deep    | `#1B1815` | Bottom of ink subjects                             |
-| ink bg      | `#2A2622` | Top of the ink background                          |
-| ink bg deep | `#17140F` | Bottom of the ink background                       |
-| white       | `#FFFFFF` | Top of white subjects                              |
-| white deep  | `#EEE7DA` | Bottom of white subjects (warm, never gray)        |
+| Name        | Hex       | Role                                                |
+| ----------- | --------- | --------------------------------------------------- |
+| amber       | `#FFBB16` | Brand source token. Flat fills, the sticker ground  |
+| amber light | `#FFD24A` | Top of every amber gradient                         |
+| amber deep  | `#F2A100` | Bottom of every amber gradient                      |
+| amber dark  | `#D68A00` | Secondary parts of an amber subject (ribbons, flap) |
+| amber shade | `#8F5A00` | Shadows and bottom shade on amber subjects          |
+| paper       | `#FDFBF7` | Top of the paper background                         |
+| paper deep  | `#F1EBE0` | Bottom of the paper background                      |
+| paper shade | `#7A6A54` | Shadows cast on paper                               |
+| ink         | `#2E2A25` | Eyes, smiles, sticker outlines, the check mark      |
+| ink light   | `#4A433C` | Top of ink subjects                                 |
+| ink deep    | `#1B1815` | Bottom of ink subjects                              |
+| ink bg      | `#2A2622` | Top of the ink background                           |
+| ink bg deep | `#17140F` | Bottom of the ink background                        |
+| white       | `#FFFFFF` | Top of white subjects                               |
+| white deep  | `#EEE7DA` | Bottom of white subjects (warm, never gray)         |
 
 Three backgrounds, each a vertical gradient (light on top) plus a soft white
 radial light at the top center (35% on amber and paper, 8% on ink):
@@ -211,6 +215,32 @@ Legibility, checked on the sheet at 64 and 32 px: 01, 02, 04, 05, 06, 08 and
 amber accent shrinks to a dot; for 03 that dot is enough to read as ours
 next to the wordmark, so the favicon uses it as is.
 
+### 6.1 Series two, the mascots
+
+Requested after the flagship pick: the 08 blob's treatment (amber soft
+plastic character on paper, ink pill eyes, optional smile) applied to shapes
+that say the product's name. Three stars, then seven objects. They share one
+frame in `build.mjs` (`mascot()`), so a new one is a shape and a face.
+
+| #   | File                 | Subject                                   | Says                                 |
+| --- | -------------------- | ----------------------------------------- | ------------------------------------ |
+| 11  | `star-smile-mascot`  | Plump star, eyes and smile                | The rating star, delighted           |
+| 12  | `star-tilt-mascot`   | Star leaning 14 degrees, eyes only        | The rating star, relaxed             |
+| 13  | `star-chubby-mascot` | Very round star, almost a flower, smiling | The rating star, soft                |
+| 14  | `bubble-mascot`      | Speech bubble with a face                 | A testimonial talking                |
+| 15  | `seal-mascot`        | Scalloped seal with a face                | Verified, certified proof            |
+| 16  | `quote-mascot`       | One closing quote mark, eyes in the head  | The quote itself, the flagship's kin |
+| 17  | `medal-mascot`       | Disc on two ribbons, smiling              | An award, the best proof             |
+| 18  | `magnifier-mascot`   | Ring and handle, the lens holds the face  | Proof means looking closely          |
+| 19  | `stamp-mascot`       | Perforated postage stamp with a face      | Stamped, approved, sent              |
+| 20  | `envelope-mascot`    | Envelope, the flap wears the eyes         | Proof arrives, "get some"            |
+
+Rules specific to the series: the subject is always amber on paper (never on
+amber or ink), secondary parts use `amber dark`, and the face is the only ink.
+Stars with a smile read as delighted, eyes alone read as calm; keep both
+moods in the family. Best uses: onboarding, empty states, the success step,
+stickers and social posts. None of them replaces the flagship icon.
+
 ## 7. Sizes and exports
 
 - Master: 1024 x 1024 SVG, clipped to the squircle. PNG export at 1024 with
@@ -222,11 +252,12 @@ next to the wordmark, so the favicon uses it as is.
 - macOS: 1024, 512, 256, 128, 32, 16 px. At 32 and 16 use icon 05 or 09; a
   face at 16 px is a smudge.
 - Web: `node scripts/app-icons/render.mjs --install` writes
-  `src/app/icon.svg` (the flat build, served as the SVG favicon and read by
-  `BrandMark` for the in-app mark at 32 px), `src/app/apple-icon.png` (180
-  px, square, opaque; iOS rounds it) and `src/app/favicon.ico` (16, 32 and
-  48 px PNG frames). The SVG favicon keeps the squircle clip; browsers do not
-  mask.
+  `src/app/icon.svg` (the official icon as is, served as the SVG favicon and
+  read by `BrandMark` for the in-app mark at 32 px), `src/app/apple-icon.png`
+  (180 px, corners squared off and opaque; iOS rounds it) and
+  `src/app/favicon.ico` (16, 32 and 48 px PNG frames), all from
+  `public/brand/icon.svg`. Browsers do not mask the SVG favicon; the file
+  carries its own rounded corners.
 - Social avatars: circles crop the squircle corners, so keep the subject
   inside a 700 px circle centered on the canvas. 01, 02, 05 and 08 pass.
 - Marketing tiles: place the icon at 160 to 240 px on `--paper` with the
@@ -286,14 +317,123 @@ code so the family stays consistent and editable.
   `node scripts/app-icons/render.mjs` (uses the Playwright Chromium already
   installed for the e2e suite). Add `--install` to rewrite the site icons in
   `src/app/` from the flagship.
-- `public/brand/icons/*.svg`: the family, source of truth, plus the
-  flagship's flat and mark builds (section 6).
+- `public/brand/icons/*.svg`: the family, source of truth (01 to 10 the
+  subjects, 11 to 20 the mascots), plus the flagship's flat and mark builds
+  (section 6) and the lockup marks: `08-blob-mascot-mark.svg` and
+  `12-star-tilt-mascot-mark.svg` (transparent, shaded, room for the cast
+  shadow) with their `-mark-flat.svg` twins for Figma and small sizes.
 - `docs/design/app-icons/png/*.png`: 1024 px exports, transparent corners.
 - `docs/design/app-icons/sheet.png`: review sheet, regenerated with the PNGs.
 
-Open decisions, tracked here until settled: whether the logo lockup in
-`public/brand/logo.png` (star plus wordmark) is redrawn around the quote
-marks, whether `BrandMark` should show the mark-only build instead of the
-paper tile on paper surfaces, and whether the blob (08) becomes the product
-mascot for empty states, which would add it to the doodle vocabulary in
-`DESIGN.md` section 4.
+### 10.1 The official logo
+
+Delivered by the founder on 2026-09-07 as one Figma export and cut into three
+states in `public/brand/`:
+
+| File            | Box       | What                                                       |
+| --------------- | --------- | ---------------------------------------------------------- |
+| `logo.svg`      | 631 x 103 | Lockup: the blob mark on the left of the outlined wordmark |
+| `logo-mark.svg` | 103 x 103 | The blob alone, in the square it occupies in the lockup    |
+| `logo-type.svg` | 517 x 80  | The wordmark alone, cropped to its ink                     |
+
+The mark is the 08 blob, tilted counterclockwise, drawn in Figma with an
+amber gradient (`#FFD24A` to `#F2A100`) and two inner shadows (white from the
+top left, amber dark from the bottom right); the eyes are `#2E2A25`. The
+wordmark is "Getsomeproof" in Gelica, outlined, filled black in the source
+file. Rules: never redraw the paths, export new states from this file. The
+lockup needs at least 24px of height to keep the eyes readable; below that
+use the mark alone. On dark surfaces the wordmark needs a paper-filled
+variant, not yet produced. The tilted star (12) stays an alternate mark for
+stickers and social posts.
+
+### 10.2 The official app icon and the blob
+
+`public/brand/icon.svg` is the founder's Figma export: a 1000 x 1000 tile
+with a plain rounded square at 28% radius (not the superellipse of the
+generated family; keep it, the difference is invisible below 256px), the
+paper gradient with the top light, and the upright blob (same drawing as the
+logo mark, not tilted) with its amber gradient, two inner shadows and ink
+pill eyes. `public/brand/blob.svg` is that blob alone, transparent, cropped
+to a 576 x 576 square, for use on the site itself.
+
+Where the blob may appear on the site: as the spot of an empty state, the
+onboarding preview, the success step, the 404, and marketing pages; at most
+one per screen, 96 to 200px tall, never inside the embed and never next to
+the logo mark (it is the same character twice). It joins the hand-drawn
+signature as its only rendered element: everything around it stays thin-line
+and ink.
+
+**Expressions.** The blob has eleven faces, defined once in
+`src/lib/blob-expressions.ts`, reviewed on the development page `/kit/blob`
+and exported to `public/brand/blob/<name>.svg` by
+`node scripts/app-icons/blob-set.mjs`. The body never changes and the blob
+never has a mouth: the eyes alone carry the mood. The measurable rule, checked
+by `node scripts/app-icons/blob-metrics.mjs`: every eye mark has the ink mass
+of the official pill (54 x 126, tolerance 5%), re-shaped, never re-weighted.
+The dash is the pill lying down; the arch is a semicircle of radius 34 drawn
+at 44 wide, because a 54 stroke bent over the pill's length cannot leave an
+opening; the disc has the pill's area; the tilt keeps the pill. Left and
+right marks mirror each other, on the official centres (422 and 578) unless
+both glance together by the same vector. Props: heart eyes and star eyes share
+one mass (1.2 pills) and one placement (408 and 592); the sunglasses are one
+prop across both eyes and the only mark outside the mass rule. Two documented
+exceptions: Wink is the one deliberate asymmetry, and Worried's sweat drop is
+the one mark that is neither an eye nor ink.
+
+Names and moments: neutral (brand mark), happy (saved, published: both eyes
+closed in an arch), love (a five-star testimonial: heart eyes), wink (tips,
+pro features: one pill, one arch), surprised (a new testimonial: round eyes),
+curious (empty inbox, no result, loading: both pills glance up and to the
+right, 64 units across and 48 up), sleepy (nothing yet, idle: flat dashes),
+sad (error, declined, deleted: pills lean in at the top), starstruck (video,
+featured, the Wall going live), cool (verified, upgraded, milestone), worried
+(quota, pending payment, slow upload: the arch turned over, eyes closed and
+downcast, plus the sweat drop). Pick the expression from the moment, never
+at random, and never show two on one screen. Adding a face is a new entry in
+the array, then a run of the metrics script.
+
+**Motion.** Six behaviours in `src/lib/blob-animations.ts`, shown under the
+set on `/kit/blob`, exported to `public/brand/blob/animated/<name>.svg` as
+standalone animated SVGs, and available in the app as
+`<AnimatedBlob variant="…" size={…} />` from
+`src/components/brand/animated-blob.tsx`. Transforms and opacity only, on
+the same body and eyes; `prefers-reduced-motion` freezes every one on the
+neutral face. Character of the motion: a jelly, never a ball. Amplitudes of 2
+to 5%, every squash keeps the volume (wider means shorter), the body pivots
+on its base, loops on a sine-like curve, one-shot moves on a soft back-out.
+Names and moments: breathe (any resting blob: 2% swell, 3.2 s), blink (the
+resting blob with life: 120 ms blink every 4 s over the breathing), look
+(loading and searching: the eyes glide up-right, then left, the body leans
+2°, 3 s), bounce (working hard, uploads and processing: squash, stretch, soft
+landing, 1.1 s), wobble (an entrance or hover: three shrinking swings over
+900 ms, then still, one-shot in the product), pop (success: a hop while the
+pills cross-fade into the Happy arches, one-shot in the product). The site loader is `BlobLoader`
+(`src/components/brand/blob-loader.tsx`): the `look` behaviour at 64px, 72px
+full screen through the root `loading.tsx`, with a `label` for assistive
+tech; `bounce` is reserved for uploads and processing; idle screens use
+`breathe` or `blink` at 96 to 160px; never two animated blobs on one screen, and an animated blob
+replaces the static one, it does not sit next to it.
+
+**Transitions.** The blob never snaps from one face to another. The
+`Blob` component (`src/components/brand/blob.tsx`, `<Blob expression="…"
+size={…} idle />`) runs one transition on every change of `expression`: the
+eyes shut in 140 ms, the face swaps while they are shut, they reopen with a
+soft settle of the body (380 ms in all, transform and opacity only). The same
+blink works between any two expressions, props and sweat drop included,
+which is why there is no shape morphing. `idle` adds breathing and the 4 s
+blink. Try it on `/kit/blob` under "Transitions": the strip picks the next
+face for the big blob. In the product, a static blob that may change state
+(an inbox that fills, an upload that finishes) is always a `Blob`, never a
+swapped image.
+
+**Toasts.** Notifications are the blob talking: `BlobToast` and the
+`blobToast.*` helpers in `src/components/brand/blob-toast.tsx` put the blob
+at 48px next to a speech bubble with the message, the blob blinking from
+neutral into the message's mood on appearance (happy, neutral, worried, sad,
+the `look` loader for loading). Reviewed under "Toasts" on `/kit/blob`. They appear top right.
+
+Open decisions, tracked here until settled: moving `BrandMark` (sidebar,
+onboarding, Collection Form badge) from the app icon to `logo-mark.svg` or
+to the full lockup once the shell work lands, and whether the blob becomes
+the product mascot for empty states, which would add it to the doodle
+vocabulary in `DESIGN.md` section 4.

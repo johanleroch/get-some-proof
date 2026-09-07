@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import {
-  Bricolage_Grotesque,
-  Caveat,
-  DM_Sans,
-  Geist_Mono,
-} from "next/font/google";
+import { Caveat, Figtree, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
@@ -17,18 +13,25 @@ import { themeInitializationScript } from "@/lib/theme";
 
 import "./globals.css";
 
-// Typography per DESIGN.md: DM Sans for body and UI, Bricolage Grotesque for
-// display, Caveat only for hand-drawn annotations, Geist Mono for code.
-const dmSans = DM_Sans({
-  axes: ["opsz"],
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
+// Typography per DESIGN.md: Gelica for display (licensed, self-hosted from
+// src/app/fonts/gelica, kept out of git: see DESIGN.md section 3), Figtree
+// for body and UI, Caveat only for hand-drawn annotations, Geist Mono for
+// code.
+const gelica = localFont({
+  display: "swap",
+  src: [
+    { path: "./fonts/gelica/Gelica-Regular.otf", weight: "400" },
+    { path: "./fonts/gelica/Gelica-Medium.otf", weight: "500" },
+    { path: "./fonts/gelica/Gelica-SemiBold.otf", weight: "600" },
+    { path: "./fonts/gelica/Gelica-Bold.otf", weight: "700" },
+    { path: "./fonts/gelica/Gelica-Black.otf", weight: "900" },
+  ],
+  variable: "--font-gelica",
 });
 
-const bricolage = Bricolage_Grotesque({
-  axes: ["opsz"],
+const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-bricolage",
+  variable: "--font-figtree",
 });
 
 const caveat = Caveat({
@@ -64,7 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body
-        className={`${dmSans.variable} ${bricolage.variable} ${caveat.variable} ${geistMono.variable}`}
+        className={`${gelica.variable} ${figtree.variable} ${caveat.variable} ${geistMono.variable}`}
       >
         <TooltipProvider>
           {environment.configured ? (

@@ -21,6 +21,7 @@ const C = {
   amber: "#FFBB16",
   amberLight: "#FFD24A",
   amberDeep: "#F2A100",
+  amberDark: "#D68A00",
   amberShade: "#8F5A00",
   paper: "#FDFBF7",
   paperDeep: "#F1EBE0",
@@ -144,6 +145,24 @@ function rrect(x, y, w, h, r) {
 
 function circle(cx, cy, r) {
   return `M${f(cx - r)} ${f(cy)}a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0Z`;
+}
+
+/** Thick segment with round ends, as a filled path. */
+function capsule(x1, y1, x2, y2, w) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * (w / 2);
+  const ny = (dx / len) * (w / 2);
+  const r = w / 2;
+  return [
+    `M${f(x1 + nx)} ${f(y1 + ny)}`,
+    `L${f(x2 + nx)} ${f(y2 + ny)}`,
+    `A${f(r)} ${f(r)} 0 0 0 ${f(x2 - nx)} ${f(y2 - ny)}`,
+    `L${f(x1 - nx)} ${f(y1 - ny)}`,
+    `A${f(r)} ${f(r)} 0 0 0 ${f(x1 + nx)} ${f(y1 + ny)}`,
+    "Z",
+  ].join("");
 }
 
 /** Speech bubble: very round body plus a short curved tail. */
@@ -537,6 +556,157 @@ ${cast("shadowSmall", `<path d="${s1}${s2}"/>`)}
   });
 });
 
+// ---------------------------------------------------------------- mascots
+// Series two, the 08 blob's cousins: one amber soft plastic character on
+// paper, ink pill eyes, optional smile. Three stars, then shapes that say
+// "Get Some Proof" (bubble, seal, quote, medal, magnifier, stamp, envelope).
+
+/** Shared frame for the mascot series. `shapes` are amber, `over` draws on top. */
+function mascot({ name, shapes, defs = "", over = "", under = "" }) {
+  const bg = background("paper");
+  return svg({
+    name: `Get Some Proof, ${name}`,
+    defs: `${bg.defs}${vgrad("body", C.amberLight, C.amberDeep, 200, 860)}${vgrad("bodyDark", C.amberDeep, C.amberDark, 150, 700)}${plasticFilter("plastic", { rim: 0.8, shade: 0.24, rimSize: 16, shadeSize: 28, shadeColor: C.amberShade })}${dropShadow("shadow", { color: C.paperShade, opacity: 0.32, blur: 24, dy: 34 })}${defs}`,
+    body: `${bg.body}
+${cast("shadow", paths(shapes, ""))}
+${under}
+<g ${fx("plastic")}>${paths(shapes, `fill="url(#body)"`)}</g>
+${over}`,
+  });
+}
+
+// 11 · Star smile. The 01 mascot in amber on paper, delighted.
+icons.push(() =>
+  mascot({
+    name: "star smile mascot",
+    shapes: [star(512, 536, 364, { inner: 0.52, round: 0.2 })],
+    over: `${eyes(512, 526, { gap: 132, w: 48, h: 108 })}${smile(512, 620, 88, { stroke: 26 })}`,
+  }),
+);
+
+// 12 · Star tilt. Leaning star, eyes only, calm.
+icons.push(() => {
+  const rot = -14;
+  return mascot({
+    name: "star tilt mascot",
+    shapes: [star(520, 540, 372, { inner: 0.5, round: 0.18, rotate: rot })],
+    over: `<g transform="rotate(${rot} 520 540)">${eyes(520, 532, { gap: 140, w: 50, h: 116 })}</g>`,
+  });
+});
+
+// 13 · Star chubby. A very round star, almost a flower, smiling.
+icons.push(() =>
+  mascot({
+    name: "star chubby mascot",
+    shapes: [star(512, 540, 384, { inner: 0.62, round: 0.34 })],
+    over: `${eyes(512, 522, { gap: 136, w: 50, h: 110 })}${smile(512, 616, 96, { stroke: 26 })}`,
+  }),
+);
+
+// 14 · Bubble buddy. An amber speech bubble with a face.
+icons.push(() =>
+  mascot({
+    name: "bubble mascot",
+    shapes: bubble({ x: 196, y: 226, w: 632, h: 500, side: "left" }),
+    over: `${eyes(512, 452, { gap: 146, w: 52, h: 122 })}${smile(512, 552, 92, { stroke: 26 })}`,
+  }),
+);
+
+// 15 · Seal buddy. The proof seal, now a character.
+icons.push(() =>
+  mascot({
+    name: "seal mascot",
+    shapes: seal(512, 528, 288, 12, 0.25),
+    over: `${eyes(512, 500, { gap: 140, w: 50, h: 116 })}${smile(512, 598, 92, { stroke: 26 })}`,
+  }),
+);
+
+// 16 · Quote buddy. One closing quote mark with eyes in its head.
+icons.push(() => {
+  const R = 204;
+  const cx = 512;
+  const cy = 418;
+  const tail = [
+    `M${f(cx + R * 0.98)} ${f(cy - R * 0.2)}`,
+    `C${f(cx + R * 1.05)} ${f(cy + R * 0.9)} ${f(cx + R * 0.55)} ${f(cy + R * 1.75)} ${f(cx - R * 0.25)} ${f(cy + R * 2.15)}`,
+    `C${f(cx + R * 0.2)} ${f(cy + R * 1.55)} ${f(cx + R * 0.35)} ${f(cy + R * 1.05)} ${f(cx - R * 0.1)} ${f(cy + R * 0.95)}`,
+    "Z",
+  ].join("");
+  return mascot({
+    name: "quote mascot",
+    shapes: [circle(cx, cy, R), tail],
+    over: eyes(cx, cy + 4, { gap: 122, w: 46, h: 104 }),
+  });
+});
+
+// 17 · Medal buddy. A disc on two ribbons, smiling.
+icons.push(() => {
+  const ribbon = (angle) =>
+    `<path d="${rrect(428, 96, 168, 560, 36)}" fill="url(#bodyDark)" transform="rotate(${angle} 512 620)"/>`;
+  return mascot({
+    name: "medal mascot",
+    shapes: [circle(512, 600, 246)],
+    under: `<g ${fx("plastic")}>${ribbon(-24)}${ribbon(24)}</g>`,
+    over: `${eyes(512, 584, { gap: 130, w: 48, h: 108 })}${smile(512, 676, 88, { stroke: 26 })}`,
+  });
+});
+
+// 18 · Magnifier buddy. The lens is the face: proof means looking closely.
+icons.push(() => {
+  const ring = 92;
+  const cx = 468;
+  const cy = 466;
+  const R = 262;
+  return mascot({
+    name: "magnifier mascot",
+    shapes: [
+      circle(cx, cy, R + ring),
+      capsule(cx + R * 0.74, cy + R * 0.74, 812, 812, 118),
+    ],
+    defs: rgrad("lens", cx - 60, cy - 70, R * 1.3, [
+      [0, C.white],
+      [1, C.paperDeep],
+    ]),
+    over: `<circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#lens)"/>
+${eyes(cx, cy - 8, { gap: 124, w: 46, h: 104 })}${smile(cx, cy + 82, 84, { stroke: 24 })}`,
+  });
+});
+
+// 19 · Stamp buddy. A postage stamp with perforated edges and eyes.
+icons.push(() => {
+  const x = 232;
+  const y = 262;
+  const w = 560;
+  const h = 500;
+  const holes = [];
+  const step = 70;
+  for (let i = 0; i <= w / step; i += 1) {
+    holes.push([x + i * step, y], [x + i * step, y + h]);
+  }
+  for (let i = 1; i < h / step; i += 1) {
+    holes.push([x, y + i * step], [x + w, y + i * step]);
+  }
+  return mascot({
+    name: "stamp mascot",
+    shapes: [rrect(x, y, w, h, 34)],
+    over: `${holes.map(([hx, hy]) => `<circle cx="${hx}" cy="${hy}" r="23" fill="url(#bg)"/>`).join("")}
+${eyes(512, 486, { gap: 142, w: 52, h: 120 })}${smile(512, 586, 92, { stroke: 26 })}`,
+  });
+});
+
+// 20 · Envelope buddy. Proof arrives in the mail; the flap wears the face.
+icons.push(() => {
+  const body = rrect(212, 296, 600, 440, 56);
+  const flap =
+    "M212 352C212 322 236 296 268 296H756C788 296 812 322 812 352L560 566C532 588 492 588 464 566Z";
+  return mascot({
+    name: "envelope mascot",
+    shapes: [body],
+    over: `<g ${fx("plastic")}><path d="${flap}" fill="url(#bodyDark)"/></g>
+${eyes(512, 420, { gap: 122, w: 44, h: 96 })}`,
+  });
+});
+
 export const ICONS = [
   "star-mascot",
   "bubble-sticker",
@@ -548,6 +718,16 @@ export const ICONS = [
   "blob-mascot",
   "p-monogram",
   "star-burst",
+  "star-smile-mascot",
+  "star-tilt-mascot",
+  "star-chubby-mascot",
+  "bubble-mascot",
+  "seal-mascot",
+  "quote-mascot",
+  "medal-mascot",
+  "magnifier-mascot",
+  "stamp-mascot",
+  "envelope-mascot",
 ];
 
 /** Index of the icon chosen as the product's app icon (03 quote marks). */
@@ -555,6 +735,16 @@ export const FLAGSHIP = 2;
 
 /** Tight crop around the flagship subject, for the mark-only export. */
 const FLAGSHIP_MARK_VIEWBOX = [200, 134, 722, 656];
+
+/**
+ * Mascots exported as marks (no squircle, transparent) for lockups next to
+ * the wordmark: the blob and the tilted star. The crop leaves room for the
+ * cast shadow of the shaded build.
+ */
+const MASCOT_MARKS = {
+  7: [186, 196, 652, 704],
+  11: [96, 146, 792, 866],
+};
 
 export function iconFileName(index) {
   return `${String(index + 1).padStart(2, "0")}-${ICONS[index]}`;
@@ -598,6 +788,18 @@ async function main() {
     path.join(OUT_DIR, `${flagship}-mark-on-dark.svg`),
     buildIcon(FLAGSHIP, { ...mark, invert: true }),
   );
+  for (const [index, viewBox] of Object.entries(MASCOT_MARKS)) {
+    const i = Number(index);
+    const bare = { clip: false, bare: true, viewBox };
+    await write(
+      path.join(OUT_DIR, `${iconFileName(i)}-mark.svg`),
+      buildIcon(i, bare),
+    );
+    await write(
+      path.join(OUT_DIR, `${iconFileName(i)}-mark-flat.svg`),
+      buildIcon(i, { ...bare, flat: true }),
+    );
+  }
 }
 
 if (
