@@ -227,6 +227,9 @@ function QuickAccessMenu({
           <DropdownMenuItem asChild>
             <a href="/kit/blob">Blob expressions</a>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="/kit/testimonials">Testimonial card</a>
+          </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() =>
               blobToast.success("Testimonial published.", {
