@@ -1,5 +1,6 @@
-// Builds the spot illustrations of the hand-drawn signature (DESIGN.md
-// section 4) as React components in src/components/doodles/spots.tsx.
+// Builds the hand-drawn signature (DESIGN.md section 4) as React components:
+// the spot illustrations in src/components/doodles/spots.tsx and the marks
+// (star, underline, ring, arrows) in src/components/doodles/marks.tsx.
 //
 // Every drawing shares one grammar so the set stays coherent:
 // - a 320 x 220 artboard, subjects tilted 2 to 6 degrees;
@@ -20,10 +21,12 @@ import { fileURLToPath } from "node:url";
 const ARTBOARD = "0 0 320 220";
 const SURFACE = "surface";
 const BRAND = "brand";
-const OUT_FILE = path.resolve(
+const DOODLES_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../src/components/doodles/spots.tsx",
+  "../../src/components/doodles",
 );
+const OUT_FILE = path.join(DOODLES_DIR, "spots.tsx");
+const MARKS_FILE = path.join(DOODLES_DIR, "marks.tsx");
 
 /** Small deterministic PRNG (mulberry32) so a seed always draws the same lines. */
 function prng(seed) {
@@ -146,7 +149,91 @@ function pen(seed) {
 
   const stars = (xs, y, r) => xs.map((x) => star(x, y, r)).join("");
 
-  return { bubble, circle, line, quotes, rect, sparkle, star, stars };
+  /** Smooth cubic path through points (Catmull-Rom), open or closed. */
+  const through = (points, { close = false } = {}) => {
+    const n = points.length;
+    const at = (i) =>
+      points[close ? (i + n) % n : Math.min(Math.max(i, 0), n - 1)];
+    let d = `M${round(points[0][0])} ${round(points[0][1])}`;
+    const last = close ? n : n - 1;
+    for (let i = 0; i < last; i += 1) {
+      const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += `C${round(c1[0])} ${round(c1[1])},${round(c2[0])} ${round(c2[1])},${round(p2[0])} ${round(p2[1])}`;
+    }
+    return close ? d + "Z" : d;
+  };
+
+  /** Five-point star outline with slightly concave edges, closed. */
+  const starOutline = (cx, cy, outer, inner) => {
+    const tips = [];
+    for (let i = 0; i < 10; i += 1) {
+      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+      const radius = (i % 2 === 0 ? outer : inner) + j(0.5);
+      tips.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+    }
+    let d = `M${round(tips[0][0])} ${round(tips[0][1])}`;
+    for (let i = 0; i < 10; i += 1) {
+      const a = tips[i];
+      const b = tips[(i + 1) % 10];
+      const mx = (a[0] + b[0]) / 2;
+      const my = (a[1] + b[1]) / 2;
+      // pull the control point toward the center so edges bow inward a touch
+      const cxp = mx + (cx - mx) * 0.12;
+      const cyp = my + (cy - my) * 0.12;
+      d += `Q${round(cxp)} ${round(cyp)},${round(b[0])} ${round(b[1])}`;
+    }
+    return d + "Z";
+  };
+
+  /** Marker swash: a tapered wave filled with the current color. */
+  const marker = (x1, x2, y, amplitude, waves, thickness) => {
+    const samples = 28;
+    const top = [];
+    const bottom = [];
+    for (let i = 0; i <= samples; i += 1) {
+      const u = i / samples;
+      const x = x1 + (x2 - x1) * u;
+      const wave = Math.sin(u * waves * Math.PI * 2 - Math.PI / 2) * amplitude;
+      const t = thickness * (0.35 + 0.65 * Math.sin(u * Math.PI));
+      top.push([x, y + wave - t / 2]);
+      bottom.push([x, y + wave + t / 2]);
+    }
+    return through([...top, ...bottom.reverse()], { close: true });
+  };
+
+  /** A loop drawn once and a bit, the second pass just outside the first. */
+  const loop = (cx, cy, rx, ry, turns = 1.18) => {
+    const points = [];
+    const start = Math.PI * 0.92;
+    const steps = 44;
+    for (let i = 0; i <= steps; i += 1) {
+      const u = i / steps;
+      const angle = start + u * turns * Math.PI * 2;
+      const grow = 1 + 0.075 * u * turns + 0.015 * Math.sin(angle * 3 + 1);
+      points.push([
+        cx + Math.cos(angle) * rx * grow,
+        cy + Math.sin(angle) * ry * grow,
+      ]);
+    }
+    return through(points);
+  };
+
+  return {
+    bubble,
+    circle,
+    line,
+    loop,
+    marker,
+    quotes,
+    rect,
+    sparkle,
+    star,
+    starOutline,
+    stars,
+    through,
+  };
 }
 
 const group = (transform, paths) => ({ paths, transform });
@@ -277,11 +364,68 @@ const spots = [
   },
 ];
 
+const marks = [
+  {
+    doc: ["A loosely drawn five-point star, the logo's cousin."],
+    draw(p) {
+      return [
+        group("rotate(-8 24 25)", [stroke(p.starOutline(24, 25, 19, 8.4))]),
+      ];
+    },
+    name: "ScribbleStar",
+    seed: 41,
+    viewBox: "0 0 48 48",
+  },
+  {
+    doc: [
+      "A marker swash under one key word, filled with the current color.",
+      "Stretches to its container.",
+    ],
+    draw(p) {
+      return [
+        group("", [filled(p.marker(3, 117, 8, 2.6, 2, 5.2), "currentColor")]),
+      ];
+    },
+    name: "WavyUnderline",
+    preserveAspectRatio: "none",
+    seed: 43,
+    viewBox: "0 0 120 16",
+  },
+  {
+    doc: ["A ring drawn once and a bit around a number or a short label."],
+    draw(p) {
+      return [group("rotate(-4 60 30)", [stroke(p.loop(60, 31, 50, 21))])];
+    },
+    name: "CircleAround",
+    seed: 47,
+    viewBox: "0 0 120 60",
+  },
+];
+
+/** Arrow strokes for SketchArrow; both point right, mirrored by the caller. */
+const arrows = {
+  curve: {
+    paths: ["M6 9c14 2 32 7 45 22 4 5 7 10 9 16", "M52 42l9 5-1-11"],
+    viewBox: "0 0 80 60",
+  },
+  flat: {
+    paths: ["M4 15c12-7 26-9 40-6 11 2 20 3 30 2", "M65 4l9 7-10 5"],
+    viewBox: "0 0 80 24",
+  },
+};
+
 function fillAttribute(fill) {
-  return fill ? ` fill="var(--${fill})"` : "";
+  if (!fill) return "";
+  return fill === "currentColor"
+    ? ' fill="currentColor"'
+    : ` fill="var(--${fill})"`;
 }
 
 function componentSource(spot) {
+  const viewBox = spot.viewBox ?? ARTBOARD;
+  const extra = spot.preserveAspectRatio
+    ? ` preserveAspectRatio="${spot.preserveAspectRatio}"`
+    : "";
   const groups = spot.draw(pen(spot.seed));
   const body = groups
     .map((g) => {
@@ -296,7 +440,50 @@ function componentSource(spot) {
     })
     .join("\n");
   const doc = spot.doc.map((line) => ` * ${line}`).join("\n");
-  return `/**\n${doc}\n */\nexport function ${spot.name}(props: DoodleProps) {\n  return (\n    <svg {...doodleProps(props, "${ARTBOARD}")}>\n${body}\n    </svg>\n  );\n}\n`;
+  return `/**\n${doc}\n */\nexport function ${spot.name}(props: DoodleProps) {\n  return (\n    <svg {...doodleProps(props, "${viewBox}")}${extra}>\n${body}\n    </svg>\n  );\n}\n`;
+}
+
+function arrowSource() {
+  const shape = (key) =>
+    arrows[key].paths
+      .map((d) => `        <path {...strokeAttributes} d="${d}" />`)
+      .join("\n");
+  return [
+    "/**",
+    " * Arrow used with a handwritten caption. `curve` dives from the caption down",
+    " * to something below it; `flat` runs sideways to something on the same line.",
+    " * Both point right; mirror with `-scale-x-100` to point left.",
+    " */",
+    "export function SketchArrow({",
+    '  shape = "curve",',
+    "  ...props",
+    '}: DoodleProps & { shape?: "curve" | "flat" }) {',
+    '  if (shape === "flat") {',
+    "    return (",
+    `      <svg {...doodleProps(props, "${arrows.flat.viewBox}")}>`,
+    shape("flat"),
+    "      </svg>",
+    "    );",
+    "  }",
+    "  return (",
+    `    <svg {...doodleProps(props, "${arrows.curve.viewBox}")}>`,
+    shape("curve"),
+    "    </svg>",
+    "  );",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function marksFileSource() {
+  const header = [
+    "// Generated by scripts/doodles/build.mjs. Edit the script, not this file:",
+    "// `pnpm doodles:build` rewrites it. DESIGN.md section 4 sets the grammar.",
+    "",
+    'import { doodleProps, type DoodleProps, strokeAttributes } from "./doodle";',
+    "",
+  ].join("\n");
+  return header + marks.map(componentSource).join("\n") + "\n" + arrowSource();
 }
 
 function fileSource() {
@@ -314,6 +501,7 @@ function fileSource() {
 }
 
 function svgSource(spot) {
+  const viewBox = spot.viewBox ?? ARTBOARD;
   const groups = spot.draw(pen(spot.seed));
   const body = groups
     .map((g) => {
@@ -325,10 +513,27 @@ function svgSource(spot) {
       return [open, ...paths, "</g>"].join("");
     })
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${ARTBOARD}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const extra = spot.preserveAspectRatio
+    ? ` preserveAspectRatio="${spot.preserveAspectRatio}"`
+    : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"${extra} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 }
 
 function previewSource() {
+  const markPanels = marks
+    .map((mark) => {
+      const svg = svgSource(mark);
+      const big =
+        mark.name === "WavyUnderline"
+          ? "width:260px;height:36px"
+          : "height:120px";
+      const small =
+        mark.name === "WavyUnderline"
+          ? "width:120px;height:14px"
+          : "height:40px";
+      return `<div class="panel mark"><div style="${big}">${svg}</div><p>${mark.name}</p></div><div class="panel mark dark"><div style="${big}">${svg}</div></div><div class="panel mark small"><div style="${small}">${svg}</div></div>`;
+    })
+    .join("\n");
   const panels = spots
     .map((spot) => {
       const svg = svgSource(spot);
@@ -340,7 +545,8 @@ body{margin:0;display:grid;grid-template-columns:2fr 2fr 1fr;gap:24px;padding:24
 .panel{background:#f5f1ea;padding:28px;border-radius:12px;color:#2e2a25;--brand:#ffbb16;--surface:#fff}
 .dark{background:#2a2522;color:#eeebe4;--surface:#211c18}
 svg{width:100%;height:auto}.small svg{width:160px}p{margin:8px 0 0;font-size:13px;color:#6b655c}
-</style>${panels}`;
+.mark div{display:inline-block}.mark svg{width:auto;height:100%}.mark.small svg{width:auto}
+</style>${markPanels}${panels}`;
 }
 
 const previewIndex = process.argv.indexOf("--preview");
@@ -351,7 +557,8 @@ if (previewIndex !== -1) {
   console.log(`Preview sheet: ${target}`);
 } else {
   await writeFile(OUT_FILE, fileSource());
+  await writeFile(MARKS_FILE, marksFileSource());
   console.log(
-    `Wrote ${path.relative(process.cwd(), OUT_FILE)} (${spots.length} spots)`,
+    `Wrote ${path.relative(process.cwd(), OUT_FILE)} (${spots.length} spots) and ${path.relative(process.cwd(), MARKS_FILE)} (${marks.length} marks + SketchArrow)`,
   );
 }

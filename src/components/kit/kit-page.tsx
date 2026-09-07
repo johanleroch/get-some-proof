@@ -1352,7 +1352,7 @@ function DoodleShowcase() {
             <span className="relative inline-block">
               proof
               <WavyUnderline
-                className="text-brand absolute -bottom-1 left-0 h-3 w-full"
+                className="text-brand absolute -bottom-2 left-0 h-4 w-full"
                 draw
               />
             </span>

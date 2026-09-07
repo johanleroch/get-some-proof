@@ -15,7 +15,11 @@ import { spotViewBox } from "@/components/doodles/spots";
 
 const marks = { CircleAround, ScribbleStar, SketchArrow, WavyUnderline };
 const spots = { CameraTripod, EnvelopeStamp, SpeechBubbleStars, WallFrames };
-const allowedFills = new Set(["var(--surface)", "var(--brand)"]);
+const allowedFills = new Set([
+  "var(--surface)",
+  "var(--brand)",
+  "currentColor",
+]);
 
 afterEach(cleanup);
 
