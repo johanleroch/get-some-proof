@@ -396,7 +396,12 @@ Order of work, each step verified in `/screens` (sample and live) and with
 6. Visual evidence: refresh `visual-evidence.config.json` captures and the
    fixtures' sample data (names, companies, quotes) to the new voice.
 
+App icons (App Store, dock, favicon, social avatars) follow their own spec in
+`docs/design/app-icons/DESIGN.md`, built on the same tokens. Ten candidates
+live in `public/brand/icons/`; the flagship is 03 quote marks, installed as
+the favicon, the Apple touch icon and the in-app brand mark.
+
 Open decisions, tracked here until settled: the final accent hue (amber is
-provisional), a possible logo refresh once the palette is live, and whether the
-Wall offers a "quiet" variant without the signature for very conservative
-customer Brands.
+provisional), a possible logo refresh once the palette is live (see the app
+icon family), and whether the Wall offers a "quiet" variant without the
+signature for very conservative customer Brands.
