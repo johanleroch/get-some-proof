@@ -4,7 +4,7 @@ import { paginationOptsValidator } from "convex/server";
 
 import { query } from "./_generated/server";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
-import { accentInk } from "./domain/color-contrast";
+import { accentInk } from "./domain/colorContrast";
 import { organizationPublicVisibility } from "./publicProjection";
 import { testimonialCardValue } from "./testimonialCardValue";
 
