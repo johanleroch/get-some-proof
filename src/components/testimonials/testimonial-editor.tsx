@@ -107,7 +107,7 @@ export function TestimonialEditor({
         </div>
         <PlateContent
           aria-label="Your testimonial"
-          className="min-h-40 px-3 py-3 text-sm leading-7 outline-none [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:text-stone-900"
+          className="h-40 [scrollbar-gutter:stable] overflow-y-auto overscroll-contain px-3 py-3 text-sm leading-7 outline-none [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:text-stone-900"
           data-step-focus
           id={id}
           placeholder="What changed for you?"
