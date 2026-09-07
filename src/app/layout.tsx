@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from "react";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { DevQuickAccess } from "@/components/dev/dev-quick-access";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { productDescription, productName } from "@/lib/brand";
@@ -50,6 +51,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const environment = getPublicEnvironment();
+  // Designer quick access: development only, never in visual-evidence captures.
+  const showDevTools =
+    process.env.NODE_ENV !== "production" &&
+    process.env.VISUAL_EVIDENCE_MODE !== "true";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -65,6 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {environment.configured ? (
             <ConvexClientProvider url={environment.convexUrl}>
               {children}
+              {showDevTools ? <DevQuickAccess /> : null}
             </ConvexClientProvider>
           ) : (
             children
