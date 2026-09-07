@@ -14,6 +14,7 @@ import {
   IconExternalLink,
   IconFlask,
   IconLock,
+  IconPalette,
   IconRefresh,
 } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -315,6 +316,12 @@ function GalleryView({
           >
             <IconRefresh aria-hidden="true" />
             Reload all
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <a href="/kit">
+              <IconPalette aria-hidden="true" />
+              Kit
+            </a>
           </Button>
           <ThemeToggle />
         </div>
