@@ -19,10 +19,10 @@ import {
   CameraTripod,
   CircleAround,
   EnvelopeStamp,
-  ScribbleStar,
+  Sparkle,
   SpeechBubbleStars,
   WallFrames,
-  WavyUnderline,
+  MarkerHighlight,
 } from "@/components/doodles";
 import { TestimonialCard } from "@/components/testimonials/testimonial-card";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card-markup";
@@ -1343,21 +1343,21 @@ function DoodleShowcase() {
     <div className="space-y-6" key={drawKey}>
       <div className="flex flex-wrap items-end gap-8">
         <div className="space-y-2">
-          <ScribbleStar className="text-brand size-12" draw />
-          <p className="text-ink-2 type-small">ScribbleStar</p>
+          <Sparkle className="text-brand size-12" draw />
+          <p className="text-ink-2 type-small">Sparkle</p>
         </div>
         <div className="space-y-2">
-          <p className="type-display relative inline-block">
+          <p className="type-display">
             Get some{" "}
-            <span className="relative inline-block">
-              proof
-              <WavyUnderline
-                className="text-brand absolute -bottom-2 left-0 h-4 w-full"
+            <span className="relative inline-block whitespace-nowrap">
+              <MarkerHighlight
+                className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]"
                 draw
               />
+              <span className="relative">proof</span>
             </span>
           </p>
-          <p className="text-ink-2 type-small">WavyUnderline</p>
+          <p className="text-ink-2 type-small">MarkerHighlight</p>
         </div>
         <div className="space-y-2">
           <span className="relative inline-block px-4 py-1">

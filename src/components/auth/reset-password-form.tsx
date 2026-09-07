@@ -3,7 +3,7 @@
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
 
-import { ScribbleStar } from "@/components/doodles";
+import { Sparkle } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Field } from "@/components/ui/field";
@@ -44,7 +44,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
   if (complete) {
     return (
       <div className="space-y-5">
-        <ScribbleStar className="text-brand size-12" draw />
+        <Sparkle className="text-brand size-12" draw />
         <div className="space-y-1.5">
           <h2 className="type-heading">Password updated</h2>
           <p className="type-body text-ink-2">

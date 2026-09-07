@@ -21,7 +21,7 @@ import {
 import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
-import { ScribbleStar, WallFrames } from "@/components/doodles";
+import { Sparkle, WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -583,7 +583,7 @@ function SuccessStep({
 }) {
   return (
     <section className="space-y-5 py-2">
-      <ScribbleStar className="size-14 text-(--brand-accent)" draw />
+      <Sparkle className="size-14 text-(--brand-accent)" draw />
       <div className="space-y-2">
         <h2 className="type-heading" data-step-focus tabIndex={-1}>
           Thank you for your proof

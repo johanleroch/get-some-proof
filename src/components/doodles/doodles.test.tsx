@@ -5,15 +5,15 @@ import {
   CameraTripod,
   CircleAround,
   EnvelopeStamp,
-  ScribbleStar,
+  MarkerHighlight,
   SketchArrow,
+  Sparkle,
   SpeechBubbleStars,
   WallFrames,
-  WavyUnderline,
 } from "@/components/doodles";
 import { spotViewBox } from "@/components/doodles/spots";
 
-const marks = { CircleAround, ScribbleStar, SketchArrow, WavyUnderline };
+const marks = { CircleAround, MarkerHighlight, SketchArrow, Sparkle };
 const spots = { CameraTripod, EnvelopeStamp, SpeechBubbleStars, WallFrames };
 const allowedFills = new Set([
   "var(--surface)",

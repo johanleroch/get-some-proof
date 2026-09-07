@@ -203,6 +203,23 @@ function pen(seed) {
     return through([...top, ...bottom.reverse()], { close: true });
   };
 
+  /** Highlighter band: wavy edges, rounded tapered ends, filled with the current color. */
+  const highlight = (x1, x2, y, height) => {
+    const samples = 22;
+    const top = [];
+    const bottom = [];
+    for (let i = 0; i <= samples; i += 1) {
+      const u = i / samples;
+      const x = x1 + (x2 - x1) * u;
+      const ease = Math.min(1, Math.sin(u * Math.PI) * 2.2);
+      const h = height * (0.72 + 0.28 * ease);
+      const drift = Math.sin(u * Math.PI * 2.3 + 0.6) * height * 0.06;
+      top.push([x, y - h / 2 + drift + j(0.4)]);
+      bottom.push([x, y + h / 2 + drift * 0.6 + j(0.4)]);
+    }
+    return through([...top, ...bottom.reverse()], { close: true });
+  };
+
   /** A loop drawn once and a bit, the second pass just outside the first. */
   const loop = (cx, cy, rx, ry, turns = 1.18) => {
     const points = [];
@@ -223,6 +240,7 @@ function pen(seed) {
   return {
     bubble,
     circle,
+    highlight,
     line,
     loop,
     marker,
@@ -238,7 +256,7 @@ function pen(seed) {
 
 const group = (transform, paths) => ({ paths, transform });
 const stroke = (d) => ({ d });
-const filled = (d, fill) => ({ d, fill });
+const filled = (d, fill, extra = {}) => ({ d, fill, ...extra });
 
 const spots = [
   {
@@ -366,30 +384,42 @@ const spots = [
 
 const marks = [
   {
-    doc: ["A loosely drawn five-point star, the logo's cousin."],
+    doc: [
+      "A big four-point sparkle with a small one, the accent that also lights",
+      "every illustration. Filled with the current color.",
+    ],
     draw(p) {
       return [
-        group("rotate(-8 24 25)", [stroke(p.starOutline(24, 25, 19, 8.4))]),
+        group("", [
+          filled(p.sparkle(21, 27, 18), "currentColor", { stroke: "none" }),
+          filled(p.sparkle(40, 10, 7), "currentColor", { stroke: "none" }),
+        ]),
       ];
     },
-    name: "ScribbleStar",
+    name: "Sparkle",
     seed: 41,
     viewBox: "0 0 48 48",
   },
   {
+    color: "text-brand-soft-2",
     doc: [
-      "A marker swash under one key word, filled with the current color.",
-      "Stretches to its container.",
+      "A highlighter stroke behind one key word, in a soft amber unless the",
+      "caller sets another text color. Stretches to its container; place it",
+      "before the word in the DOM so the text paints on top.",
     ],
     draw(p) {
       return [
-        group("", [filled(p.marker(3, 117, 8, 2.6, 2, 5.2), "currentColor")]),
+        group("rotate(-1.2 60 20)", [
+          filled(p.highlight(2, 118, 20, 30), "currentColor", {
+            stroke: "none",
+          }),
+        ]),
       ];
     },
-    name: "WavyUnderline",
+    name: "MarkerHighlight",
     preserveAspectRatio: "none",
     seed: 43,
-    viewBox: "0 0 120 16",
+    viewBox: "0 0 120 40",
   },
   {
     color: "text-brand",
@@ -418,11 +448,13 @@ const arrows = {
   },
 };
 
-function fillAttribute(fill) {
-  if (!fill) return "";
-  return fill === "currentColor"
-    ? ' fill="currentColor"'
-    : ` fill="var(--${fill})"`;
+function fillAttribute(fill, stroke) {
+  const fillPart = !fill
+    ? ""
+    : fill === "currentColor"
+      ? ' fill="currentColor"'
+      : ` fill="var(--${fill})"`;
+  return fillPart + (stroke === "none" ? ' stroke="none"' : "");
 }
 
 function componentSource(spot) {
@@ -438,7 +470,7 @@ function componentSource(spot) {
         : "      <g>";
       const paths = g.paths.map(
         (item) =>
-          `        <path {...strokeAttributes} d="${item.d}"${fillAttribute(item.fill)} />`,
+          `        <path {...strokeAttributes} d="${item.d}"${fillAttribute(item.fill, item.stroke)} />`,
       );
       return [open, ...paths, "      </g>"].join("\n");
     })
@@ -517,7 +549,7 @@ function svgSource(spot) {
       const open = g.transform ? `<g transform="${g.transform}">` : "<g>";
       const paths = g.paths.map(
         (item) =>
-          `<path d="${item.d}"${fillAttribute(item.fill)} pathLength="1" vector-effect="non-scaling-stroke"/>`,
+          `<path d="${item.d}"${fillAttribute(item.fill, item.stroke)} pathLength="1" vector-effect="non-scaling-stroke"/>`,
       );
       return [open, ...paths, "</g>"].join("");
     })
@@ -533,12 +565,12 @@ function previewSource() {
     .map((mark) => {
       const svg = svgSource(mark);
       const big =
-        mark.name === "WavyUnderline"
-          ? "width:260px;height:36px"
+        mark.name === "MarkerHighlight"
+          ? "width:260px;height:70px"
           : "height:120px";
       const small =
-        mark.name === "WavyUnderline"
-          ? "width:120px;height:14px"
+        mark.name === "MarkerHighlight"
+          ? "width:120px;height:30px"
           : "height:40px";
       return `<div class="panel mark"><div style="${big}">${svg}</div><p>${mark.name}</p></div><div class="panel mark dark"><div style="${big}">${svg}</div></div><div class="panel mark small"><div style="${small}">${svg}</div></div>`;
     })

@@ -1,7 +1,7 @@
 import { Fragment, type CSSProperties } from "react";
 import Link from "next/link";
 
-import { ScribbleStar, WallFrames } from "@/components/doodles";
+import { Sparkle, WallFrames } from "@/components/doodles";
 import {
   TestimonialCard,
   type PublicTestimonial,
@@ -27,7 +27,7 @@ function FreeWallPromotion() {
       className="bg-ink text-paper mb-5 break-inside-avoid overflow-hidden rounded-lg p-6 sm:p-8"
       data-gsp-promotion=""
     >
-      <ScribbleStar className="text-brand size-10" />
+      <Sparkle className="text-brand size-10" />
       <h2 className="font-display mt-4 text-2xl leading-tight font-bold tracking-[-0.025em] sm:text-3xl">
         Testimonials made easy
       </h2>
@@ -69,7 +69,7 @@ export function HostedWall({
             <p className="type-micro text-muted-foreground">Customer proof</p>
             <h1 className="type-display-xl flex items-start gap-3 text-balance">
               <span>{wall.brandName}</span>
-              <ScribbleStar
+              <Sparkle
                 className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10"
                 draw
               />

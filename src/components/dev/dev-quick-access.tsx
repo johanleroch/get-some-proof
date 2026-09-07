@@ -12,7 +12,7 @@ import { IconDeviceLaptop, IconMoon, IconSun } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { ScribbleStar } from "@/components/doodles";
+import { Sparkle } from "@/components/doodles";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,7 +200,7 @@ function QuickAccessMenu({
           className="bg-ink text-paper shadow-float hover:bg-ink/90 focus-visible:ring-ring data-[state=open]:bg-ink/90 fixed right-4 bottom-4 z-50 grid size-11 cursor-pointer place-items-center rounded-full transition-[background-color,translate] duration-150 outline-none focus-visible:ring-[3px] active:translate-y-px"
           type="button"
         >
-          <ScribbleStar className="text-brand size-6" />
+          <Sparkle className="text-brand size-6" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

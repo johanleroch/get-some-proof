@@ -10,7 +10,7 @@ import {
   normalizeVideoMimeType,
   supportedVideoMimeTypes,
 } from "@convex/domain/video";
-import { ScribbleStar, WallFrames } from "@/components/doodles";
+import { Sparkle, WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast } from "@/components/ui/error-toast";
@@ -100,7 +100,7 @@ export function VideoRetryFormView({
   if (complete) {
     return (
       <section className="mx-auto w-full max-w-xl space-y-5">
-        <ScribbleStar className="text-ink size-14" draw />
+        <Sparkle className="text-ink size-14" draw />
         <div className="space-y-2">
           <h1 className="type-heading">Replacement uploaded</h1>
           <p className="type-body text-ink-2">

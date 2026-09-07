@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ScribbleStar } from "@/components/doodles";
+import { Sparkle } from "@/components/doodles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,7 +37,7 @@ describe("design primitives", () => {
       <EmptyState
         action={<Button>Copy collection link</Button>}
         description="Share your Collection Form."
-        illustration={<ScribbleStar />}
+        illustration={<Sparkle />}
         title="No Testimonials yet"
       />,
     );
