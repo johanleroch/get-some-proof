@@ -715,13 +715,15 @@ function ScreenPanel({
     }
   }, [device.minHeight, frameKey]);
 
-  // "Fit" scales the artboard to the frame's inner width so nothing overflows;
-  // fixed zoom levels may overflow and scroll inside their own frame.
+  // "Fit" scales the artboard to the column width (minus the frame's padding
+  // and border) so nothing overflows; fixed zoom levels may overflow and
+  // scroll inside their own frame. The frame itself shrinks to the artboard.
+  const frameInset = 26;
   const scaledWidth =
     zoom === "fit"
       ? areaWidth === null
         ? null
-        : Math.floor(Math.min(areaWidth, device.width))
+        : Math.floor(Math.min(areaWidth - frameInset, device.width))
       : Math.round((device.width * Number(zoom)) / 100);
   const scale = scaledWidth === null ? null : scaledWidth / device.width;
   const scaledHeight = scale === null ? null : Math.round(height * scale);
@@ -819,8 +821,13 @@ function ScreenPanel({
         </div>
       </header>
 
-      <div className="bg-muted/40 overflow-x-auto rounded-xl border p-3">
-        <div className="w-full min-w-0" ref={areaRef}>
+      <div className="w-full min-w-0" ref={areaRef}>
+        <div
+          className={cn(
+            "bg-muted/40 overflow-x-auto rounded-xl border p-3",
+            scaledWidth === null ? "w-full" : "w-fit max-w-full",
+          )}
+        >
           {scaledWidth === null || scaledHeight === null || scale === null ? (
             <div
               aria-hidden="true"
