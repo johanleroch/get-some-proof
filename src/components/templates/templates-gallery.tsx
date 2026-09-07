@@ -255,13 +255,11 @@ export function TemplatesGallery({
           </div>
         </div>
 
-        <div className="bg-surface-2 relative rounded-lg border p-3 sm:p-5 md:pt-10">
-          <ArrowNote
-            className="absolute top-1.5 right-8 hidden md:inline-flex"
-            draw
-          >
-            this is what your visitors see
-          </ArrowNote>
+        <ArrowNote className="-mb-1 hidden md:inline-flex" draw>
+          this is what your visitors see
+        </ArrowNote>
+
+        <div className="bg-surface-2 rounded-lg border p-3 sm:p-5">
           <div>
             <TemplateStage
               accentColor={accent}
