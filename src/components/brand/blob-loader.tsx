@@ -26,7 +26,7 @@ export function BlobLoader({
       )}
       role="status"
     >
-      <AnimatedBlob label={label} size={size} variant="look" />
+      <AnimatedBlob size={size} variant="look" />
       <span className="sr-only">{label}</span>
     </div>
   );

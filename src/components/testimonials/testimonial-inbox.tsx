@@ -6,7 +6,6 @@ import {
   IconAlertTriangle,
   IconChevronDown,
   IconExternalLink,
-  IconLoader2,
 } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -32,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AnimatedBlob } from "@/components/brand/animated-blob";
 import { SpeechBubbleStars } from "@/components/doodles";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -143,10 +143,7 @@ function VideoAssetPlaceholder({
     >
       <div className="absolute top-3 right-3">{menu}</div>
       <div className="max-w-64">
-        <IconLoader2
-          aria-hidden="true"
-          className="mx-auto size-8 animate-spin motion-reduce:animate-none"
-        />
+        <AnimatedBlob className="mx-auto" size={56} variant="look" />
         <p className="mt-4 font-medium">
           {videoStatusLabel(testimonial.videoStatus)}
         </p>
