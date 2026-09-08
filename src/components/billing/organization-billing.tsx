@@ -757,7 +757,9 @@ export function BillingCockpit({
                 <div>
                   <CardTitle>Current plan</CardTitle>
                   <CardDescription className="mt-1">
-                    Shared across all projects
+                    {overview.effectivePlan === "premium"
+                      ? "Unlimited projects · Shared account quotas"
+                      : "1 active project included"}
                   </CardDescription>
                 </div>
               </div>
@@ -769,8 +771,8 @@ export function BillingCockpit({
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-sm leading-6">
               {overview.effectivePlan === "premium"
-                ? "Pro includes unlimited text collection, 25 stored Ready videos, and no Get Some Proof promo card."
-                : "Free includes 13 lifetime text credits, 2 lifetime video credits, and one Get Some Proof promo card in each Wall."}
+                ? "Pro includes unlimited projects at no extra cost per project, unlimited text collection, 25 stored Ready videos shared across all projects, and no Get Some Proof promo card."
+                : "Free includes 1 active project, 13 lifetime text credits, 2 lifetime video credits, and one Get Some Proof promo card in each Wall. Upgrade to Pro for unlimited projects."}
             </p>
             <div className="bg-muted/40 rounded-lg border p-4">
               <p className="text-sm font-medium">
@@ -956,8 +958,9 @@ export function BillingCockpit({
             <CardHeader>
               <CardTitle>Upgrade to Pro</CardTitle>
               <CardDescription>
-                Choose monthly or annual billing. The same Pro features, either
-                way.
+                Unlimited projects with monthly or annual billing, and no extra
+                cost per project. Text and video allowances are shared across
+                all projects.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">

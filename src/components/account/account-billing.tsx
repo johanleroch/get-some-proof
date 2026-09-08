@@ -50,6 +50,11 @@ export function AccountBilling() {
       />
       <section className="bg-card space-y-4 rounded-lg border p-5">
         <h2 className="type-subheading">{pro ? "Pro" : "Free"} plan</h2>
+        <p className="text-brand-text text-sm font-semibold">
+          {pro
+            ? "Unlimited projects · No extra cost per project"
+            : `${projects.some(({ id }) => id === account?.freeProjectId) ? 1 : 0} / 1 active project · Unlimited projects with Pro`}
+        </p>
         {account ? (
           <p className="text-ink-2 text-sm">
             {pro
