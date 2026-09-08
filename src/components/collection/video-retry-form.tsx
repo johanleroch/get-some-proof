@@ -95,7 +95,7 @@ export function VideoRetryFormView({
   if (complete) {
     return (
       <section className="mx-auto w-full max-w-xl space-y-5">
-        <Sparkle className="text-ink size-14" draw />
+        <Sparkle className="text-ink size-14" />
         <div className="space-y-2">
           <h1 className="type-heading">Replacement uploaded</h1>
           <p className="type-body text-ink-2">

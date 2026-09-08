@@ -10,6 +10,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BrowserVideoRecorder } from "./browser-video-recorder";
 
+/**
+ * Drives the device pickers, which are the Select primitive rather than a
+ * native select (DESIGN.md section 10). Radix opens on a key press and
+ * commits on a click, and src/test/setup.ts stubs the pointer APIs jsdom
+ * lacks.
+ */
+async function chooseDevice(picker: string, option: string) {
+  fireEvent.keyDown(screen.getByRole("combobox", { name: picker }), {
+    key: "ArrowDown",
+  });
+  fireEvent.click(await screen.findByRole("option", { name: option }));
+  // Radix keeps the portal mounted for a beat after a choice; opening the
+  // next picker while it is still up finds no options.
+  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((next) => {
@@ -57,14 +73,12 @@ describe("BrowserVideoRecorder", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
 
     expect(await screen.findByLabelText("Camera preview")).toBeVisible();
-    expect(screen.getByLabelText("Camera")).toHaveValue("camera-1");
-    expect(screen.getByLabelText("Microphone")).toHaveValue("microphone-1");
+    expect(screen.getByRole("combobox", { name: "Camera" })).toHaveTextContent(
+      "FaceTime HD Camera",
+    );
     expect(
-      screen.getByRole("option", { name: "FaceTime HD Camera" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("option", { name: "MacBook Microphone" }),
-    ).toBeVisible();
+      screen.getByRole("combobox", { name: "Microphone" }),
+    ).toHaveTextContent("MacBook Microphone");
     await waitFor(() => expect(enumerateDevices).toHaveBeenCalledTimes(1));
   });
 
@@ -234,10 +248,8 @@ describe("BrowserVideoRecorder", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
-    await screen.findByLabelText("Camera");
-    fireEvent.change(screen.getByLabelText("Camera"), {
-      target: { value: "camera-2" },
-    });
+    await screen.findByRole("combobox", { name: "Camera" });
+    await chooseDevice("Camera", "Studio Camera");
 
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
     expect(getUserMedia).toHaveBeenLastCalledWith({
@@ -303,13 +315,9 @@ describe("BrowserVideoRecorder", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Open camera" }));
-    await screen.findByLabelText("Camera");
-    fireEvent.change(screen.getByLabelText("Camera"), {
-      target: { value: "camera-2" },
-    });
-    fireEvent.change(screen.getByLabelText("Microphone"), {
-      target: { value: "microphone-2" },
-    });
+    await screen.findByRole("combobox", { name: "Camera" });
+    await chooseDevice("Camera", "Studio Camera");
+    await chooseDevice("Microphone", "Studio Mic");
     const latestStream = makeStream("camera-2", "microphone-2", stopLatest);
     latestRequest.resolve(latestStream);
     await waitFor(() =>
@@ -326,9 +334,7 @@ describe("BrowserVideoRecorder", () => {
       latestStream,
     );
 
-    fireEvent.change(screen.getByLabelText("Camera"), {
-      target: { value: "camera-1" },
-    });
+    await chooseDevice("Camera", "Built-in Camera");
     unmount();
     const stopAfterUnmount = vi.fn();
     afterUnmountRequest.resolve(

@@ -12,7 +12,7 @@ export default function OrganizationOnboardingPage() {
           <ThemeToggle />
         </div>
         <PageHeader
-          description="Set the public identity and Collection Form your customers will see."
+          description="This is the identity your customers see when you ask them for a Testimonial. Only the name is needed; we write the rest for you."
           eyebrow="First step"
           title="Create your Brand"
         />

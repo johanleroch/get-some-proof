@@ -93,7 +93,8 @@ export function PublishedCurationView({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  if (!testimonials || testimonials.length === 0) return null;
+  // The Published tab owns the empty case now, so this view never renders
+  // blank inside its own region.
 
   async function saveOrder(
     testimonialId: Id<"testimonials">,
@@ -147,7 +148,7 @@ export function PublishedCurationView({
     <section aria-labelledby="published-curation-heading" className="space-y-4">
       <div>
         <h2 className="type-subheading" id="published-curation-heading">
-          Public Wall curation
+          Wall order
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
           Drag Published Testimonials or use the move buttons. The hosted and

@@ -1,4 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function selectText(editor: Locator, start: number, end: number) {
+  await editor.evaluate(
+    (element, offsets) => {
+      const node = element.querySelector("[data-slate-string]")!.firstChild!;
+      const selection = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(node, offsets.start);
+      range.setEnd(node, offsets.end);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.dispatchEvent(new Event("selectionchange"));
+    },
+    { start, end },
+  );
+}
 
 test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   page,
@@ -14,17 +30,8 @@ test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   await expect(page.locator("blockquote")).toHaveText(
     "We saved five hours every week.Our customers noticed.",
   );
-  await editor.evaluate((element) => {
-    const node = element.querySelector("[data-slate-string]")!.firstChild!;
-    const selection = window.getSelection()!;
-    const range = document.createRange();
-    range.setStart(node, 9);
-    range.setEnd(node, 19);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.dispatchEvent(new Event("selectionchange"));
-  });
-  await page.getByRole("button", { name: "Highlight selected text" }).click();
+  await selectText(editor, 9, 19);
+  await page.getByRole("button", { name: "Highlight", exact: true }).click();
   await expect(page.locator("blockquote mark")).toHaveText("five hours");
   await page.getByLabel("Attach testimonial images").setInputFiles({
     name: "proof.png",
@@ -39,33 +46,55 @@ test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   await expect(page.getByRole("img", { name: "proof.png" })).toHaveCount(0);
 });
 
-test("Owner highlights an immutable quote and saves the same words", async ({
+test("Owner marks a phrase, can unmark it, and never changes the words", async ({
   page,
 }) => {
+  const quote =
+    "We saved five hours every week. Our customers noticed the difference immediately.";
   await page.goto("/visual-evidence/rich-testimonial");
   await page
     .getByRole("button", { name: "Highlight a phrase", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
-  const editor = dialog.locator("[data-slate-editor]");
+  // The rule the product enforces is said out loud, not only in the server.
+  await expect(dialog).toContainText("they stay as written");
+  const editor = dialog.locator("#highlight-testimonial");
+  // The words are immutable by construction: nothing an Owner does here can
+  // rewrite what their customer wrote (docs/product-scope.md).
   await expect(editor).toHaveAttribute("contenteditable", "false");
-  await editor.evaluate((element) => {
-    const node = element.querySelector("[data-slate-string]")!.firstChild!;
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.dispatchEvent(new Event("selectionchange"));
+
+  // With nothing selected the toolbar instructs rather than showing a dead button.
+  await expect(dialog).toContainText("Select a few words in the quote below.");
+  await expect(
+    dialog.getByRole("button", { name: /^(Highlight|Remove highlight)$/ }),
+  ).toHaveCount(0);
+
+  await selectText(editor, 0, 2);
+  const toggle = dialog.getByRole("button", {
+    name: /^(Highlight|Remove highlight)$/,
   });
-  await dialog.getByRole("button", { name: "Highlight selected text" }).click();
+  await expect(toggle).toHaveText("Highlight");
+  await toggle.click();
+
+  // The same words now offer the opposite act: that is the undo.
+  await selectText(editor, 0, 2);
+  await expect(toggle).toHaveText("Remove highlight");
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+  await expect(toggle).toHaveText("Highlight");
+  await toggle.click();
+
+  // Typing and deleting must leave the customer's words untouched. The click
+  // is pinned to the first line: the highlight pill follows the selection and
+  // would otherwise take a click aimed at the middle of the quote.
+  await editor.click({ position: { x: 60, y: 16 } });
+  await page.keyboard.type("XXXX");
+  await page.keyboard.press("Backspace");
+  await expect(editor).toHaveText(quote);
+
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.locator("blockquote")).toHaveText(
-    "We saved five hours every week. Our customers noticed the difference immediately.",
-  );
-  await expect(page.locator("blockquote mark").first()).toContainText(
-    "We saved",
-  );
+  await expect(page.locator("blockquote").first()).toHaveText(quote);
+  await expect(page.locator("blockquote mark").first()).toContainText("We");
 });
 
 test("preserves pasted paragraphs and strips pasted HTML formatting", async ({
@@ -77,7 +106,7 @@ test("preserves pasted paragraphs and strips pasted HTML formatting", async ({
   await expect(async () => {
     await editor.press("ControlOrMeta+A");
     await expect(
-      page.getByRole("button", { name: "Highlight selected text" }),
+      page.getByRole("button", { name: "Highlight", exact: true }),
     ).toBeEnabled();
   }).toPass();
   await editor.press("Backspace");
@@ -131,7 +160,9 @@ test("keeps the editor and following controls still as text grows", async ({
     el.scrollTop = el.scrollHeight;
   });
   expect(await editor.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  // The toolbar keeps its place while the text grows. With nothing selected
+  // it instructs instead of showing a button that cannot be pressed.
   await expect(
-    page.getByRole("button", { name: "Highlight selected text" }),
+    page.getByText("Select a few words in the quote below."),
   ).toBeVisible();
 });

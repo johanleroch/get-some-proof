@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
+import { blobToast } from "@/components/brand/blob-toast";
 
 import type { ScreenStatus, ScreenStatuses } from "@/lib/screens-catalog";
 
@@ -48,7 +48,7 @@ export function useScreenStatuses(initialStatuses: ScreenStatuses) {
             const saved = confirmed.current[slug] ?? null;
             setStatuses((current) => withStatus(current, slug, saved));
           }
-          toast.error("Could not save the screen status.");
+          blobToast.error("Could not save the screen status.");
         }
       };
       queue.current = queue.current.then(save, save);

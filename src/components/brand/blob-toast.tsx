@@ -19,6 +19,27 @@ const faces: Record<Exclude<BlobToastType, "loading">, BlobExpressionName> = {
   error: "sad",
 };
 
+/**
+ * The status colors the title and the action, the way it colors a badge
+ * label: the bubble itself stays `--surface` so the message keeps its
+ * contrast on any screen, and an error reads as an error at a glance.
+ */
+const titleColors: Record<BlobToastType, string> = {
+  error: "text-danger",
+  info: "text-info",
+  loading: "text-ink",
+  success: "text-success",
+  warning: "text-warning",
+};
+
+const actionColors: Record<BlobToastType, string> = {
+  error: "text-danger",
+  info: "text-info",
+  loading: "text-brand-text",
+  success: "text-success",
+  warning: "text-warning",
+};
+
 export type BlobToastProps = {
   type: BlobToastType;
   title: string;
@@ -30,8 +51,11 @@ export type BlobToastProps = {
 
 /**
  * A notification told by the mascot: the blob on the left, its message in a
- * speech bubble. The blob appears neutral and blinks into the expression of
- * the message, so every toast starts with a small sign of life.
+ * speech bubble. The bubble arrives first and squashes as it lands, the blob
+ * hops in a beat later (`.toast-bubble` and `.toast-mascot` in globals.css),
+ * then blinks from neutral into the expression of the message, so every toast
+ * starts with a small sign of life. The status colors the title and the
+ * action; the bubble stays `--surface`.
  */
 export function BlobToast({
   action,
@@ -45,7 +69,7 @@ export function BlobToast({
   const [expression, setExpression] = useState<BlobExpressionName>("neutral");
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setExpression(target), 160);
+    const timer = window.setTimeout(() => setExpression(target), 380);
     return () => window.clearTimeout(timer);
   }, [target]);
 
@@ -58,18 +82,28 @@ export function BlobToast({
       role="status"
     >
       {type === "loading" ? (
-        <AnimatedBlob className="mb-0.5" size={48} variant="look" />
+        <AnimatedBlob
+          className="toast-mascot mb-0.5"
+          size={48}
+          variant="look"
+        />
       ) : (
-        <Blob className="mb-0.5" expression={expression} size={48} />
+        <Blob
+          className="toast-mascot mb-0.5"
+          expression={expression}
+          size={48}
+        />
       )}
-      <div className="bg-card shadow-float relative min-w-0 flex-1 rounded-lg border px-3.5 py-3">
+      <div className="toast-bubble bg-card text-card-foreground shadow-float relative min-w-0 flex-1 rounded-lg border px-3.5 py-3">
         <span
           aria-hidden="true"
           className="bg-card absolute bottom-[18px] -left-[7px] size-3 rotate-45 border-b border-l"
         />
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="type-ui font-semibold">{title}</p>
+            <p className={cn("type-ui font-semibold", titleColors[type])}>
+              {title}
+            </p>
             {description ? (
               <p className="text-muted-foreground type-small mt-0.5">
                 {description}
@@ -77,7 +111,10 @@ export function BlobToast({
             ) : null}
             {action ? (
               <button
-                className="text-brand-text type-ui mt-2 cursor-pointer font-semibold underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                className={cn(
+                  "type-ui mt-2 cursor-pointer font-semibold underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none",
+                  actionColors[type],
+                )}
                 onClick={action.onClick}
                 type="button"
               >
@@ -104,10 +141,12 @@ export function BlobToast({
 type Options = Omit<BlobToastProps, "type" | "title" | "onDismiss"> & {
   /** Milliseconds before it leaves; loading toasts stay until dismissed. */
   duration?: number;
+  /** Reuse an id so the same message replaces itself instead of stacking. */
+  id?: string;
 };
 
 function show(type: BlobToastType, title: string, options: Options = {}) {
-  const { duration, ...rest } = options;
+  const { duration, id, ...rest } = options;
   return toast.custom(
     (id) => (
       <BlobToast
@@ -122,6 +161,7 @@ function show(type: BlobToastType, title: string, options: Options = {}) {
       // shadow or background of its own, overflow visible, natural height.
       className: "!bg-transparent !shadow-none !overflow-visible !h-auto",
       duration: type === "loading" ? Number.POSITIVE_INFINITY : duration,
+      id,
       unstyled: true,
     },
   );

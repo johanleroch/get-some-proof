@@ -29,10 +29,7 @@ export function TemplatesPage() {
             >
               Proof, laid out{" "}
               <span className="relative inline-block whitespace-nowrap">
-                <MarkerHighlight
-                  className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]"
-                  draw
-                />
+                <MarkerHighlight className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]" />
                 <span className="relative">your way</span>
               </span>
             </h1>
