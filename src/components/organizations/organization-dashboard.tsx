@@ -114,29 +114,20 @@ export function BrandDashboardView({
               height sat on top of a centred row and the panel ended up with
               33px of padding above and 46 below. */}
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1">
+            {/* A container, so the note below can ask whether the buttons'
+                row has room for it rather than guess from the viewport. */}
+            <div className="@container min-w-0 flex-1">
               <p className="type-micro text-ink-2">Your Collection Form</p>
               {/* A label and its value are one pair: 8px, the smallest step
-                  DESIGN.md section 5 allows inside a component. The note
-                  floats above in padding that already existed and claims
-                  none of the space between them. */}
-              <div className="relative mt-2 w-fit max-w-full">
-                <ArrowNote
-                  className="absolute -top-9 right-0 hidden md:inline-flex"
-                  direction="left"
-                  size="sm"
-                >
-                  share this to start collecting
-                </ArrowNote>
-                {/* Mono, the family DESIGN.md gives public slugs. It borrows
-                    the scale's size through the tokens rather than a `type-*`
-                    utility, because those carry the display family with them
-                    and would quietly put Gelica here. */}
-                <p className="font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere] sm:text-[length:var(--type-heading-size)] sm:leading-[var(--type-heading-leading)]">
-                  {collectionUrl}
-                </p>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+                  DESIGN.md section 5 allows inside a component. Mono, the
+                  family DESIGN.md gives public slugs; it borrows the scale's
+                  size through the tokens rather than a `type-*` utility,
+                  because those carry the display family with them and would
+                  quietly put Gelica here. */}
+              <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere] sm:text-[length:var(--type-heading-size)] sm:leading-[var(--type-heading-leading)]">
+                {collectionUrl}
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Button onClick={copyLink} type="button">
                   <IconCopy aria-hidden="true" />
                   Copy link
@@ -147,6 +138,19 @@ export function BrandDashboardView({
                     <IconExternalLink aria-hidden="true" />
                   </Link>
                 </Button>
+                {/* On the buttons' row, 24px to their right, its arrow
+                    climbing back to the address. The stroke is out of flow,
+                    so the note adds no height and opens no gap; shown in both
+                    states so the panel keeps one geometry, and only once the
+                    row is wide enough to hold it beside the buttons rather
+                    than wrap it under them. */}
+                <ArrowNote
+                  arrow="rise"
+                  className="ms-4 hidden @xl:inline-flex"
+                  direction="left"
+                >
+                  share this to start collecting
+                </ArrowNote>
               </div>
             </div>
             {/* Shorter than the column beside it, so the row's height comes
