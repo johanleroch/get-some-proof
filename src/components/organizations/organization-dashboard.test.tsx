@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BrandDashboardView } from "./organization-dashboard";
 
@@ -40,7 +40,7 @@ describe("BrandDashboardView", () => {
       screen.getByRole("link", { name: "Manage subscription" }),
     ).toHaveAttribute("href", "/org/harbor/billing");
   });
-  beforeEach(cleanup);
+  afterEach(cleanup);
 
   it("leads with the Collection Form and says the queue is empty", async () => {
     const copyCollectionUrl = vi.fn().mockResolvedValue(undefined);
