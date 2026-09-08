@@ -3,7 +3,51 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  accounts: defineTable({
+    publicationGeneration: v.optional(v.number()),
+    publicationTransitionKey: v.optional(v.string()),
+    preservedPublicationIds: v.optional(v.array(v.id("testimonials"))),
+    lastProRecoveryAt: v.optional(v.number()),
+    deletionStartedAt: v.optional(v.number()),
+    selectedFreeProjectId: v.optional(v.id("organizations")),
+    ownerUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_owner", ["ownerUserId"]),
+  accountDeletions: defineTable({
+    accountId: v.id("accounts"),
+    ownerUserId: v.string(),
+    status: v.union(
+      v.literal("requested"),
+      v.literal("failed"),
+      v.literal("deleted"),
+    ),
+    leaseId: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_account", ["accountId"]),
+  accountDeletionSubscriptions: defineTable({
+    accountId: v.id("accounts"),
+    stripeSubscriptionId: v.string(),
+    canceledAt: v.optional(v.number()),
+  })
+    .index("by_subscription", ["stripeSubscriptionId"])
+    .index("by_account_pending", ["accountId", "canceledAt"]),
+  collectionAdmissions: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    imageUses: v.number(),
+    avatarUses: v.number(),
+    submissionUsed: v.boolean(),
+  })
+    .index("by_token_hash", ["tokenHash"])
+    .index("by_organization", ["organizationId"]),
   organizations: defineTable({
+    accountId: v.optional(v.id("accounts")),
     name: v.string(),
     slug: v.string(),
     publicSlug: v.string(),
@@ -13,6 +57,7 @@ export default defineSchema({
     collectionFormTitle: v.string(),
     collectionFormDescription: v.string(),
     privacyContact: v.string(),
+    publicWallPrivacyRevision: v.optional(v.number()),
     publicWallTheme: v.optional(
       v.union(v.literal("light"), v.literal("dark"), v.literal("system")),
     ),
@@ -35,6 +80,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
+    .index("by_account_open", ["accountId", "deletionStartedAt"])
     .index("by_public_slug", ["publicSlug"])
     .index("by_logo_storage_id", ["logoStorageId"]),
   userProfiles: defineTable({
@@ -59,6 +105,7 @@ export default defineSchema({
     .index("by_user_status", ["userId", "status"])
     .index("by_organization_status", ["organizationId", "status"]),
   billingProfiles: defineTable({
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     billingEmail: v.string(),
     contactUpdateEmail: v.optional(v.string()),
@@ -82,8 +129,11 @@ export default defineSchema({
     stripeCheckoutSessionId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_organization", ["organizationId"]),
+  })
+    .index("by_account", ["accountId"])
+    .index("by_organization", ["organizationId"]),
   billingSubscriptionStates: defineTable({
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     stripeSubscriptionId: v.string(),
     stripeCustomerId: v.string(),
@@ -100,7 +150,25 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+    .index("by_stripe_subscription", ["stripeSubscriptionId"])
+    .index("by_account", ["accountId"])
+    .index("by_account_status", ["accountId", "status"])
+    .index("by_account_trusted_status_end", [
+      "accountId",
+      "stripeCustomerId",
+      "priceId",
+      "status",
+      "cancelAtPeriodEnd",
+      "currentPeriodEnd",
+    ])
+    .index("by_account_trusted_status_changed", [
+      "accountId",
+      "stripeCustomerId",
+      "priceId",
+      "status",
+      "cancelAtPeriodEnd",
+      "statusChangedAt",
+    ]),
   stripeWebhookEvents: defineTable({
     stripeEventId: v.string(),
     stripeEventCreated: v.number(),
@@ -136,6 +204,12 @@ export default defineSchema({
     .index("by_stripe_invoice", ["stripeInvoiceId"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"]),
   billingDowngradeTransitions: defineTable({
+    accountId: v.optional(v.id("accounts")),
+    activeProjectId: v.optional(v.id("organizations")),
+    processingProjectId: v.optional(v.id("organizations")),
+    processingAssets: v.optional(v.boolean()),
+    projectCursor: v.optional(v.string()),
+    projectsExhausted: v.optional(v.boolean()),
     organizationId: v.id("organizations"),
     stripeSubscriptionId: v.string(),
     version: v.number(),
@@ -160,6 +234,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_account", ["accountId"])
     .index("by_organization", ["organizationId"])
     .index("by_organization_status", ["organizationId", "status"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"]),
@@ -199,7 +274,7 @@ export default defineSchema({
   videoDowngradeRetentions: defineTable({
     organizationId: v.id("organizations"),
     transitionId: v.id("billingDowngradeTransitions"),
-    testimonialId: v.id("testimonials"),
+    testimonialId: v.optional(v.id("testimonials")),
     videoAssetId: v.id("videoAssets"),
     retainedAt: v.number(),
     expiresAt: v.number(),
@@ -216,8 +291,14 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_video_asset", ["videoAssetId"])
     .index("by_organization", ["organizationId"])
     .index("by_testimonial", ["testimonialId"])
+    .index("by_transition_status_expiry", [
+      "transitionId",
+      "status",
+      "expiresAt",
+    ])
     .index("by_transition", ["transitionId"])
     .index("by_expiry", ["status", "expiresAt"]),
   projects: defineTable({
@@ -389,6 +470,7 @@ export default defineSchema({
     .index("by_avatar_storage_id", ["avatarStorageId"])
     .index("by_poster_storage_id", ["posterStorageId"]),
   collectionCredits: defineTable({
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
     submissionType: v.union(v.literal("text"), v.literal("video")),
@@ -398,9 +480,19 @@ export default defineSchema({
       v.union(v.literal("automatic"), v.literal("support")),
     ),
   })
+    .index("by_account", ["accountId"])
+    .index("by_account_type_restored", [
+      "accountId",
+      "submissionType",
+      "restoredAt",
+    ])
     .index("by_organization", ["organizationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization_type", ["organizationId", "submissionType"]),
+  accountSpamRestorations: defineTable({
+    accountId: v.id("accounts"),
+    reportedAt: v.number(),
+  }).index("by_account_reported_at", ["accountId", "reportedAt"]),
   spamQuarantines: defineTable({
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
@@ -432,6 +524,7 @@ export default defineSchema({
   publicTestimonialProjections: defineTable(
     v.union(
       v.object({
+        publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
         type: v.literal("text"),
@@ -458,6 +551,7 @@ export default defineSchema({
         ),
       }),
       v.object({
+        publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
         type: v.literal("video"),
@@ -592,6 +686,8 @@ export default defineSchema({
     .index("by_storage_id", ["storageId"])
     .index("by_expiry", ["expiresAt"]),
   videoReservations: defineTable({
+    freeCreditPending: v.optional(v.boolean()),
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
     plan: v.union(v.literal("free"), v.literal("premium")),
@@ -605,6 +701,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_account_pending_credit", ["accountId", "freeCreditPending"])
+    .index("by_account_status", ["accountId", "status"])
     .index("by_organization", ["organizationId"])
     .index("by_organization_client_submission", [
       "organizationId",
@@ -614,11 +712,13 @@ export default defineSchema({
     .index("by_provider_upload_id", ["providerUploadId"])
     .index("by_expiry", ["expiresAt"]),
   videoAssets: defineTable({
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     reservationId: v.id("videoReservations"),
     testimonialId: v.optional(v.id("testimonials")),
     provider: v.union(v.literal("fake"), v.literal("mux")),
     providerUploadId: v.string(),
+    cleanupScheduled: v.optional(v.boolean()),
     providerAssetId: v.optional(v.string()),
     playbackId: v.optional(v.string()),
     // Cleanup-only compatibility for derived assets created before MP4 export
@@ -647,6 +747,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_account_status", ["accountId", "status"])
     .index("by_organization", ["organizationId"])
     .index("by_reservation", ["reservationId"])
     .index("by_testimonial", ["testimonialId"])
@@ -729,14 +830,16 @@ export default defineSchema({
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization", ["organizationId"]),
   videoProviderCleanupJobs: defineTable({
+    accountId: v.optional(v.id("accounts")),
     attempts: v.number(),
     organizationId: v.id("organizations"),
-    testimonialId: v.id("testimonials"),
+    testimonialId: v.optional(v.id("testimonials")),
     provider: v.union(v.literal("fake"), v.literal("mux")),
     providerAssetId: v.optional(v.string()),
     providerUploadId: v.optional(v.string()),
     createdAt: v.number(),
   })
+    .index("by_account", ["accountId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization", ["organizationId"])
     .index("by_provider_asset", ["provider", "providerAssetId"])
@@ -749,6 +852,7 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_key", ["key"]),
   workspaceDeletions: defineTable({
+    accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     actorUserId: v.string(),
     status: v.union(

@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import { useEffect, useRef, useState } from "react";
 
 import { ErrorToast } from "@/components/ui/error-toast";
@@ -90,9 +92,7 @@ export function TurnstileChallenge({
     <div>
       <div ref={containerRef} />
       {status === "loading" ? (
-        <p className="text-muted-foreground text-sm" role="status">
-          Verifying this submission…
-        </p>
+        <BlobLoadingText label="Verifying this submission…" />
       ) : null}
       {status === "error" ? (
         <div>

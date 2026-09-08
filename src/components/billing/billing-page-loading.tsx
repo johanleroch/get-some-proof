@@ -1,7 +1,7 @@
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 export function BillingPageLoading() {
   return (
-    <div className="grid min-h-[50vh] place-items-center" role="status">
-      <p className="text-muted-foreground text-sm">Loading Billing…</p>
-    </div>
+    <BlobLoader className="min-h-[50vh]" label="Loading Billing…" showLabel />
   );
 }

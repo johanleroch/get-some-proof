@@ -1,8 +1,13 @@
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { recordOrganizationAuditEvent } from "./auditEvents";
 import { authzForOrganization } from "./authorization";
+import { getAccountBillingEntitlement } from "./billingEntitlements";
 import {
   normalizeBrandName,
   normalizeCollectionFormDescription,
@@ -22,6 +27,7 @@ import {
   requireOrganizationPermission,
 } from "./security/organizationAccess";
 import { requireVerifiedPrincipal } from "./security/principal";
+import { isProjectActive } from "./projectActivity";
 
 const organizationSummary = v.object({
   id: v.id("organizations"),
@@ -53,16 +59,32 @@ export const create = mutation({
   }),
   handler: async (ctx, args) => {
     const principal = await requireVerifiedPrincipal(ctx);
+    const existingAccount = await ctx.db
+      .query("accounts")
+      .withIndex("by_owner", (index) =>
+        index.eq("ownerUserId", principal.actorId),
+      )
+      .unique();
+    if (existingAccount?.deletionStartedAt !== undefined) {
+      throw new ConvexError({
+        code: "ACCOUNT_DELETING",
+        message: "This account has been closed.",
+      });
+    }
     const existingMembership = await ctx.db
       .query("memberships")
       .withIndex("by_user_status", (index) =>
         index.eq("userId", principal.actorId).eq("status", "active"),
       )
       .first();
-    if (existingMembership) {
+    const canCreateAdditional = existingAccount
+      ? (await getAccountBillingEntitlement(ctx, existingAccount._id))
+          .effectivePlan === "premium"
+      : false;
+    if (existingMembership && !canCreateAdditional) {
       throw new ConvexError({
         code: "BRAND_ALREADY_EXISTS",
-        message: "This Owner already has a Brand.",
+        message: "Upgrade to Pro to create another Project.",
       });
     }
 
@@ -134,7 +156,15 @@ export const create = mutation({
     }
 
     const now = Date.now();
+    const accountId =
+      existingAccount?._id ??
+      (await ctx.db.insert("accounts", {
+        ownerUserId: principal.actorId,
+        createdAt: now,
+        updatedAt: now,
+      }));
     const organizationId = await ctx.db.insert("organizations", {
+      accountId,
       collectionFormDescription,
       collectionFormTitle,
       name,
@@ -156,12 +186,15 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    await ctx.db.insert("billingProfiles", {
-      organizationId,
-      billingEmail: principal.email.trim().toLowerCase(),
-      createdAt: now,
-      updatedAt: now,
-    });
+    if (!existingAccount) {
+      await ctx.db.insert("billingProfiles", {
+        accountId,
+        organizationId,
+        billingEmail: principal.email.trim().toLowerCase(),
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     await authzForOrganization(String(organizationId)).assignRole(
       ctx,
@@ -201,7 +234,7 @@ export const listMine = query({
       .withIndex("by_user_status", (index) =>
         index.eq("userId", principal.actorId).eq("status", "active"),
       )
-      .collect();
+      .take(100);
 
     const organizations = await Promise.all(
       memberships.map((membership) => ctx.db.get(membership.organizationId)),
@@ -223,6 +256,38 @@ export const listMine = query({
           })),
       )
     ).sort((left, right) => left.name.localeCompare(right.name));
+  },
+});
+
+// The navigation snapshot above is bounded; the selector can traverse every Project.
+export const listMinePage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(organizationSummaryWithLogo),
+  handler: async (ctx, args) => {
+    const principal = await requireVerifiedPrincipal(ctx);
+    const page = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", principal.actorId).eq("status", "active"),
+      )
+      .paginate(args.paginationOpts);
+    const projects = await Promise.all(
+      page.page.map(async (membership) => {
+        const project = await ctx.db.get(membership.organizationId);
+        if (!project || project.deletionStartedAt !== undefined) return null;
+        return {
+          id: project._id,
+          name: project.name,
+          slug: project.slug,
+          publicSlug: project.publicSlug,
+          publicSlugCanChange: project.publicSlugChangedAt === undefined,
+          logoUrl: project.logoStorageId
+            ? await ctx.storage.getUrl(project.logoStorageId)
+            : null,
+        };
+      }),
+    );
+    return { ...page, page: projects.filter((project) => project !== null) };
   },
 });
 
@@ -499,7 +564,8 @@ export const getByPublicSlug = query({
         index.eq("publicSlug", publicSlug),
       )
       .unique();
-    if (!organization) return null;
+    if (!organization || !(await isProjectActive(ctx, organization)))
+      return null;
 
     return {
       collectionFormDescription: organization.collectionFormDescription,

@@ -2,7 +2,6 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { Route } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,7 +18,7 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
-import { BrandMark } from "@/components/brand-mark";
+import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -131,26 +130,69 @@ function pageTitle(pathname: string, items: NavigationItem[]) {
   );
 }
 
-export function AppShell({
-  children,
-  organizationId,
-  organizationLogoUrl,
-  organizationName,
-  organizationPublicSlug,
-  organizationSlug,
-}: {
+type AppShellProps = {
   children: ReactNode;
   organizationId: Id<"organizations">;
   organizationLogoUrl?: string | null;
   organizationName: string;
   organizationPublicSlug: string;
   organizationSlug: string;
-}) {
+};
+
+export function AppShell(props: AppShellProps) {
   const pathname = usePathname();
   const authorization = useQuery(api.organizationAuthorization.getMine, {
-    organizationId,
+    organizationId: props.organizationId,
   });
   const health = useQuery(api.system.health);
+  const account = useQuery(api.accounts.getMine, {});
+  return (
+    <AppShellView
+      {...props}
+      pathname={pathname}
+      account={account}
+      authorization={authorization}
+      connected={health?.status === "ok"}
+      userMenu={<NavUser />}
+      projectSwitcher={
+        <OrganizationSwitcher
+          canReadAudit={false}
+          canReadBilling={false}
+          canUpdateOrganization={authorization?.can.updateOrganization ?? false}
+          canCreateProject={account?.effectivePlan === "premium"}
+          currentName={props.organizationName}
+          currentLogoUrl={props.organizationLogoUrl}
+          currentSlug={props.organizationSlug}
+        />
+      }
+    />
+  );
+}
+
+export function AppShellView({
+  children,
+  organizationId,
+  organizationPublicSlug,
+  organizationSlug,
+  pathname,
+  account,
+  authorization,
+  connected,
+  userMenu,
+  projectSwitcher,
+}: AppShellProps & {
+  pathname: string;
+  account?: {
+    effectivePlan: "free" | "premium";
+    freeProjectId: Id<"organizations"> | null;
+  } | null;
+  authorization?: {
+    can: { manageOwnership: boolean; updateOrganization: boolean };
+  } | null;
+  connected: boolean;
+  userMenu: ReactNode;
+  projectSwitcher: ReactNode;
+}) {
   const accountContext = pathname.startsWith("/account");
   const productNavigation: NavigationItem[] = [
     {
@@ -172,7 +214,7 @@ export function AppShell({
       visible: true,
     },
     {
-      label: "Brand settings",
+      label: "Project settings",
       icon: IconSettings,
       href: `/org/${organizationSlug}/settings` as Route,
       visible: authorization?.can.updateOrganization ?? false,
@@ -181,7 +223,7 @@ export function AppShell({
 
   const navigationSections: NavigationSection[] = accountContext
     ? [{ label: "Account", items: accountNavigation }]
-    : [{ label: "Workspace", items: productNavigation }];
+    : [{ label: "Project", items: productNavigation }];
   const navigation = navigationSections.flatMap(({ items }) => items);
   const title = pageTitle(pathname, navigation);
 
@@ -197,39 +239,27 @@ export function AppShell({
     >
       <Sidebar collapsible="offcanvas" variant="sidebar">
         <SidebarHeader>
-          <Link
-            aria-label={organizationName}
-            className="hover:bg-sidebar-accent flex min-w-0 items-center gap-3 rounded-md p-2 transition-colors"
-            href={`/org/${organizationSlug}/dashboard` as Route}
-          >
-            {organizationLogoUrl ? (
-              <Image
-                alt=""
-                className="size-8 rounded-lg object-cover"
-                height={32}
-                src={organizationLogoUrl}
-                unoptimized
-                width={32}
-              />
-            ) : (
-              <BrandMark />
-            )}
-            <span className="min-w-0">
-              <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
-                {organizationName}
-              </span>
-              <span className="text-ink-2 block truncate font-mono text-[11px]">
-                /c/{organizationPublicSlug}
-              </span>
-            </span>
-          </Link>
+          {userMenu}
+          {account ? (
+            <div className="px-2 pb-2">
+              <p className="text-ink-2 mb-2 text-xs font-medium">
+                {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
+              </p>
+              <Link
+                className="text-brand-text text-sm font-semibold hover:underline"
+                href={`/org/${organizationSlug}/billing` as Route}
+              >
+                {account.effectivePlan === "premium"
+                  ? "Manage subscription"
+                  : "Upgrade to Pro"}
+              </Link>
+            </div>
+          ) : null}
         </SidebarHeader>
         <SidebarContent>
           <Navigation pathname={pathname} sections={navigationSections} />
         </SidebarContent>
-        <SidebarFooter>
-          <NavUser />
-        </SidebarFooter>
+        <SidebarFooter>{projectSwitcher}</SidebarFooter>
       </Sidebar>
       <SidebarInset className="dashboard-view min-h-0 overflow-hidden">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
@@ -250,17 +280,38 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <div className="flex flex-1 flex-col">
+          <div
+            role="region"
+            aria-label="Page content"
+            tabIndex={0}
+            className="min-h-0 flex-1 overflow-y-auto"
+          >
             <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
               <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
+                {!accountContext &&
+                account?.effectivePlan === "free" &&
+                account.freeProjectId &&
+                account.freeProjectId !== organizationId ? (
+                  <section
+                    className="bg-muted space-y-1 rounded-lg border p-4"
+                    aria-label="Inactive project"
+                  >
+                    <h2 className="text-sm font-semibold">
+                      This project is inactive
+                    </h2>
+                    <p className="text-ink-2 text-sm">
+                      You can review your testimonials privately. Collection,
+                      the public Wall, and embeds are disabled. Upgrade to Pro
+                      to use all your projects again.
+                    </p>
+                  </section>
+                ) : null}
                 {children}
               </div>
             </div>
           </div>
           <span className="sr-only" aria-live="polite">
-            {health?.status === "ok"
-              ? "Convex connected"
-              : "Connecting to Convex"}
+            {connected ? "Convex connected" : "Connecting to Convex"}
           </span>
         </div>
       </SidebarInset>

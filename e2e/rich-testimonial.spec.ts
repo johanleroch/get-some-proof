@@ -1,4 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function selectText(editor: Locator, start: number, end: number) {
+  await editor.evaluate(
+    (element, offsets) => {
+      const node = element.querySelector("[data-slate-string]")!.firstChild!;
+      const selection = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(node, offsets.start);
+      range.setEnd(node, offsets.end);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.dispatchEvent(new Event("selectionchange"));
+    },
+    { start, end },
+  );
+}
 
 test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   page,
@@ -14,16 +30,7 @@ test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   await expect(page.locator("blockquote")).toHaveText(
     "We saved five hours every week.Our customers noticed.",
   );
-  await editor.evaluate((element) => {
-    const node = element.querySelector("[data-slate-string]")!.firstChild!;
-    const selection = window.getSelection()!;
-    const range = document.createRange();
-    range.setStart(node, 9);
-    range.setEnd(node, 19);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.dispatchEvent(new Event("selectionchange"));
-  });
+  await selectText(editor, 9, 19);
   await page.getByRole("button", { name: "Highlight", exact: true }).click();
   await expect(page.locator("blockquote mark")).toHaveText("five hours");
   await page.getByLabel("Attach testimonial images").setInputFiles({
@@ -62,7 +69,7 @@ test("Owner marks a phrase, can unmark it, and never changes the words", async (
     dialog.getByRole("button", { name: /^(Highlight|Remove highlight)$/ }),
   ).toHaveCount(0);
 
-  await editor.dblclick({ position: { x: 60, y: 16 } });
+  await selectText(editor, 0, 2);
   const toggle = dialog.getByRole("button", {
     name: /^(Highlight|Remove highlight)$/,
   });
@@ -70,7 +77,7 @@ test("Owner marks a phrase, can unmark it, and never changes the words", async (
   await toggle.click();
 
   // The same words now offer the opposite act: that is the undo.
-  await editor.dblclick({ position: { x: 60, y: 16 } });
+  await selectText(editor, 0, 2);
   await expect(toggle).toHaveText("Remove highlight");
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   await toggle.click();
@@ -96,8 +103,14 @@ test("preserves pasted paragraphs and strips pasted HTML formatting", async ({
   await page.goto("/visual-evidence/rich-testimonial");
   const editor = page.getByRole("textbox", { name: "Your testimonial" });
   await editor.click();
-  await editor.press("ControlOrMeta+A");
+  await expect(async () => {
+    await editor.press("ControlOrMeta+A");
+    await expect(
+      page.getByRole("button", { name: "Highlight", exact: true }),
+    ).toBeEnabled();
+  }).toPass();
   await editor.press("Backspace");
+  await expect(editor).not.toContainText("We saved five hours");
   await editor.evaluate((element) => {
     const data = new DataTransfer();
     data.setData("text/plain", "First paragraph.\nSecond paragraph.");

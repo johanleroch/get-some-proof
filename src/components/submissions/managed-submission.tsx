@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { BlobLoader } from "@/components/brand/blob-loader";
+import { BlobLoader, BlobLoadingText } from "@/components/brand/blob-loader";
 
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -116,6 +116,7 @@ function CurrentManagedVideo({
   posterUrl?: string;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const poster =
     posterUrl ??
     `https://image.mux.com/${encodeURIComponent(playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${posterTimeSeconds ?? 0.5}`;
@@ -132,17 +133,31 @@ function CurrentManagedVideo({
           autoPlay
           className="block h-full w-full"
           disableCookies
+          onCanPlay={() => setBuffering(false)}
+          onEnded={() => setBuffering(false)}
+          onError={() => setBuffering(false)}
+          onPause={() => setBuffering(false)}
+          onPlaying={() => setBuffering(false)}
+          onWaiting={() => setBuffering(true)}
           playbackId={playbackId}
           playsInline
           poster={poster}
           preload="metadata"
-          style={{ aspectRatio: "9 / 16", height: "100%", width: "100%" }}
+          style={{
+            "--loading-indicator": "none",
+            aspectRatio: "9 / 16",
+            height: "100%",
+            width: "100%",
+          }}
         />
       ) : (
         <button
           aria-label="Play your current video testimonial"
           className="group absolute inset-0 cursor-pointer"
-          onClick={() => setPlaying(true)}
+          onClick={() => {
+            setBuffering(true);
+            setPlaying(true);
+          }}
           type="button"
         >
           <Image
@@ -161,6 +176,13 @@ function CurrentManagedVideo({
           </span>
         </button>
       )}
+      {playing && buffering ? (
+        <BlobLoader
+          className="pointer-events-none absolute inset-0"
+          label="Loading video"
+          size={48}
+        />
+      ) : null}
     </div>
   );
 }
@@ -453,7 +475,12 @@ export function ManagedSubmissionView({
                   Ready and you confirm it.
                 </p>
               </div>
-              {submission.replacement ? (
+              {submission.replacement?.status === "processing" ||
+              submission.replacement?.status === "awaiting_upload" ? (
+                <BlobLoadingText
+                  label={`Replacement: ${submission.replacement.status.replace("_", " ")}`}
+                />
+              ) : submission.replacement ? (
                 <p className="text-sm" role="status">
                   Replacement:{" "}
                   <span className="capitalize">
@@ -662,6 +689,7 @@ export function ManagedSubmission({ token }: { token: string }) {
         const clientSubmissionId = `revision-${token.slice(0, 32)}`;
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
           clientSubmissionId,
+          token,
           publicSlug: submission.publicSlug,
         });
         const storageId = await uploadProfileImage(file, uploadUrl);

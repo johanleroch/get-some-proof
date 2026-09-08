@@ -1,3 +1,4 @@
+import { removePublicProjection } from "./publicProjection";
 import {
   richTextValidator,
   normalizeRichText,
@@ -463,9 +464,9 @@ export const setStatus = mutation({
         ctx,
         access.organization._id,
       );
-      await upsertPublicProjection(ctx, testimonial, now, publicOrderKey);
+      await upsertPublicProjection(ctx, testimonial, now, publicOrderKey, true);
     } else if (existingProjection) {
-      await ctx.db.delete(existingProjection._id);
+      await removePublicProjection(ctx, existingProjection);
     }
 
     await ctx.db.patch(testimonial._id, {
@@ -540,7 +541,7 @@ export const markSpam = mutation({
         index.eq("testimonialId", testimonial._id),
       )
       .unique();
-    if (projection) await ctx.db.delete(projection._id);
+    if (projection) await removePublicProjection(ctx, projection);
     const expiresAt = now + spamQuarantineDurationMs;
     const quarantineId = await ctx.db.insert("spamQuarantines", {
       creditRestored: false,

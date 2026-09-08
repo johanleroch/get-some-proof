@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { type FormEvent, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
@@ -36,11 +39,7 @@ export function AccountProfile() {
   const user = session.data?.user;
 
   if (!user || currentUser === undefined) {
-    return (
-      <p className="text-muted-foreground text-sm" role="status">
-        Loading profile…
-      </p>
-    );
+    return <BlobLoader label="Loading profile…" showLabel />;
   }
 
   return (
@@ -151,6 +150,9 @@ export function AccountProfileView({
         eyebrow="Account"
         title="Profile"
       />
+      <Link className="text-sm underline" href="/account/billing">
+        Account billing and deletion
+      </Link>
 
       <Card>
         <CardHeader>

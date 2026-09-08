@@ -1,4 +1,8 @@
 {
+  "account-deletion": "ok",
+  "account-free-project": "ok",
+  "account-inactive-project": "ok",
+  "account-pro-projects": "ok",
   "billing": "todo",
   "billing-downgrade": "ok",
   "collection-form": "todo",

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import { useId, useState } from "react";
 import { IconCheck, IconColorPicker } from "@tabler/icons-react";
 
@@ -16,10 +16,6 @@ import { type Hsv, hexToHsv, hsvToHex, normalizeHex } from "@/lib/color-hsv";
 import { cn } from "@/lib/utils";
 
 export type ColorPreset = { label: string; value: string };
-
-/** How far one arrow press moves; Shift takes the bigger step. */
-const STEP = 2;
-const BIG_STEP = 10;
 
 function clamp(value: number, max: number) {
   return Math.min(max, Math.max(0, value));
@@ -82,30 +78,16 @@ function ColorPanel({
     commit({ ...hsv, s: x * 100, v: (1 - y) * 100 });
   }
 
-  function nudge(event: KeyboardEvent<HTMLDivElement>) {
-    const step = event.shiftKey ? BIG_STEP : STEP;
-    const moves: Record<string, Partial<Hsv>> = {
-      ArrowDown: { v: clamp(hsv.v - step, 100) },
-      ArrowLeft: { s: clamp(hsv.s - step, 100) },
-      ArrowRight: { s: clamp(hsv.s + step, 100) },
-      ArrowUp: { v: clamp(hsv.v + step, 100) },
-    };
-    const move = moves[event.key];
-    if (!move) return;
-    event.preventDefault();
-    commit({ ...hsv, ...move });
-  }
-
   const hex = hsvToHex(hsv);
 
   return (
     <div className="space-y-3">
-      {/* The square is a custom two-axis control: the arrow keys drive it, and
-          the hex field below is the exact way in for anyone who cannot. */}
+      {/* Pointer users choose both axes together. Native ranges below expose
+          each axis and its value to keyboard and assistive technology users. */}
       <div
-        aria-label="Saturation and brightness. Use the arrow keys."
-        className="border-line focus-visible:ring-ring relative h-36 w-full cursor-crosshair touch-none rounded-md border outline-none focus-visible:ring-[3px]"
-        onKeyDown={nudge}
+        aria-hidden="true"
+        className="border-line relative h-36 w-full cursor-crosshair touch-none rounded-md border"
+        role="presentation"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           pick(event);
@@ -118,7 +100,6 @@ function ColorPanel({
         style={{
           background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${hsv.h} 100% 50%)`,
         }}
-        tabIndex={0}
       >
         <span
           aria-hidden="true"
@@ -129,6 +110,33 @@ function ColorPanel({
             top: `${100 - hsv.v}%`,
           }}
         />
+      </div>
+
+      {/* Reveal both controls when either receives focus, keeping keyboard
+          focus visible without changing the pointer-oriented panel layout. */}
+      <div className="sr-only focus-within:not-sr-only focus-within:space-y-2">
+        {(
+          [
+            { axis: "s", label: "Saturation" },
+            { axis: "v", label: "Brightness" },
+          ] as const
+        ).map(({ axis, label }) => (
+          <label className="type-small block" key={axis}>
+            <span>{label}</span>
+            <input
+              aria-valuetext={`${Math.round(hsv[axis])}%`}
+              className="focus-visible:ring-ring accent-ink block h-11 w-full outline-none focus-visible:ring-[3px]"
+              max={100}
+              min={0}
+              onChange={(event) =>
+                commit({ ...hsv, [axis]: Number(event.target.value) })
+              }
+              step={1}
+              type="range"
+              value={Math.round(hsv[axis])}
+            />
+          </label>
+        ))}
       </div>
 
       {/* A real range input: the hue is one axis, so the accessible control

@@ -183,10 +183,10 @@ export function OrganizationOnboardingFormView({
     } catch (caught) {
       setError(
         organizationCreated
-          ? "Your Brand was created, but the logo upload failed. Retry or continue without it."
+          ? "Your project was created, but the logo upload failed. Retry or continue without it."
           : caught instanceof Error
             ? caught.message
-            : "Unable to create the Brand.",
+            : "Unable to create the project.",
       );
       setPending(false);
     }
@@ -295,7 +295,11 @@ export function OrganizationOnboardingFormView({
             />
             Write your own wording
           </button>
-          <div className="space-y-5 pt-5" hidden={!wordingIsOpen}>
+          <div
+            className="space-y-5 pt-5"
+            hidden={!wordingIsOpen}
+            id="collection-form-wording"
+          >
             <Field>
               <Label htmlFor="collection-form-title">
                 Collection Form title
@@ -336,6 +340,16 @@ export function OrganizationOnboardingFormView({
                 id="privacy-contact"
                 name="privacyContact"
                 onChange={(event) => setPrivacyContact(event.target.value)}
+                onInvalid={(event) => {
+                  if (wordingIsOpen) return;
+                  event.preventDefault();
+                  const input = event.currentTarget;
+                  setWordingIsOpen(true);
+                  window.requestAnimationFrame(() => {
+                    input.focus();
+                    input.reportValidity();
+                  });
+                }}
                 placeholder="privacy@yourbrand.com"
                 type="email"
                 value={privacyContact}
@@ -351,7 +365,7 @@ export function OrganizationOnboardingFormView({
         {error ? <ErrorToast message={error} /> : null}
         <div className="space-y-2">
           <Button className="w-full" loading={pending} type="submit">
-            {createdOrganization ? "Retry logo and continue" : "Create Brand"}
+            {createdOrganization ? "Retry logo and continue" : "Create project"}
           </Button>
           {createdOrganization ? (
             <Button

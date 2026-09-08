@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import {
   Component,
   type ReactNode,
@@ -217,7 +219,13 @@ function QuickAccessMenu({
           <span>Quick access</span>
           <DropdownMenuShortcut>⌘ .</DropdownMenuShortcut>
         </DropdownMenuLabel>
-        <p className="text-ink-2 px-2 pb-1.5 text-xs">{status}</p>
+        <p className="text-ink-2 px-2 pb-1.5 text-xs">
+          {sessionState === "loading" ? (
+            <BlobLoadingText label={status} className="text-xs" />
+          ) : (
+            status
+          )}
+        </p>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuLabel>Design</DropdownMenuLabel>

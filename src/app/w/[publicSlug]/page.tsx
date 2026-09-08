@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchQuery } from "convex/nextjs";
+import { cache } from "react";
+import { headers } from "next/headers";
 
-import { api } from "@convex/_generated/api";
+import { publicWallResponse } from "@/lib/public-wall-server";
+import {
+  wallFromResponse,
+  type PublicWallResponse,
+} from "@/lib/public-wall-response";
 import { PublicWallLive } from "@/components/public-wall/public-wall-live";
 import { SetupRequired } from "@/components/setup-required";
 import { getPublicEnvironment } from "@/lib/env/public-env";
@@ -10,20 +15,18 @@ import { buildPublicWallMetadata } from "@/lib/public-wall-metadata";
 
 export const dynamic = "force-dynamic";
 
-async function getWallBrand(publicSlug: string) {
-  return fetchQuery(api.publicWall.getBrand, { publicSlug });
-}
-
-async function getInitialWall(publicSlug: string) {
-  const [brand, testimonials] = await Promise.all([
-    getWallBrand(publicSlug),
-    fetchQuery(api.publicWall.list, {
-      paginationOpts: { cursor: null, numItems: 24 },
-      publicSlug,
-    }),
-  ]);
-  return brand ? { ...brand, testimonials: testimonials.page } : null;
-}
+const getInitialWall = cache(async (publicSlug: string) => {
+  // A local adapter call, not an HTTP fetch using a caller-controlled host.
+  const requestHeaders = new Headers(await headers());
+  requestHeaders.delete("if-none-match");
+  const response = await publicWallResponse(
+    new Request("https://public-wall.invalid/", { headers: requestHeaders }),
+    { params: Promise.resolve({ publicSlug }) },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("Public Wall temporarily unavailable.");
+  return (await response.json()) as PublicWallResponse;
+});
 
 export async function generateMetadata({
   params,
@@ -35,15 +38,15 @@ export async function generateMetadata({
   if (!environment.configured) {
     return { robots: { follow: false, index: false }, title: "Public Wall" };
   }
-  const wall = await getWallBrand(publicSlug);
+  const wall = await getInitialWall(publicSlug);
   if (!wall) {
     return { robots: { follow: false, index: false }, title: "Public Wall" };
   }
   return buildPublicWallMetadata(
     {
-      brandName: wall.brandName,
-      publicSlug: wall.publicSlug,
-      testimonialCount: wall.hasPublishedTestimonials ? 1 : 0,
+      brandName: wall.brand.name,
+      publicSlug: wall.brand.publicSlug,
+      testimonialCount: wall.testimonials.length,
     },
     environment.siteUrl,
   );
@@ -61,5 +64,12 @@ export default async function PublicWallPage({
   const { publicSlug } = await params;
   const wall = await getInitialWall(publicSlug);
   if (!wall) notFound();
-  return <PublicWallLive initialWall={wall} />;
+  return (
+    <PublicWallLive
+      key={publicSlug}
+      initialWall={wallFromResponse(wall)}
+      initialCursor={wall.pagination.cursor}
+      initialPrivacyRevision={wall.privacyRevision}
+    />
+  );
 }

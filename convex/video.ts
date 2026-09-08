@@ -1,7 +1,9 @@
+import { retainAccountVideo } from "./billingDowngrade";
+import { isProjectActive } from "./projectActivity";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   action,
   internalAction,
@@ -43,12 +45,12 @@ import {
 } from "./email/templates";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
 import { requireOrganizationPermission } from "./security/organizationAccess";
-import {
-  cancelVideoDirectUpload,
-  createVideoDirectUpload,
-  type DirectUpload,
-} from "./videoProvider";
+import { createVideoDirectUpload, type DirectUpload } from "./videoProvider";
 import { createVideoRetryLink } from "./videoRetryLinks";
+import {
+  enqueueAssetCleanup,
+  enqueueVideoAssetCleanup,
+} from "./testimonialDeletion";
 import { verifyTurnstileToken } from "./turnstile";
 
 const reservationTtlMs = 2 * 60 * 60 * 1_000;
@@ -64,7 +66,7 @@ async function requireOpenVideoOrganization(
   organizationId: Id<"organizations">,
 ) {
   const organization = await ctx.db.get(organizationId);
-  if (!organization || organization.deletionStartedAt !== undefined) {
+  if (!organization || !(await isProjectActive(ctx, organization))) {
     unavailable("COLLECTION_FORM_UNAVAILABLE", "Collection Form unavailable.");
   }
   return organization;
@@ -96,6 +98,26 @@ function validateUploadRequest(mimeType: string, fileSizeBytes: number) {
     unavailable("INVALID_VIDEO_SIZE", "Choose a video smaller than 512 MB.");
   }
   return normalizedMimeType;
+}
+
+async function retireReservation(
+  ctx: MutationCtx,
+  reservation: Doc<"videoReservations">,
+  asset: Doc<"videoAssets"> | null,
+  reason: string,
+) {
+  await ctx.db.patch(reservation._id, {
+    status: "released",
+    freeCreditPending: undefined,
+    updatedAt: Date.now(),
+  });
+  if (!asset) return;
+  await enqueueVideoAssetCleanup(ctx, asset);
+  await ctx.db.patch(asset._id, {
+    failureReason: reason,
+    status: "failed",
+    updatedAt: Date.now(),
+  });
 }
 
 async function reserveForOrganization(
@@ -161,10 +183,22 @@ async function reserveForOrganization(
         "Use the private replacement link sent by email.",
       );
     }
-    if (previousAsset) await ctx.db.delete(previousAsset._id);
+    if (previousAsset) {
+      await enqueueVideoAssetCleanup(ctx, previousAsset);
+      await ctx.db.delete(previousAsset._id);
+    }
     await ctx.db.delete(existing._id);
+    if (
+      !(await getCollectionAvailability(ctx, organizationId)).videoAvailable
+    ) {
+      unavailable(
+        "VIDEO_CAPACITY_REACHED",
+        "Video testimonials are temporarily unavailable for this Brand.",
+      );
+    }
   }
   const reservationId = await ctx.db.insert("videoReservations", {
+    accountId: (await ctx.db.get(organizationId))?.accountId,
     clientSubmissionId,
     createdAt: now,
     expiresAt,
@@ -178,7 +212,7 @@ async function reserveForOrganization(
     internal.video.expireReservation,
     { reservationId },
   );
-  return { expiresAt, reservationId };
+  return { expiresAt, reservationId, organizationId };
 }
 
 export const reserveCapacity = internalMutation({
@@ -188,6 +222,7 @@ export const reserveCapacity = internalMutation({
   },
   returns: v.object({
     expiresAt: v.number(),
+    organizationId: v.id("organizations"),
     reservationId: v.id("videoReservations"),
   }),
   handler: async (ctx, args) => {
@@ -197,7 +232,7 @@ export const reserveCapacity = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) {
+    if (!brand || !(await isProjectActive(ctx, brand))) {
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -242,7 +277,8 @@ export const attachProviderUpload = internalMutation({
       providerUploadId: args.providerUploadId,
       updatedAt: now,
     });
-    return await ctx.db.insert("videoAssets", {
+    const assetId = await ctx.db.insert("videoAssets", {
+      accountId: reservation.accountId,
       captionsStatus: "requested",
       createdAt: now,
       fileSizeBytes: args.fileSizeBytes,
@@ -256,6 +292,8 @@ export const attachProviderUpload = internalMutation({
       status: "awaiting_upload",
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(assetId))!);
+    return assetId;
   },
 });
 
@@ -266,6 +304,7 @@ export const reserveRetryCapacity = internalMutation({
   },
   returns: v.object({
     expiresAt: v.number(),
+    organizationId: v.id("organizations"),
     failedVideoAssetId: v.id("videoAssets"),
     reservationId: v.id("videoReservations"),
     testimonialId: v.id("testimonials"),
@@ -391,7 +430,8 @@ export const attachRetryProviderUpload = internalMutation({
       testimonialId: undefined,
       updatedAt: now,
     });
-    return await ctx.db.insert("videoAssets", {
+    const assetId = await ctx.db.insert("videoAssets", {
+      accountId: reservation.accountId,
       captionsStatus: "requested",
       createdAt: now,
       fileSizeBytes: args.fileSizeBytes,
@@ -406,6 +446,8 @@ export const attachRetryProviderUpload = internalMutation({
       testimonialId: testimonial._id,
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(assetId))!);
+    return assetId;
   },
 });
 
@@ -438,6 +480,7 @@ export const releaseRetryCapacity = internalMutation({
     if (reservation?.status === "reserved" && !asset) {
       await ctx.db.patch(reservation._id, {
         status: "released",
+        freeCreditPending: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -446,13 +489,27 @@ export const releaseRetryCapacity = internalMutation({
 });
 
 export const releaseCapacity = internalMutation({
-  args: { reservationId: v.id("videoReservations") },
+  args: {
+    reservationId: v.id("videoReservations"),
+    organizationId: v.optional(v.id("organizations")),
+    provider: v.optional(v.union(v.literal("fake"), v.literal("mux"))),
+    providerUploadId: v.optional(v.string()),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const reservation = await ctx.db.get(args.reservationId);
+    const organizationId = reservation?.organizationId ?? args.organizationId;
+    if (organizationId && args.provider && args.providerUploadId) {
+      await enqueueAssetCleanup(ctx, {
+        organizationId,
+        provider: args.provider,
+        providerUploadId: args.providerUploadId,
+      });
+    }
     if (reservation?.status === "reserved") {
       await ctx.db.patch(reservation._id, {
         status: "released",
+        freeCreditPending: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -469,33 +526,20 @@ export const expireReservationState = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const reservation = await ctx.db.get(args.reservationId);
-    if (
-      reservation?.status === "reserved" &&
-      reservation.expiresAt <= Date.now()
-    ) {
-      await ctx.db.patch(reservation._id, {
-        status: "released",
-        updatedAt: Date.now(),
+    if (!reservation || reservation.expiresAt > Date.now()) return null;
+    const asset = await ctx.db
+      .query("videoAssets")
+      .withIndex("by_reservation", (q) =>
+        q.eq("reservationId", reservation._id),
+      )
+      .unique();
+    if (asset?.status === "ready" && asset.testimonialId) return null;
+    await retireReservation(ctx, reservation, asset, "Upload timed out.");
+    if (asset && args.retryTokenHash && args.retryTokenSeed) {
+      await createVideoRetryLink(ctx, asset, {
+        hash: args.retryTokenHash,
+        seed: args.retryTokenSeed,
       });
-      const asset = await ctx.db
-        .query("videoAssets")
-        .withIndex("by_reservation", (index) =>
-          index.eq("reservationId", reservation._id),
-        )
-        .unique();
-      if (asset && asset.status !== "ready" && asset.status !== "failed") {
-        await ctx.db.patch(asset._id, {
-          failureReason: "Upload timed out.",
-          status: "failed",
-          updatedAt: Date.now(),
-        });
-        if (args.retryTokenHash && args.retryTokenSeed) {
-          await createVideoRetryLink(ctx, asset, {
-            hash: args.retryTokenHash,
-            seed: args.retryTokenSeed,
-          });
-        }
-      }
     }
     return null;
   },
@@ -538,22 +582,14 @@ export const cancelUpload = mutation({
           .unique()
       : null;
     if (
-      reservation?.status === "reserved" &&
+      reservation &&
+      (reservation.status === "reserved" ||
+        reservation.status === "consumed") &&
       reservation.clientSubmissionId ===
         normalizedClientSubmissionId(args.clientSubmissionId) &&
       !asset?.testimonialId
     ) {
-      await ctx.db.patch(reservation._id, {
-        status: "released",
-        updatedAt: Date.now(),
-      });
-      if (asset && asset.status !== "ready") {
-        await ctx.db.patch(asset._id, {
-          failureReason: "Upload cancelled.",
-          status: "failed",
-          updatedAt: Date.now(),
-        });
-      }
+      await retireReservation(ctx, reservation, asset, "Upload cancelled.");
     }
     return null;
   },
@@ -604,6 +640,7 @@ export const cancelRetryUpload = mutation({
       return null;
     }
     const now = Date.now();
+    await enqueueVideoAssetCleanup(ctx, replacementAsset);
     await ctx.db.delete(replacementAsset._id);
     await ctx.db.patch(failedAsset._id, {
       testimonialId: retry.testimonialId,
@@ -611,6 +648,7 @@ export const cancelRetryUpload = mutation({
     });
     await ctx.db.patch(reservation._id, {
       status: "released",
+      freeCreditPending: undefined,
       updatedAt: now,
     });
     await ctx.db.patch(retry._id, {
@@ -630,6 +668,7 @@ export const createDirectUpload = action({
     publicSlug: v.string(),
     spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
     turnstileToken: v.optional(v.string()),
+    admissionToken: v.optional(v.string()),
   },
   returns: v.object({
     expiresAt: v.number(),
@@ -638,7 +677,15 @@ export const createDirectUpload = action({
     uploadUrl: v.string(),
   }),
   handler: async (ctx: ActionCtx, args) => {
-    await verifyTurnstileToken(args.turnstileToken, "collect_proof");
+    if (args.admissionToken !== undefined) {
+      await ctx.runMutation(internal.collectionAdmission.consumeSubmission, {
+        publicSlug: args.publicSlug,
+        clientSubmissionId: args.clientSubmissionId,
+        token: args.admissionToken,
+      });
+    } else {
+      await verifyTurnstileToken(args.turnstileToken, "collect_proof");
+    }
     await ctx.runMutation(
       internal.collectionRateLimit.recordPublicCollectionRequest,
       {
@@ -650,6 +697,7 @@ export const createDirectUpload = action({
     sourceVideoMetadata(args.dimensions);
     const reserved: {
       expiresAt: number;
+      organizationId: Id<"organizations">;
       reservationId: import("./_generated/dataModel").Id<"videoReservations">;
     } = await ctx.runMutation(internal.video.reserveCapacity, {
       clientSubmissionId: args.clientSubmissionId,
@@ -661,6 +709,7 @@ export const createDirectUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachProviderUpload, {
@@ -679,18 +728,12 @@ export const createDirectUpload = action({
         uploadUrl: directUpload.uploadUrl,
       };
     } catch (error) {
-      try {
-        if (directUpload) {
-          await cancelVideoDirectUpload(
-            directUpload.uploadId,
-            directUpload.provider,
-          );
-        }
-      } finally {
-        await ctx.runMutation(internal.video.releaseCapacity, {
-          reservationId: reserved.reservationId,
-        });
-      }
+      await ctx.runMutation(internal.video.releaseCapacity, {
+        reservationId: reserved.reservationId,
+        organizationId: reserved.organizationId,
+        provider: directUpload?.provider,
+        providerUploadId: directUpload?.uploadId,
+      });
       throw error;
     }
   },
@@ -796,7 +839,7 @@ export const createVideoRecords = internalMutation({
       );
     }
     const brand = await ctx.db.get(reservation.organizationId);
-    if (!brand || brand.deletionStartedAt !== undefined)
+    if (!brand || !(await isProjectActive(ctx, brand)))
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -1000,6 +1043,7 @@ export const createVideoRecords = internalMutation({
       testimonialId,
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(asset._id))!);
     if (asset.status === "ready") {
       await consumeReadyVideoCredit(ctx, {
         organizationId: brand._id,
@@ -1165,6 +1209,7 @@ export const completeFakeAsset = internalMutation({
     });
     await ctx.db.patch(reservation._id, {
       status: "consumed",
+      freeCreditPending: reservation.plan === "free" ? true : undefined,
       updatedAt: now,
     });
     await consumeReadyVideoCredit(ctx, {
@@ -1282,6 +1327,7 @@ export const createRetryDirectUpload = action({
     const tokenHash = await hashSubmissionManagementToken(args.token);
     const reserved: {
       expiresAt: number;
+      organizationId: Id<"organizations">;
       failedVideoAssetId: Id<"videoAssets">;
       reservationId: Id<"videoReservations">;
       testimonialId: Id<"testimonials">;
@@ -1295,6 +1341,7 @@ export const createRetryDirectUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachRetryProviderUpload, {
@@ -1321,19 +1368,16 @@ export const createRetryDirectUpload = action({
         uploadUrl: directUpload.uploadUrl,
       };
     } catch (error) {
-      try {
-        if (directUpload) {
-          await cancelVideoDirectUpload(
-            directUpload.uploadId,
-            directUpload.provider,
-          );
-        }
-      } finally {
-        await ctx.runMutation(internal.video.releaseRetryCapacity, {
-          reservationId: reserved.reservationId,
-          tokenHash,
-        });
-      }
+      await ctx.runMutation(internal.video.releaseCapacity, {
+        reservationId: reserved.reservationId,
+        organizationId: reserved.organizationId,
+        provider: directUpload?.provider,
+        providerUploadId: directUpload?.uploadId,
+      });
+      await ctx.runMutation(internal.video.releaseRetryCapacity, {
+        reservationId: reserved.reservationId,
+        tokenHash,
+      });
       throw error;
     }
   },

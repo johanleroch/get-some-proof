@@ -1,3 +1,4 @@
+import { removePublicProjection } from "./publicProjection";
 import { deleteTestimonialImages } from "./testimonialImages";
 import { v } from "convex/values";
 
@@ -14,11 +15,30 @@ export async function enqueueAssetCleanup(
     provider: "fake" | "mux";
     providerAssetId?: string;
     providerUploadId?: string;
-    testimonialId: Id<"testimonials">;
+    testimonialId?: Id<"testimonials">;
   },
 ) {
   if (!input.providerAssetId && !input.providerUploadId) return;
+  const existing = input.providerAssetId
+    ? await ctx.db
+        .query("videoProviderCleanupJobs")
+        .withIndex("by_provider_asset", (q) =>
+          q
+            .eq("provider", input.provider)
+            .eq("providerAssetId", input.providerAssetId),
+        )
+        .first()
+    : await ctx.db
+        .query("videoProviderCleanupJobs")
+        .withIndex("by_provider_upload", (q) =>
+          q
+            .eq("provider", input.provider)
+            .eq("providerUploadId", input.providerUploadId),
+        )
+        .first();
+  if (existing) return;
   const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
+    accountId: (await ctx.db.get(input.organizationId))?.accountId,
     attempts: 0,
     createdAt: Date.now(),
     organizationId: input.organizationId,
@@ -35,8 +55,10 @@ export async function enqueueAssetCleanup(
 export async function enqueueVideoAssetCleanup(
   ctx: MutationCtx,
   asset: Doc<"videoAssets">,
-  testimonialId: Id<"testimonials">,
+  testimonialId: Id<"testimonials"> | undefined = asset.testimonialId,
 ) {
+  if (asset.cleanupScheduled) return;
+  await ctx.db.patch(asset._id, { cleanupScheduled: true });
   await enqueueAssetCleanup(ctx, {
     organizationId: asset.organizationId,
     provider: asset.provider,
@@ -115,7 +137,7 @@ async function purgeTestimonialRelationshipBatch(
       ])
     : [[], []];
 
-  if (projection) await ctx.db.delete(projection._id);
+  if (projection) await removePublicProjection(ctx, projection);
   if (consent) await ctx.db.delete(consent._id);
   for (const delivery of deliveries) await ctx.db.delete(delivery._id);
   for (const quarantine of quarantines) await ctx.db.delete(quarantine._id);

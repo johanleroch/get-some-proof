@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,9 +44,6 @@ function initials(name: string) {
 export function NavUser() {
   const user = useQuery(api.auth.getCurrentUser, {});
   const router = useRouter();
-  const { isMobile } = useSidebar();
-  const name = user?.name || "Your account";
-  const email = user?.email || "Loading profile…";
 
   async function signOut() {
     const result = await authClient.signOut();
@@ -54,6 +53,23 @@ export function NavUser() {
     }
   }
 
+  return <NavUserView user={user} signOut={signOut} />;
+}
+
+export function NavUserView({
+  user,
+  signOut,
+}: {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
+  signOut: () => Promise<void>;
+}) {
+  const { isMobile } = useSidebar();
+  const name = user?.name || "Your account";
+  const email = user?.email || "";
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -75,7 +91,14 @@ export function NavUser() {
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {email}
+                  {user === undefined ? (
+                    <BlobLoadingText
+                      label="Loading profile…"
+                      className="text-xs"
+                    />
+                  ) : (
+                    email
+                  )}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -100,7 +123,14 @@ export function NavUser() {
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{name}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {email}
+                    {user === undefined ? (
+                      <BlobLoadingText
+                        label="Loading profile…"
+                        className="text-xs"
+                      />
+                    ) : (
+                      email
+                    )}
                   </span>
                 </div>
               </div>

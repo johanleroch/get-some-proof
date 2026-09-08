@@ -1,3 +1,7 @@
+import { isProjectOpen } from "./projectActivity";
+import { isProjectActive } from "./projectActivity";
+import { consumeAdmission } from "./collectionAdmission";
+import { resolveUploadContext } from "./testimonialImages";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
 import { imageIdsValidator } from "./domain/testimonialImage";
 import { setTestimonialImages } from "./testimonialImages";
@@ -58,6 +62,7 @@ const textSubmissionArgs = {
   text: v.string(),
   richText: v.optional(richTextValidator),
   turnstileToken: v.optional(v.string()),
+  admissionToken: v.optional(v.string()),
 };
 
 const submissionResult = v.object({
@@ -136,23 +141,38 @@ async function findCurrentOwnerEmail(
 }
 
 export const generateAvatarUploadUrl = mutation({
-  args: { clientSubmissionId: v.string(), publicSlug: v.string() },
+  args: {
+    clientSubmissionId: v.string(),
+    publicSlug: v.string(),
+    token: v.optional(v.string()),
+    admissionToken: v.optional(v.string()),
+  },
   returns: v.object({
     reservationId: v.id("submissionAvatarUploads"),
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const brand = await ctx.db
-      .query("organizations")
-      .withIndex("by_public_slug", (index) =>
-        index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
-      )
-      .unique();
-    if (!brand || brand.deletionStartedAt !== undefined)
-      collectionUnavailable();
+    const { brand, testimonialId } = await resolveUploadContext(
+      ctx,
+      {
+        ...args,
+        publicSlug: args.publicSlug.trim().toLowerCase(),
+      },
+      "avatar",
+    ).catch(() => collectionUnavailable());
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,
     );
+    if (!testimonialId)
+      await consumeAdmission(
+        ctx,
+        {
+          organizationId: brand._id,
+          clientSubmissionId,
+          token: args.admissionToken,
+        },
+        "avatar",
+      );
     const existing = await ctx.db
       .query("submissionAvatarUploads")
       .withIndex("by_organization_client_submission", (index) =>
@@ -293,8 +313,7 @@ export const createTextRecords = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined)
-      collectionUnavailable();
+    if (!brand || !(await isProjectActive(ctx, brand))) collectionUnavailable();
 
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,
@@ -662,7 +681,15 @@ export const submitText = action({
   args: textSubmissionArgs,
   returns: submissionResult,
   handler: async (ctx, args): Promise<SubmissionActionResult> => {
-    await verifyTurnstileToken(args.turnstileToken, "collect_proof");
+    if (args.admissionToken !== undefined) {
+      await ctx.runMutation(internal.collectionAdmission.consumeSubmission, {
+        publicSlug: args.publicSlug,
+        clientSubmissionId: args.clientSubmissionId,
+        token: args.admissionToken,
+      });
+    } else {
+      await verifyTurnstileToken(args.turnstileToken, "collect_proof");
+    }
     await ctx.runMutation(
       internal.collectionRateLimit.recordPublicCollectionRequest,
       {
@@ -805,7 +832,7 @@ export const getByManagementToken = query({
         )
         .unique(),
     ]);
-    if (!brand || !consent) return null;
+    if (!brand || !consent || !(await isProjectOpen(ctx, brand))) return null;
     return {
       brandName: brand.name,
       company: testimonial.company,

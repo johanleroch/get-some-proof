@@ -7,7 +7,10 @@ import {
   internalQuery,
   type MutationCtx,
 } from "./_generated/server";
-import { syncBillingDowngradeLifecycle } from "./billingDowngrade";
+import {
+  freezeExpiredAccountPublications,
+  syncBillingDowngradeLifecycle,
+} from "./billingDowngrade";
 
 const maximumScheduleHopSeconds = 20 * 24 * 60 * 60;
 const maximumReconciliationRetryMs = 15 * 60_000;
@@ -56,6 +59,58 @@ async function subscriptionDeletionStarted(
   stripeSubscriptionId: string,
   organizationId?: string,
 ) {
+  const accountMarker = await ctx.db
+    .query("accountDeletionSubscriptions")
+    .withIndex("by_subscription", (q) =>
+      q.eq("stripeSubscriptionId", stripeSubscriptionId),
+    )
+    .unique();
+  const subscription = await ctx.db
+    .query("billingSubscriptionStates")
+    .withIndex("by_stripe_subscription", (q) =>
+      q.eq("stripeSubscriptionId", stripeSubscriptionId),
+    )
+    .unique();
+  const projectId = organizationId
+    ? ctx.db.normalizeId("organizations", organizationId)
+    : null;
+  const project = projectId ? await ctx.db.get(projectId) : null;
+  const projectDeletion = projectId
+    ? await ctx.db
+        .query("workspaceDeletions")
+        .withIndex("by_organization", (q) => q.eq("organizationId", projectId))
+        .unique()
+    : null;
+  const accountId =
+    accountMarker?.accountId ??
+    subscription?.accountId ??
+    project?.accountId ??
+    projectDeletion?.accountId;
+  const accountDeletion = accountId
+    ? await ctx.db
+        .query("accountDeletions")
+        .withIndex("by_account", (q) => q.eq("accountId", accountId))
+        .unique()
+    : null;
+  if (accountDeletion) {
+    if (!accountMarker)
+      await ctx.db.insert("accountDeletionSubscriptions", {
+        accountId: accountDeletion.accountId,
+        stripeSubscriptionId,
+      });
+    if (accountMarker?.canceledAt === undefined) {
+      await ctx.db.patch(accountDeletion._id, {
+        status: "requested",
+        updatedAt: Date.now(),
+      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.accountDeletion.processDeletion,
+        { deletionId: accountDeletion._id },
+      );
+    }
+    return true;
+  }
   const marker = await ctx.db
     .query("workspaceDeletionSubscriptions")
     .withIndex("by_stripe_subscription", (index) =>
@@ -82,7 +137,7 @@ async function subscriptionDeletionStarted(
       index.eq("organizationId", normalizedOrganizationId),
     )
     .unique();
-  if (!deletion) return false;
+  if (!deletion || deletion.accountId) return false;
   await ctx.db.insert("workspaceDeletionSubscriptions", {
     createdAt: Date.now(),
     deletionId: deletion._id,
@@ -476,7 +531,23 @@ export const applySubscriptionEvent = internalMutation({
         existing?.status === args.status
           ? (args.statusChangedAt ?? existing.statusChangedAt)
           : args.statusChangedAt;
+      // Checkout metadata can still point to a Project deleted before delivery.
+      // Its durable deletion record preserves the owning Account association.
+      const project = await ctx.db.get(organizationId);
+      const deletedProject =
+        !existing?.accountId && !project?.accountId
+          ? await ctx.db
+              .query("workspaceDeletions")
+              .withIndex("by_organization", (q) =>
+                q.eq("organizationId", organizationId),
+              )
+              .unique()
+          : null;
       const snapshot = {
+        accountId:
+          existing?.accountId ??
+          project?.accountId ??
+          deletedProject?.accountId,
         cancelAt: args.cancelAt,
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
         currentPeriodEnd: args.currentPeriodEnd,
@@ -493,6 +564,12 @@ export const applySubscriptionEvent = internalMutation({
         stripeSubscriptionId: args.stripeSubscriptionId,
         updatedAt: Date.now(),
       };
+      if (snapshot.accountId)
+        await freezeExpiredAccountPublications(
+          ctx,
+          organizationId,
+          snapshot.accountId,
+        );
       if (existing) await ctx.db.replace(existing._id, snapshot);
       else await ctx.db.insert("billingSubscriptionStates", snapshot);
       await syncBillingDowngradeLifecycle(ctx, snapshot);

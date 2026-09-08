@@ -68,7 +68,7 @@ describe("OrganizationOnboardingForm", () => {
     expect(
       screen.getByText(/Your public address will be \/c\/northwind-bakery\./),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
 
     await waitFor(() =>
       expect(mocks.create).toHaveBeenCalledWith({
@@ -83,6 +83,44 @@ describe("OrganizationOnboardingForm", () => {
     expect(mocks.setLogo).not.toHaveBeenCalled();
     expect(mocks.push).toHaveBeenCalledWith(
       "/org/visual-studio-ab12/dashboard",
+    );
+  });
+
+  it("reveals an invalid privacy email after its disclosure was collapsed", async () => {
+    render(<OrganizationOnboardingForm />);
+    fireEvent.change(screen.getByLabelText("Brand name"), {
+      target: { value: "Northwind Bakery" },
+    });
+    const disclosure = screen.getByRole("button", {
+      name: "Write your own wording",
+    });
+    fireEvent.click(disclosure);
+    const privacyContact = screen.getByLabelText("Privacy contact");
+    fireEvent.change(privacyContact, { target: { value: "invalid-email" } });
+    fireEvent.click(disclosure);
+    expect(privacyContact).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+
+    await waitFor(() => expect(privacyContact).toHaveFocus());
+    expect(privacyContact).toBeVisible();
+    expect(privacyContact).toBeInvalid();
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    expect(
+      document.getElementById(disclosure.getAttribute("aria-controls")!),
+    ).toContainElement(privacyContact);
+    expect(mocks.create).not.toHaveBeenCalled();
+
+    fireEvent.change(privacyContact, {
+      target: { value: "privacy@northwind.example" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    await waitFor(() =>
+      expect(mocks.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          privacyContact: "privacy@northwind.example",
+        }),
+      ),
     );
   });
 
@@ -111,7 +149,7 @@ describe("OrganizationOnboardingForm", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Coral" }));
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
 
     await waitFor(() => {
       expect(mocks.create).toHaveBeenCalledWith({
@@ -142,11 +180,11 @@ describe("OrganizationOnboardingForm", () => {
       target: { value: "Visual Studio" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
 
     expect(
       await screen.findByText(
-        "Your Brand was created, but the logo upload failed. Retry or continue without it.",
+        "Your project was created, but the logo upload failed. Retry or continue without it.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(

@@ -2,6 +2,27 @@
   "project": "get-some-proof",
   "screens": [
     {
+      "slug": "full-page-loading",
+      "title": "Full-page loading",
+      "path": "/visual-evidence/full-page-loading",
+      "heading": "Loading\u2026",
+      "theme": "light"
+    },
+    {
+      "slug": "loading-states",
+      "title": "Loading states",
+      "path": "/visual-evidence/loading-states",
+      "heading": "Loading states",
+      "theme": "light"
+    },
+    {
+      "slug": "managed-video-processing",
+      "title": "Private video replacement processing",
+      "path": "/visual-evidence/managed-video-processing",
+      "heading": "Manage your testimonial",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in",
       "title": "Sign in",
       "path": "/sign-in",
@@ -91,7 +112,7 @@
       "title": "Brand dashboard",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Fernhill Studio",
+      "heading": "Harbor Studio",
       "theme": "light",
       "requiresAuth": true
     },
@@ -100,7 +121,7 @@
       "title": "Brand dashboard - dark",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Fernhill Studio",
+      "heading": "Harbor Studio",
       "theme": "dark",
       "requiresAuth": true
     },
@@ -366,6 +387,60 @@
       "path": "/templates/marquee",
       "heading": "Marquee",
       "theme": "light"
+    },
+    {
+      "slug": "account-pro-projects",
+      "title": "Pro Account with shared project quotas",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/account-pro",
+      "heading": "Harbor Studio",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-project-selector",
+      "title": "Account Project selector",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/account-pro",
+      "heading": "Harbor Studio",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-inactive-project",
+      "title": "Inactive Project after downgrade",
+      "path": "/org/:organizationSlug/dashboard",
+      "fixturePath": "/visual-evidence/inactive-project",
+      "heading": "Harbor Studio",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-deletion",
+      "title": "Account deletion scope",
+      "path": "/account/billing",
+      "fixturePath": "/visual-evidence/account-deletion",
+      "heading": "Delete account",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-deletion-confirmation",
+      "title": "Confirm deletion of all Projects",
+      "path": "/account/billing",
+      "fixturePath": "/visual-evidence/account-deletion",
+      "heading": "Delete account",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-free-project",
+      "title": "Choose the active Free Project",
+      "path": "/org/:organizationSlug/billing",
+      "fixturePath": "/visual-evidence/account-free-project",
+      "heading": "Choose your Free project",
+      "theme": "light",
+      "requiresAuth": true
     }
   ]
 }
