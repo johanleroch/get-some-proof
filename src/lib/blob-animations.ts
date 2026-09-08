@@ -15,6 +15,10 @@
 //   overshoot visibly.
 // - The body pivots on its base (transform-origin bottom centre); eyes move
 //   inside the body and blink on their own centre.
+// - No `will-change: transform` on the moving groups: Chrome then promotes
+//   the filtered body to its own layer and rasterises it once at a coarse
+//   scale, so the mascot came out pixelated on screen (seen by the founder
+//   in the Inbox on 2026-09-08). Plain transforms repaint crisply.
 
 import {
   EYE_Y,
@@ -187,7 +191,7 @@ export function animatedBlobSvg(
   const css = animation.css.replaceAll("$", scope);
   return `<svg xmlns="http://www.w3.org/2000/svg" id="${svgId}" viewBox="${ANIMATED_VIEWBOX}"${dimensions} overflow="visible" fill="none" role="img" aria-label="Get Some Proof mascot, ${animation.label.toLowerCase()}">
 <style>
-${scope} .body, ${scope} .eyes, ${scope} .eye, ${scope} .arches { transform-box: fill-box; will-change: transform; }
+${scope} .body, ${scope} .eyes, ${scope} .eye, ${scope} .arches { transform-box: fill-box; }
 ${scope} .body { transform-origin: 50% 100%; }
 ${scope} .eyes, ${scope} .eye, ${scope} .arches { transform-origin: 50% 50%; }
 ${scope} .arches { opacity: 0; }

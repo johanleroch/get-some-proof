@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" id="blob-anim-bounce" viewBox="176 140 648 648" overflow="visible" fill="none" role="img" aria-label="Get Some Proof mascot, bounce">
 <style>
-#blob-anim-bounce .body, #blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { transform-box: fill-box; will-change: transform; }
+#blob-anim-bounce .body, #blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { transform-box: fill-box; }
 #blob-anim-bounce .body { transform-origin: 50% 100%; }
 #blob-anim-bounce .eyes, #blob-anim-bounce .eye, #blob-anim-bounce .arches { transform-origin: 50% 50%; }
 #blob-anim-bounce .arches { opacity: 0; }

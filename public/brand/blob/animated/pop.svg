@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" id="blob-anim-pop" viewBox="176 140 648 648" overflow="visible" fill="none" role="img" aria-label="Get Some Proof mascot, pop">
 <style>
-#blob-anim-pop .body, #blob-anim-pop .eyes, #blob-anim-pop .eye, #blob-anim-pop .arches { transform-box: fill-box; will-change: transform; }
+#blob-anim-pop .body, #blob-anim-pop .eyes, #blob-anim-pop .eye, #blob-anim-pop .arches { transform-box: fill-box; }
 #blob-anim-pop .body { transform-origin: 50% 100%; }
 #blob-anim-pop .eyes, #blob-anim-pop .eye, #blob-anim-pop .arches { transform-origin: 50% 50%; }
 #blob-anim-pop .arches { opacity: 0; }
