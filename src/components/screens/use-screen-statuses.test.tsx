@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useScreenStatuses } from "./use-screen-statuses";
 
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/components/brand/blob-toast", () => ({
+  blobToast: { error: vi.fn() },
+}));
 
 function deferredResponse() {
   let resolve!: (response: Response) => void;

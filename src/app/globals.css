@@ -192,6 +192,28 @@
   --shadow-float:
     0 1px 2px oklch(0.25 0.02 60 / 6%), 0 12px 32px oklch(0.25 0.02 60 / 12%);
 
+  /*
+    Motion (DESIGN.md section 8). Two hands, never mixed: a plain ease for
+    things that only change colour, and the mascot's own curves for anything
+    that moves. `settle` overshoots and comes back, the way the blob lands;
+    `settle-soft` is the same hand with less overshoot, for heavier surfaces;
+    `exit` gets out of the way without ceremony; `sine` is the only curve
+    that loops. Mass decides which one: the smaller the element, the more it
+    overshoots. The overshoot is measured, not guessed: `settle` peaks about
+    10 percent past its mark, `settle-soft` about 4. Below 3 the eye reads it
+    as linear, which is the whole thing we are avoiding.
+  */
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --ease-settle: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-settle-soft: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 0.9, 0.6);
+  --ease-sine: cubic-bezier(0.45, 0, 0.55, 1);
+
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-settle: 320ms;
+  --motion-exit: 140ms;
+
   /* shadcn aliases. Point primitives at the tokens above; never at raw colors. */
   --background: var(--paper);
   --foreground: var(--ink);
@@ -570,35 +592,98 @@ select:disabled {
 }
 
 /*
- * Hand-drawn strokes may draw themselves in once (DESIGN.md section 4).
- * Paths carry pathLength="1" and a non-scaling stroke; Chromium measures the
- * dash in user units but strokes in screen space, so a dash of 1 only covers
- * 1/scale of an enlarged doodle. The dash is 2 (whole up to 2x) and the last
- * frame drops dashing entirely so every size ends solid.
+ * Spot illustrations may drift: each object floats on its own slow loop, out
+ * of phase with its neighbours, so the drawing breathes without ever pulling
+ * the eye. Opt in with the `float` prop on the doodle. There is no draw-in:
+ * dashing a stroke that also carries a non-scaling stroke is unreliable
+ * across browsers, and the reveal never read as a hand drawing.
  */
-.doodle-draw path,
-.doodle-draw circle {
-  stroke-dasharray: 2;
-  stroke-dashoffset: 2;
-  animation: doodle-draw 600ms cubic-bezier(0.2, 0, 0, 1) forwards;
+.doodle-float .doodle-item {
+  animation-name: doodle-float;
+  animation-timing-function: var(--ease-sine);
+  animation-iteration-count: infinite;
 }
 
-@keyframes doodle-draw {
-  99% {
-    stroke-dasharray: 2;
-    stroke-dashoffset: 0;
+@keyframes doodle-float {
+  0%,
+  100% {
+    transform: translateY(0);
   }
-  to {
-    stroke-dasharray: 0;
-    stroke-dashoffset: 0;
+  50% {
+    transform: translateY(var(--doodle-float, -6px));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .doodle-draw path,
-  .doodle-draw circle {
-    stroke-dasharray: 0;
-    stroke-dashoffset: 0;
+  .doodle-float .doodle-item {
+    animation: none;
+  }
+}
+
+/*
+ * Toasts (DESIGN.md section 8). Sonner owns the wrapper: it places the toast
+ * and restacks the pile, so it only gets our curves and durations, and the
+ * gestures keep sonner's own instant transition. The organic part happens
+ * inside, on elements sonner never touches: the bubble arrives stretched
+ * along its travel and squashes as it lands, and the mascot hops in a beat
+ * later, pivoting on its base like every blob animation. Volume is preserved
+ * in both squashes.
+ */
+[data-sonner-toaster]
+  [data-sonner-toast]:not([data-swiping="true"]):not([data-swipe-out="true"]) {
+  transition-duration: var(--motion-settle);
+  transition-timing-function: var(--ease-settle);
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-removed="true"]:not([data-swiping="true"]) {
+  transition-duration: var(--motion-exit);
+  transition-timing-function: var(--ease-exit);
+}
+
+.toast-bubble {
+  transform-origin: 0 78%;
+  animation: toast-bubble-in var(--motion-settle) var(--ease-out-soft) both;
+}
+
+.toast-mascot {
+  transform-origin: 50% 100%;
+  animation: toast-mascot-in 360ms var(--ease-out-soft) 70ms both;
+}
+
+@keyframes toast-bubble-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(14px, -10px, 0) scale(0.94, 1.05) rotate(1.2deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(0, 2px, 0) scale(1.02, 0.97) rotate(-0.3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-mascot-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.72, 0.8);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, -3px, 0) scale(1.06, 0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-bubble,
+  .toast-mascot {
     animation: none;
   }
 }
@@ -652,6 +737,34 @@ select:disabled {
   .dashboard-skeleton::after {
     animation: none;
   }
+}
+
+/*
+ * Highlighted words use the hand-drawn marker swash (DESIGN.md section 4),
+ * never a coloured box. The image is the `MarkerHighlight` doodle baked with
+ * the amber accent; a Testimonial card overrides it inline with the customer
+ * Brand accent (`src/lib/marker-highlight.ts`).
+ */
+mark {
+  background: none;
+  /* The swash colour is inherited, so a scope can hand it a customer Brand's
+     accent (the highlight dialog, the Collection Form). It is a fallback, not
+     a declaration on `mark` itself: declaring it here would beat inheritance
+     and every mark would stay amber. */
+  background-image: var(
+    --marker-image,
+    url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2040%22%20preserveAspectRatio%3D%22none%22%3E%3Cg%20transform%3D%22rotate(-1.2%2060%2020)%22%3E%3Cpath%20d%3D%22M2%2010.6C2.9%207%2C5.5%209.8%2C7.3%209.3C9%208.9%2C10.8%208.4%2C12.5%208C14.3%207.6%2C16.1%206.9%2C17.8%206.8C19.6%206.6%2C21.3%207.1%2C23.1%207C24.8%206.9%2C26.6%206.3%2C28.4%206.2C30.1%206.1%2C31.9%206.4%2C33.6%206.3C35.4%206.1%2C37.2%205.7%2C38.9%205.4C40.7%205.2%2C42.4%204.9%2C44.2%204.7C45.9%204.6%2C47.7%204.7%2C49.5%204.5C51.2%204.3%2C53%203.7%2C54.7%203.6C56.5%203.5%2C58.2%203.8%2C60%203.7C61.8%203.7%2C63.5%203.4%2C65.3%203.3C67%203.3%2C68.8%203.5%2C70.5%203.5C72.3%203.6%2C74.1%203.5%2C75.8%203.5C77.6%203.5%2C79.3%203.5%2C81.1%203.6C82.8%203.7%2C84.6%203.8%2C86.4%204.1C88.1%204.3%2C89.9%204.9%2C91.6%205.1C93.4%205.3%2C95.2%205.2%2C96.9%205.4C98.7%205.6%2C100.4%206%2C102.2%206.5C103.9%207%2C105.7%207.8%2C107.5%208.4C109.2%208.9%2C111%209.4%2C112.7%209.8C114.5%2010.2%2C117.1%207.1%2C118%2010.8C118.9%2014.5%2C118.9%2028.4%2C118%2032.1C117.1%2035.8%2C114.5%2032.6%2C112.7%2032.9C111%2033.3%2C109.2%2033.8%2C107.5%2034.2C105.7%2034.7%2C103.9%2035.2%2C102.2%2035.4C100.4%2035.6%2C98.7%2035.6%2C96.9%2035.5C95.2%2035.5%2C93.4%2035.4%2C91.6%2035.2C89.9%2035%2C88.1%2034.3%2C86.4%2034.2C84.6%2034%2C82.8%2034.3%2C81.1%2034.4C79.3%2034.4%2C77.6%2034.5%2C75.8%2034.4C74.1%2034.4%2C72.3%2034.1%2C70.5%2034C68.8%2033.9%2C67%2033.8%2C65.3%2033.8C63.5%2033.8%2C61.8%2033.9%2C60%2034C58.2%2034%2C56.5%2033.7%2C54.7%2033.9C53%2034%2C51.2%2034.7%2C49.5%2034.9C47.7%2035.1%2C45.9%2035.1%2C44.2%2035.1C42.4%2035.1%2C40.7%2035%2C38.9%2035.1C37.2%2035.1%2C35.4%2035%2C33.6%2035.2C31.9%2035.4%2C30.1%2036%2C28.4%2036.1C26.6%2036.3%2C24.8%2036%2C23.1%2035.8C21.3%2035.7%2C19.6%2035.5%2C17.8%2035.3C16.1%2035.1%2C14.3%2035.1%2C12.5%2034.6C10.8%2034.2%2C9%2033.1%2C7.3%2032.6C5.5%2032%2C2.9%2034.9%2C2%2031.2C1.1%2027.5%2C1.1%2014.3%2C2%2010.6Z%22%20fill%3D%22rgba(255%2C%20187%2C%2022%2C%200.55)%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 0.14em;
+  margin: 0 -0.06em;
+  color: inherit;
+}
+
+.phrase-marker ::selection {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 ::selection {

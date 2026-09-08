@@ -56,3 +56,25 @@ export function accentInk(accentHex: string): string {
   if (lightContrast >= 4.5) return lightInk;
   return "#000000";
 }
+
+/**
+ * The Brand accent at low opacity, for the highlight behind a marked phrase.
+ * Returned as `rgba()` rather than `color-mix()` so it also paints inside the
+ * embed's shadow DOM on older browsers, and over any surface in either theme.
+ */
+export function accentSoft(accentHex: string, alpha = 0.3): string {
+  const rgb = hexToRgb(accentHex);
+  if (!rgb) return `rgba(255, 187, 22, ${alpha})`;
+  const [r, g, b] = rgb;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Opacity for the marker swash behind a highlighted phrase. A pale accent
+ * needs more paint to register; a deep one would swallow the words, so the
+ * alpha follows the accent's luminance and the ink stays readable either way.
+ */
+export function accentHighlight(accentHex: string): string {
+  const luminance = relativeLuminance(accentHex) ?? 0.5;
+  return accentSoft(accentHex, Math.round((0.3 + 0.3 * luminance) * 100) / 100);
+}

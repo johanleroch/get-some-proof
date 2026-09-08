@@ -82,15 +82,20 @@ function setVideoPlaying(cardRoot: HTMLElement | null, playing: boolean) {
 export function TestimonialCard({
   accentColor,
   menu,
+  status,
   testimonial,
 }: {
   accentColor: string;
   menu?: ReactNode;
+  /** Private moderation Badge; only the Inbox passes one. */
+  status?: ReactNode;
   testimonial: TestimonialCardValue;
 }) {
   const [playerTarget, setPlayerTarget] = useState<HTMLElement | null>(null);
   const [menuTarget, setMenuTarget] = useState<HTMLElement | null>(null);
+  const [statusTarget, setStatusTarget] = useState<HTMLElement | null>(null);
   const hasMenu = Boolean(menu);
+  const hasStatus = Boolean(status);
   const cardRootRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<React.ElementRef<typeof MuxPlayer>>(null);
   const playRequestedRef = useRef(false);
@@ -110,15 +115,24 @@ export function TestimonialCard({
       testimonialCardHtml({
         accentColor,
         menuMount: hasMenu,
+        statusMount: hasStatus,
         testimonial,
       }),
-    [accentColor, hasMenu, testimonial],
+    [accentColor, hasMenu, hasStatus, testimonial],
   );
 
   useEffect(() => {
     setMenuTarget(
       cardRootRef.current?.querySelector<HTMLElement>("[data-gsp-card-menu]") ??
         null,
+    );
+  }, [html]);
+
+  useEffect(() => {
+    setStatusTarget(
+      cardRootRef.current?.querySelector<HTMLElement>(
+        "[data-gsp-card-status]",
+      ) ?? null,
     );
   }, [html]);
 
@@ -240,6 +254,7 @@ export function TestimonialCard({
     <>
       <StaticCardMarkup html={html} ref={cardRootRef} />
       {menu && menuTarget ? createPortal(menu, menuTarget) : null}
+      {status && statusTarget ? createPortal(status, statusTarget) : null}
       {videoContent && playerTarget
         ? createPortal(videoContent, playerTarget)
         : null}

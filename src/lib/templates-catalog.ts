@@ -215,17 +215,22 @@ export function isWallTheme(value: unknown): value is WallTheme {
 }
 
 /**
- * Sample Brand accents for the previews. Each is a believable customer color;
- * the first is the fixtures' Fernhill Studio teal, the second the default a
- * new Brand gets at onboarding.
+ * Brand accents offered as swatches. Proof Amber leads because it is the
+ * product's own colour and the one a new Brand is seeded with; the rest are
+ * believable customer colours.
  */
 export const accentPresets = [
-  { label: "Fernhill teal", value: "#0f766e" },
   { label: "Proof amber", value: "#ffbb16" },
+  { label: "Fernhill teal", value: "#0f766e" },
   { label: "Coral", value: "#d9483b" },
   { label: "Navy", value: "#274690" },
 ] as const;
 
+/**
+ * What a template preview opens on: the head of the list, Proof Amber. The
+ * founder chose one preselected colour across the product on 2026-09-08, over
+ * the older rule that kept our amber out of the preview frame.
+ */
 export const defaultAccent: string = accentPresets[0].value;
 
 export function isHexColor(value: unknown): value is string {

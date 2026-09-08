@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
+import type { VariantProps } from "class-variance-authority";
 
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function AlertDialog(
@@ -21,7 +23,7 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-[0.98] data-[state=open]:zoom-in-[0.98] shadow-float fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 duration-200",
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-[0.98] data-[state=open]:zoom-in-[0.98] shadow-float fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 data-[state=closed]:duration-[160ms] data-[state=closed]:ease-[var(--ease-exit)] data-[state=open]:duration-[260ms] data-[state=open]:ease-[var(--ease-settle-soft)]",
           className,
         )}
         {...props}
@@ -84,19 +86,38 @@ function AlertDialogDescription({
   );
 }
 
-function AlertDialogCancel(
-  props: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>,
-) {
+/**
+ * The two footer buttons carry the button styles themselves, so a
+ * confirmation can never render as bare text. Pass `asChild` with a `Button`
+ * only when the action needs something the variants do not cover, such as a
+ * loading state.
+ */
+function AlertDialogCancel({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
   return (
-    <AlertDialogPrimitive.Cancel data-slot="alert-dialog-cancel" {...props} />
+    <AlertDialogPrimitive.Cancel
+      data-slot="alert-dialog-cancel"
+      className={cn(buttonVariants({ variant: "outline" }), className)}
+      {...props}
+    />
   );
 }
 
-function AlertDialogAction(
-  props: React.ComponentProps<typeof AlertDialogPrimitive.Action>,
-) {
+function AlertDialogAction({
+  className,
+  variant = "default",
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
+  Pick<VariantProps<typeof buttonVariants>, "variant">) {
   return (
-    <AlertDialogPrimitive.Action data-slot="alert-dialog-action" {...props} />
+    <AlertDialogPrimitive.Action
+      data-slot="alert-dialog-action"
+      data-variant={variant}
+      className={cn(buttonVariants({ variant }), className)}
+      {...props}
+    />
   );
 }
 

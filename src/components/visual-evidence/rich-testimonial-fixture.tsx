@@ -71,6 +71,8 @@ export function RichTestimonialScreenFixture() {
       </Button>
       {formatting ? (
         <HighlightTestimonialDialog
+          accentColor={"#0f766e"}
+          submitterName="Alice Martin"
           testimonial={card}
           onClose={() => setFormatting(false)}
           onSave={async (richText) => setCard({ ...card, richText })}

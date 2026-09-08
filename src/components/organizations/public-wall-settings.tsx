@@ -4,9 +4,9 @@ import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { Field, FieldDescription } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { accentPresets } from "@/lib/templates-catalog";
 
 export type PublicWallSettingsValue = {
   accentColor: string;
@@ -53,6 +54,7 @@ export function PublicWallSettings({
   const [theme, setTheme] = useState<PublicWallSettingsValue["theme"]>(
     settings.theme,
   );
+  const [accentColor, setAccentColor] = useState(settings.accentColor);
   const [visibility, setVisibility] = useState(settings.visibility);
   const [transparentEmbed, setTransparentEmbed] = useState(
     settings.transparentEmbed,
@@ -64,9 +66,8 @@ export function PublicWallSettings({
     setError(null);
     setSuccess(null);
     try {
-      const form = new FormData(event.currentTarget);
       await onSave({
-        accentColor: String(form.get("accentColor")),
+        accentColor,
         hideAttribution: settings.canHideAttribution,
         theme,
         transparentEmbed,
@@ -112,13 +113,14 @@ export function PublicWallSettings({
           </Select>
         </Field>
         <Field>
-          <Label htmlFor="wall-accent">Accent color</Label>
-          <Input
-            className="h-10 cursor-pointer p-1"
-            defaultValue={settings.accentColor}
-            id="wall-accent"
-            name="accentColor"
-            type="color"
+          <Label id="wall-accent-label">Accent color</Label>
+          <ColorPicker
+            className="-ml-3"
+            labelledBy="wall-accent-label"
+            legend="Accent color"
+            onChange={setAccentColor}
+            presets={accentPresets}
+            value={accentColor}
           />
         </Field>
       </div>

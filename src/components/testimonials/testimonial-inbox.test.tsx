@@ -38,27 +38,77 @@ const testimonial = {
 describe("TestimonialInboxView", () => {
   beforeEach(cleanup);
 
-  it("renders the shared card and exposes private actions only through options", async () => {
+  it("puts the routine work on the card and keeps the rare acts in the menu", async () => {
     const onAction = vi.fn();
     render(
-      <TestimonialInboxView onAction={onAction} testimonials={[testimonial]} />,
+      <TestimonialInboxView
+        category="pending"
+        onAction={onAction}
+        pendingId={null}
+        testimonials={[testimonial]}
+      />,
     );
 
     expect(screen.getByText(testimonial.card.text)).toBeVisible();
-    expect(screen.queryByText(testimonial.submitterEmail)).toBeNull();
+    // The card carries its own category, so a mixed screen is impossible.
+    expect(screen.getByText("Pending")).toBeVisible();
+    // Private facts the Owner needs, never in the shared public markup.
+    expect(screen.getByText(testimonial.submitterEmail)).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(onAction).toHaveBeenCalledWith(testimonial, "publish");
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+    expect(onAction).toHaveBeenCalledWith(testimonial, "archive");
+    fireEvent.click(screen.getByRole("button", { name: "Highlight a phrase" }));
+    expect(onAction).toHaveBeenCalledWith(testimonial, "highlight");
+
     const options = screen.getByRole("button", {
-      name: "Options for Camille Test's Testimonial",
+      name: "More actions for Camille Test's Testimonial",
     });
     fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Publish" }));
-    expect(onAction).toHaveBeenCalledWith(testimonial, "publish");
+    expect(
+      await screen.findByRole("menuitem", { name: "Mark as Spam" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("menuitem", { name: "Delete permanently" }),
+    ).toBeVisible();
+    // Publishing left the menu entirely.
+    expect(screen.queryByRole("menuitem", { name: "Publish" })).toBeNull();
   });
 
-  it("renders a useful empty state", () => {
-    render(<TestimonialInboxView onAction={vi.fn()} testimonials={[]} />);
+  it("gives each category its own empty state, and says when a filter caused it", () => {
+    const { rerender } = render(
+      <TestimonialInboxView
+        category="pending"
+        onAction={vi.fn()}
+        pendingId={null}
+        testimonials={[]}
+      />,
+    );
+    expect(screen.getByText("Nothing Pending")).toBeInTheDocument();
+
+    rerender(
+      <TestimonialInboxView
+        category="published"
+        onAction={vi.fn()}
+        pendingId={null}
+        testimonials={[]}
+      />,
+    );
     expect(
-      screen.getByText("No Testimonials match these filters."),
+      screen.getByText("Nothing on your Public Wall yet"),
     ).toBeInTheDocument();
+
+    rerender(
+      <TestimonialInboxView
+        category="pending"
+        filtered
+        onAction={vi.fn()}
+        pendingId={null}
+        testimonials={[]}
+      />,
+    );
+    expect(screen.getByText("Nothing here right now")).toBeInTheDocument();
   });
 
   it("asks for a concise permanent-deletion confirmation", () => {
@@ -113,36 +163,43 @@ describe("TestimonialInboxView", () => {
       spamCreditRestored: true,
     };
     render(
-      <TestimonialInboxView onAction={onUndoSpam} testimonials={[spam]} />,
+      <TestimonialInboxView
+        category="spam"
+        onAction={onUndoSpam}
+        pendingId={null}
+        testimonials={[spam]}
+      />,
     );
 
-    fireEvent.pointerDown(
-      screen.getByRole("button", {
-        name: "Options for Camille Test's Testimonial",
-      }),
-      { button: 0, ctrlKey: false },
-    );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Undo Spam" }));
+    // Undoing is one click, on the card, not a filter change away.
+    fireEvent.click(screen.getByRole("button", { name: "Not Spam" }));
     expect(onUndoSpam).toHaveBeenCalledWith(spam, "undo-spam");
+    // The seven-day clock that ends in Permanent Deletion is finally visible.
+    expect(screen.getByText(/Content is deleted on/)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Delete permanently" }),
+      screen.queryByRole("button", { name: "Highlight a phrase" }),
     ).toBeNull();
   });
 
-  it("disables every moderation action while a mutation is pending", () => {
+  it("marks the one Testimonial being acted on, not the whole screen", () => {
     const { container } = render(
       <TestimonialInboxView
         actionsDisabled
+        category="pending"
         onAction={vi.fn()}
+        pendingId={testimonial.testimonialId}
         testimonials={[testimonial]}
       />,
     );
     const view = within(container);
 
     expect(
+      view.getByTestId(`inbox-testimonial-${testimonial.testimonialId}`),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(
       view.getByRole("button", {
-        name: "Options for Camille Test's Testimonial",
+        name: "More actions for Camille Test's Testimonial",
       }),
     ).toBeDisabled();
   });
@@ -164,7 +221,12 @@ describe("TestimonialInboxView", () => {
       videoStatus: "processing" as const,
     };
     const { rerender } = render(
-      <TestimonialInboxView onAction={onAction} testimonials={[video]} />,
+      <TestimonialInboxView
+        category="pending"
+        onAction={onAction}
+        pendingId={null}
+        testimonials={[video]}
+      />,
     );
 
     expect(screen.getByText("Processing")).toBeVisible();
@@ -176,21 +238,15 @@ describe("TestimonialInboxView", () => {
     const processingCard = screen.getByTestId("processing-video-placeholder");
     expect(processingCard).toHaveAttribute("data-video-aspect-ratio", "9:16");
     expect(processingCard).toHaveStyle({ aspectRatio: "9 / 16" });
-    fireEvent.pointerDown(
-      screen.getByRole("button", {
-        name: "Options for Camille Test's Testimonial",
-      }),
-      { button: 0, ctrlKey: false },
-    );
-    expect(screen.getByRole("menuitem", { name: "Publish" })).toHaveAttribute(
-      "data-disabled",
-    );
+    expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
     expect(
-      screen.queryByRole("menuitem", { name: /Download MP4/i }),
-    ).toBeNull();
+      screen.getByText("Only a Ready video can be Published."),
+    ).toBeVisible();
 
     rerender(
       <TestimonialInboxView
+        category="pending"
+        pendingId={null}
         onAction={onAction}
         testimonials={[
           {
@@ -207,6 +263,8 @@ describe("TestimonialInboxView", () => {
 
     rerender(
       <TestimonialInboxView
+        category="pending"
+        pendingId={null}
         onAction={onAction}
         testimonials={[
           {
@@ -224,6 +282,8 @@ describe("TestimonialInboxView", () => {
 
     rerender(
       <TestimonialInboxView
+        category="pending"
+        pendingId={null}
         onAction={onAction}
         testimonials={[
           {
@@ -253,6 +313,8 @@ describe("TestimonialInboxView", () => {
   it("uses the Public Wall video card and loads playback only after Owner intent", async () => {
     render(
       <TestimonialInboxView
+        category="pending"
+        pendingId={null}
         onAction={vi.fn()}
         testimonials={[
           {
@@ -295,14 +357,19 @@ describe("TestimonialInboxView", () => {
       moderationStatus: "published" as const,
     };
     render(
-      <TestimonialInboxView onAction={onAction} testimonials={[published]} />,
+      <TestimonialInboxView
+        category="published"
+        onAction={onAction}
+        pendingId={null}
+        testimonials={[published]}
+      />,
     );
 
+    expect(screen.getByText("Published")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
     const options = screen.getByRole("button", {
-      name: "Options for Camille Test's Testimonial",
+      name: "More actions for Camille Test's Testimonial",
     });
-    fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Unpublish" }));
     fireEvent.pointerDown(options, { button: 0, ctrlKey: false });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Delete permanently" }),

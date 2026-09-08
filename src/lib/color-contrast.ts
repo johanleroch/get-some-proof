@@ -3,7 +3,9 @@
  * the readable ink on a customer Brand accent (DESIGN.md section 2.5).
  */
 export {
+  accentHighlight,
   accentInk,
+  accentSoft,
   contrastRatio,
   hexToRgb,
   relativeLuminance,

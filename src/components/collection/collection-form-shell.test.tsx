@@ -492,7 +492,7 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
 
-    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "Verification failed",
     );
     expect(resetBotVerification).toHaveBeenCalledTimes(1);
@@ -568,13 +568,13 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(screen.getByLabelText(/at least 18 years old/i));
     fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
-    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "Connection lost after submission.",
     );
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
-    expect(await screen.findByTestId("error-toast-message")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "VIDEO_RESERVATION_UNAVAILABLE",
     );
     await waitFor(() => expect(cancelVideo).toHaveBeenCalledTimes(1));
@@ -796,5 +796,95 @@ describe("CollectionFormShellView", () => {
         delete (navigator as { mediaDevices?: unknown }).mediaDevices;
       }
     }
+  });
+  it("does not carry a failed submission's message into the next step", async () => {
+    const submitText = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Connection lost after submission."));
+    render(
+      <CollectionFormShellView
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Northwind story",
+          logoUrl: null,
+          name: "Northwind Bakery",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@northwind.example",
+          publicSlug: "northwind-bakery",
+        }}
+        submitText={submitText}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send a text testimonial" }),
+    );
+    fireEvent.change(screen.getByLabelText("Your testimonial"), {
+      target: { value: "They turned kind emails into proof we can show." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByLabelText("Your name"), {
+      target: { value: "Alice Martin" },
+    });
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.click(screen.getByLabelText(/at least 18 years old/i));
+    fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
+    fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
+
+    // The failure stays where it happened: the step did not change.
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Connection lost after submission.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("refuses a photo it cannot publish instead of dropping it in silence", () => {
+    render(
+      <CollectionFormShellView
+        brand={{
+          collectionFormDescription: "Tell us what changed.",
+          collectionFormTitle: "Share your Northwind story",
+          logoUrl: null,
+          name: "Northwind Bakery",
+          primaryColor: "#123abc",
+          privacyContact: "privacy@northwind.example",
+          publicSlug: "northwind-bakery",
+        }}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send a text testimonial" }),
+    );
+    fireEvent.change(screen.getByLabelText("Your testimonial"), {
+      target: { value: "They turned kind emails into proof we can show." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const photo = screen.getByLabelText("Photo (optional)");
+    const tooLarge = new File(["photo"], "kitchen.jpg", { type: "image/jpeg" });
+    Object.defineProperty(tooLarge, "size", { value: 6 * 1024 * 1024 });
+    fireEvent.change(photo, { target: { files: [tooLarge] } });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Choose a PNG, JPG, or WebP image smaller than 5 MB.",
+    );
+    expect(screen.queryByText("kitchen.jpg")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Choose a photo" }),
+    ).toBeVisible();
+
+    const accepted = new File(["photo"], "counter.png", { type: "image/png" });
+    fireEvent.change(photo, { target: { files: [accepted] } });
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "Replace photo" })).toBeVisible();
+    expect(screen.getByText("counter.png")).toBeVisible();
   });
 });
