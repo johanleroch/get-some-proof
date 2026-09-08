@@ -114,18 +114,24 @@ export function BrandDashboardView({
         title={name}
       />
 
+      {/* Account-wide, so it stands apart from this Project's proof: one quiet
+          strip between the title and the work, the plan named at UI weight
+          rather than as a heading, so the queue and the Collection Form below
+          keep the page. Figures are tabular so the two lines align. */}
       {account && billingHref ? (
         <section
           aria-label="Account plan and usage"
-          className="flex flex-wrap items-center justify-between gap-4 border-y py-4"
+          className="border-line flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-y py-4"
         >
-          <div className="space-y-1">
-            <h2 className="font-semibold">
+          <div className="min-w-0">
+            <h2 className="type-ui font-semibold">
               {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
             </h2>
-            <p className="text-ink-2 text-sm">Shared across all projects</p>
+            <p className="text-ink-2 type-small mt-0.5">
+              Shared across all projects
+            </p>
           </div>
-          <div className="text-sm tabular-nums">
+          <div className="type-small tabular-nums">
             {account.effectivePlan === "premium" ? (
               <>
                 <p>{account.usage.readyVideos} / 25 videos stored</p>
@@ -154,6 +160,7 @@ export function BrandDashboardView({
           </Button>
         </section>
       ) : null}
+
       {/* The page reorders itself around the work that is waiting. With an
           empty queue the link is the whole job, so it takes the hero. */}
       <section aria-label="Brand overview" className="space-y-4">
