@@ -227,11 +227,11 @@ export const accentPresets = [
 ] as const;
 
 /**
- * What a template preview opens on. Pinned to the fixtures' teal rather than
- * taken from the head of the list: DESIGN.md section 6 forbids our own amber
- * inside the preview frame, where it would read as the customer's colour.
+ * What a template preview opens on: the head of the list, Proof Amber. The
+ * founder chose one preselected colour across the product on 2026-09-08, over
+ * the older rule that kept our amber out of the preview frame.
  */
-export const defaultAccent = "#0f766e";
+export const defaultAccent: string = accentPresets[0].value;
 
 export function isHexColor(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
