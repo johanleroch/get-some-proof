@@ -44,9 +44,6 @@ function initials(name: string) {
 export function NavUser() {
   const user = useQuery(api.auth.getCurrentUser, {});
   const router = useRouter();
-  const { isMobile } = useSidebar();
-  const name = user?.name || "Your account";
-  const email = user?.email || "";
 
   async function signOut() {
     const result = await authClient.signOut();
@@ -56,6 +53,23 @@ export function NavUser() {
     }
   }
 
+  return <NavUserView user={user} signOut={signOut} />;
+}
+
+export function NavUserView({
+  user,
+  signOut,
+}: {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
+  signOut: () => Promise<void>;
+}) {
+  const { isMobile } = useSidebar();
+  const name = user?.name || "Your account";
+  const email = user?.email || "";
   return (
     <SidebarMenu>
       <SidebarMenuItem>

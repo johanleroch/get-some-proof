@@ -1,3 +1,4 @@
+import { isProjectActive } from "./projectActivity";
 import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { components, internal } from "./_generated/api";
@@ -47,7 +48,7 @@ export const issue = internalMutation({
       .query("organizations")
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.publicSlug))
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) unavailable();
+    if (!brand || !(await isProjectActive(ctx, brand))) unavailable();
     for (const [name, key] of [
       ["collectionAdmissionGlobal", "global"],
       ["collectionAdmissionBrand", String(brand._id)],
@@ -145,7 +146,7 @@ export const consumeSubmission = internalMutation({
       .query("organizations")
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.publicSlug))
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) unavailable();
+    if (!brand || !(await isProjectActive(ctx, brand))) unavailable();
     await consumeAdmission(
       ctx,
       {

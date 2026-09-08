@@ -15,7 +15,7 @@ import {
   IconSettings,
   IconShieldCheck,
 } from "@tabler/icons-react";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,29 +46,33 @@ function organizationInitials(name: string) {
     .join("");
 }
 
-export function OrganizationSwitcher({
-  canReadAudit,
-  canReadBilling,
-  canUpdateOrganization,
-  currentName,
-  currentLogoUrl,
-  currentSlug,
-}: {
+type OrganizationSwitcherProps = {
+  canCreateProject?: boolean;
   canReadAudit: boolean;
   canReadBilling: boolean;
   canUpdateOrganization: boolean;
   currentName: string;
   currentLogoUrl?: string | null;
   currentSlug: string;
-}) {
-  const organizations = useQuery(api.organizations.listMine, {});
+};
+
+export function OrganizationSwitcher(props: OrganizationSwitcherProps) {
+  const {
+    results: organizations,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.organizations.listMinePage,
+    {},
+    { initialNumItems: 50 },
+  );
   const pathname = usePathname();
   const router = useRouter();
-  const { isMobile } = useSidebar();
+  const { currentSlug } = props;
 
   useEffect(() => {
     if (
-      !organizations ||
+      status !== "Exhausted" ||
       organizations.some(({ slug }) => slug === currentSlug)
     ) {
       return;
@@ -80,15 +84,52 @@ export function OrganizationSwitcher({
     }
 
     router.replace(organizationSwitchRoute(pathname, organizations[0].slug));
-  }, [currentSlug, organizations, pathname, router]);
+  }, [currentSlug, organizations, pathname, router, status]);
 
+  return (
+    <OrganizationSwitcherView
+      {...props}
+      organizations={organizations}
+      status={status}
+      loadMore={() => loadMore(50)}
+      switchProject={(slug) =>
+        router.replace(organizationSwitchRoute(pathname, slug))
+      }
+    />
+  );
+}
+
+export function OrganizationSwitcherView({
+  canCreateProject = true,
+  canReadAudit,
+  canReadBilling,
+  canUpdateOrganization,
+  currentName,
+  currentLogoUrl,
+  currentSlug,
+  organizations,
+  status,
+  loadMore,
+  switchProject,
+}: OrganizationSwitcherProps & {
+  organizations: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl?: string | null;
+  }>;
+  status: "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted";
+  loadMore: () => void;
+  switchProject: (slug: string) => void;
+}) {
+  const { isMobile, setOpenMobile } = useSidebar();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              aria-label="Switch Organization"
+              aria-label="Switch project"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               size="lg"
             >
@@ -119,7 +160,7 @@ export function OrganizationSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Organizations
+              Projects
             </DropdownMenuLabel>
             <DropdownMenuGroup>
               {organizations?.map((organization) => {
@@ -129,9 +170,8 @@ export function OrganizationSwitcher({
                     key={organization.id}
                     onSelect={() => {
                       if (!active) {
-                        router.replace(
-                          organizationSwitchRoute(pathname, organization.slug),
-                        );
+                        switchProject(organization.slug);
+                        if (isMobile) setOpenMobile(false);
                       }
                     }}
                   >
@@ -154,13 +194,24 @@ export function OrganizationSwitcher({
                 );
               })}
             </DropdownMenuGroup>
+            {status === "CanLoadMore" || status === "LoadingMore" ? (
+              <DropdownMenuItem
+                disabled={status === "LoadingMore"}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  loadMore();
+                }}
+              >
+                Load more projects
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               {canUpdateOrganization ? (
                 <DropdownMenuItem asChild>
                   <Link href={`/org/${currentSlug}/settings` as Route}>
                     <IconSettings />
-                    Organization settings
+                    Project settings
                   </Link>
                 </DropdownMenuItem>
               ) : null}
@@ -181,22 +232,28 @@ export function OrganizationSwitcher({
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem asChild>
-                <Link href={"/onboarding" as Route}>
+                <Link
+                  href={
+                    (canCreateProject
+                      ? "/projects/new"
+                      : `/org/${currentSlug}/billing`) as Route
+                  }
+                >
                   <span className="grid size-6 place-items-center rounded-md border">
                     <IconPlus className="size-3.5" />
                   </span>
-                  Create Organization
+                  Create project
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            {!organizations ? (
-              <BlobLoadingText label="Loading Organizations…" />
+            {status === "LoadingFirstPage" ? (
+              <BlobLoadingText label="Loading Projects…" />
             ) : null}
-            {organizations?.length === 0 ? (
+            {status === "Exhausted" && organizations.length === 0 ? (
               <DropdownMenuItem asChild>
                 <Link href={"/onboarding" as Route}>
                   <IconBuilding />
-                  Create your first Organization
+                  Create your first project
                 </Link>
               </DropdownMenuItem>
             ) : null}

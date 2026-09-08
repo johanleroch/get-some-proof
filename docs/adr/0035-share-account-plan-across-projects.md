@@ -1,0 +1,3 @@
+# Share one Account plan across Projects
+
+The Owner's Account owns one subscription and shared quotas across independently branded Projects. This replaces the single-Brand product boundary in ADR 0001 and the per-Organization subscription decision in ADR 0031 for the multi-project design: owners can operate multiple businesses without buying a subscription for each. Free includes one Project; Pro includes unlimited Projects without a per-Project surcharge, while retaining Account-wide plan quotas. Each Project retains separate proof, settings, and public destinations; the initial release is owner-only. Lifecycle details remain under discussion; this decision records the agreed target, not an implemented migration.

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BlobLoader } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useState } from "react";
@@ -149,6 +150,9 @@ export function AccountProfileView({
         eyebrow="Account"
         title="Profile"
       />
+      <Link className="text-sm underline" href="/account/billing">
+        Account billing and deletion
+      </Link>
 
       <Card>
         <CardHeader>

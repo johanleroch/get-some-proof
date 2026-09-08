@@ -182,6 +182,10 @@ export async function getOrganizationBillingEntitlement(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
+  const organization = await ctx.db.get(organizationId);
+  if (organization?.accountId) {
+    return getAccountBillingEntitlement(ctx, organization.accountId);
+  }
   const [subscriptions, profile] = await Promise.all([
     ctx.db
       .query("billingSubscriptionStates")
@@ -207,6 +211,128 @@ export async function getOrganizationBillingEntitlement(
       stripeCustomerId: profile?.stripeCustomerId,
     },
   );
+}
+
+export async function getAccountBillingEntitlement(
+  ctx: QueryCtx | MutationCtx,
+  accountId: Id<"accounts">,
+) {
+  const account = await ctx.db.get(accountId);
+  if (!account || account.deletionStartedAt !== undefined) {
+    return deriveBillingEntitlement([], false);
+  }
+  const profile = await ctx.db
+    .query("billingProfiles")
+    .withIndex("by_account", (q) => q.eq("accountId", accountId))
+    .unique();
+  const candidates =
+    profile?.stripeCustomerId && profile.expectedProPriceId
+      ? await Promise.all(
+          [...statePriority.keys()].flatMap((status) =>
+            [false, true].flatMap((cancelAtPeriodEnd) => {
+              const end = ctx.db
+                .query("billingSubscriptionStates")
+                .withIndex("by_account_trusted_status_end", (q) =>
+                  q
+                    .eq("accountId", accountId)
+                    .eq("stripeCustomerId", profile.stripeCustomerId!)
+                    .eq("priceId", profile.expectedProPriceId!)
+                    .eq("status", status)
+                    .eq("cancelAtPeriodEnd", cancelAtPeriodEnd),
+                )
+                .order("desc")
+                .first();
+              // A more recent payment failure can still be inside its grace period even
+              // when an older subscription has a later nominal period end.
+              return status === "past_due"
+                ? [
+                    end,
+                    ctx.db
+                      .query("billingSubscriptionStates")
+                      .withIndex("by_account_trusted_status_changed", (q) =>
+                        q
+                          .eq("accountId", accountId)
+                          .eq("stripeCustomerId", profile.stripeCustomerId!)
+                          .eq("priceId", profile.expectedProPriceId!)
+                          .eq("status", status)
+                          .eq("cancelAtPeriodEnd", cancelAtPeriodEnd),
+                      )
+                      .order("desc")
+                      .first(),
+                  ]
+                : [end];
+            }),
+          ),
+        )
+      : [];
+  const subscriptions = candidates.filter((candidate) => candidate !== null);
+  return deriveBillingEntitlement(
+    subscriptions,
+    isStripeSandboxConfigured({
+      secretKey: env.STRIPE_SECRET_KEY,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    }),
+    {
+      expectedProPriceId: profile?.expectedProPriceId,
+      stripeCustomerId: profile?.stripeCustomerId,
+    },
+  );
+}
+
+export async function getProjectBillingProfile(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  const profiles = ctx.db.query("billingProfiles");
+  return accountId
+    ? profiles
+        .withIndex("by_account", (q) => q.eq("accountId", accountId))
+        .unique()
+    : profiles
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .unique();
+}
+
+export async function getProjectBillingSubscriptions(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  const subscriptions = ctx.db.query("billingSubscriptionStates");
+  const recent = await (
+    accountId
+      ? subscriptions.withIndex("by_account", (q) =>
+          q.eq("accountId", accountId),
+        )
+      : subscriptions.withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+  )
+    .order("desc")
+    .take(100);
+  if (!accountId) return recent;
+  const open = await Promise.all(
+    ["active", "trialing", "past_due", "incomplete", "unpaid", "paused"].map(
+      (status) =>
+        ctx.db
+          .query("billingSubscriptionStates")
+          .withIndex("by_account_status", (q) =>
+            q.eq("accountId", accountId).eq("status", status),
+          )
+          .first(),
+    ),
+  );
+  return [
+    ...new Map(
+      [...recent, ...open.filter((row) => row !== null)].map((row) => [
+        row._id,
+        row,
+      ]),
+    ).values(),
+  ];
 }
 
 export async function requireProEntitlement(
