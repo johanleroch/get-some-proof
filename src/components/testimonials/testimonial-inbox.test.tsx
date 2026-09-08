@@ -234,10 +234,12 @@ describe("TestimonialInboxView", () => {
       />,
     );
 
-    expect(screen.getByTestId("processing-video-placeholder")).toBeVisible();
-    expect(
-      screen.getByText("Video processing. Publish once it is Ready."),
-    ).toBeVisible();
+    const processing = screen.getByTestId("processing-video-placeholder");
+    expect(processing).toBeVisible();
+    // A portrait clip keeps its shape while it processes: no landscape crop.
+    expect(processing).toHaveStyle({ aspectRatio: "9 / 16", width: "48px" });
+    expect(screen.getByText("Processing")).toBeVisible();
+    expect(screen.getByText("Publish once the video is Ready.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Archive" })).toBeEnabled();
 
@@ -253,7 +255,8 @@ describe("TestimonialInboxView", () => {
     );
     expect(screen.getByTestId("failed-video-placeholder")).toBeVisible();
     expect(screen.queryByTestId("processing-video-placeholder")).toBeNull();
-    expect(screen.getByText(/Video failed/)).toBeVisible();
+    expect(screen.getByText("Failed")).toBeVisible();
+    expect(screen.getByText(/link to replace the video/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
 
     const ready = {
@@ -281,13 +284,17 @@ describe("TestimonialInboxView", () => {
         testimonials={[ready]}
       />,
     );
-    expect(screen.getByText("Video · 0:42")).toBeVisible();
+    // Ready: no status line; the still carries the duration in a corner.
+    expect(screen.queryByText("Processing")).toBeNull();
+    expect(screen.getByText("0:42")).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish" })).toBeEnabled();
     // The list never loads a player; the still opens the real card.
     expect(screen.queryByTestId("mux-video-player")).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Preview Camille Test's video" }),
-    );
+    const still = screen.getByRole("button", {
+      name: "Preview Camille Test's video",
+    });
+    expect(still).toHaveStyle({ aspectRatio: "9 / 16", width: "48px" });
+    fireEvent.click(still);
     expect(onAction).toHaveBeenCalledWith(ready, "preview");
   });
 

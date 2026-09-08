@@ -308,8 +308,10 @@ const testimonialFixture = {
 };
 
 const videoTestimonialFixture = {
+  // Portrait, as a phone records it for the Collection Form.
+  aspectRatio: "9:16",
   card: {
-    aspectRatio: "4:3",
+    aspectRatio: "9:16",
     avatarUrl: null,
     captionsAvailable: true,
     id: "fixture-video-testimonial",

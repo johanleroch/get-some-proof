@@ -63,6 +63,8 @@ import { cn } from "@/lib/utils";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
 import { DesignQuote } from "@/components/testimonials/designs/design-parts";
+import { videoAspect } from "@/components/testimonials/testimonial-card-markup";
+import { Badge } from "@/components/ui/badge";
 import { Stars } from "@/components/templates/template-primitives";
 import {
   InboxTestimonialMenu,
@@ -170,28 +172,49 @@ function stillUrl(card: TestimonialCardVideoValue) {
 }
 
 /**
- * One line about the Video Asset, in the state it is in. It carries the
- * reason Publish is disabled, so the button needs no note of its own.
+ * The Video Asset's state while it is not yet Ready: a Badge in the status
+ * vocabulary of DESIGN.md section 7 and one sentence. The sentence carries
+ * the reason Publish is disabled, so the button needs no note of its own. A
+ * Ready video says nothing here; its still and its duration speak for it.
  */
-function videoLine(testimonial: VideoInboxTestimonial) {
+function videoState(testimonial: VideoInboxTestimonial) {
   switch (testimonial.videoStatus) {
     case "ready":
-      return [
-        "Video",
-        testimonial.videoDurationSeconds
-          ? formatDuration(testimonial.videoDurationSeconds)
-          : null,
-        testimonial.captionsStatus === "failed" ? "no captions" : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      return null;
     case "failed":
-      return "Video failed. The Submitter received a link to replace it.";
+      return {
+        badge: "danger" as const,
+        label: "Failed",
+        note: "The Submitter received a link to replace the video.",
+      };
     case "processing":
-      return "Video processing. Publish once it is Ready.";
+      return {
+        badge: "warning" as const,
+        label: "Processing",
+        note: "Publish once the video is Ready.",
+      };
     case "awaiting_upload":
-      return "Video uploading. Publish once it is Ready.";
+      return {
+        badge: "neutral" as const,
+        label: "Uploading",
+        note: "Publish once the video is Ready.",
+      };
   }
+}
+
+/**
+ * The still keeps the video's own shape, never a landscape crop of a portrait
+ * clip: 48px wide when the video is portrait (what a phone records for the
+ * Collection Form, 9:16 by default), 64px wide when it is not. The same box
+ * stands in while the Video Asset is processing or failed, so a row keeps
+ * its shape the moment the video becomes Ready.
+ */
+function stillBox(aspectRatio?: string): CSSProperties {
+  const [width, height] = videoAspect(aspectRatio);
+  return {
+    aspectRatio: `${width} / ${height}`,
+    width: width < height ? 48 : 64,
+  };
 }
 
 /**
@@ -233,18 +256,17 @@ function InboxFace({
     return (
       <button
         aria-label={`Preview ${testimonial.submitterName}'s video`}
-        className="group/still bg-ink focus-visible:ring-ring relative block h-12 w-16 shrink-0 cursor-pointer overflow-hidden rounded-md outline-none focus-visible:ring-[3px]"
+        className="group/still bg-ink focus-visible:ring-ring relative block shrink-0 cursor-pointer overflow-hidden rounded-md outline-none focus-visible:ring-[3px]"
         onClick={onPreview}
+        style={stillBox(testimonial.aspectRatio)}
         type="button"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt=""
           className="size-full object-cover transition-transform duration-[var(--motion-base)] ease-[var(--ease-settle-soft)] group-hover/still:scale-105 motion-reduce:transition-none"
-          height={48}
           loading="lazy"
           src={stillUrl(testimonial.card)}
-          width={64}
         />
         <span
           aria-hidden="true"
@@ -252,6 +274,14 @@ function InboxFace({
         >
           <IconPlayerPlayFilled className="size-4" />
         </span>
+        {testimonial.videoDurationSeconds ? (
+          <span
+            aria-hidden="true"
+            className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 font-mono text-[11px] leading-4 text-white tabular-nums"
+          >
+            {formatDuration(testimonial.videoDurationSeconds)}
+          </span>
+        ) : null}
       </button>
     );
   }
@@ -259,8 +289,9 @@ function InboxFace({
     return (
       <span
         aria-hidden="true"
-        className="bg-surface-2 text-danger grid h-12 w-16 shrink-0 place-items-center rounded-md"
+        className="bg-surface-2 text-danger grid shrink-0 place-items-center rounded-md"
         data-testid="failed-video-placeholder"
+        style={stillBox(testimonial.aspectRatio)}
       >
         <IconVideoOff className="size-5" />
       </span>
@@ -268,8 +299,9 @@ function InboxFace({
   }
   return (
     <span
-      className="bg-surface-2 grid h-12 w-16 shrink-0 place-items-center rounded-md"
+      className="bg-surface-2 grid shrink-0 place-items-center rounded-md"
       data-testid="processing-video-placeholder"
+      style={stillBox(testimonial.aspectRatio)}
     >
       <BlobLoader
         label={`${testimonial.submitterName}'s video is processing`}
@@ -359,6 +391,8 @@ function InboxRow({
         .join(" · ")
     : "";
   const rating = testimonial.card?.rating;
+  const video =
+    testimonial.submissionType === "video" ? videoState(testimonial) : null;
 
   return (
     <li
@@ -371,22 +405,28 @@ function InboxRow({
       onDragStart={drag?.onStart}
       onDrop={drag?.onDrop}
     >
-      {/* Top-aligned like any list, centred on the first line on desktop. */}
-      <div className="flex items-center gap-2 self-start md:-mt-1.5 md:gap-3">
+      {/*
+        The face is a column of its own: centred on the row like the actions,
+        and always 64px wide so the words start on the same line whatever
+        stands in it (a 48px photo, the quote mark, a portrait still).
+      */}
+      <div className="flex items-center gap-2 md:gap-3">
         {ordering ? (
           <IconGripVertical
             aria-hidden="true"
             className="text-ink-3 hidden size-5 shrink-0 cursor-grab md:block"
           />
         ) : null}
-        <InboxFace
-          onPreview={() => onAction("preview")}
-          testimonial={testimonial}
-        />
+        <div className="grid w-16 shrink-0 place-items-center">
+          <InboxFace
+            onPreview={() => onAction("preview")}
+            testimonial={testimonial}
+          />
+        </div>
       </div>
 
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:min-h-9">
+      <div className="min-w-0 self-center">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="type-ui text-ink font-semibold">
             {testimonial.submitterName}
           </span>
@@ -403,16 +443,21 @@ function InboxRow({
             accentColor={accentColor}
             testimonial={testimonial.card}
           />
-        ) : (
-          <p className="type-small text-ink-2 mt-1">{videoLine(testimonial)}</p>
-        )}
+        ) : null}
+
+        {video ? (
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Badge variant={video.badge}>{video.label}</Badge>
+            <span className="type-small text-ink-2">{video.note}</span>
+          </p>
+        ) : null}
 
         <p className="type-small text-ink-2 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span>Received {formatShortDate(testimonial.createdAt)}</span>
           <span aria-hidden="true" className="hidden sm:inline">
             ·
           </span>
-          <span className="w-full truncate font-mono text-[12px] sm:w-auto">
+          <span className="w-full truncate sm:w-auto">
             {testimonial.submitterEmail}
           </span>
           {isSpam && testimonial.quarantineExpiresAt ? (
@@ -426,7 +471,7 @@ function InboxRow({
         </p>
       </div>
 
-      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-start">
+      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center">
         {ordering && onMove && position ? (
           <>
             <Button

@@ -341,14 +341,18 @@ pages still start at the top and scroll normally.
   `--line` hairline, `--radius-lg`) of rows with dividers and `--surface-2`
   hover, never a wall of cards: the Wall is where cards are judged, the
   Inbox is where decisions are made. A row starts with the face (the
-  Customer's 48px photo, the display quote mark in the Brand accent, or a
-  64×48 video still that opens the real playable card in a dialog), then the
-  name at `ui` 600 with role, company and 14px stars on the same line, the
-  words in full at `body` (a marked phrase keeps its swash), one private
-  line at `small` (received date, the email only the Owner sees, the Spam
-  deletion date), and on the right the one decision the category allows:
-  Publish and Archive, Unpublish, or Not Spam. A video that is not Ready
-  says so on its own line and Publish is disabled without a note of its own.
+  Customer's 48px photo, the display quote mark in the Brand accent, or the
+  video still in the video's own shape, 48px wide when portrait and 64px
+  when not, with its duration in a corner, which opens the real playable
+  card in a dialog; the face column is 64px wide and, like the actions,
+  centred on its row), then the name at `ui` 600 with role, company and
+  14px stars on the same line, the words in full at `body` (a marked phrase
+  keeps its swash), one private line at `small` in one style (received
+  date, the email only the Owner sees, the Spam deletion date), and on the
+  right the one decision the category allows: Publish and Archive,
+  Unpublish, or Not Spam. A video that is not Ready shows its Video Asset
+  state as a status Badge (Processing, Uploading, Failed) beside one
+  sentence, and Publish is disabled without a note of its own.
   The tools that shape the card (Highlight a phrase, Change thumbnail, Show
   or hide details) and the two rare acts (Spam, Delete) live in the "…"
   menu, the rare ones behind a rule. Published is the Public Wall itself in
