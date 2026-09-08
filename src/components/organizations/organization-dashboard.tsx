@@ -113,23 +113,28 @@ export function BrandDashboardView({
           <p className="type-micro text-ink-2">Your Collection Form</p>
           <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
             <div className="min-w-0 flex-1 space-y-4">
-              {/* Breaks only where it must: an address is read as much as it
-                  is copied. */}
-              <p className="type-subheading sm:type-heading font-mono [overflow-wrap:anywhere]">
-                {collectionUrl}
-              </p>
-              {/* Under the address, its arrow running back along the line it
-                  is talking about. Shown in both states so the panel keeps
-                  one geometry: a note that appears and disappears is a note
-                  that shoves the buttons around. */}
-              <ArrowNote
-                arrow="flat"
-                className="hidden md:inline-flex"
-                direction="left"
-                size="sm"
-              >
-                share this to start collecting
-              </ArrowNote>
+              {/* The address is mono, the family DESIGN.md gives public
+                  slugs. It borrows the scale's size and leading through the
+                  tokens rather than a `type-*` utility, because those carry
+                  the display family with them and would quietly put Gelica
+                  here. Breaks only where it must: an address is read as much
+                  as it is copied. */}
+              <div className="relative w-fit max-w-full">
+                {/* Above the address and right-aligned to its end, out of the
+                    flow: the panel reserves nothing, and it is shown in both
+                    states so the card keeps one geometry whatever is in the
+                    queue. */}
+                <ArrowNote
+                  className="absolute -top-9 right-0 hidden md:inline-flex"
+                  direction="left"
+                  size="sm"
+                >
+                  share this to start collecting
+                </ArrowNote>
+                <p className="font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere] sm:text-[length:var(--type-heading-size)] sm:leading-[var(--type-heading-leading)]">
+                  {collectionUrl}
+                </p>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={copyLink} type="button">
                   <IconCopy aria-hidden="true" />
