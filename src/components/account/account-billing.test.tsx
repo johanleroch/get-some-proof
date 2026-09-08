@@ -26,6 +26,9 @@ vi.mock("@/components/billing/organization-billing", () => ({
     <div>Plan controls for {slug}</div>
   ),
 }));
+vi.mock("./account-invoices", () => ({
+  AccountInvoices: () => <div>Invoice history</div>,
+}));
 vi.mock("./account-closure", () => ({
   AccountClosure: () => <div>Account closure</div>,
 }));

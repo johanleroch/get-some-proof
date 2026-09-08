@@ -52,14 +52,14 @@ function billingErrorMessage(error: unknown) {
   return error.message;
 }
 
-type ProLookupKey = "pro_monthly";
+type ProLookupKey = "pro_monthly" | "pro_annual";
 
 type PublicOffer = {
   amount: number;
   currency: string;
   description: string | null;
   features: string[];
-  interval: "month";
+  interval: "month" | "year";
   lookupKey: ProLookupKey;
   name: string;
 };
@@ -67,7 +67,7 @@ type PublicOffer = {
 type SubscriptionDetails = {
   amount: number;
   currency: string;
-  interval: "month";
+  interval: "month" | "year";
 };
 
 function formatOfferAmount(offer: Pick<PublicOffer, "amount" | "currency">) {
@@ -607,6 +607,19 @@ export function BillingCockpit({
     videoIds: Id<"testimonials">[],
   ) => Promise<unknown>;
 }) {
+  const [selectedInterval, setSelectedInterval] = useState<"month" | "year">(
+    "month",
+  );
+  const selectedOffer = offers?.find(
+    (offer) => offer.interval === selectedInterval,
+  );
+  const monthlyOffer = offers?.find((offer) => offer.interval === "month");
+  const annualOffer = offers?.find((offer) => offer.interval === "year");
+  const twoMonthsFree =
+    monthlyOffer &&
+    annualOffer &&
+    monthlyOffer.currency === annualOffer.currency &&
+    annualOffer.amount === monthlyOffer.amount * 10;
   const [contactPending, setContactPending] = useState(false);
   const [checkoutPending, setCheckoutPending] = useState(false);
   const [portalPending, setPortalPending] = useState(false);
@@ -635,7 +648,7 @@ export function BillingCockpit({
 
   async function beginCheckout() {
     if (checkoutPending || !overview.canManage || !onStartCheckout) return;
-    const offer = offers?.[0];
+    const offer = selectedOffer;
     if (!offer) return;
 
     setCheckoutPending(true);
@@ -779,7 +792,11 @@ export function BillingCockpit({
                   <dt className="text-muted-foreground text-xs">Cadence</dt>
                   <dd className="mt-1 font-medium">
                     {subscriptionDetails ? (
-                      "Monthly"
+                      subscriptionDetails.interval === "year" ? (
+                        "Annual"
+                      ) : (
+                        "Monthly"
+                      )
                     ) : subscriptionDetails === undefined ? (
                       <BlobLoadingText label="Loading…" />
                     ) : (
@@ -875,8 +892,7 @@ export function BillingCockpit({
             <CardHeader>
               <CardTitle>Manage with Stripe</CardTitle>
               <CardDescription>
-                Stripe creates a new short-lived Customer Portal session for
-                each action. This application never stores the Portal URL.
+                Update your payment method or manage your subscription.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -940,39 +956,77 @@ export function BillingCockpit({
             <CardHeader>
               <CardTitle>Upgrade to Pro</CardTitle>
               <CardDescription>
-                One monthly plan. The price is loaded directly from the active
-                Stripe sandbox catalog.
+                Choose monthly or annual billing. The same Pro features, either
+                way.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              <div
+                className="flex flex-wrap items-center gap-2"
+                role="group"
+                aria-label="Billing interval"
+              >
+                <Button
+                  variant={selectedInterval === "month" ? "default" : "outline"}
+                  aria-pressed={selectedInterval === "month"}
+                  disabled={checkoutPending}
+                  onClick={() => setSelectedInterval("month")}
+                >
+                  Monthly
+                </Button>
+                <Button
+                  variant={selectedInterval === "year" ? "default" : "outline"}
+                  aria-pressed={selectedInterval === "year"}
+                  disabled={checkoutPending}
+                  onClick={() => setSelectedInterval("year")}
+                >
+                  Annual{twoMonthsFree ? " · 2 months free" : ""}
+                </Button>
+              </div>
               {offersError ? (
                 <ErrorToast message={offersError} />
-              ) : offers?.[0] ? (
+              ) : selectedOffer ? (
                 <div className="border-brand bg-brand-soft rounded-lg border p-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <span className="text-sm font-medium">
-                      {offers[0]!.name}
+                      {selectedOffer.name}
                     </span>
                     <span className="text-2xl font-semibold">
-                      {formatOfferAmount(offers[0]!)}
+                      {formatOfferAmount(selectedOffer)}
                       <span className="text-muted-foreground ml-1 text-xs font-normal">
-                        / month
+                        / {selectedOffer.interval}
                       </span>
                     </span>
                   </div>
-                  {offers[0]!.description ? (
-                    <p className="text-muted-foreground mt-3 text-sm">
-                      {offers[0]!.description}
+                  {selectedOffer.interval === "year" ? (
+                    <p className="text-muted-foreground mt-2 text-sm">
+                      {formatOfferAmount({
+                        ...selectedOffer,
+                        amount: selectedOffer.amount / 12,
+                      })}{" "}
+                      / month, billed annually.
+                      {twoMonthsFree
+                        ? ` Save ${formatOfferAmount({ ...selectedOffer, amount: monthlyOffer.amount * 12 - selectedOffer.amount })} a year.`
+                        : ""}
                     </p>
                   ) : null}
-                  {offers[0]!.features.length > 0 ? (
+                  {selectedOffer.description ? (
+                    <p className="text-muted-foreground mt-3 text-sm">
+                      {selectedOffer.description}
+                    </p>
+                  ) : null}
+                  {selectedOffer.features.length > 0 ? (
                     <ul className="text-muted-foreground mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                      {offers[0]!.features.map((feature) => (
+                      {selectedOffer.features.map((feature) => (
                         <li key={feature}>{feature}</li>
                       ))}
                     </ul>
                   ) : null}
                 </div>
+              ) : offers ? (
+                <p className="text-muted-foreground text-sm">
+                  This billing option is temporarily unavailable.
+                </p>
               ) : (
                 <BlobLoadingText label="Loading Pro prices…" />
               )}
@@ -989,7 +1043,7 @@ export function BillingCockpit({
                 </div>
                 {overview.canManage ? (
                   <Button
-                    disabled={!offers?.length}
+                    disabled={!selectedOffer || !!offersError}
                     loading={checkoutPending}
                     onClick={beginCheckout}
                     type="button"
