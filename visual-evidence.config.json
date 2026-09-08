@@ -135,6 +135,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "account-invoices",
+      "title": "Account Invoices",
+      "path": "/account/billing",
+      "fixturePath": "/visual-evidence/billing",
+      "heading": "Invoices",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "workspace-billing-downgrade",
       "title": "Workspace Billing - downgrade selection",
       "path": "/org/:organizationSlug/billing",

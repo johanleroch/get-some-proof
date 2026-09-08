@@ -23,7 +23,7 @@ export function AccountInvoices({
   const load = useAction(api.billingInvoices.listAccountInvoices);
   const openPortal = useAction(api.billingActions.openAccountPortal);
   const [page, setPage] = useState<InvoicePage>();
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState(true);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -37,6 +37,9 @@ export function AccountInvoices({
       })
       .catch(() => {
         if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setPending(false);
       });
     return () => {
       active = false;
@@ -46,9 +49,9 @@ export function AccountInvoices({
   async function loadMore() {
     if (pending || !page?.nextCursor) return;
     setPending(true);
-    setError(false);
     try {
       const result = await load({ cursor: page.nextCursor });
+      setError(false);
       setPage({
         ...result,
         invoices: [
@@ -72,9 +75,12 @@ export function AccountInvoices({
       canManageBilling={canManageBilling}
       onLoadMore={loadMore}
       onRetry={() => {
-        setError(false);
+        if (pending) return;
         if (page) void loadMore();
-        else setAttempt((value) => value + 1);
+        else {
+          setPending(true);
+          setAttempt((value) => value + 1);
+        }
       }}
       onOpenPortal={async () => {
         const { url } = await openPortal({});
@@ -217,7 +223,7 @@ export function AccountInvoicesView({
             <p className="text-destructive text-sm">
               Invoices could not be loaded.
             </p>
-            <Button variant="outline" onClick={onRetry}>
+            <Button variant="outline" loading={pending} onClick={onRetry}>
               Try again
             </Button>
           </div>

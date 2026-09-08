@@ -58,3 +58,11 @@ it("supports empty and retry states", () => {
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(props.onRetry).toHaveBeenCalledOnce();
 });
+
+it("keeps retry feedback on the button while invoices are loading", () => {
+  render(<AccountInvoicesView {...handlers()} error pending />);
+  expect(screen.getByRole("button", { name: "Try again" })).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+});

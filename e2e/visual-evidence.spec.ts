@@ -196,6 +196,19 @@ for (const screen of config.screens) {
         page.getByRole("link", { name: "Back to project" }),
       ).toBeVisible();
     }
+    if (fixtureMode && screen.slug === "workspace-billing") {
+      await page
+        .getByRole("button", { name: "Annual · 2 months free" })
+        .click();
+      await page
+        .getByRole("heading", { name: "Upgrade to Pro", exact: true })
+        .scrollIntoViewIfNeeded();
+    }
+    if (fixtureMode && screen.slug === "account-invoices") {
+      await page
+        .getByRole("heading", { name: "Invoices", exact: true })
+        .scrollIntoViewIfNeeded();
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
