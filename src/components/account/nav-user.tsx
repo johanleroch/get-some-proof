@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   IconDotsVertical,
+  IconCreditCard,
   IconLogout,
   IconShieldLock,
   IconUserCircle,
@@ -107,7 +108,7 @@ export function NavUserView({
           <DropdownMenuContent
             align="end"
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "top" : "right"}
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
@@ -147,6 +148,12 @@ export function NavUserView({
                 <Link href={"/account/security" as Route}>
                   <IconShieldLock />
                   Security
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/account/billing">
+                  <IconCreditCard />
+                  Billing
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

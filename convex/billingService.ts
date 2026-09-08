@@ -2,16 +2,21 @@ import { ConvexError, v } from "convex/values";
 
 export const proLookupKey = "pro_monthly" as const;
 
-export type ProLookupKey = typeof proLookupKey;
+export const proLookupKeys = [proLookupKey, "pro_annual"] as const;
 
-export const proLookupKeyValidator = v.literal(proLookupKey);
+export type ProLookupKey = (typeof proLookupKeys)[number];
+
+export const proLookupKeyValidator = v.union(
+  v.literal(proLookupKey),
+  v.literal("pro_annual"),
+);
 
 export type ResolvedBillingOffer = {
   amount: number;
   currency: string;
   description: string | null;
   features: string[];
-  interval: "month";
+  interval: "month" | "year";
   lookupKey: ProLookupKey;
   name: string;
   priceId: string;
@@ -55,7 +60,7 @@ export type BillingProvider = {
   retrieveSubscriptionPrice: (priceId: string) => Promise<{
     amount: number;
     currency: string;
-    interval: "month";
+    interval: "month" | "year";
   }>;
   updateCustomerEmail: (input: {
     customerId: string;
@@ -78,19 +83,28 @@ const terminalSubscriptionStatuses = new Set([
 ]);
 
 export async function listPublicOffers(provider: BillingProvider) {
-  const { amount, currency, description, features, interval, lookupKey, name } =
-    await provider.resolveOffer(proLookupKey);
-  return [
-    {
-      amount,
-      currency,
-      description,
-      features,
-      interval,
-      lookupKey,
-      name,
-    },
-  ];
+  return Promise.all(
+    proLookupKeys.map(async (key) => {
+      const {
+        amount,
+        currency,
+        description,
+        features,
+        interval,
+        lookupKey,
+        name,
+      } = await provider.resolveOffer(key);
+      return {
+        amount,
+        currency,
+        description,
+        features,
+        interval,
+        lookupKey,
+        name,
+      };
+    }),
+  );
 }
 
 export async function createOrganizationCheckout(

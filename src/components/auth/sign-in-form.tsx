@@ -5,6 +5,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Field } from "@/components/ui/field";
@@ -51,22 +52,6 @@ export function SignInForm({
     router.refresh();
   }
 
-  async function signInWithGoogle() {
-    setError(null);
-    setPending(true);
-    sessionStorage.setItem("post-two-factor-route", callbackURL);
-    const result = await authClient.signIn.social({
-      provider: "google",
-      callbackURL,
-      errorCallbackURL: "/sign-in?error=oauth",
-    });
-
-    if (result?.error) {
-      setPending(false);
-      setError(result.error.message ?? "Google sign-in is not configured.");
-    }
-  }
-
   return (
     <form className="space-y-5" onSubmit={signInWithEmail}>
       <Field>
@@ -104,18 +89,12 @@ export function SignInForm({
       <Button className="w-full" loading={pending} type="submit">
         Sign in
       </Button>
-      <div className="text-ink-2 before:border-line relative py-1 text-center text-xs font-semibold tracking-[0.06em] uppercase before:absolute before:top-1/2 before:left-0 before:w-full before:border-t">
-        <span className="bg-background relative px-3">or</span>
-      </div>
-      <Button
-        className="w-full"
-        disabled={pending}
-        onClick={signInWithGoogle}
-        type="button"
-        variant="outline"
-      >
-        Continue with Google
-      </Button>
+      <GoogleSignInButton
+        callbackURL={callbackURL}
+        pending={pending}
+        setPending={setPending}
+        setError={setError}
+      />
       <p className="text-ink-2 text-center text-sm">
         New to Get Some Proof?{" "}
         <Link

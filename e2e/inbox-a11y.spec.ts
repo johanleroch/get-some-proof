@@ -112,12 +112,25 @@ async function focused(page: Page) {
 
 /** Every stop Tab makes from `start` until focus leaves the document. */
 async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
+  // An explicit end marker avoids browser-specific focus behavior outside the page.
+  await page.evaluate(() => {
+    const end = document.createElement("button");
+    end.dataset.keyboardSequenceEnd = "true";
+    end.textContent = "End of keyboard sequence";
+    document.body.append(end);
+  });
   await start.focus();
   const stops: string[] = [];
   const first = await focused(page);
   stops.push(`${first.role}: ${first.name}`);
   for (let index = 0; index < max; index++) {
     await page.keyboard.press("Tab");
+    if (
+      await page.evaluate(() =>
+        document.activeElement?.hasAttribute("data-keyboard-sequence-end"),
+      )
+    )
+      break;
     const stop = await focused(page);
     if (stop.role === "body") break;
     const key = `${stop.role}: ${stop.name}`;
@@ -127,6 +140,9 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
     );
     stops.push(key);
   }
+  await page
+    .locator("[data-keyboard-sequence-end]")
+    .evaluate((end) => end.remove());
   return stops;
 }
 

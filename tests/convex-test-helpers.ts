@@ -29,6 +29,7 @@ export async function addStripeSubscription(
   organizationId: Id<"organizations">,
   status: string,
   {
+    priceId = "price_pro_monthly",
     cancelAtPeriodEnd = false,
     currentPeriodEnd = Math.floor(Date.now() / 1_000) + 1_728_000,
     eventCreated = Math.floor(Date.now() / 1_000),
@@ -36,6 +37,7 @@ export async function addStripeSubscription(
     stripeSubscriptionId = `sub_${organizationId}`,
     eventId = `evt_${stripeSubscriptionId}_${status}_${eventCreated}`,
   }: {
+    priceId?: string;
     cancelAtPeriodEnd?: boolean;
     currentPeriodEnd?: number;
     eventCreated?: number;
@@ -47,8 +49,11 @@ export async function addStripeSubscription(
   await t.mutation(components.stripe.private.handleSubscriptionCreated, {
     cancelAtPeriodEnd,
     currentPeriodEnd,
-    metadata: { lookupKey: "pro_monthly", orgId: organizationId },
-    priceId: "price_pro_monthly",
+    metadata: {
+      lookupKey: priceId === "price_pro_annual" ? "pro_annual" : "pro_monthly",
+      orgId: organizationId,
+    },
+    priceId,
     quantity: 1,
     status,
     stripeCustomerId: `cus_${organizationId}`,
@@ -61,7 +66,7 @@ export async function addStripeSubscription(
     eventId,
     eventType: "customer.subscription.updated",
     organizationId: String(organizationId),
-    priceId: "price_pro_monthly",
+    priceId,
     status,
     statusChangedAt,
     stripeCustomerId: `cus_${organizationId}`,
@@ -76,7 +81,7 @@ export async function addStripeSubscription(
       .unique();
     if (!profile) throw new Error("Billing profile unavailable in test.");
     await ctx.db.patch(profile._id, {
-      expectedProPriceId: "price_pro_monthly",
+      expectedProPriceId: priceId,
       stripeCustomerId: `cus_${organizationId}`,
     });
   });

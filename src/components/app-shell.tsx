@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   type Icon,
+  IconArrowLeft,
+  IconCreditCard,
   IconDashboard,
   IconInbox,
   IconLock,
@@ -35,6 +37,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 type NavigationItem = {
@@ -42,6 +45,7 @@ type NavigationItem = {
   icon: Icon;
   href: Route;
   visible: boolean;
+  newTab?: boolean;
 };
 
 type NavigationSection = {
@@ -62,6 +66,12 @@ const accountNavigation: NavigationItem[] = [
     href: "/account/security" as Route,
     visible: true,
   },
+  {
+    label: "Billing",
+    icon: IconCreditCard,
+    href: "/account/billing",
+    visible: true,
+  },
 ];
 
 function Navigation({
@@ -73,6 +83,7 @@ function Navigation({
   sections: NavigationSection[];
   pathname: string;
 }) {
+  const { setOpenMobile } = useSidebar();
   return (
     <div className={className}>
       {sections.map((section) => {
@@ -84,34 +95,41 @@ function Navigation({
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {visibleItems.map(({ href, icon: IconComponent, label }) => {
-                  const active =
-                    pathname === href ||
-                    (pathname.startsWith(`${href}/`) && href !== "/");
-                  return (
-                    <SidebarMenuItem key={href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        tooltip={label}
-                      >
-                        <Link
-                          aria-current={active ? "page" : undefined}
-                          href={href}
+                {visibleItems.map(
+                  ({ href, icon: IconComponent, label, newTab }) => {
+                    const active =
+                      pathname === href ||
+                      (pathname.startsWith(`${href}/`) && href !== "/");
+                    return (
+                      <SidebarMenuItem key={href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          tooltip={label}
                         >
-                          {active ? (
-                            <span
-                              aria-hidden="true"
-                              className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
-                            />
-                          ) : null}
-                          <IconComponent aria-hidden="true" />
-                          <span>{label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                          <Link
+                            aria-current={active ? "page" : undefined}
+                            href={href}
+                            onClick={() => {
+                              if (!newTab) setOpenMobile(false);
+                            }}
+                            target={newTab ? "_blank" : undefined}
+                            rel={newTab ? "noopener noreferrer" : undefined}
+                          >
+                            {active ? (
+                              <span
+                                aria-hidden="true"
+                                className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
+                              />
+                            ) : null}
+                            <IconComponent aria-hidden="true" />
+                            <span>{label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  },
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -209,6 +227,7 @@ export function AppShellView({
     },
     {
       label: "Public Wall",
+      newTab: true,
       icon: IconWorld,
       href: `/w/${organizationPublicSlug}` as Route,
       visible: true,
@@ -222,7 +241,20 @@ export function AppShellView({
   ];
 
   const navigationSections: NavigationSection[] = accountContext
-    ? [{ label: "Account", items: accountNavigation }]
+    ? [
+        {
+          label: "Account",
+          items: [
+            {
+              label: "Back to project",
+              icon: IconArrowLeft,
+              href: `/org/${organizationSlug}/dashboard` as Route,
+              visible: true,
+            },
+            ...accountNavigation,
+          ],
+        },
+      ]
     : [{ label: "Project", items: productNavigation }];
   const navigation = navigationSections.flatMap(({ items }) => items);
   const title = pageTitle(pathname, navigation);
@@ -238,16 +270,19 @@ export function AppShellView({
       }
     >
       <Sidebar collapsible="offcanvas" variant="sidebar">
-        <SidebarHeader>
-          {userMenu}
+        <SidebarHeader>{projectSwitcher}</SidebarHeader>
+        <SidebarContent>
+          <Navigation pathname={pathname} sections={navigationSections} />
+        </SidebarContent>
+        <SidebarFooter className="border-line gap-3 border-t pt-3">
           {account ? (
-            <div className="px-2 pb-2">
-              <p className="text-ink-2 mb-2 text-xs font-medium">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-2">
+              <span className="bg-brand-soft text-brand-text inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold">
                 {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
-              </p>
+              </span>
               <Link
-                className="text-brand-text text-sm font-semibold hover:underline"
-                href={`/org/${organizationSlug}/billing` as Route}
+                className="text-brand-text text-xs font-semibold hover:underline"
+                href="/account/billing"
               >
                 {account.effectivePlan === "premium"
                   ? "Manage subscription"
@@ -255,13 +290,10 @@ export function AppShellView({
               </Link>
             </div>
           ) : null}
-        </SidebarHeader>
-        <SidebarContent>
-          <Navigation pathname={pathname} sections={navigationSections} />
-        </SidebarContent>
-        <SidebarFooter>{projectSwitcher}</SidebarFooter>
+          {userMenu}
+        </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-view min-h-0 overflow-hidden">
+      <SidebarInset className="dashboard-view min-h-0 overflow-clip">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -284,7 +316,7 @@ export function AppShellView({
             role="region"
             aria-label="Page content"
             tabIndex={0}
-            className="min-h-0 flex-1 overflow-y-auto"
+            className="min-h-0 flex-1 overflow-y-auto scroll-smooth motion-reduce:scroll-auto"
           >
             <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
               <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">

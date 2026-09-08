@@ -59,6 +59,11 @@ function ReviewQueue({
   );
 }
 
+const projectPlanDescriptions = {
+  free: "Unlimited projects with Pro",
+  premium: "Shared across all projects",
+};
+
 export function BrandDashboardView({
   collectionUrl,
   account,
@@ -128,17 +133,19 @@ export function BrandDashboardView({
               {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
             </h2>
             <p className="text-ink-2 type-small mt-0.5">
-              Shared across all projects
+              {projectPlanDescriptions[account.effectivePlan]}
             </p>
           </div>
           <div className="type-small tabular-nums">
             {account.effectivePlan === "premium" ? (
               <>
+                <p className="font-semibold">Unlimited projects</p>
                 <p>{account.usage.readyVideos} / 25 videos stored</p>
                 <p className="text-ink-2">Unlimited text collection</p>
               </>
             ) : (
               <>
+                <p className="font-semibold">1 / 1 active project</p>
                 <p>{account.usage.freeTextUsed} / 13 text credits used</p>
                 <p>{account.usage.freeVideoUsed} / 2 video credits used</p>
               </>
@@ -274,7 +281,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   return (
     <BrandDashboardView
       account={account}
-      billingHref={`/org/${slug}/billing`}
+      billingHref="/account/billing"
       collectionUrl={collectionUrl}
       copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
       name={organization.name}

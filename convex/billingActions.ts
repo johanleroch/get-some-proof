@@ -103,7 +103,7 @@ type ManagementContext = {
 type SubscriptionDetails = {
   amount: number;
   currency: string;
-  interval: "month";
+  interval: "month" | "year";
 };
 
 export const getOffers = action({
@@ -317,7 +317,7 @@ export const getSubscriptionDetails = action({
     v.object({
       amount: v.number(),
       currency: v.string(),
-      interval: v.literal("month"),
+      interval: v.union(v.literal("month"), v.literal("year")),
     }),
   ),
   handler: (ctx, args): Promise<SubscriptionDetails | null> =>

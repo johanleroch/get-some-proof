@@ -49,7 +49,7 @@ export function ProfileImageControl({
     setError(null);
     if (!file) return;
     if (!file.type.startsWith("image/") || file.size > maximumImageBytes) {
-      setError("Choose a PNG, JPG, or WebP image smaller than 5 MB.");
+      setError("Choose a PNG, SVG, JPG, or WebP image smaller than 5 MB.");
       return;
     }
     setSource(URL.createObjectURL(file));
@@ -116,7 +116,7 @@ export function ProfileImageControl({
         <div>
           <p className="text-sm font-medium">{label}</p>
           <p className="text-muted-foreground mt-1 text-xs">
-            PNG, JPG, or WebP. Maximum 5 MB.
+            PNG, SVG, JPG, or WebP. Maximum 5 MB.
           </p>
         </div>
         {!readOnly ? (
@@ -144,7 +144,7 @@ export function ProfileImageControl({
           </div>
         ) : null}
         <input
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/svg+xml,image/jpeg,image/webp"
           className="sr-only"
           onChange={(event) => {
             chooseFile(event.target.files?.[0]);

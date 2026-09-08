@@ -246,7 +246,8 @@ export const screenSections: ScreenSection[] = [
       {
         slug: "billing",
         title: "Billing",
-        description: "Plan status and Stripe-hosted checkout entry point.",
+        description:
+          "Monthly or annual Pro billing, invoice downloads and the Stripe portal.",
         fixturePath: "/visual-evidence/billing",
         livePath: "/org/:organizationSlug/billing",
         requiresAuth: true,

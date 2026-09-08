@@ -166,7 +166,8 @@ describe("OrganizationBilling", () => {
 
     render(<OrganizationBilling slug="acme-1234" />);
 
-    expect(screen.getByText("Billing is connected")).toBeVisible();
+    expect(screen.queryByText("Billing is connected")).toBeNull();
+    expect(screen.getByRole("img", { name: "Stripe" })).toBeVisible();
     expect(screen.queryByText("Billing is not connected")).toBeNull();
     expect(
       screen.getByText("No Stripe subscription is active for this Account."),
@@ -196,7 +197,7 @@ describe("OrganizationBilling", () => {
     ).toBeVisible();
     expect(screen.getByText("Unlimited proof")).toBeVisible();
     expect(screen.getByText("Priority exports")).toBeVisible();
-    expect(screen.queryByText(/annual/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "Annual" })).toBeVisible();
     expect(mocks.getOffers).toHaveBeenCalledWith({
       organizationId: "organization-1",
     });
@@ -636,4 +637,55 @@ describe("OrganizationBilling", () => {
       }).title,
     ).toBe(title);
   });
+});
+
+it("charges the selected annual offer and displays the full annual total", async () => {
+  cleanup();
+  const onStartCheckout = vi
+    .fn()
+    .mockResolvedValue({ url: "https://checkout.stripe.example/annual" });
+  render(
+    <BillingCockpit
+      offers={[
+        {
+          amount: 2900,
+          currency: "eur",
+          description: null,
+          features: [],
+          interval: "month",
+          lookupKey: "pro_monthly",
+          name: "Pro",
+        },
+        {
+          amount: 29000,
+          currency: "eur",
+          description: null,
+          features: [],
+          interval: "year",
+          lookupKey: "pro_annual",
+          name: "Pro",
+        },
+      ]}
+      overview={{
+        availability: "available",
+        billingContact: null,
+        canManage: true,
+        effectivePlan: "free",
+        state: "missing",
+        subscription: null,
+      }}
+      onUpdateContact={async () => undefined}
+      onStartCheckout={onStartCheckout}
+      navigateToCheckout={() => undefined}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: /Annual.*2 months free/ }),
+  );
+  expect(screen.getByText(/290/)).toBeVisible();
+  expect(screen.getByText(/24.17.*billed annually/)).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Continue to Stripe" }));
+  await waitFor(() =>
+    expect(onStartCheckout).toHaveBeenCalledWith("pro_annual"),
+  );
 });

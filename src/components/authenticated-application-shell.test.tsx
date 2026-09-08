@@ -138,6 +138,29 @@ describe("AuthenticatedApplicationShell", () => {
     );
   });
 
+  it.each(["profile", "security"])(
+    "remembers the selected Project on Account %s",
+    (page) => {
+      mocks.organizations!.push({
+        id: "organization-2",
+        name: "Second",
+        slug: "second-project",
+      });
+      mocks.pathname = "/org/second-project/dashboard";
+      const view = render(
+        <AuthenticatedApplicationShell>Overview</AuthenticatedApplicationShell>,
+      );
+      mocks.pathname = `/account/${page}`;
+      view.rerender(
+        <AuthenticatedApplicationShell>Account</AuthenticatedApplicationShell>,
+      );
+      expect(screen.getByTestId("app-shell")).toHaveAttribute(
+        "data-organization",
+        "second-project",
+      );
+    },
+  );
+
   it("leaves onboarding outside the application shell", () => {
     mocks.pathname = "/onboarding";
     mocks.organizations = [];
