@@ -12,9 +12,8 @@ test("loading buttons preserve their accessible name", async ({ page }) => {
   await expect(button.locator('svg[id^="blob-anim-"]')).toHaveCount(0);
   const spinner = button.locator('[data-slot="button-spinner"]');
   await expect(spinner).toBeVisible();
-  const spinnerSize = await spinner.boundingBox();
-  expect(spinnerSize?.width).toBe(16);
-  expect(spinnerSize?.height).toBe(16);
+  await expect(spinner).toHaveCSS("width", "16px");
+  await expect(spinner).toHaveCSS("height", "16px");
   const widths = await button.evaluate((loadingButton) => {
     const idleButton = loadingButton.cloneNode(true) as HTMLButtonElement;
     idleButton.replaceChildren(document.createTextNode("Save settings"));
