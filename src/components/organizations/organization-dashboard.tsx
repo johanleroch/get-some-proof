@@ -113,26 +113,23 @@ export function BrandDashboardView({
           <p className="type-micro text-ink-2">Your Collection Form</p>
           <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
             <div className="min-w-0 flex-1 space-y-4">
-              {/* The note fills the room already free to the right of the
-                  eyebrow: absolute, and lifted just enough to sit in that
-                  band, so the panel reserves nothing for it and nothing
-                  moves. Right-aligned to the address so the arrow dives at
-                  the link. Breaks only where it must: an address is read as
-                  much as it is copied. */}
-              <div className="relative w-fit max-w-full">
-                {waiting ? null : (
-                  <ArrowNote
-                    className="absolute -top-9 right-0 hidden md:inline-flex"
-                    direction="left"
-                    size="sm"
-                  >
-                    share this to collect
-                  </ArrowNote>
-                )}
-                <p className="type-subheading sm:type-heading font-mono [overflow-wrap:anywhere]">
-                  {collectionUrl}
-                </p>
-              </div>
+              {/* Breaks only where it must: an address is read as much as it
+                  is copied. */}
+              <p className="type-subheading sm:type-heading font-mono [overflow-wrap:anywhere]">
+                {collectionUrl}
+              </p>
+              {/* Under the address, its arrow running back along the line it
+                  is talking about. Shown in both states so the panel keeps
+                  one geometry: a note that appears and disappears is a note
+                  that shoves the buttons around. */}
+              <ArrowNote
+                arrow="flat"
+                className="hidden md:inline-flex"
+                direction="left"
+                size="sm"
+              >
+                share this to start collecting
+              </ArrowNote>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={copyLink} type="button">
                   <IconCopy aria-hidden="true" />
