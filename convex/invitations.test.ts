@@ -62,6 +62,78 @@ describe("Member Invitations", () => {
     delete process.env.SITE_URL;
   });
 
+  it("closes Invitation operations once Brand deletion is prepared", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const organization = await owner.client.mutation(api.organizations.create, {
+      name: "Mira Studio",
+    });
+    const recipient = await authenticatedUser(t, {
+      email: "mira-invite@example.com",
+      name: "Mira",
+    });
+    const token = "invitation-lifecycle-fixture";
+    const invitationId = await seedInvitation(t, {
+      organizationId: organization.id,
+      invitedByUserId: owner.actorId,
+      email: "mira-invite@example.com",
+      rawToken: token,
+    });
+    await owner.client.mutation(internal.workspaceDeletion.prepare, {
+      organizationId: organization.id,
+      brandName: "Mira Studio",
+      irreversibleConfirmed: true,
+    });
+
+    await expect(
+      recipient.client.mutation(api.invitations.accept, { token }),
+    ).rejects.toMatchObject({ data: { code: "INVITATION_UNAVAILABLE" } });
+    await expect(
+      owner.client.action(api.invitations.create, {
+        organizationId: organization.id,
+        email: "new-member@example.com",
+        role: "viewer",
+      }),
+    ).rejects.toMatchObject({ data: { code: "ORGANIZATION_UNAVAILABLE" } });
+    await expect(
+      owner.client.action(api.invitations.resend, {
+        organizationId: organization.id,
+        invitationId,
+      }),
+    ).rejects.toMatchObject({ data: { code: "ORGANIZATION_UNAVAILABLE" } });
+    await expect(
+      owner.client.action(api.invitations.changeRole, {
+        organizationId: organization.id,
+        invitationId,
+        role: "editor",
+      }),
+    ).rejects.toMatchObject({ data: { code: "ORGANIZATION_UNAVAILABLE" } });
+    await expect(
+      t.query(internal.invitationRecords.getMagicLinkDelivery, {
+        tokenHash: await hashInvitationToken(token),
+        email: "mira-invite@example.com",
+        deliveryIdempotencyKey: `seed-${token}`,
+        now: Date.now(),
+      }),
+    ).resolves.toBeNull();
+    expect(
+      await t.run((ctx) =>
+        ctx.db
+          .query("memberships")
+          .withIndex("by_organization_user", (q) =>
+            q
+              .eq("organizationId", organization.id)
+              .eq("userId", recipient.actorId),
+          )
+          .unique(),
+      ),
+    ).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(invitationId))).toMatchObject({
+      status: "pending",
+      role: "viewer",
+    });
+  });
+
   it("lets Owner and Admin invite non-owner roles without exposing tokens", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);

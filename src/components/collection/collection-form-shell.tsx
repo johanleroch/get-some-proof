@@ -1417,6 +1417,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
     publicSlug,
   });
   const submitText = useAction(api.submissions.submitText);
+  const createAdmission = useAction(api.collectionAdmission.create);
   const generateImageUpload = useMutation(
     api.testimonialImages.generateUploadUrl,
   );
@@ -1435,6 +1436,37 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   );
   const [turnstileToken, setTurnstileToken] = useState<string>();
   const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>();
+  const admission = useRef<{
+    clientSubmissionId: string;
+    challenge?: string;
+    pending: Promise<{ token: string; expiresAt: number }>;
+  } | null>(null);
+  async function uploadAdmission(clientSubmissionId: string) {
+    if (
+      !admission.current ||
+      admission.current.clientSubmissionId !== clientSubmissionId ||
+      admission.current.challenge !== turnstileToken
+    ) {
+      admission.current = {
+        clientSubmissionId,
+        challenge: turnstileToken,
+        pending: createAdmission({
+          clientSubmissionId,
+          publicSlug,
+          turnstileToken,
+        }),
+      };
+    }
+    return (await admission.current.pending).token;
+  }
+  async function submissionAdmission(clientSubmissionId: string) {
+    return admission.current?.clientSubmissionId === clientSubmissionId
+      ? {
+          admissionToken: (await admission.current.pending).token,
+          turnstileToken: undefined,
+        }
+      : {};
+  }
 
   if (brand === undefined || availability === undefined) {
     return (
@@ -1469,17 +1501,31 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
       }
       botToken={turnstileToken}
       cancelVideo={cancelVideo}
-      createDirectUpload={createDirectUpload}
+      createDirectUpload={async (input) =>
+        createDirectUpload({
+          ...input,
+          ...(await submissionAdmission(input.clientSubmissionId)),
+        })
+      }
       requestReplacementLink={requestReplacementLink}
       resetBotVerification={() => {
         if (turnstileWidgetId) browserTurnstile()?.reset(turnstileWidgetId);
         setTurnstileToken(undefined);
+        admission.current = null;
       }}
-      submitText={submitText}
+      submitText={async (input) =>
+        submitText({
+          ...input,
+          ...(await submissionAdmission(input.clientSubmissionId)),
+        })
+      }
       submitVideo={submitVideo}
       uploadImage={async (file, clientSubmissionId) => {
         const identity = { clientSubmissionId, publicSlug };
-        const { imageId, uploadUrl } = await generateImageUpload(identity);
+        const { imageId, uploadUrl } = await generateImageUpload({
+          ...identity,
+          admissionToken: await uploadAdmission(clientSubmissionId),
+        });
         const storageId = await uploadProfileImage(file, uploadUrl);
         return registerImageUpload({ ...identity, imageId, storageId });
       }}
@@ -1487,6 +1533,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
           clientSubmissionId,
           publicSlug,
+          admissionToken: await uploadAdmission(clientSubmissionId),
         });
         const storageId = await uploadProfileImage(file, uploadUrl);
         await registerAvatarUpload({ reservationId, storageId });

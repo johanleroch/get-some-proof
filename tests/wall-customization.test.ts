@@ -1,3 +1,8 @@
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -94,6 +99,7 @@ describe("Public Wall customization and curation", () => {
       testimonialId: first,
     });
     const publicPage = await current.t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -200,6 +206,7 @@ describe("Public Wall customization and curation", () => {
       true,
     );
     const publicPage = await current.t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -248,6 +255,7 @@ describe("Public Wall customization and curation", () => {
       },
     });
     let projection = await current.t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -268,6 +276,7 @@ describe("Public Wall customization and curation", () => {
       },
     );
     projection = await current.t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -300,7 +309,10 @@ describe("Public Wall customization and curation", () => {
     });
     await addStripeSubscription(current.t, String(current.brand.id), "active");
     await expect(
-      current.t.query(api.publicWall.getBrand, { publicSlug: "acme-proof" }),
+      current.t.query(api.publicWall.getBrand, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug: "acme-proof",
+      }),
     ).resolves.toMatchObject({ attributionRequired: false });
 
     await addStripeSubscription(current.t, current.brand.id, "canceled", {
@@ -308,7 +320,10 @@ describe("Public Wall customization and curation", () => {
       eventId: "evt_attribution_downgrade",
     });
     await expect(
-      current.t.query(api.publicWall.getBrand, { publicSlug: "acme-proof" }),
+      current.t.query(api.publicWall.getBrand, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug: "acme-proof",
+      }),
     ).resolves.toMatchObject({ attributionRequired: true });
   });
 });

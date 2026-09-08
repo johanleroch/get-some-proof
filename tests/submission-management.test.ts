@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, internal } from "@convex/_generated/api";
+import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
+import { api, internal, components } from "@convex/_generated/api";
 import {
   buildPublicationConsent,
   deriveSubmissionManagementToken,
@@ -278,6 +279,36 @@ describe("Submission Management Links", () => {
     expect(results.filter(({ status }) => status === "rejected")).toHaveLength(
       1,
     );
+  });
+
+  it("stops recovery work when global admission is exhausted while preserving the response", async () => {
+    const t = createConvexTest();
+    await createManagedText(t);
+    const limiter = new RateLimiter(components.rateLimiter, {
+      managementRecovery: { kind: "fixed window", rate: 1000, period: HOUR },
+    });
+    await t.run((ctx) =>
+      limiter.limit(ctx, "managementRecovery", { key: "global", count: 1000 }),
+    );
+    await expect(
+      t.action(api.submissionManagement.requestReplacementLink, {
+        email: "alice@example.com",
+        publicSlug: "acme-proof",
+      }),
+    ).resolves.toEqual({ accepted: true });
+    expect(
+      await t.run((ctx) =>
+        ctx.db.query("managementLinkReplacementRequests").collect(),
+      ),
+    ).toEqual([]);
+    expect(
+      await t.run((ctx) =>
+        ctx.db.query("publicReadRateLimitBuckets").collect(),
+      ),
+    ).toEqual([]);
+    expect(
+      await t.query(api.submissionManagement.get, { token: originalToken }),
+    ).not.toBeNull();
   });
 
   it("rotates the link and invalidates the prior token without enumerating unknown emails", async () => {

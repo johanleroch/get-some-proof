@@ -1,3 +1,4 @@
+import { consumeAdmission } from "./collectionAdmission";
 import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import {
   imageValueValidator,
@@ -35,7 +36,7 @@ function unavailable(): never {
   });
 }
 
-async function uploadContext(
+export async function resolveUploadContext(
   ctx: MutationCtx,
   args: { clientSubmissionId: string; publicSlug: string; token?: string },
 ) {
@@ -77,13 +78,23 @@ async function uploadContext(
 }
 
 export const generateUploadUrl = mutation({
-  args: uploadIdentity,
+  args: { ...uploadIdentity, admissionToken: v.optional(v.string()) },
   returns: v.object({
     imageId: v.id("testimonialImages"),
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const { brand, testimonialId } = await uploadContext(ctx, args);
+    const { brand, testimonialId } = await resolveUploadContext(ctx, args);
+    if (!testimonialId)
+      await consumeAdmission(
+        ctx,
+        {
+          organizationId: brand._id,
+          clientSubmissionId: args.clientSubmissionId,
+          token: args.admissionToken,
+        },
+        "image",
+      );
     const limit = await rateLimiter.limit(ctx, "testimonialImageUpload", {
       key: String(brand._id),
     });
@@ -116,7 +127,7 @@ export const registerUpload = mutation({
   },
   returns: imageValueValidator,
   handler: async (ctx, args) => {
-    const { brand, testimonialId } = await uploadContext(ctx, args);
+    const { brand, testimonialId } = await resolveUploadContext(ctx, args);
     const image = await ctx.db.get(args.imageId);
     if (
       !image ||

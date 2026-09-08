@@ -1,6 +1,9 @@
 import { resolveTestimonialImages } from "./testimonialImages";
-import { v } from "convex/values";
-import { paginationOptsValidator } from "convex/server";
+import { ConvexError, v } from "convex/values";
+import {
+  requirePublicWallServer,
+  validPublicWallSlug,
+} from "./security/publicWallAccess";
 
 import { query } from "./_generated/server";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
@@ -9,7 +12,7 @@ import { organizationPublicVisibility } from "./publicProjection";
 import { testimonialCardValue } from "./testimonialCardValue";
 
 export const getBrand = query({
-  args: { publicSlug: v.string() },
+  args: { publicSlug: v.string(), secret: v.optional(v.string()) },
   returns: v.union(
     v.null(),
     v.object({
@@ -19,6 +22,7 @@ export const getBrand = query({
       brandName: v.string(),
       hasPublishedTestimonials: v.boolean(),
       publicSlug: v.string(),
+      privacyRevision: v.number(),
       theme: v.union(
         v.literal("light"),
         v.literal("dark"),
@@ -28,7 +32,10 @@ export const getBrand = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const publicSlug = args.publicSlug.trim().toLowerCase();
+    requirePublicWallServer(args.secret);
+    if (!validPublicWallSlug(args.publicSlug))
+      throw new ConvexError("Invalid Public Wall request.");
+    const publicSlug = args.publicSlug;
     const brand = await ctx.db
       .query("organizations")
       .withIndex("by_public_slug", (index) =>
@@ -54,6 +61,7 @@ export const getBrand = query({
       brandName: brand.name,
       hasPublishedTestimonials: firstProjection !== null,
       publicSlug: brand.publicSlug,
+      privacyRevision: brand.publicWallPrivacyRevision ?? 0,
       theme: brand.publicWallTheme ?? "system",
       transparentEmbed: brand.publicWallTransparentEmbed ?? false,
     };
@@ -62,11 +70,26 @@ export const getBrand = query({
 
 export const list = query({
   args: {
-    paginationOpts: paginationOptsValidator,
+    secret: v.optional(v.string()),
+    paginationOpts: v.object({
+      cursor: v.union(v.string(), v.null()),
+      numItems: v.number(),
+    }),
     publicSlug: v.string(),
   },
   handler: async (ctx, args) => {
-    const publicSlug = args.publicSlug.trim().toLowerCase();
+    requirePublicWallServer(args.secret);
+    if (!validPublicWallSlug(args.publicSlug))
+      throw new ConvexError("Invalid Public Wall request.");
+    const publicSlug = args.publicSlug;
+    if (
+      !Number.isInteger(args.paginationOpts.numItems) ||
+      args.paginationOpts.numItems < 1 ||
+      args.paginationOpts.numItems > 50 ||
+      (args.paginationOpts.cursor?.length ?? 0) > 1024
+    ) {
+      throw new ConvexError("Invalid Public Wall pagination.");
+    }
     const brand = await ctx.db
       .query("organizations")
       .withIndex("by_public_slug", (index) =>
@@ -82,7 +105,11 @@ export const list = query({
         index.eq("organizationId", brand._id),
       )
       .order("desc")
-      .paginate(args.paginationOpts);
+      .paginate({
+        ...args.paginationOpts,
+        maximumRowsRead: 50,
+        maximumBytesRead: 512_000,
+      });
     const testimonials = await Promise.all(
       page.page.map(async (projection) => {
         const defaults = organizationPublicVisibility(brand);
@@ -125,5 +152,22 @@ export const list = query({
       }),
     );
     return { ...page, page: testimonials };
+  },
+});
+
+// Intentionally public: one indexed Brand read, no testimonial or storage hydration.
+// Privacy removals invalidate already-rendered pages without exposing the server credential.
+export const privacyRevision = query({
+  args: { publicSlug: v.string() },
+  returns: v.union(v.number(), v.null()),
+  handler: async (ctx, { publicSlug }) => {
+    if (!validPublicWallSlug(publicSlug)) return null;
+    const brand = await ctx.db
+      .query("organizations")
+      .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
+      .unique();
+    return !brand || brand.deletionStartedAt !== undefined
+      ? null
+      : (brand.publicWallPrivacyRevision ?? 0);
   },
 });

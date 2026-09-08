@@ -656,6 +656,7 @@ export function ManagedSubmission({ token }: { token: string }) {
         const clientSubmissionId = `revision-${token.slice(0, 32)}`;
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
           clientSubmissionId,
+          token,
           publicSlug: submission.publicSlug,
         });
         const storageId = await uploadProfileImage(file, uploadUrl);

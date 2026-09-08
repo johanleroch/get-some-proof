@@ -33,15 +33,22 @@ async function liveReservationCount(
   ctx: DatabaseCtx,
   organizationId: Id<"organizations">,
 ) {
-  const reservations = await ctx.db
-    .query("videoReservations")
-    .withIndex("by_organization_status", (index) =>
-      index.eq("organizationId", organizationId).eq("status", "reserved"),
-    )
-    .collect();
-  const now = Date.now();
-  return reservations.filter((reservation) => reservation.expiresAt > now)
-    .length;
+  // Expiry is materialized by the scheduler; a delayed cleanup never frees a slot early.
+  const [reservations, cleanup] = await Promise.all([
+    ctx.db
+      .query("videoReservations")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "reserved"),
+      )
+      .take(premiumReadyVideoLimit),
+    ctx.db
+      .query("videoProviderCleanupJobs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .take(premiumReadyVideoLimit),
+  ]);
+  return reservations.length + cleanup.length;
 }
 
 async function unledgeredConsumedFreeVideoCount(
