@@ -1,17 +1,19 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useRef, useState } from "react";
 import {
   IconAlertTriangle,
   IconArchive,
   IconArrowBackUp,
+  IconArrowDown,
+  IconArrowUp,
   IconExternalLink,
   IconEyeOff,
-  IconHighlight,
-  IconLoader2,
-  IconPhoto,
+  IconGripVertical,
+  IconPlayerPlayFilled,
   IconSend,
+  IconVideoOff,
 } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -23,11 +25,21 @@ import {
 } from "convex/react";
 
 import { HighlightTestimonialDialog } from "./highlight-testimonial-dialog";
+import { VideoPreviewDialog } from "./video-preview-dialog";
 import { VideoThumbnailDialog } from "./video-thumbnail-dialog";
+import {
+  WallDisplayDialog,
+  type WallVisibility,
+  type WallVisibilityOverrides,
+} from "./wall-display-dialog";
 
 import { api } from "@convex/_generated/api";
 import { defaultPrimaryColor } from "@convex/domain/brand";
 import type { Id } from "@convex/_generated/dataModel";
+import type {
+  TestimonialCardTextValue,
+  TestimonialCardVideoValue,
+} from "@convex/testimonialCardValue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +50,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BlobLoader } from "@/components/brand/blob-loader";
 import { SpeechBubbleStars } from "@/components/doodles";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatShortDate } from "@/lib/format-date";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -47,23 +59,11 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
-import { Field } from "@/components/ui/field";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
-import { PublishedCuration } from "@/components/testimonials/published-curation";
-import {
-  TestimonialCard,
-  type TestimonialCardValue,
-} from "@/components/testimonials/testimonial-card";
-import { videoAspectRatioStyle } from "@/components/testimonials/testimonial-card-markup";
+import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
+import { DesignQuote } from "@/components/testimonials/designs/design-parts";
+import { Stars } from "@/components/templates/template-primitives";
 import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
@@ -74,12 +74,7 @@ type InboxTestimonialIdentity = {
   consentAcceptedAt: number;
   createdAt: number;
   moderationStatus: "pending" | "published" | "archived" | "spam";
-  publicVisibilityOverrides?: {
-    avatar?: boolean;
-    company?: boolean;
-    rating?: boolean;
-    role?: boolean;
-  };
+  publicVisibilityOverrides?: WallVisibilityOverrides;
   quarantineExpiresAt?: number;
   spamCreditRestored?: boolean;
   submitterEmail: string;
@@ -87,9 +82,9 @@ type InboxTestimonialIdentity = {
   testimonialId: Id<"testimonials">;
 };
 
-type InboxTestimonial =
+export type InboxTestimonial =
   | (InboxTestimonialIdentity & {
-      card: TestimonialCardValue;
+      card: TestimonialCardTextValue;
       submissionType: "text";
     })
   | (InboxTestimonialIdentity & {
@@ -100,15 +95,20 @@ type InboxTestimonial =
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
     });
 
+type VideoInboxTestimonial = Extract<
+  InboxTestimonial,
+  { submissionType: "video" }
+>;
+
 /**
  * The four categories a Testimonial can be in, in CONTEXT.md's own nouns and
  * in the order an Owner meets them. Pending is first and is the default,
- * because it is the only one that is a queue. The Video Asset's own states
- * (Processing, Ready, Failed) are a separate axis and never a category here.
+ * because it is the only one that is a queue. Published is the Public Wall
+ * itself, in its Curated Order. The Video Asset's own states (Processing,
+ * Ready, Failed) are a separate axis and never a category here.
  */
-const inboxCategories = [
+export const inboxCategories = [
   {
-    badge: "warning",
     empty: {
       description: "Nothing is waiting for your decision right now.",
       title: "Nothing Pending",
@@ -117,16 +117,15 @@ const inboxCategories = [
     label: "Pending",
   },
   {
-    badge: "success",
     empty: {
-      description: "Publish a Pending Testimonial and it appears here.",
+      description:
+        "Publish a Pending Testimonial and it appears here, in the order visitors see it.",
       title: "Nothing on your Public Wall yet",
     },
     key: "published",
     label: "Published",
   },
   {
-    badge: "neutral",
     empty: {
       description: "Testimonials you keep but hide from the public land here.",
       title: "Nothing Archived",
@@ -135,175 +134,346 @@ const inboxCategories = [
     label: "Archived",
   },
   {
-    badge: "danger",
     empty: {
       description:
         "Testimonials you report as Spam wait here for seven days before they are deleted.",
       title: "No Spam quarantined",
     },
     key: "spam",
-    label: "Spam quarantine",
+    label: "Spam",
   },
 ] as const;
 
-type ModerationFilter = (typeof inboxCategories)[number]["key"];
-type SubmissionTypeFilter = "all" | "text" | "video";
+export type InboxCategory = (typeof inboxCategories)[number]["key"];
+export type InboxCounts = Record<InboxCategory, number>;
 
-function categoryOf(key: ModerationFilter) {
+function categoryOf(key: InboxCategory) {
   return inboxCategories.find((category) => category.key === key)!;
 }
 
-type InboxSort = "newest" | "oldest";
+/** The order the arrows and the drag handle write: who sits above and below. */
+export type InboxMove = (
+  testimonialId: Id<"testimonials">,
+  beforeTestimonialId: Id<"testimonials"> | undefined,
+  afterTestimonialId: Id<"testimonials"> | undefined,
+) => Promise<unknown>;
 
-function videoStatusLabel(
-  status: Extract<InboxTestimonial, { submissionType: "video" }>["videoStatus"],
-) {
-  return status === "awaiting_upload"
-    ? "Processing"
-    : `${status[0].toUpperCase()}${status.slice(1)}`;
+function formatDuration(seconds: number) {
+  const whole = Math.max(0, Math.round(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
-function VideoAssetPlaceholder({
-  status,
-  testimonial,
-}: {
-  status: ReactNode;
-  testimonial: Extract<InboxTestimonial, { submissionType: "video" }>;
-}) {
-  if (
-    testimonial.videoStatus !== "awaiting_upload" &&
-    testimonial.videoStatus !== "processing"
-  ) {
-    return (
-      <section
-        className="bg-card relative mb-5 grid min-h-64 break-inside-avoid place-items-center overflow-hidden rounded-lg border px-6 py-10 text-center"
-        data-testid={`${testimonial.videoStatus}-video-placeholder`}
-      >
-        <div className="absolute top-3 left-3">{status}</div>
-        <div>
-          <p className="font-medium">
-            {videoStatusLabel(testimonial.videoStatus)}
-          </p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {testimonial.captionsStatus === "failed"
-              ? "Captions unavailable"
-              : testimonial.captionsStatus === "ready"
-                ? "Captions ready"
-                : "Captions requested"}
-          </p>
-        </div>
-      </section>
-    );
-  }
-  return (
-    <section
-      className="bg-ink text-paper border-ink relative mb-5 grid w-full break-inside-avoid place-items-center overflow-hidden rounded-lg border px-6 py-10 text-center"
-      data-testid="processing-video-placeholder"
-      data-video-aspect-ratio={testimonial.aspectRatio ?? "9:16"}
-      style={{ aspectRatio: videoAspectRatioStyle(testimonial.aspectRatio) }}
-    >
-      <div className="absolute top-3 left-3">{status}</div>
-      <div className="max-w-64">
-        <IconLoader2
-          aria-hidden="true"
-          className="mx-auto size-8 animate-spin motion-reduce:animate-none"
-        />
-        <p className="mt-4 font-medium">
-          {videoStatusLabel(testimonial.videoStatus)}
-        </p>
-        <p className="text-paper/70 mt-1 text-sm leading-6">
-          This video was just submitted. Playback will be available shortly.
-        </p>
-      </div>
-    </section>
-  );
+/** A small still for the list: the Owner's own thumbnail, or a frame. */
+function stillUrl(card: TestimonialCardVideoValue) {
+  if (card.posterUrl) return card.posterUrl;
+  return `https://image.mux.com/${encodeURIComponent(card.playbackId)}/thumbnail.webp?width=192&time=${card.posterTimeSeconds ?? 0.5}`;
 }
 
 /**
- * One Testimonial in the Inbox, in three registers that must not be confused:
- * the private meta row above (facts only the Owner sees), the card itself
- * (the exact markup the Public Wall and the embed use, carrying only its
- * moderation Badge), and the action row below (the work).
+ * One line about the Video Asset, in the state it is in. It carries the
+ * reason Publish is disabled, so the button needs no note of its own.
  */
-function InboxTestimonialCard({
+function videoLine(testimonial: VideoInboxTestimonial) {
+  switch (testimonial.videoStatus) {
+    case "ready":
+      return [
+        "Video",
+        testimonial.videoDurationSeconds
+          ? formatDuration(testimonial.videoDurationSeconds)
+          : null,
+        testimonial.captionsStatus === "failed" ? "no captions" : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    case "failed":
+      return "Video failed. The Submitter received a link to replace it.";
+    case "processing":
+      return "Video processing. Publish once it is Ready.";
+    case "awaiting_upload":
+      return "Video uploading. Publish once it is Ready.";
+  }
+}
+
+/**
+ * The first thing in a row: the Customer's face when they sent one, the
+ * display quote mark in the Brand accent otherwise (never initials), or the
+ * video still that opens the playable card. A video that is not Ready shows
+ * the blob looking around, or the failed state.
+ */
+function InboxFace({
+  onPreview,
+  testimonial,
+}: {
+  onPreview: () => void;
+  testimonial: InboxTestimonial;
+}) {
+  if (testimonial.submissionType === "text") {
+    return testimonial.card.avatarUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt=""
+        className="size-12 shrink-0 rounded-full object-cover"
+        height={48}
+        loading="lazy"
+        src={testimonial.card.avatarUrl}
+        width={48}
+      />
+    ) : (
+      <span
+        aria-hidden="true"
+        className="grid size-12 shrink-0 place-items-center"
+      >
+        <span className="font-display translate-y-[0.3em] text-[44px] leading-none font-bold text-(--wall-accent) select-none">
+          &ldquo;
+        </span>
+      </span>
+    );
+  }
+  if (testimonial.card?.type === "video") {
+    return (
+      <button
+        aria-label={`Preview ${testimonial.submitterName}'s video`}
+        className="group/still bg-ink focus-visible:ring-ring relative block h-12 w-16 shrink-0 cursor-pointer overflow-hidden rounded-md outline-none focus-visible:ring-[3px]"
+        onClick={onPreview}
+        type="button"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt=""
+          className="size-full object-cover transition-transform duration-[var(--motion-base)] ease-[var(--ease-settle-soft)] group-hover/still:scale-105 motion-reduce:transition-none"
+          height={48}
+          loading="lazy"
+          src={stillUrl(testimonial.card)}
+          width={64}
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 grid place-items-center bg-black/25 text-white"
+        >
+          <IconPlayerPlayFilled className="size-4" />
+        </span>
+      </button>
+    );
+  }
+  if (testimonial.videoStatus === "failed") {
+    return (
+      <span
+        aria-hidden="true"
+        className="bg-surface-2 text-danger grid h-12 w-16 shrink-0 place-items-center rounded-md"
+        data-testid="failed-video-placeholder"
+      >
+        <IconVideoOff className="size-5" />
+      </span>
+    );
+  }
+  return (
+    <span
+      className="bg-surface-2 grid h-12 w-16 shrink-0 place-items-center rounded-md"
+      data-testid="processing-video-placeholder"
+    >
+      <BlobLoader
+        label={`${testimonial.submitterName}'s video is processing`}
+        size={32}
+      />
+    </span>
+  );
+}
+
+/** The words in full, with the marker swash on a highlighted phrase. */
+function InboxWords({
+  accentColor,
+  testimonial,
+}: {
+  accentColor: string;
+  testimonial: TestimonialCardTextValue;
+}) {
+  return (
+    <>
+      <DesignQuote
+        accentColor={accentColor}
+        className="type-body text-ink mt-1 max-w-prose"
+        testimonial={testimonial}
+      />
+      {testimonial.images?.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {testimonial.images.map((image, index) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={`Image ${index + 1} from ${testimonial.name}`}
+              className="size-14 rounded-md object-cover"
+              height={56}
+              key={image.id}
+              loading="lazy"
+              src={image.url}
+              width={56}
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+const rowButton = "h-10 md:h-9";
+const rowIconButton = "size-10 md:size-9";
+
+/**
+ * One Testimonial as a row: the face, then who said it and what, then one
+ * private line (when it arrived, and the email only the Owner sees), and on
+ * the right the one decision the category allows. Everything else waits in
+ * the menu. A Published row also carries its place on the Public Wall.
+ */
+function InboxRow({
   accentColor,
   busy,
   disabled,
+  drag,
   onAction,
+  onMove,
+  position,
   testimonial,
 }: {
   accentColor: string;
   busy: boolean;
   disabled: boolean;
+  /** Pointer reordering, on Published rows only. */
+  drag?: {
+    onDrop: () => void;
+    onEnd: () => void;
+    onStart: () => void;
+  };
   onAction: (action: InboxTestimonialAction) => void;
+  /** Arrow reordering, on Published rows only. */
+  onMove?: (direction: -1 | 1) => void;
+  position?: { index: number; count: number };
   testimonial: InboxTestimonial;
 }) {
-  const category = categoryOf(testimonial.moderationStatus);
   const isSpam = testimonial.moderationStatus === "spam";
+  const ordering = Boolean(onMove && position);
   const videoReady =
     testimonial.submissionType !== "video" ||
     testimonial.videoStatus === "ready";
-  const menu = (
-    <InboxTestimonialMenu
-      disabled={disabled}
-      onAction={onAction}
-      testimonial={testimonial}
-    />
-  );
-  const status = (
-    <Badge dot variant={category.badge}>
-      {category.label === "Spam quarantine" ? "Spam" : category.label}
-    </Badge>
-  );
+  const identity = testimonial.card
+    ? [testimonial.card.role, testimonial.card.company]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+  const rating = testimonial.card?.rating;
 
   return (
-    <article
+    <li
       aria-busy={busy || undefined}
-      className="mb-4 break-inside-avoid"
+      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 px-4 py-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-5"
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
+      draggable={ordering && !disabled ? true : undefined}
+      onDragEnd={drag?.onEnd}
+      onDragOver={drag ? (event) => event.preventDefault() : undefined}
+      onDragStart={drag?.onStart}
+      onDrop={drag?.onDrop}
     >
-      <div className="text-ink-2 type-small flex flex-wrap items-center gap-x-2 gap-y-1 px-1 pb-2">
-        <span>{formatShortDate(testimonial.createdAt)}</span>
-        <span aria-hidden="true">·</span>
-        <span className="truncate font-mono text-[12px]">
-          {testimonial.submitterEmail}
-        </span>
+      {/* Top-aligned like any list, centred on the first line on desktop. */}
+      <div className="flex items-center gap-2 self-start md:-mt-1.5 md:gap-3">
+        {ordering ? (
+          <IconGripVertical
+            aria-hidden="true"
+            className="text-ink-3 hidden size-5 shrink-0 cursor-grab md:block"
+          />
+        ) : null}
+        <InboxFace
+          onPreview={() => onAction("preview")}
+          testimonial={testimonial}
+        />
       </div>
 
-      {testimonial.card ? (
-        <TestimonialCard
-          accentColor={accentColor}
-          status={status}
-          testimonial={testimonial.card}
-        />
-      ) : testimonial.submissionType === "video" ? (
-        <VideoAssetPlaceholder status={status} testimonial={testimonial} />
-      ) : null}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:min-h-9">
+          <span className="type-ui text-ink font-semibold">
+            {testimonial.submitterName}
+          </span>
+          {identity ? (
+            <span className="type-small text-ink-2 truncate">{identity}</span>
+          ) : null}
+          {rating ? (
+            <Stars className="shrink-0" rating={rating} size={14} />
+          ) : null}
+        </div>
 
-      {isSpam && testimonial.quarantineExpiresAt ? (
-        <p className="text-ink-2 type-small px-1 pb-2">
-          Content is deleted on{" "}
-          {formatShortDate(testimonial.quarantineExpiresAt)}.
+        {testimonial.submissionType === "text" ? (
+          <InboxWords
+            accentColor={accentColor}
+            testimonial={testimonial.card}
+          />
+        ) : (
+          <p className="type-small text-ink-2 mt-1">{videoLine(testimonial)}</p>
+        )}
+
+        <p className="type-small text-ink-2 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span>Received {formatShortDate(testimonial.createdAt)}</span>
+          <span aria-hidden="true" className="hidden sm:inline">
+            ·
+          </span>
+          <span className="w-full truncate font-mono text-[12px] sm:w-auto">
+            {testimonial.submitterEmail}
+          </span>
+          {isSpam && testimonial.quarantineExpiresAt ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="text-danger">
+                Deleted on {formatShortDate(testimonial.quarantineExpiresAt)}
+              </span>
+            </>
+          ) : null}
         </p>
-      ) : null}
+      </div>
 
-      <div className="flex flex-wrap items-center gap-2 px-1">
+      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-start">
+        {ordering && onMove && position ? (
+          <>
+            <Button
+              aria-label={`Move ${testimonial.submitterName} up`}
+              className={rowIconButton}
+              disabled={disabled || position.index === 0}
+              onClick={() => onMove(-1)}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              <IconArrowUp aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label={`Move ${testimonial.submitterName} down`}
+              className={rowIconButton}
+              disabled={disabled || position.index === position.count - 1}
+              onClick={() => onMove(1)}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              <IconArrowDown aria-hidden="true" />
+            </Button>
+          </>
+        ) : null}
+
         {isSpam ? (
           <Button
+            className={rowButton}
             disabled={disabled}
             loading={busy}
             onClick={() => onAction("undo-spam")}
             size="sm"
+            type="button"
           >
             <IconArrowBackUp aria-hidden="true" />
             Not Spam
           </Button>
         ) : testimonial.moderationStatus === "published" ? (
           <Button
+            className={rowButton}
             disabled={disabled}
             loading={busy}
             onClick={() => onAction("unpublish")}
             size="sm"
+            type="button"
             variant="outline"
           >
             <IconEyeOff aria-hidden="true" />
@@ -312,19 +482,23 @@ function InboxTestimonialCard({
         ) : (
           <>
             <Button
+              className={rowButton}
               disabled={disabled || !videoReady}
               loading={busy}
               onClick={() => onAction("publish")}
               size="sm"
+              type="button"
             >
               <IconSend aria-hidden="true" />
               Publish
             </Button>
             {testimonial.moderationStatus === "pending" ? (
               <Button
+                className={rowButton}
                 disabled={disabled}
                 onClick={() => onAction("archive")}
                 size="sm"
+                type="button"
                 variant="outline"
               >
                 <IconArchive aria-hidden="true" />
@@ -334,99 +508,127 @@ function InboxTestimonialCard({
           </>
         )}
 
-        {!isSpam && testimonial.submissionType === "text" ? (
-          <Button
-            disabled={disabled}
-            onClick={() => onAction("highlight")}
-            size="sm"
-            variant="ghost"
-          >
-            <IconHighlight aria-hidden="true" />
-            Highlight a phrase
-          </Button>
-        ) : null}
-
-        {!isSpam &&
-        testimonial.submissionType === "video" &&
-        testimonial.videoStatus === "ready" ? (
-          <Button
-            disabled={disabled}
-            onClick={() => onAction("thumbnail")}
-            size="sm"
-            variant="ghost"
-          >
-            <IconPhoto aria-hidden="true" />
-            Change thumbnail
-          </Button>
-        ) : null}
-
-        <span className="ml-auto">{menu}</span>
+        <InboxTestimonialMenu
+          className={cn(rowIconButton, "ml-auto md:ml-0")}
+          disabled={disabled}
+          onAction={onAction}
+          testimonial={testimonial}
+        />
       </div>
-
-      {!videoReady && !isSpam ? (
-        <p className="text-ink-2 type-small px-1 pt-1.5">
-          Only a Ready video can be Published.
-        </p>
-      ) : null}
-    </article>
+    </li>
   );
 }
 
+/**
+ * The list for one category: rows with dividers in a single panel, never a
+ * wall of cards. The Wall is where cards are judged; the Inbox is where
+ * decisions are made. In Published the rows are the Public Wall in its
+ * Curated Order and can be moved.
+ */
 export function TestimonialInboxView({
   accentColor = defaultPrimaryColor,
   actionsDisabled = false,
   category,
   emptyAction,
-  filtered,
+  footer,
   onAction,
+  onMove,
   pendingId,
   testimonials,
 }: {
   accentColor?: string;
   actionsDisabled?: boolean;
-  category: ModerationFilter;
+  category: InboxCategory;
   emptyAction?: ReactNode;
-  /** True when a Type filter is narrowing the category. */
-  filtered?: boolean;
+  /** Rendered inside the panel after the rows: the Load more control. */
+  footer?: ReactNode;
   onAction: (
     testimonial: InboxTestimonial,
     action: InboxTestimonialAction,
   ) => void;
+  /** Present in Published, where the list is the Public Wall's order. */
+  onMove?: InboxMove;
   pendingId: Id<"testimonials"> | null;
   testimonials: InboxTestimonial[];
 }) {
+  const draggedId = useRef<string | undefined>(undefined);
+  const ordering = category === "published" && onMove !== undefined;
+
+  function move(from: number, to: number) {
+    if (!onMove || to < 0 || to >= testimonials.length || from === to) return;
+    const ids = testimonials.map(({ testimonialId }) => testimonialId);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved!);
+    void onMove(moved!, ids[to - 1], ids[to + 1]);
+  }
+
   if (testimonials.length === 0) {
-    const empty = filtered
-      ? {
-          description:
-            "No Testimonial in this category matches the type you chose.",
-          title: "Nothing here right now",
-        }
-      : categoryOf(category).empty;
     return (
-      <section className="bg-card rounded-lg border">
+      <section className="bg-surface border-line rounded-lg border">
         <EmptyState
           action={emptyAction}
-          description={empty.description}
+          description={categoryOf(category).empty.description}
           illustration={<SpeechBubbleStars className="h-28" />}
-          title={empty.title}
+          title={categoryOf(category).empty.title}
         />
       </section>
     );
   }
 
   return (
-    <div className="columns-1 gap-4 lg:columns-2 xl:columns-3">
-      {testimonials.map((testimonial) => (
-        <InboxTestimonialCard
-          accentColor={accentColor}
-          busy={pendingId === testimonial.testimonialId}
-          disabled={actionsDisabled}
-          key={testimonial.testimonialId}
-          onAction={(action) => onAction(testimonial, action)}
-          testimonial={testimonial}
-        />
-      ))}
+    <div className="space-y-3">
+      {ordering ? (
+        <p className="type-small text-ink-2">
+          Visitors see your Public Wall in this order. Drag a row, or use the
+          arrows.
+        </p>
+      ) : null}
+      <section
+        className="bg-surface border-line overflow-hidden rounded-lg border"
+        style={{ "--wall-accent": accentColor } as CSSProperties}
+      >
+        <ol className="divide-line divide-y">
+          {testimonials.map((testimonial, index) => (
+            <InboxRow
+              accentColor={accentColor}
+              busy={pendingId === testimonial.testimonialId}
+              disabled={actionsDisabled}
+              drag={
+                ordering
+                  ? {
+                      onDrop: () => {
+                        const from = testimonials.findIndex(
+                          ({ testimonialId }) =>
+                            String(testimonialId) === draggedId.current,
+                        );
+                        if (from >= 0) move(from, index);
+                        draggedId.current = undefined;
+                      },
+                      onEnd: () => {
+                        draggedId.current = undefined;
+                      },
+                      onStart: () => {
+                        draggedId.current = String(testimonial.testimonialId);
+                      },
+                    }
+                  : undefined
+              }
+              key={testimonial.testimonialId}
+              onAction={(action) => onAction(testimonial, action)}
+              onMove={
+                ordering
+                  ? (direction) => move(index, index + direction)
+                  : undefined
+              }
+              position={
+                ordering ? { count: testimonials.length, index } : undefined
+              }
+              testimonial={testimonial}
+            />
+          ))}
+        </ol>
+        {footer}
+      </section>
     </div>
   );
 }
@@ -485,95 +687,49 @@ export function TestimonialDeleteDialog({
 }
 
 /**
- * The four categories as tabs, then the two controls that cut across all of
- * them. Status is no longer a select: a category is where you are, not a
- * filter you set.
+ * The four categories as tabs, each with how many Testimonials wait in it.
+ * A category is where you are, not a filter you set; nothing else cuts
+ * across them, so the tabs are the whole navigation of the page.
  */
 export function InboxCategoryTabs({
   children,
-  filters,
+  counts,
   moderationStatus,
   onModerationStatusChange,
 }: {
   /** The category's own panel: only the open one is rendered. */
   children: ReactNode;
-  /** Type and Sort, which cut across every category. */
-  filters?: ReactNode;
-  moderationStatus: ModerationFilter;
-  onModerationStatusChange: (value: ModerationFilter) => void;
+  counts?: InboxCounts;
+  moderationStatus: InboxCategory;
+  onModerationStatusChange: (value: InboxCategory) => void;
 }) {
   return (
     <Tabs
       className="gap-6"
       onValueChange={(value) =>
-        onModerationStatusChange(value as ModerationFilter)
+        onModerationStatusChange(value as InboxCategory)
       }
       value={moderationStatus}
     >
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <TabsList aria-label="Testimonial categories">
-          {inboxCategories.map((category) => (
+      <TabsList aria-label="Testimonial categories">
+        {inboxCategories.map((category) => {
+          const count = counts?.[category.key] ?? 0;
+          return (
             <TabsTrigger key={category.key} value={category.key}>
-              {category.label}
+              {category.label}{" "}
+              {count > 0 ? (
+                <span className="text-ink-3 [[data-state=active]_&]:text-ink-2 font-medium tabular-nums">
+                  {count}
+                </span>
+              ) : null}
             </TabsTrigger>
-          ))}
-        </TabsList>
-        {filters}
-      </div>
+          );
+        })}
+      </TabsList>
       <TabsContent className="space-y-6" value={moderationStatus}>
         {children}
       </TabsContent>
     </Tabs>
-  );
-}
-
-export function InboxFilters({
-  onSortChange,
-  onSubmissionTypeChange,
-  sort,
-  submissionType,
-}: {
-  onSortChange: (value: InboxSort) => void;
-  onSubmissionTypeChange: (value: SubmissionTypeFilter) => void;
-  sort: InboxSort;
-  submissionType: SubmissionTypeFilter;
-}) {
-  return (
-    <div className="flex flex-wrap gap-3" aria-label="Inbox filters">
-      <Field className="w-36">
-        <Label htmlFor="inbox-type">Type</Label>
-        <Select
-          onValueChange={(value) =>
-            onSubmissionTypeChange(value as SubmissionTypeFilter)
-          }
-          value={submissionType}
-        >
-          <SelectTrigger className="w-full" id="inbox-type" size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="text">Text</SelectItem>
-            <SelectItem value="video">Video</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field className="w-40">
-        <Label htmlFor="inbox-sort">Sort</Label>
-        <Select
-          onValueChange={(value) => onSortChange(value as InboxSort)}
-          value={sort}
-        >
-          <SelectTrigger className="w-full" id="inbox-sort" size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-    </div>
   );
 }
 
@@ -608,15 +764,18 @@ function InboxLoadMore({
     return null;
   }
   return (
-    <Button
-      disabled={pending}
-      loading={paginationStatus === "LoadingMore"}
-      onClick={onLoadMore}
-      type="button"
-      variant="outline"
-    >
-      Load more Testimonials
-    </Button>
+    <div className="border-line border-t p-2">
+      <Button
+        className="w-full"
+        disabled={pending}
+        loading={paginationStatus === "LoadingMore"}
+        onClick={onLoadMore}
+        type="button"
+        variant="ghost"
+      >
+        Load more Testimonials
+      </Button>
+    </div>
   );
 }
 
@@ -653,13 +812,11 @@ async function runInboxAction({
 export function TestimonialInbox({ slug }: { slug: string }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const [moderationStatus, setModerationStatusFilter] =
-    useState<ModerationFilter>("pending");
-  const [publishedView, setPublishedView] = useState<"cards" | "order">(
-    "cards",
+    useState<InboxCategory>("pending");
+  const counts = useQuery(
+    api.testimonialModeration.countInbox,
+    organization ? { organizationId: organization.id } : "skip",
   );
-  const [submissionType, setSubmissionType] =
-    useState<SubmissionTypeFilter>("all");
-  const [sort, setSort] = useState<InboxSort>("newest");
   const {
     loadMore,
     results: testimonials,
@@ -669,9 +826,8 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     organization
       ? {
           organizationId: organization.id,
-          sort,
+          sort: moderationStatus === "published" ? "wall" : "newest",
           status: moderationStatus,
-          submissionType: submissionType === "all" ? undefined : submissionType,
         }
       : "skip",
     { initialNumItems: 20 },
@@ -686,10 +842,19 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   );
   const [thumbnailTarget, setThumbnailTarget] =
     useState<InboxTestimonial | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
+    null,
+  );
   const wallSettings = useQuery(
     api.wallCustomization.getSettings,
     organization ? { organizationId: organization.id } : "skip",
   );
+  const movePublished = useMutation(api.wallCustomization.movePublished);
+  const setVisibility = useMutation(
+    api.wallCustomization.setTestimonialVisibility,
+  );
+  const [wallDisplayTarget, setWallDisplayTarget] =
+    useState<InboxTestimonial | null>(null);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
   const removeText = useMutation(api.testimonialModeration.remove);
@@ -699,7 +864,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // One Testimonial at a time, so the grid never dims as a whole and the
+  // One Testimonial at a time, so the list never dims as a whole and the
   // Owner can see which record is being acted on.
   const [pendingId, setPendingId] = useState<Id<"testimonials"> | null>(null);
 
@@ -710,6 +875,13 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     return <p className="text-muted-foreground text-sm">Brand unavailable.</p>;
   }
   const activeOrganization = organization;
+  const wallVisibility: WallVisibility | undefined = wallSettings?.visibility;
+
+  function startAction(testimonialId: Id<"testimonials">) {
+    setPendingId(testimonialId);
+    setError(null);
+    setMessage(null);
+  }
 
   async function changeStatus(
     testimonial: InboxTestimonial,
@@ -718,11 +890,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
-      onStart: () => {
-        setPendingId(testimonial.testimonialId);
-        setError(null);
-        setMessage(null);
-      },
+      onStart: () => startAction(testimonial.testimonialId),
       onSuccess: () => {
         setMessage(
           `${testimonial.submitterName}'s Testimonial is now ${nextStatus}.`,
@@ -748,11 +916,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
-      onStart: () => {
-        setPendingId(deleteTarget.testimonialId);
-        setError(null);
-        setMessage(null);
-      },
+      onStart: () => startAction(deleteTarget.testimonialId),
       onSuccess: () => {
         setMessage("Testimonial permanently deleted.");
         setDeleteTarget(null);
@@ -768,11 +932,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
-      onStart: () => {
-        setPendingId(testimonial.testimonialId);
-        setError(null);
-        setMessage(null);
-      },
+      onStart: () => startAction(testimonial.testimonialId),
       onSuccess: () => {
         setMessage(
           action === "mark"
@@ -788,6 +948,26 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     });
   }
 
+  async function moveOnWall(
+    testimonialId: Id<"testimonials">,
+    beforeTestimonialId: Id<"testimonials"> | undefined,
+    afterTestimonialId: Id<"testimonials"> | undefined,
+  ) {
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPendingId(null),
+      onStart: () => startAction(testimonialId),
+      onSuccess: () => setMessage("Public Wall order saved."),
+      run: () =>
+        movePublished({
+          afterTestimonialId,
+          beforeTestimonialId,
+          organizationId: activeOrganization.id,
+          testimonialId,
+        }),
+    });
+  }
+
   function handleInboxAction(
     testimonial: InboxTestimonial,
     action: InboxTestimonialAction,
@@ -798,6 +978,12 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         return;
       case "thumbnail":
         setThumbnailTarget(testimonial);
+        return;
+      case "preview":
+        setPreviewTarget(testimonial);
+        return;
+      case "wall-display":
+        setWallDisplayTarget(testimonial);
         return;
       case "delete":
         setDeleteTarget(testimonial);
@@ -842,81 +1028,36 @@ export function TestimonialInbox({ slug }: { slug: string }) {
       <InboxFeedback error={error} message={message} />
 
       <InboxCategoryTabs
-        filters={
-          <InboxFilters
-            onSortChange={setSort}
-            onSubmissionTypeChange={setSubmissionType}
-            sort={sort}
-            submissionType={submissionType}
-          />
-        }
+        counts={counts}
         moderationStatus={moderationStatus}
-        onModerationStatusChange={(next) => {
-          setModerationStatusFilter(next);
-          setPublishedView("cards");
-        }}
+        onModerationStatusChange={setModerationStatusFilter}
       >
-        {moderationStatus === "published" ? (
-          <div
-            aria-label="Published view"
-            className="bg-surface-2 inline-flex h-11 items-center gap-1 rounded-md p-1"
-            role="group"
-          >
-            {(
-              [
-                { key: "cards", label: "Cards" },
-                { key: "order", label: "Wall order" },
-              ] as const
-            ).map((view) => (
-              <button
-                aria-pressed={publishedView === view.key}
-                className={cn(
-                  "focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center rounded-sm border px-3 text-sm font-semibold tracking-[-0.008em] transition-[background-color,border-color,color] duration-150 outline-none focus-visible:ring-[3px]",
-                  publishedView === view.key
-                    ? "bg-surface border-line text-ink"
-                    : "text-ink-2 hover:text-ink border-transparent",
-                )}
-                key={view.key}
-                onClick={() => setPublishedView(view.key)}
-                type="button"
+        <TestimonialInboxView
+          accentColor={wallSettings?.accentColor}
+          actionsDisabled={pendingId !== null}
+          category={moderationStatus}
+          emptyAction={
+            moderationStatus === "pending" ? null : (
+              <Button
+                onClick={() => setModerationStatusFilter("pending")}
+                variant="outline"
               >
-                {view.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {moderationStatus === "published" && publishedView === "order" ? (
-          <PublishedCuration organizationId={activeOrganization.id} />
-        ) : (
-          <>
-            <TestimonialInboxView
-              accentColor={wallSettings?.accentColor}
-              actionsDisabled={pendingId !== null}
-              category={moderationStatus}
-              emptyAction={
-                moderationStatus === "pending" ? null : (
-                  <Button
-                    onClick={() => setModerationStatusFilter("pending")}
-                    variant="outline"
-                  >
-                    Go to Pending
-                  </Button>
-                )
-              }
-              filtered={submissionType !== "all"}
-              onAction={handleInboxAction}
-              pendingId={pendingId}
-              testimonials={testimonials}
-            />
-
+                Go to Pending
+              </Button>
+            )
+          }
+          footer={
             <InboxLoadMore
               onLoadMore={() => loadMore(20)}
               paginationStatus={paginationStatus}
               pending={pendingId !== null}
             />
-          </>
-        )}
+          }
+          onAction={handleInboxAction}
+          onMove={moderationStatus === "published" ? moveOnWall : undefined}
+          pendingId={pendingId}
+          testimonials={testimonials}
+        />
       </InboxCategoryTabs>
 
       {highlightTarget?.card?.type === "text" ? (
@@ -983,6 +1124,40 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           testimonial={thumbnailTarget.card}
         />
       ) : null}
+
+      {previewTarget?.card?.type === "video" ? (
+        <VideoPreviewDialog
+          accentColor={wallSettings?.accentColor}
+          key={previewTarget.testimonialId}
+          onClose={() => setPreviewTarget(null)}
+          submitterName={previewTarget.submitterName}
+          testimonial={previewTarget.card}
+        />
+      ) : null}
+
+      {wallDisplayTarget?.card ? (
+        <WallDisplayDialog
+          accentColor={wallSettings?.accentColor}
+          key={wallDisplayTarget.testimonialId}
+          onClose={() => setWallDisplayTarget(null)}
+          onSave={async (overrides) => {
+            await setVisibility({
+              organizationId: activeOrganization.id,
+              overrides,
+              testimonialId: wallDisplayTarget.testimonialId,
+            });
+            setError(null);
+            setMessage(
+              `What ${wallDisplayTarget.submitterName}'s card shows is live on your Public Wall.`,
+            );
+          }}
+          overrides={wallDisplayTarget.publicVisibilityOverrides}
+          submitterName={wallDisplayTarget.submitterName}
+          testimonial={wallDisplayTarget.card}
+          wallVisibility={wallVisibility}
+        />
+      ) : null}
+
       <TestimonialDeleteDialog
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}

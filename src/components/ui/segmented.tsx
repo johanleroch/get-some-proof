@@ -4,7 +4,12 @@ import type { Icon } from "@tabler/icons-react";
 
 import { cn } from "@/lib/utils";
 
-export type Segment<T extends string> = { icon: Icon; key: T; label: string };
+export type Segment<T extends string> = {
+  /** Optional: a choice can be its word alone. */
+  icon?: Icon;
+  key: T;
+  label: string;
+};
 
 /**
  * A row of exclusive choices in a sunken track, the chosen one lifted onto
@@ -49,7 +54,9 @@ export function Segmented<T extends string>({
             onClick={() => onChange(option.key)}
             type="button"
           >
-            <OptionIcon aria-hidden="true" className="size-4" />
+            {OptionIcon ? (
+              <OptionIcon aria-hidden="true" className="size-4" />
+            ) : null}
             {option.label}
           </button>
         );

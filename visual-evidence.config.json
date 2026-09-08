@@ -240,6 +240,24 @@
       "requiresAuth": true
     },
     {
+      "slug": "testimonial-inbox-published",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox-published",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-details",
+      "title": "Testimonial Inbox - details shown on the Wall",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox-details",
+      "heading": "Details on Alice Martin’s card",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "testimonial-delete",
       "title": "Permanent Testimonial deletion confirmation",
       "path": "/org/:organizationSlug/inbox",

@@ -335,6 +335,26 @@ pages still start at the top and scroll normally.
   (micro), `display` title, one primary action on the right. Data lives in
   lists and tables with `--surface-2` row hover, not in stacks of cards.
   Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+- Inbox: the four categories as tabs with their counts, Pending first
+  because it is the queue, and nothing else to set: no type or sort
+  controls, newest first. Under the tabs, one list panel (`--surface`,
+  `--line` hairline, `--radius-lg`) of rows with dividers and `--surface-2`
+  hover, never a wall of cards: the Wall is where cards are judged, the
+  Inbox is where decisions are made. A row starts with the face (the
+  Customer's 48px photo, the display quote mark in the Brand accent, or a
+  64×48 video still that opens the real playable card in a dialog), then the
+  name at `ui` 600 with role, company and 14px stars on the same line, the
+  words in full at `body` (a marked phrase keeps its swash), one private
+  line at `small` (received date, the email only the Owner sees, the Spam
+  deletion date), and on the right the one decision the category allows:
+  Publish and Archive, Unpublish, or Not Spam. A video that is not Ready
+  says so on its own line and Publish is disabled without a note of its own.
+  The tools that shape the card (Highlight a phrase, Change thumbnail, Show
+  or hide details) and the two rare acts (Spam, Delete) live in the "…"
+  menu, the rare ones behind a rule. Published is the Public Wall itself in
+  its Curated Order: a grip, arrows, and no separate "wall order" screen.
+  Buttons in a row are 36px on desktop and 40px on touch widths; below
+  768px the actions wrap under the words.
 - Authentication: split screen from 1024px, form first. Left column holds the
   product name, the form and the footer line in one 400px block centered in
   the column, so wide screens never leave the form stuck to the edge; right panel on

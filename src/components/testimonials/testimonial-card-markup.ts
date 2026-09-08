@@ -47,12 +47,18 @@ export function testimonialAspectRatio(testimonial: TestimonialCardVideoValue) {
   return videoAspectRatioStyle(testimonial.aspectRatio);
 }
 
-export function videoAspectRatioStyle(aspectRatio?: string) {
+/** The video's own ratio as a pair, portrait 9:16 when it is not known. */
+export function videoAspect(aspectRatio?: string): [number, number] {
   const match = /^(\d{1,5}):(\d{1,5})$/.exec(aspectRatio ?? "");
   if (!match || Number(match[1]) <= 0 || Number(match[2]) <= 0) {
-    return "9 / 16";
+    return [9, 16];
   }
-  return `${Number(match[1])} / ${Number(match[2])}`;
+  return [Number(match[1]), Number(match[2])];
+}
+
+export function videoAspectRatioStyle(aspectRatio?: string) {
+  const [width, height] = videoAspect(aspectRatio);
+  return `${width} / ${height}`;
 }
 
 /**

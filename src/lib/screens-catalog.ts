@@ -173,8 +173,17 @@ export const screenSections: ScreenSection[] = [
         slug: "inbox",
         title: "Testimonial inbox",
         description:
-          "Review, play, publish, unpublish, and delete incoming Testimonials.",
+          "Pending first: one list of rows, each with its decision. Publish, Archive, preview a video, and reach the tools from the menu.",
         fixturePath: "/visual-evidence/testimonial-inbox",
+        livePath: "/org/:organizationSlug/inbox",
+        requiresAuth: true,
+      },
+      {
+        slug: "inbox-published",
+        title: "Inbox, Published",
+        description:
+          "The Published category is the Public Wall in its Curated Order: grip, arrows, Unpublish, and the details each card shows.",
+        fixturePath: "/visual-evidence/testimonial-inbox-published",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,
       },
@@ -209,6 +218,13 @@ export const screenSections: ScreenSection[] = [
     id: "dialogs-feedback",
     title: "Dialogs and feedback",
     screens: [
+      {
+        slug: "testimonial-details",
+        title: "Details shown on the Wall",
+        description:
+          "Which of a Published card's details the Public Wall shows, with the real card as preview.",
+        fixturePath: "/visual-evidence/testimonial-inbox-details",
+      },
       {
         slug: "testimonial-delete",
         title: "Delete a Testimonial",

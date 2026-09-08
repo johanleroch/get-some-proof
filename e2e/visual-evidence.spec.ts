@@ -119,6 +119,11 @@ for (const screen of config.screens) {
       await expect(page.getByRole("dialog")).toBeVisible();
     }
     if (fixtureMode && screen.slug === "testimonial-inbox-player") {
+      // The still in the row opens the real card; playback starts from it.
+      await page
+        .getByRole("button", { name: "Preview Remy Jupille's video" })
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
       await page
         .getByRole("button", { name: "Play Remy Jupille's testimonial" })
         .click();
@@ -141,7 +146,10 @@ for (const screen of config.screens) {
           name: "More actions for Remy Jupille's Testimonial",
         })
         .click();
-      // Unpublish moved onto the card; the menu keeps only the rare acts.
+      // The row keeps the decision; the menu holds the tools and the rare acts.
+      await expect(
+        page.getByRole("menuitem", { name: "Change thumbnail" }),
+      ).toBeVisible();
       await expect(
         page.getByRole("menuitem", { name: "Delete permanently" }),
       ).toBeVisible();
