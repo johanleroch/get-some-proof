@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import { cn } from "@/lib/utils";
 
 /**
  * Submissions waiting for a decision. A count exists to be acted on, so this
@@ -109,23 +110,37 @@ export function BrandDashboardView({
           <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
         ) : null}
 
-        <div className="border-line bg-surface rounded-lg border p-6 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
-            <div className="min-w-0 space-y-3">
-              <p className="type-micro text-ink-2">Your Collection Form</p>
-              <p className="type-heading font-mono break-all">
-                {collectionUrl}
-              </p>
-              {waiting ? null : (
-                <ArrowNote
-                  arrow="flat"
-                  className="hidden sm:inline-flex"
-                  direction="left"
-                >
-                  share this to start collecting
-                </ArrowNote>
-              )}
-              <div className="flex flex-wrap gap-2 pt-1">
+        <div className="border-line bg-surface relative rounded-lg border p-6 sm:p-8">
+          <p className="type-micro text-ink-2">Your Collection Form</p>
+          <div
+            className={cn(
+              "mt-3 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10",
+              // Room for the note that floats above the address, and only
+              // then: with Submissions waiting there is no note, and the gap
+              // would read as a hole.
+              waiting ? null : "md:mt-10",
+            )}
+          >
+            <div className="min-w-0 flex-1 space-y-4">
+              {/* The note hangs off the address itself, not off the panel,
+                  so the arrow dives at the link instead of into the margin
+                  beside it — and being absolute it costs no height. Breaks
+                  only where it must: an address is read as much as copied. */}
+              <div className="relative w-fit max-w-full">
+                {waiting ? null : (
+                  <ArrowNote
+                    className="absolute -top-10 right-0 hidden md:inline-flex"
+                    direction="left"
+                    size="sm"
+                  >
+                    share this to start collecting
+                  </ArrowNote>
+                )}
+                <p className="type-subheading sm:type-heading font-mono [overflow-wrap:anywhere]">
+                  {collectionUrl}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <Button onClick={copyLink} type="button">
                   <IconCopy aria-hidden="true" />
                   Copy link
@@ -138,9 +153,11 @@ export function BrandDashboardView({
                 </Button>
               </div>
             </div>
+            {/* Decoration yields to the address: it only appears once the
+                panel is wide enough to carry both. */}
             <EnvelopeStamp
               aria-hidden="true"
-              className="text-ink hidden h-28 shrink-0 sm:block"
+              className="text-ink hidden h-28 shrink-0 lg:block"
             />
           </div>
         </div>
