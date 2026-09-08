@@ -1,5 +1,7 @@
 "use client";
 
+import { StripeLogo } from "./stripe-logo";
+
 import { BlobLoadingText } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useEffect, useState } from "react";
@@ -679,6 +681,7 @@ export function BillingCockpit({
         description="Review this Account's plan and manage where billing notices are sent."
         eyebrow="Account"
         title={<span id="billing-heading">Billing</span>}
+        actions={<StripeLogo />}
       />
 
       {checkoutReturn === "success" ? (
@@ -687,36 +690,38 @@ export function BillingCockpit({
         <InfoToast message="Checkout canceled. No billing change was made. You can choose a plan and try again whenever you’re ready." />
       ) : null}
 
-      <div
-        className={
-          lifecycle.tone === "danger"
-            ? "border-danger/30 bg-danger-soft text-ink [&_svg]:text-danger flex gap-3 rounded-lg border p-4 text-sm"
-            : lifecycle.tone === "warning"
-              ? "border-warning/30 bg-warning-soft text-ink [&_svg]:text-warning flex gap-3 rounded-lg border p-4 text-sm"
-              : "bg-surface-2 text-ink [&_svg]:text-ink-2 flex gap-3 rounded-lg border p-4 text-sm"
-        }
-        role={
-          overview.state === "past_due" || overview.state === "unpaid"
-            ? "alert"
-            : "status"
-        }
-      >
-        {lifecycle.tone === "neutral" ? (
-          <IconCreditCard
-            aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0"
-          />
-        ) : (
-          <IconAlertCircle
-            aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0"
-          />
-        )}
-        <div>
-          <p className="font-medium">{lifecycle.title}</p>
-          <p className="text-ink-2 mt-1">{lifecycle.description}</p>
+      {overview.state !== "missing" && (
+        <div
+          className={
+            lifecycle.tone === "danger"
+              ? "border-danger/30 bg-danger-soft text-ink [&_svg]:text-danger flex gap-3 rounded-lg border p-4 text-sm"
+              : lifecycle.tone === "warning"
+                ? "border-warning/30 bg-warning-soft text-ink [&_svg]:text-warning flex gap-3 rounded-lg border p-4 text-sm"
+                : "bg-surface-2 text-ink [&_svg]:text-ink-2 flex gap-3 rounded-lg border p-4 text-sm"
+          }
+          role={
+            overview.state === "past_due" || overview.state === "unpaid"
+              ? "alert"
+              : "status"
+          }
+        >
+          {lifecycle.tone === "neutral" ? (
+            <IconCreditCard
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+          ) : (
+            <IconAlertCircle
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+          )}
+          <div>
+            <p className="font-medium">{lifecycle.title}</p>
+            <p className="text-ink-2 mt-1">{lifecycle.description}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         {downgradePlan ? (

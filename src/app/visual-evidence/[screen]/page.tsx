@@ -21,6 +21,7 @@ import {
   ManagedVideoProcessingScreenFixture,
   OnboardingScreenFixture,
   OrganizationSettingsScreenFixture,
+  ProjectSettingsShellFixture,
   ProfileScreenFixture,
   ProPublicWallScreenFixture,
   PublicWallScreenFixture,
@@ -35,6 +36,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
   "rich-testimonial": RichTestimonialScreenFixture,
@@ -84,7 +86,8 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "full-page-loading" ||
+  return screen === "project-settings-shell" ||
+    screen === "full-page-loading" ||
     screen === "onboarding" ||
     screen === "dashboard" ||
     screen === "account-pro" ||

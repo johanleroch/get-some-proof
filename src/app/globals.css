@@ -525,7 +525,7 @@ body {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  overflow: hidden;
+  overflow: clip;
 }
 
 button:not(:disabled),

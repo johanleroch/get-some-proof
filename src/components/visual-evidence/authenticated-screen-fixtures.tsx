@@ -735,3 +735,23 @@ export function AccountFreeProjectScreenFixture() {
     </section>
   );
 }
+
+export function ProjectSettingsShellFixture() {
+  return (
+    <AppShellView
+      organizationId={"fixture-project" as Id<"organizations">}
+      organizationName="Fernhill Studio"
+      organizationPublicSlug="fernhill-studio"
+      organizationSlug="fernhill-studio"
+      pathname="/org/fernhill-studio/settings"
+      connected
+      authorization={{
+        can: { manageOwnership: true, updateOrganization: true },
+      }}
+      userMenu={null}
+      projectSwitcher={null}
+    >
+      <OrganizationSettingsScreenFixture />
+    </AppShellView>
+  );
+}

@@ -261,7 +261,7 @@ export function AppShellView({
         </SidebarContent>
         <SidebarFooter>{projectSwitcher}</SidebarFooter>
       </Sidebar>
-      <SidebarInset className="dashboard-view min-h-0 overflow-hidden">
+      <SidebarInset className="dashboard-view min-h-0 overflow-clip">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
           <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -284,7 +284,7 @@ export function AppShellView({
             role="region"
             aria-label="Page content"
             tabIndex={0}
-            className="min-h-0 flex-1 overflow-y-auto"
+            className="min-h-0 flex-1 overflow-y-auto scroll-smooth motion-reduce:scroll-auto"
           >
             <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
               <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
