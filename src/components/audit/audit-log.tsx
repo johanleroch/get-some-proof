@@ -114,12 +114,12 @@ export function AuditLog({
 
       {status === "CanLoadMore" || status === "LoadingMore" ? (
         <Button
-          disabled={status === "LoadingMore"}
+          loading={status === "LoadingMore"}
           onClick={() => loadMore(20)}
           type="button"
           variant="outline"
         >
-          {status === "LoadingMore" ? "Loading…" : "Load more activity"}
+          Load more activity
         </Button>
       ) : null}
     </section>

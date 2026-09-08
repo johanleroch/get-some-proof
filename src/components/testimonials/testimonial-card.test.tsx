@@ -163,6 +163,11 @@ describe("TestimonialCard", () => {
     const player = await screen.findByTestId("mux-video-player");
     fireEvent.click(play.closest(".video-shell")!);
     expect(screen.getByRole("status", { name: "Loading video" })).toBeVisible();
+    expect(
+      screen
+        .getByRole("status", { name: "Loading video" })
+        .querySelector('svg[id^="blob-anim-"]'),
+    ).not.toBeNull();
     expect(play).not.toHaveAttribute("data-playing");
     expect(play.closest(".video-shell")).toHaveAttribute("data-video-active");
     expect(play).toBeInTheDocument();
@@ -205,6 +210,11 @@ describe("TestimonialCard", () => {
     fireEvent.playing(eventSource);
     fireEvent.waiting(eventSource);
     expect(screen.getByRole("status", { name: "Loading video" })).toBeVisible();
+    expect(
+      screen
+        .getByRole("status", { name: "Loading video" })
+        .querySelector('svg[id^="blob-anim-"]'),
+    ).not.toBeNull();
     fireEvent.error(eventSource);
     expect(screen.queryByRole("status", { name: "Loading video" })).toBeNull();
     expect(play).toBeEnabled();

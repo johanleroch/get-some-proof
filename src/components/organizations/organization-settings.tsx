@@ -1,5 +1,9 @@
 "use client";
 
+import { AnimatedBlob } from "@/components/brand/animated-blob";
+
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { redirect } from "next/navigation";
@@ -182,7 +186,7 @@ export function OrganizationSettings({
   ) {
     return (
       <div className="grid min-h-[50vh] place-items-center">
-        <p className="text-muted-foreground text-sm">Loading settings…</p>
+        <BlobLoader label="Loading settings…" showLabel />
       </div>
     );
   }
@@ -544,6 +548,9 @@ export function WorkspaceDeletionProgress({
 
   return (
     <section className="mx-auto max-w-2xl space-y-4 px-6 py-12">
+      {status === "requested" ? (
+        <AnimatedBlob size={64} variant="look" />
+      ) : null}
       <div>
         <h1 className="type-heading">Deleting {brandName}</h1>
         <p className="type-body text-ink-2 mt-2">

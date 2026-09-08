@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import { type FormEvent, useEffect, useState } from "react";
 import {
   IconAlertCircle,
@@ -767,11 +769,13 @@ export function BillingCockpit({
                 <div>
                   <dt className="text-muted-foreground text-xs">Cadence</dt>
                   <dd className="mt-1 font-medium">
-                    {subscriptionDetails
-                      ? "Monthly"
-                      : subscriptionDetails === undefined
-                        ? "Loading…"
-                        : "Not available"}
+                    {subscriptionDetails ? (
+                      "Monthly"
+                    ) : subscriptionDetails === undefined ? (
+                      <BlobLoadingText label="Loading…" />
+                    ) : (
+                      "Not available"
+                    )}
                   </dd>
                 </div>
                 <div>
@@ -907,13 +911,11 @@ export function BillingCockpit({
                   </div>
                   {overview.canManage ? (
                     <Button
-                      disabled={portalPending}
+                      loading={portalPending}
                       onClick={() => void beginPortal("payment_method_update")}
                       type="button"
                     >
-                      {portalPending
-                        ? "Opening Stripe…"
-                        : "Update payment method"}
+                      Update payment method
                     </Button>
                   ) : null}
                 </div>
@@ -963,9 +965,7 @@ export function BillingCockpit({
                   ) : null}
                 </div>
               ) : (
-                <p aria-live="polite" className="text-muted-foreground text-sm">
-                  Loading Pro prices…
-                </p>
+                <BlobLoadingText label="Loading Pro prices…" />
               )}
 
               <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -980,11 +980,12 @@ export function BillingCockpit({
                 </div>
                 {overview.canManage ? (
                   <Button
-                    disabled={checkoutPending || !offers?.length}
+                    disabled={!offers?.length}
+                    loading={checkoutPending}
                     onClick={beginCheckout}
                     type="button"
                   >
-                    {checkoutPending ? "Opening Stripe…" : "Continue to Stripe"}
+                    Continue to Stripe
                   </Button>
                 ) : (
                   <p className="text-muted-foreground text-xs">
