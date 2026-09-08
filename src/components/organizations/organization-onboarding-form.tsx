@@ -183,10 +183,10 @@ export function OrganizationOnboardingFormView({
     } catch (caught) {
       setError(
         organizationCreated
-          ? "Your Brand was created, but the logo upload failed. Retry or continue without it."
+          ? "Your project was created, but the logo upload failed. Retry or continue without it."
           : caught instanceof Error
             ? caught.message
-            : "Unable to create the Brand.",
+            : "Unable to create the project.",
       );
       setPending(false);
     }
@@ -365,7 +365,7 @@ export function OrganizationOnboardingFormView({
         {error ? <ErrorToast message={error} /> : null}
         <div className="space-y-2">
           <Button className="w-full" loading={pending} type="submit">
-            {createdOrganization ? "Retry logo and continue" : "Create Brand"}
+            {createdOrganization ? "Retry logo and continue" : "Create project"}
           </Button>
           {createdOrganization ? (
             <Button

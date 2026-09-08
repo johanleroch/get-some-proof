@@ -1,15 +1,19 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
-import { IconExternalLink, IconMenu2 } from "@tabler/icons-react";
+import { useEffect, useRef, useState } from "react";
+import { IconExternalLink } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
 
 import type { Id } from "@convex/_generated/dataModel";
+import { AccountDeletionSection } from "@/components/account/account-closure";
+import { AccountFreeProjectSelectionView } from "@/components/billing/account-free-project-selection";
 import { AccountProfileView } from "@/components/account/account-profile";
 import { BrandLogo } from "@/components/brand-logo";
-import { BrandMark } from "@/components/brand-mark";
+import { AppShellView } from "@/components/app-shell";
+import { NavUserView } from "@/components/account/nav-user";
+import { OrganizationSwitcherView } from "@/components/organizations/organization-switcher";
 import { BrandDashboardView } from "@/components/organizations/organization-dashboard";
 import { PageHeader } from "@/components/page-header";
 import { BrandPrivacyNoticeView } from "@/components/collection/brand-privacy-notice";
@@ -588,90 +592,88 @@ export function WorkspaceDeletionProgressScreenFixture() {
   );
 }
 
-export function DashboardBackgroundScreenFixture() {
+export function DashboardBackgroundScreenFixture({
+  plan = "free",
+  inactive = false,
+}: {
+  plan?: "free" | "premium";
+  inactive?: boolean;
+}) {
+  const projects = [
+    { id: "fixture-harbor", name: "Harbor Studio", slug: "harbor-studio" },
+    {
+      id: "fixture-northwind",
+      name: "Northwind Coffee",
+      slug: "northwind-coffee",
+    },
+  ];
+  const [selectedSlug, setSelectedSlug] = useState(projects[0].slug);
+  const project = projects.find(({ slug }) => slug === selectedSlug)!;
+  const account = {
+    effectivePlan: plan,
+    freeProjectId: (inactive
+      ? projects[1].id
+      : projects[0].id) as Id<"organizations">,
+    usage: {
+      freeTextUsed: 4,
+      freeVideoUsed: 1,
+      readyVideos: 8,
+      reservedVideos: 1,
+    },
+  };
   return (
-    <div
-      className="dashboard-frame flex h-svh overflow-hidden"
-      style={
-        {
-          "--sidebar-width": "16.25rem",
-        } as CSSProperties
+    <AppShellView
+      organizationId={project.id as Id<"organizations">}
+      organizationName={project.name}
+      organizationPublicSlug={project.slug}
+      organizationSlug={project.slug}
+      pathname={`/org/${project.slug}/dashboard`}
+      account={account}
+      authorization={{
+        can: { manageOwnership: true, updateOrganization: true },
+      }}
+      connected
+      userMenu={
+        <NavUserView
+          user={{ name: "Alex Morgan", email: "alex@example.test" }}
+          signOut={async () => undefined}
+        />
+      }
+      projectSwitcher={
+        <OrganizationSwitcherView
+          canCreateProject={plan === "premium"}
+          canReadAudit={false}
+          canReadBilling={false}
+          canUpdateOrganization
+          currentName={project.name}
+          currentSlug={project.slug}
+          organizations={
+            plan === "premium" || inactive ? projects : [projects[0]]
+          }
+          status="Exhausted"
+          loadMore={() => undefined}
+          switchProject={setSelectedSlug}
+        />
       }
     >
-      <aside className="bg-sidebar text-sidebar-foreground relative z-10 hidden w-(--sidebar-width) shrink-0 flex-col border-r md:flex">
-        <div className="flex h-full w-full flex-col" data-slot="sidebar-inner">
-          <div className="flex flex-1 flex-col gap-4 p-2">
-            <div className="flex items-center gap-3 rounded-md p-2">
-              <BrandMark />
-              <span className="min-w-0">
-                <span className="text-ink block truncate text-sm font-semibold tracking-[-0.008em]">
-                  Fernhill Studio
-                </span>
-                <span className="text-ink-2 block truncate font-mono text-[11px]">
-                  /c/fernhill-studio
-                </span>
-              </span>
-            </div>
-            <nav className="space-y-5 p-2">
-              <div>
-                <p className="mb-2 px-2" data-sidebar="group-label">
-                  Workspace
-                </p>
-                <div className="space-y-1">
-                  <button
-                    className="bg-brand-soft text-ink relative flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold tracking-[-0.008em]"
-                    data-active="true"
-                    data-sidebar="menu-button"
-                    type="button"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
-                    />
-                    Overview
-                  </button>
-                  {["Inbox", "Public Wall", "Brand settings"].map((label) => (
-                    <button
-                      className="hover:bg-sidebar-accent flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-medium tracking-[-0.008em]"
-                      data-sidebar="menu-button"
-                      key={label}
-                      type="button"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </nav>
-          </div>
-        </div>
-      </aside>
-      <main className="dashboard-view relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 md:px-6">
-            <button
-              aria-label="Open navigation"
-              className="grid size-8 place-items-center rounded-md md:hidden"
-              type="button"
-            >
-              <IconMenu2 aria-hidden="true" className="size-4" />
-            </button>
-            <p className="text-ink-2 text-sm font-medium tracking-[-0.008em]">
-              Overview
-            </p>
-          </header>
-          <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
-            <BrandDashboardView
-              copyCollectionUrl={async () => undefined}
-              name="Fernhill Studio"
-              pendingCount={0}
-              publicSlug="fernhill-studio"
-            />
-          </div>
-        </div>
-      </main>
-    </div>
+      <BrandDashboardView
+        account={account}
+        billingHref={`/org/${project.slug}/billing`}
+        copyCollectionUrl={async () => undefined}
+        name={project.name}
+        pendingCount={0}
+        publicSlug={project.slug}
+      />
+    </AppShellView>
   );
+}
+
+export function ProProjectsScreenFixture() {
+  return <DashboardBackgroundScreenFixture plan="premium" />;
+}
+
+export function InactiveProjectScreenFixture() {
+  return <DashboardBackgroundScreenFixture inactive />;
 }
 
 export function ManagedVideoProcessingScreenFixture() {
@@ -699,5 +701,42 @@ export function ManagedVideoProcessingScreenFixture() {
         text: "",
       }}
     />
+  );
+}
+
+export function AccountDeletionScreenFixture() {
+  const fixtureRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (fixtureRef.current) fixtureRef.current.dataset.fixtureReady = "true";
+  }, []);
+  return (
+    <div ref={fixtureRef} data-fixture-ready="false">
+      <AccountDeletionSection status={null} onDelete={async () => undefined} />
+    </div>
+  );
+}
+
+export function AccountFreeProjectScreenFixture() {
+  return (
+    <section className="space-y-6">
+      <h1 className="type-heading">Choose your Free project</h1>
+      <AccountFreeProjectSelectionView
+        projects={[
+          {
+            id: "fixture-harbor" as Id<"organizations">,
+            name: "Harbor Studio",
+          },
+          {
+            id: "fixture-northwind" as Id<"organizations">,
+            name: "Northwind Coffee",
+          },
+        ]}
+        freeProjectId={"fixture-harbor" as Id<"organizations">}
+        freeProjectName="Harbor Studio"
+        status="Exhausted"
+        loadMore={() => undefined}
+        selectProject={async () => undefined}
+      />
+    </section>
   );
 }

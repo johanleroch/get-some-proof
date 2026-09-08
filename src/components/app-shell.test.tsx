@@ -8,10 +8,12 @@ const mocks = vi.hoisted(() => ({
   readBilling: true,
   readAudit: true,
   updateOrganization: true,
+  effectivePlan: "free",
 }));
 
 vi.mock("convex/react", () => ({
   useQuery: () => ({
+    effectivePlan: mocks.effectivePlan,
     can: {
       readAudit: mocks.readAudit,
       readBilling: mocks.readBilling,
@@ -28,11 +30,33 @@ vi.mock("@/components/account/nav-user", () => ({
   NavUser: () => <div>User menu</div>,
 }));
 
+vi.mock("@/components/organizations/organization-switcher", () => ({
+  OrganizationSwitcher: ({ currentName }: { currentName: string }) => (
+    <button aria-label="Switch project">{currentName}</button>
+  ),
+}));
+
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div>Theme control</div>,
 }));
 
 describe("AppShell", () => {
+  it("shows the Account plan and an English upgrade action beside the user menu", () => {
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Harbor Studio"
+        organizationPublicSlug="harbor"
+        organizationSlug="harbor-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    expect(screen.getByText("Free plan")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Upgrade to Pro" }),
+    ).toHaveAttribute("href", "/org/harbor-1234/billing");
+  });
   beforeEach(() => {
     cleanup();
     Object.defineProperty(window, "innerWidth", {
@@ -61,15 +85,17 @@ describe("AppShell", () => {
     expect(
       screen.getAllByRole("link", { name: "Overview" })[0],
     ).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Acme" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Brand settings" }),
+      screen.getByRole("button", { name: "Switch project" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Project settings" }),
     ).toHaveAttribute("href", "/org/acme-1234/settings");
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Members" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
-    expect(screen.getByText("Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Project")).toBeInTheDocument();
     expect(screen.queryByText("Collaboration")).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
@@ -88,12 +114,12 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "Brand settings" }),
+      screen.getByRole("link", { name: "Project settings" }),
     ).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
-    expect(screen.getByText("Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Project")).toBeInTheDocument();
   });
 
   it("switches to personal Account navigation without changing the shell", () => {
@@ -137,7 +163,7 @@ describe("AppShell", () => {
 
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Brand settings" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Project settings" })).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 

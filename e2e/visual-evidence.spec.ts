@@ -167,6 +167,26 @@ for (const screen of config.screens) {
       );
     }
 
+    if (screen.slug === "account-project-selector") {
+      const switcher = page.getByRole("button", { name: "Switch project" });
+      if (!(await switcher.isVisible()))
+        await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+      await switcher.click();
+      await expect(
+        page.getByRole("menuitem", { name: "Northwind Coffee" }),
+      ).toBeVisible();
+    }
+
+    if (screen.slug === "account-deletion-confirmation") {
+      await page
+        .getByLabel("Type DELETE ACCOUNT to continue")
+        .fill("DELETE ACCOUNT");
+      await page
+        .getByRole("button", { name: "Review account deletion" })
+        .click();
+      await expect(page.getByRole("alertdialog")).toBeVisible();
+    }
+
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );

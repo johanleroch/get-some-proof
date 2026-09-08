@@ -17,7 +17,14 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("convex/react", () => ({
-  useQuery: mocks.useQuery,
+  usePaginatedQuery: () => {
+    const results = mocks.useQuery();
+    return {
+      results: results ?? [],
+      status: results === undefined ? "LoadingFirstPage" : "Exhausted",
+      loadMore: vi.fn(),
+    };
+  },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -63,7 +70,7 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
 
     const trigger = screen.getByRole("button", {
-      name: "Switch Organization",
+      name: "Switch project",
     });
     expect(trigger).toHaveClass("cursor-pointer");
     expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toHaveClass(
@@ -74,10 +81,10 @@ describe("OrganizationSwitcher", () => {
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     expect(screen.getAllByText("Acme")).not.toHaveLength(0);
     expect(
-      screen.getByRole("menuitem", { name: /create organization/i }),
-    ).toHaveAttribute("href", "/onboarding");
+      screen.getByRole("menuitem", { name: /create project/i }),
+    ).toHaveAttribute("href", "/projects/new");
     expect(
-      screen.getByRole("menuitem", { name: "Organization settings" }),
+      screen.getByRole("menuitem", { name: "Project settings" }),
     ).toHaveAttribute("href", "/org/acme-1234/settings");
     expect(screen.getByRole("menuitem", { name: "Audit Log" })).toHaveAttribute(
       "href",
@@ -103,12 +110,12 @@ describe("OrganizationSwitcher", () => {
       canUpdateOrganization: false,
     });
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch Organization" }),
+      screen.getByRole("button", { name: "Switch project" }),
       { button: 0, ctrlKey: false },
     );
 
     expect(
-      screen.queryByRole("menuitem", { name: "Organization settings" }),
+      screen.queryByRole("menuitem", { name: "Project settings" }),
     ).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Audit Log" })).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Billing" })).toBeNull();
@@ -122,7 +129,7 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher();
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch Organization" }),
+      screen.getByRole("button", { name: "Switch project" }),
       { button: 0, ctrlKey: false },
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));
@@ -152,7 +159,7 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher();
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch Organization" }),
+      screen.getByRole("button", { name: "Switch project" }),
       { button: 0, ctrlKey: false },
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));

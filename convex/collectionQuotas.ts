@@ -1,3 +1,4 @@
+import { isProjectActive } from "./projectActivity";
 import { ConvexError, v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
@@ -18,6 +19,21 @@ async function activeCreditCount(
   organizationId: Id<"organizations">,
   submissionType: SubmissionType,
 ) {
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  if (accountId) {
+    const credits = await ctx.db
+      .query("collectionCredits")
+      .withIndex("by_account_type_restored", (q) =>
+        q
+          .eq("accountId", accountId)
+          .eq("submissionType", submissionType)
+          .eq("restoredAt", undefined),
+      )
+      .take(
+        submissionType === "text" ? freeTextCreditLimit : freeVideoCreditLimit,
+      );
+    return credits.length;
+  }
   const credits = await ctx.db
     .query("collectionCredits")
     .withIndex("by_organization_type", (index) =>
@@ -33,20 +49,27 @@ async function liveReservationCount(
   ctx: DatabaseCtx,
   organizationId: Id<"organizations">,
 ) {
-  // Expiry is materialized by the scheduler; a delayed cleanup never frees a slot early.
+  // Expiry is materialized; pending provider cleanup continues to reserve capacity.
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  const reservationsQuery = ctx.db.query("videoReservations");
+  const cleanupQuery = ctx.db.query("videoProviderCleanupJobs");
   const [reservations, cleanup] = await Promise.all([
-    ctx.db
-      .query("videoReservations")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "reserved"),
-      )
-      .take(premiumReadyVideoLimit),
-    ctx.db
-      .query("videoProviderCleanupJobs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .take(premiumReadyVideoLimit),
+    (accountId
+      ? reservationsQuery.withIndex("by_account_status", (q) =>
+          q.eq("accountId", accountId).eq("status", "reserved"),
+        )
+      : reservationsQuery.withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", organizationId).eq("status", "reserved"),
+        )
+    ).take(premiumReadyVideoLimit),
+    (accountId
+      ? cleanupQuery.withIndex("by_account", (q) =>
+          q.eq("accountId", accountId),
+        )
+      : cleanupQuery.withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+    ).take(premiumReadyVideoLimit),
   ]);
   return reservations.length + cleanup.length;
 }
@@ -55,6 +78,16 @@ async function unledgeredConsumedFreeVideoCount(
   ctx: DatabaseCtx,
   organizationId: Id<"organizations">,
 ) {
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  if (accountId)
+    return (
+      await ctx.db
+        .query("videoReservations")
+        .withIndex("by_account_pending_credit", (q) =>
+          q.eq("accountId", accountId).eq("freeCreditPending", true),
+        )
+        .take(freeVideoCreditLimit)
+    ).length;
   const reservations = await ctx.db
     .query("videoReservations")
     .withIndex("by_organization_status", (index) =>
@@ -104,12 +137,17 @@ export async function getCollectionAvailability(
         videoUsed + unledgeredVideo + reservations < freeVideoCreditLimit,
     };
   }
-  const readyVideos = await ctx.db
-    .query("videoAssets")
-    .withIndex("by_organization_status", (index) =>
-      index.eq("organizationId", organizationId).eq("status", "ready"),
-    )
-    .collect();
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  const assets = ctx.db.query("videoAssets");
+  const readyVideos = await (
+    accountId
+      ? assets.withIndex("by_account_status", (q) =>
+          q.eq("accountId", accountId).eq("status", "ready"),
+        )
+      : assets.withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", organizationId).eq("status", "ready"),
+        )
+  ).take(premiumReadyVideoLimit);
   return {
     textAvailable: true,
     videoAvailable: readyVideos.length + reservations < premiumReadyVideoLimit,
@@ -149,6 +187,7 @@ export async function consumeFreeCollectionCredit(
     });
   }
   return await ctx.db.insert("collectionCredits", {
+    accountId: (await ctx.db.get(input.organizationId))?.accountId,
     consumedAt: Date.now(),
     organizationId: input.organizationId,
     submissionType: input.submissionType,
@@ -168,6 +207,14 @@ export async function consumeReadyVideoCredit(
     ...input,
     submissionType: "video",
   });
+  const asset = await ctx.db
+    .query("videoAssets")
+    .withIndex("by_testimonial", (q) =>
+      q.eq("testimonialId", input.testimonialId),
+    )
+    .unique();
+  if (asset && (await ctx.db.get(asset.reservationId)))
+    await ctx.db.patch(asset.reservationId, { freeCreditPending: undefined });
   if (!creditId) return null;
   const testimonial = await ctx.db.get(input.testimonialId);
   if (testimonial?.moderationStatus !== "spam") return creditId;
@@ -207,20 +254,42 @@ export async function restoreSpamCollectionCredit(
   const now = Date.now();
   const restorationMode = supportActor === undefined ? "automatic" : "support";
   if (restorationMode === "automatic") {
-    const recentReports = await ctx.db
-      .query("spamQuarantines")
-      .withIndex("by_organization_reported_at", (index) =>
-        index
-          .eq("organizationId", quarantine.organizationId)
-          .gte("reportedAt", now - automaticSpamRestorationWindowMs),
-      )
-      .collect();
-    const automaticRestorations = recentReports.filter(
-      (report) =>
-        report._id !== quarantine._id && report.restorationMode === "automatic",
-    ).length;
-    if (automaticRestorations >= automaticSpamRestorationLimit) return false;
+    const accountId =
+      credit.accountId ??
+      (await ctx.db.get(quarantine.organizationId))?.accountId;
+    if (accountId) {
+      const restorations = await ctx.db
+        .query("accountSpamRestorations")
+        .withIndex("by_account_reported_at", (q) =>
+          q
+            .eq("accountId", accountId)
+            .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+        )
+        .take(automaticSpamRestorationLimit);
+      if (restorations.length >= automaticSpamRestorationLimit) return false;
+      // Account history survives deleting the Project or undoing its Spam report.
+      await ctx.db.insert("accountSpamRestorations", {
+        accountId,
+        reportedAt: quarantine.reportedAt,
+      });
+    } else {
+      const recentReports = await ctx.db
+        .query("spamQuarantines")
+        .withIndex("by_organization_reported_at", (index) =>
+          index
+            .eq("organizationId", quarantine.organizationId)
+            .gte("reportedAt", now - automaticSpamRestorationWindowMs),
+        )
+        .collect();
+      const automaticRestorations = recentReports.filter(
+        (report) =>
+          report._id !== quarantine._id &&
+          report.restorationMode === "automatic",
+      ).length;
+      if (automaticRestorations >= automaticSpamRestorationLimit) return false;
+    }
   }
+
   await ctx.db.patch(credit._id, { restorationMode, restoredAt: now });
   await ctx.db.patch(quarantine._id, {
     creditRestored: true,
@@ -273,7 +342,7 @@ export const getPublicAvailability = query({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!organization || organization.deletionStartedAt !== undefined)
+    if (!organization || !(await isProjectActive(ctx, organization)))
       return null;
     return await getCollectionAvailability(ctx, organization._id);
   },

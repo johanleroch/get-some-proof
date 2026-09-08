@@ -1,3 +1,5 @@
+import * as videoProvider from "@convex/videoProvider";
+import { buildPublicationConsent } from "@convex/domain/submission";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -114,6 +116,437 @@ async function latestTransition(
 }
 
 describe("deterministic Pro downgrade", () => {
+  it("retains excess video across every Project while keeping only the selected Project public", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const first = await owner.client.mutation(api.organizations.create, {
+      name: "Harbor Design",
+    });
+    await addStripeSubscription(t, first.id, "active");
+    const second = await owner.client.mutation(api.organizations.create, {
+      name: "Harbor Academy",
+    });
+    await owner.client.mutation(api.accounts.selectFreeProject, {
+      projectId: second.id,
+    });
+    const firstVideo = await createPublishedProof(t, first.id, "video", 10);
+    const keep = await createPublishedProof(t, second.id, "video", 1);
+    await createPublishedProof(t, second.id, "video", 2);
+    const excess = await createPublishedProof(t, second.id, "video", 3);
+    await addStripeSubscription(t, first.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+      eventId: "evt_account_terminal",
+    });
+    let transition = await latestTransition(t, first.id);
+    await t.mutation(internal.billingDowngrade.processTransition, {
+      transitionId: transition!._id,
+      version: transition!.version,
+    });
+    for (let batch = 0; batch < 20; batch += 1) {
+      transition = await latestTransition(t, first.id);
+      if (transition!.status === "applied") break;
+      await t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        transitionId: transition!._id,
+        version: transition!.version,
+        cursor: transition!.processingCursor ?? null,
+      });
+    }
+    expect((await latestTransition(t, first.id))?.status).toBe("applied");
+    const result = await t.run(async (ctx) => ({
+      retentions: await ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_transition", (q) =>
+          q.eq("transitionId", transition!._id),
+        )
+        .collect(),
+      first: await ctx.db.get(firstVideo),
+      keep: await ctx.db.get(keep),
+    }));
+    expect(result.retentions.map((row) => row.testimonialId).sort()).toEqual(
+      [firstVideo, excess].sort(),
+    );
+    expect(result.first?.moderationStatus).toBe("archived");
+    expect(result.keep?.moderationStatus).toBe("published");
+    await addStripeSubscription(t, first.id, "active", {
+      eventCreated: baseNow / 1000 + 2,
+      eventId: "evt_account_recovered",
+      stripeSubscriptionId: "sub_new_account_subscription",
+    });
+    const account = await owner.client.query(api.accounts.getMine, {});
+    await t.mutation(internal.billingDowngrade.recoverAccountTransitions, {
+      accountId: account!.id,
+      recoveredAt: Date.now(),
+      currentSubscriptionId: "sub_new_account_subscription",
+      cursor: null,
+    });
+    const recovered = await latestTransition(t, first.id);
+    await t.mutation(internal.billingDowngrade.cancelRecoveredRetentions, {
+      transitionId: recovered!._id,
+      version: recovered!.version,
+    });
+    const afterRecovery = await t.run(async (ctx) => ({
+      retentions: await ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_transition", (q) => q.eq("transitionId", recovered!._id))
+        .collect(),
+      first: await ctx.db.get(firstVideo),
+    }));
+    expect(afterRecovery.retentions).toHaveLength(0);
+    expect(afterRecovery.first?.moderationStatus).toBe("archived");
+  });
+  it("applies downgrade across surviving Projects after deleting the billing anchor", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const first = await owner.client.mutation(api.organizations.create, {
+      name: "Billing anchor",
+    });
+    await addStripeSubscription(t, first.id, "active");
+    const second = await owner.client.mutation(api.organizations.create, {
+      name: "Surviving project",
+    });
+    const account = await owner.client.query(api.accounts.getMine, {});
+    await createPublishedProof(t, second.id, "video", 1);
+    await createPublishedProof(t, second.id, "video", 2);
+    const excess = await createPublishedProof(t, second.id, "video", 3);
+    const { deletionId } = await owner.client.mutation(
+      internal.workspaceDeletion.prepare,
+      {
+        organizationId: first.id,
+        brandName: "Billing anchor",
+        irreversibleConfirmed: true,
+      },
+    );
+    for (let step = 0; step < 100; step++) {
+      await t.action(internal.workspaceDeletion.processDeletion, {
+        deletionId,
+      });
+      if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "deleted")
+        break;
+    }
+    expect(await t.run((ctx) => ctx.db.get(first.id))).toBeNull();
+    await addStripeSubscription(t, first.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+    });
+    let transition = await latestTransition(t, first.id);
+    expect(transition?.accountId).toBe(account!.id);
+    await t.mutation(internal.billingDowngrade.processTransition, {
+      transitionId: transition!._id,
+      version: transition!.version,
+    });
+    for (let step = 0; step < 20; step++) {
+      transition = await latestTransition(t, first.id);
+      if (transition?.status === "applied") break;
+      await t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        transitionId: transition!._id,
+        version: transition!.version,
+        cursor: transition!.processingCursor ?? null,
+      });
+    }
+    expect(transition?.status).toBe("applied");
+    const email = await t.run((ctx) =>
+      ctx.db
+        .query("billingLifecycleEmails")
+        .withIndex("by_organization", (q) => q.eq("organizationId", first.id))
+        .first(),
+    );
+    expect(email).not.toBeNull();
+    await expect(
+      t.mutation(internal.billingDowngradeEmail.reserveLifecycleEmail, {
+        emailId: email!._id,
+        leaseId: "surviving-account-warning",
+      }),
+    ).resolves.toMatchObject({ email: "alice@example.com", slug: second.slug });
+
+    expect(
+      await t.run((ctx) =>
+        ctx.db
+          .query("videoDowngradeRetentions")
+          .withIndex("by_testimonial", (q) => q.eq("testimonialId", excess))
+          .first(),
+      ),
+    ).not.toBeNull();
+  });
+  it("does not republish proof when Pro returns before downgrade batches run", async () => {
+    vi.stubEnv(
+      "PUBLIC_READ_RATE_LIMIT_SECRET",
+      "wall-service-test-credential-32-characters",
+    );
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const first = await owner.client.mutation(api.organizations.create, {
+      name: "First",
+      publicSlug: "first",
+    });
+    await addStripeSubscription(t, first.id, "active");
+    const second = await owner.client.mutation(api.organizations.create, {
+      name: "Second",
+      publicSlug: "second",
+    });
+    await createPublishedProof(t, first.id, "text", 1);
+    const hidden = await createPublishedProof(t, second.id, "text", 2);
+    const list = (publicSlug: string) =>
+      t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug,
+        paginationOpts: { numItems: 20, cursor: null },
+      });
+    expect((await list("second")).page).toHaveLength(1);
+    const before = await t.query(api.publicWall.privacyRevision, {
+      publicSlug: "second",
+    });
+    await addStripeSubscription(t, first.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+    });
+    await addStripeSubscription(t, first.id, "active", {
+      stripeSubscriptionId: "sub_quick_recovery",
+      eventCreated: baseNow / 1000 + 2,
+    });
+    expect((await list("first")).page).toHaveLength(1);
+    expect((await list("second")).page).toHaveLength(0);
+    expect(
+      await t.query(api.publicWall.privacyRevision, { publicSlug: "second" }),
+    ).not.toBe(before);
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: second.id,
+      testimonialId: hidden,
+      status: "archived",
+    });
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: second.id,
+      testimonialId: hidden,
+      status: "published",
+    });
+    expect((await list("second")).page).toHaveLength(1);
+  });
+  it("keeps proof revoked when cancellation expires before the downgrade worker runs", async () => {
+    vi.stubEnv(
+      "PUBLIC_READ_RATE_LIMIT_SECRET",
+      "wall-service-test-credential-32-characters",
+    );
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const first = await owner.client.mutation(api.organizations.create, {
+      name: "First",
+      publicSlug: "first",
+    });
+    await addStripeSubscription(t, first.id, "active");
+    const second = await owner.client.mutation(api.organizations.create, {
+      name: "Second",
+      publicSlug: "second",
+    });
+    await createPublishedProof(t, first.id, "text", 1);
+    const hidden = await createPublishedProof(t, second.id, "text", 2);
+    const list = (publicSlug: string) =>
+      t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug,
+        paginationOpts: { numItems: 20, cursor: null },
+      });
+    expect((await list("second")).page).toHaveLength(1);
+    const before = await t.query(api.publicWall.privacyRevision, {
+      publicSlug: "second",
+    });
+    await addStripeSubscription(t, first.id, "active", {
+      cancelAtPeriodEnd: true,
+      currentPeriodEnd: baseNow / 1000 + 1,
+      eventCreated: baseNow / 1000 + 1,
+    });
+    vi.setSystemTime(baseNow + 2_000);
+    expect((await list("second")).page).toHaveLength(0);
+    await addStripeSubscription(t, first.id, "active", {
+      stripeSubscriptionId: "sub_quick_recovery",
+      eventCreated: baseNow / 1000 + 3,
+    });
+    expect((await list("first")).page).toHaveLength(1);
+    expect((await list("second")).page).toHaveLength(0);
+    expect(
+      await t.query(api.publicWall.privacyRevision, { publicSlug: "second" }),
+    ).not.toBe(before);
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: second.id,
+      testimonialId: hidden,
+      status: "archived",
+    });
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: second.id,
+      testimonialId: hidden,
+      status: "published",
+    });
+    expect((await list("second")).page).toHaveLength(1);
+  });
+  it("preserves older eligible videos across repeated downgrades without a new selection", async () => {
+    vi.stubEnv(
+      "PUBLIC_READ_RATE_LIMIT_SECRET",
+      "wall-service-test-credential-32-characters",
+    );
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const project = await owner.client.mutation(api.organizations.create, {
+      name: "Keepers",
+      publicSlug: "keepers",
+    });
+    await addStripeSubscription(t, project.id, "active", {
+      cancelAtPeriodEnd: true,
+    });
+    const videos = [];
+    for (let index = 1; index <= 4; index++)
+      videos.push(await createPublishedProof(t, project.id, "video", index));
+    await owner.client.mutation(api.billingDowngrade.updateSelection, {
+      organizationId: project.id,
+      textIds: [],
+      videoIds: videos.slice(2),
+    });
+    await addStripeSubscription(t, project.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+    });
+    await addStripeSubscription(t, project.id, "active", {
+      stripeSubscriptionId: "sub_repeat",
+      eventCreated: baseNow / 1000 + 2,
+    });
+    await addStripeSubscription(t, project.id, "canceled", {
+      stripeSubscriptionId: "sub_repeat",
+      eventCreated: baseNow / 1000 + 3,
+    });
+    const wall = await t.query(api.publicWall.list, {
+      publicSlug: "keepers",
+      secret: "wall-service-test-credential-32-characters",
+      paginationOpts: { numItems: 20, cursor: null },
+    });
+    expect(wall.page.map((item) => item.name).sort()).toEqual([
+      "video 3",
+      "video 4",
+    ]);
+  });
+
+  it("retains an in-flight Pro video even when its testimonial arrives after downgrade processing", async () => {
+    vi.stubEnv("MUX_PROVIDER", "fake");
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const project = await owner.client.mutation(api.organizations.create, {
+      name: "Late upload",
+      publicSlug: "late-upload",
+    });
+    await addStripeSubscription(t, project.id, "active");
+    await createPublishedProof(t, project.id, "video", 1);
+    await createPublishedProof(t, project.id, "video", 2);
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "late-pro-upload",
+      fileSizeBytes: 2048,
+      mimeType: "video/mp4",
+      publicSlug: "late-upload",
+      spokenLanguage: "en",
+    });
+    await addStripeSubscription(t, project.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+    });
+    let transition = await latestTransition(t, project.id);
+    await t.mutation(internal.billingDowngrade.processTransition, {
+      transitionId: transition!._id,
+      version: transition!.version,
+    });
+    for (let batch = 0; batch < 20; batch++) {
+      transition = await latestTransition(t, project.id);
+      if (transition!.status === "applied") break;
+      await t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        transitionId: transition!._id,
+        version: transition!.version,
+        cursor: transition!.processingCursor ?? null,
+      });
+    }
+    const consent = buildPublicationConsent({
+      brandName: "Late upload",
+      privacyContact: "alice@example.com",
+      suppliedIdentity: { avatarSupplied: false, name: "Late customer" },
+    });
+    const submitted = await t.action(api.video.submit, {
+      ageConfirmed: true,
+      clientSubmissionId: "late-pro-upload",
+      consentAccepted: true,
+      consentText: consent.text,
+      consentVersion: consent.version,
+      durationSeconds: 45,
+      reservationId: upload.reservationId,
+      submitterEmail: "late@example.test",
+      submitterName: "Late customer",
+    });
+    const retained = await t.run((ctx) =>
+      ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", submitted.testimonialId),
+        )
+        .first(),
+    );
+    expect(retained).toMatchObject({
+      status: "retained",
+      expiresAt: baseNow + 30 * DAY_MS,
+    });
+  });
+
+  it("retries provider upload cleanup when the asset-created webhook was missed", async () => {
+    const cancel = vi
+      .spyOn(videoProvider, "cancelVideoDirectUpload")
+      .mockRejectedValueOnce(new Error("Provider unavailable"))
+      .mockResolvedValue(undefined);
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const project = await owner.client.mutation(api.organizations.create, {
+      name: "Cleanup",
+    });
+    await addStripeSubscription(t, project.id, "active");
+    await createPublishedProof(t, project.id, "video", 1);
+    await createPublishedProof(t, project.id, "video", 2);
+    const excess = await createPublishedProof(t, project.id, "video", 3);
+    await t.run(async (ctx) => {
+      const asset = await ctx.db
+        .query("videoAssets")
+        .withIndex("by_testimonial", (q) => q.eq("testimonialId", excess))
+        .unique();
+      await ctx.db.patch(asset!._id, {
+        providerAssetId: undefined,
+        status: "processing",
+      });
+    });
+    await addStripeSubscription(t, project.id, "canceled", {
+      eventCreated: baseNow / 1000 + 1,
+    });
+    let transition = await latestTransition(t, project.id);
+    await t.mutation(internal.billingDowngrade.processTransition, {
+      transitionId: transition!._id,
+      version: transition!.version,
+    });
+    for (let batch = 0; batch < 10; batch++) {
+      transition = await latestTransition(t, project.id);
+      if (transition!.status === "applied") break;
+      await t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        transitionId: transition!._id,
+        version: transition!.version,
+        cursor: transition!.processingCursor ?? null,
+      });
+    }
+    const retention = await t.run((ctx) =>
+      ctx.db
+        .query("videoDowngradeRetentions")
+        .withIndex("by_testimonial", (q) => q.eq("testimonialId", excess))
+        .unique(),
+    );
+    vi.setSystemTime(baseNow + 30 * DAY_MS);
+    await t.action(internal.billingDowngradeVideo.deleteRetainedVideo, {
+      retentionId: retention!._id,
+    });
+    expect(cancel).toHaveBeenCalledWith("upload-3", "mux");
+    expect(await t.run((ctx) => ctx.db.get(retention!._id))).toMatchObject({
+      status: "retained",
+    });
+    await t.action(internal.billingDowngradeVideo.deleteRetainedVideo, {
+      retentionId: retention!._id,
+    });
+    expect(await t.run((ctx) => ctx.db.get(retention!._id))).toMatchObject({
+      status: "deleted",
+    });
+    cancel.mockRestore();
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(baseNow);
@@ -127,6 +560,7 @@ describe("deterministic Pro downgrade", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
@@ -187,6 +621,13 @@ describe("deterministic Pro downgrade", () => {
     vi.setSystemTime(baseNow + 7 * DAY_MS);
     await expect(
       t.mutation(internal.billingDowngrade.processTransition, {
+        transitionId: transition!._id,
+        version: transition!.version,
+      }),
+    ).resolves.toEqual({ outcome: "processing" });
+    await expect(
+      t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        cursor: null,
         transitionId: transition!._id,
         version: transition!.version,
       }),
@@ -413,6 +854,13 @@ describe("deterministic Pro downgrade", () => {
         transitionId: alpha._id,
         version: alpha.version,
       }),
+    ).resolves.toEqual({ outcome: "processing" });
+    await expect(
+      t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        cursor: null,
+        transitionId: alpha._id,
+        version: alpha.version,
+      }),
     ).resolves.toEqual({ outcome: "applied" });
     await expect(
       t.run((ctx) => ctx.db.query("publicTestimonialProjections").collect()),
@@ -478,6 +926,13 @@ describe("deterministic Pro downgrade", () => {
     await expect(
       t.mutation(internal.billingDowngrade.processTransitionBatch, {
         cursor: processing!.processingCursor!,
+        transitionId: transition!._id,
+        version: transition!.version,
+      }),
+    ).resolves.toEqual({ outcome: "processing" });
+    await expect(
+      t.mutation(internal.billingDowngrade.processTransitionBatch, {
+        cursor: null,
         transitionId: transition!._id,
         version: transition!.version,
       }),

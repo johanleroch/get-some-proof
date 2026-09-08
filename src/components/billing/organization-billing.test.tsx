@@ -169,7 +169,7 @@ describe("OrganizationBilling", () => {
     expect(screen.getByText("Billing is connected")).toBeVisible();
     expect(screen.queryByText("Billing is not connected")).toBeNull();
     expect(
-      screen.getByText("No Stripe subscription is active for this Workspace."),
+      screen.getByText("No Stripe subscription is active for this Account."),
     ).toBeVisible();
   });
 

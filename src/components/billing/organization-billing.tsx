@@ -39,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BillingPageLoading } from "./billing-page-loading";
+import { AccountFreeProjectSelection } from "./account-free-project-selection";
 
 function billingErrorMessage(error: unknown) {
   if (!(error instanceof Error))
@@ -180,13 +181,13 @@ export function billingLifecycleCopy(overview: BillingOverview) {
     case "unpaid":
       return {
         description:
-          "This Workspace is back on Free because payment could not be collected.",
+          "This Account is back on Free because payment could not be collected.",
         title: "Subscription is unpaid",
         tone: "danger" as const,
       };
     case "canceled":
       return {
-        description: "The subscription has ended. This Workspace is on Free.",
+        description: "The subscription has ended. This Account is on Free.",
         title: "Subscription canceled",
         tone: "neutral" as const,
       };
@@ -206,7 +207,7 @@ export function billingLifecycleCopy(overview: BillingOverview) {
       };
     case "paused":
       return {
-        description: "Pro is paused. This Workspace is on Free.",
+        description: "Pro is paused. This Account is on Free.",
         title: "Subscription paused",
         tone: "warning" as const,
       };
@@ -220,14 +221,14 @@ export function billingLifecycleCopy(overview: BillingOverview) {
     case "missing":
       return {
         description:
-          "This Workspace is on Free. Pro checkout will be handled securely by Stripe.",
+          "This Account is on Free. Pro checkout will be handled securely by Stripe.",
         title: "Billing is connected",
         tone: "neutral" as const,
       };
     case "unavailable":
       return {
         description:
-          "This Workspace safely remains on Free. No payment action is available yet.",
+          "This Account safely remains on Free. No payment action is available yet.",
         title: "Billing is not connected",
         tone: "warning" as const,
       };
@@ -368,40 +369,43 @@ export function OrganizationBilling({ slug }: { slug: string }) {
   if (!overview) return null;
 
   return (
-    <BillingCockpit
-      onUpdateContact={(email) =>
-        updateContact({ organizationId: organization.id, email })
-      }
-      checkoutReturn={
-        checkoutReturn === "success" || checkoutReturn === "canceled"
-          ? checkoutReturn
-          : null
-      }
-      navigateToCheckout={(url) => window.location.assign(url)}
-      navigateToPortal={(url) => window.location.assign(url)}
-      offers={offers}
-      offersError={offersError}
-      subscriptionDetails={subscriptionDetails}
-      subscriptionDetailsError={subscriptionDetailsError}
-      onStartCheckout={(lookupKey) =>
-        startCheckout({ organizationId: organization.id, lookupKey })
-      }
-      onOpenPortal={(mode) =>
-        openPortal({ organizationId: organization.id, mode })
-      }
-      overview={overview}
-      downgradePlan={downgradePlan ?? null}
-      downgradeCandidates={downgradeCandidates.results}
-      downgradeCandidatesStatus={downgradeCandidates.status}
-      onLoadMoreDowngradeCandidates={() => downgradeCandidates.loadMore(50)}
-      onUpdateDowngradeSelection={(textIds, videoIds) =>
-        updateDowngradeSelection({
-          organizationId: organization.id,
-          textIds,
-          videoIds,
-        })
-      }
-    />
+    <div className="space-y-8">
+      <BillingCockpit
+        onUpdateContact={(email) =>
+          updateContact({ organizationId: organization.id, email })
+        }
+        checkoutReturn={
+          checkoutReturn === "success" || checkoutReturn === "canceled"
+            ? checkoutReturn
+            : null
+        }
+        navigateToCheckout={(url) => window.location.assign(url)}
+        navigateToPortal={(url) => window.location.assign(url)}
+        offers={offers}
+        offersError={offersError}
+        subscriptionDetails={subscriptionDetails}
+        subscriptionDetailsError={subscriptionDetailsError}
+        onStartCheckout={(lookupKey) =>
+          startCheckout({ organizationId: organization.id, lookupKey })
+        }
+        onOpenPortal={(mode) =>
+          openPortal({ organizationId: organization.id, mode })
+        }
+        overview={overview}
+        downgradePlan={downgradePlan ?? null}
+        downgradeCandidates={downgradeCandidates.results}
+        downgradeCandidatesStatus={downgradeCandidates.status}
+        onLoadMoreDowngradeCandidates={() => downgradeCandidates.loadMore(50)}
+        onUpdateDowngradeSelection={(textIds, videoIds) =>
+          updateDowngradeSelection({
+            organizationId: organization.id,
+            textIds,
+            videoIds,
+          })
+        }
+      />
+      <AccountFreeProjectSelection />
+    </div>
   );
 }
 
@@ -672,8 +676,8 @@ export function BillingCockpit({
       className="mx-auto w-full max-w-5xl space-y-6"
     >
       <PageHeader
-        description="Review this Workspace's plan and manage where billing notices are sent."
-        eyebrow="Workspace"
+        description="Review this Account's plan and manage where billing notices are sent."
+        eyebrow="Account"
         title={<span id="billing-heading">Billing</span>}
       />
 
@@ -735,7 +739,7 @@ export function BillingCockpit({
                 <div>
                   <CardTitle>Current plan</CardTitle>
                   <CardDescription className="mt-1">
-                    Applied to the whole Workspace
+                    Shared across all projects
                   </CardDescription>
                 </div>
               </div>
@@ -761,7 +765,7 @@ export function BillingCockpit({
                   ? "Stripe has synchronized a subscription that grants Pro."
                   : overview.availability === "unavailable"
                     ? "Stripe is unavailable, so no checkout or renewal can start."
-                    : "No Stripe subscription is active for this Workspace."}
+                    : "No Stripe subscription is active for this Account."}
               </p>
             </div>
             {overview.subscription ? (

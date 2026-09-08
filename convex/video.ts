@@ -1,3 +1,5 @@
+import { retainAccountVideo } from "./billingDowngrade";
+import { isProjectActive } from "./projectActivity";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -64,7 +66,7 @@ async function requireOpenVideoOrganization(
   organizationId: Id<"organizations">,
 ) {
   const organization = await ctx.db.get(organizationId);
-  if (!organization || organization.deletionStartedAt !== undefined) {
+  if (!organization || !(await isProjectActive(ctx, organization))) {
     unavailable("COLLECTION_FORM_UNAVAILABLE", "Collection Form unavailable.");
   }
   return organization;
@@ -106,6 +108,7 @@ async function retireReservation(
 ) {
   await ctx.db.patch(reservation._id, {
     status: "released",
+    freeCreditPending: undefined,
     updatedAt: Date.now(),
   });
   if (!asset) return;
@@ -195,6 +198,7 @@ async function reserveForOrganization(
     }
   }
   const reservationId = await ctx.db.insert("videoReservations", {
+    accountId: (await ctx.db.get(organizationId))?.accountId,
     clientSubmissionId,
     createdAt: now,
     expiresAt,
@@ -228,7 +232,7 @@ export const reserveCapacity = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) {
+    if (!brand || !(await isProjectActive(ctx, brand))) {
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -273,7 +277,8 @@ export const attachProviderUpload = internalMutation({
       providerUploadId: args.providerUploadId,
       updatedAt: now,
     });
-    return await ctx.db.insert("videoAssets", {
+    const assetId = await ctx.db.insert("videoAssets", {
+      accountId: reservation.accountId,
       captionsStatus: "requested",
       createdAt: now,
       fileSizeBytes: args.fileSizeBytes,
@@ -287,6 +292,8 @@ export const attachProviderUpload = internalMutation({
       status: "awaiting_upload",
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(assetId))!);
+    return assetId;
   },
 });
 
@@ -423,7 +430,8 @@ export const attachRetryProviderUpload = internalMutation({
       testimonialId: undefined,
       updatedAt: now,
     });
-    return await ctx.db.insert("videoAssets", {
+    const assetId = await ctx.db.insert("videoAssets", {
+      accountId: reservation.accountId,
       captionsStatus: "requested",
       createdAt: now,
       fileSizeBytes: args.fileSizeBytes,
@@ -438,6 +446,8 @@ export const attachRetryProviderUpload = internalMutation({
       testimonialId: testimonial._id,
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(assetId))!);
+    return assetId;
   },
 });
 
@@ -470,6 +480,7 @@ export const releaseRetryCapacity = internalMutation({
     if (reservation?.status === "reserved" && !asset) {
       await ctx.db.patch(reservation._id, {
         status: "released",
+        freeCreditPending: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -498,6 +509,7 @@ export const releaseCapacity = internalMutation({
     if (reservation?.status === "reserved") {
       await ctx.db.patch(reservation._id, {
         status: "released",
+        freeCreditPending: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -636,6 +648,7 @@ export const cancelRetryUpload = mutation({
     });
     await ctx.db.patch(reservation._id, {
       status: "released",
+      freeCreditPending: undefined,
       updatedAt: now,
     });
     await ctx.db.patch(retry._id, {
@@ -826,7 +839,7 @@ export const createVideoRecords = internalMutation({
       );
     }
     const brand = await ctx.db.get(reservation.organizationId);
-    if (!brand || brand.deletionStartedAt !== undefined)
+    if (!brand || !(await isProjectActive(ctx, brand)))
       unavailable(
         "COLLECTION_FORM_UNAVAILABLE",
         "Collection Form unavailable.",
@@ -1030,6 +1043,7 @@ export const createVideoRecords = internalMutation({
       testimonialId,
       updatedAt: now,
     });
+    await retainAccountVideo(ctx, (await ctx.db.get(asset._id))!);
     if (asset.status === "ready") {
       await consumeReadyVideoCredit(ctx, {
         organizationId: brand._id,
@@ -1195,6 +1209,7 @@ export const completeFakeAsset = internalMutation({
     });
     await ctx.db.patch(reservation._id, {
       status: "consumed",
+      freeCreditPending: reservation.plan === "free" ? true : undefined,
       updatedAt: now,
     });
     await consumeReadyVideoCredit(ctx, {
