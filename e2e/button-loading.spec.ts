@@ -9,11 +9,12 @@ test("loading buttons preserve their accessible name", async ({ page }) => {
   await expect(button).toBeDisabled();
   await expect(button).toHaveAttribute("aria-busy", "true");
   await expect(button).toHaveAccessibleName("Save settings");
-  const mascot = button.locator('svg[id^="blob-anim-"]');
-  await expect(mascot).toBeVisible();
-  const mascotSize = await mascot.boundingBox();
-  expect(mascotSize?.width).toBe(24);
-  expect(mascotSize?.height).toBe(24);
+  await expect(button.locator('svg[id^="blob-anim-"]')).toHaveCount(0);
+  const spinner = button.locator('[data-slot="button-spinner"]');
+  await expect(spinner).toBeVisible();
+  const spinnerSize = await spinner.boundingBox();
+  expect(spinnerSize?.width).toBe(16);
+  expect(spinnerSize?.height).toBe(16);
   const widths = await button.evaluate((loadingButton) => {
     const idleButton = loadingButton.cloneNode(true) as HTMLButtonElement;
     idleButton.replaceChildren(document.createTextNode("Save settings"));

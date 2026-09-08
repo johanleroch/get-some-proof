@@ -119,7 +119,8 @@ export function BlobSet() {
                 wait that has no skeleton: route transitions (the root{" "}
                 <code className="font-mono text-[12px]">loading.tsx</code>), a
                 form submitting, a video processing. Compact mascots also appear
-                in buttons, inline waits, and above page skeletons.
+                in inline waits and above page skeletons. Buttons use a small
+                spinner.
               </p>
             </div>
           </div>
