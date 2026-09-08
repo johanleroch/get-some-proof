@@ -122,6 +122,9 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
     if (stop.role === "body") break;
     const key = `${stop.role}: ${stop.name}`;
     if (key === stops[0]) break;
+    // Firefox leaves focus on the last control instead of handing it to the
+    // browser chrome, so the sequence ends when Tab no longer moves.
+    if (key === stops[stops.length - 1]) break;
     expect(stop.disabled, `Tab landed on a disabled control: ${key}`).toBe(
       false,
     );
@@ -407,6 +410,15 @@ test.describe("keyboard", () => {
       "Mark as Spam",
       "Delete permanently",
     ]);
+    // Focus lands inside the menu: on its first item, or on the menu itself
+    // when a slow first paint mounts the items after the roving focus group
+    // has looked for one, in which case ArrowDown reaches the first item.
+    await expect
+      .poll(async () => (await focused(page)).role)
+      .toMatch(/^menu(item)?$/);
+    if ((await focused(page)).role === "menu") {
+      await page.keyboard.press("ArrowDown");
+    }
     await expect(
       page.getByRole("menuitem", { name: "Highlight a phrase" }),
     ).toBeFocused();
