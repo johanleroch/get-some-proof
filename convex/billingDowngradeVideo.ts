@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
-import { deleteVideoAsset } from "./videoProvider";
+import { cancelVideoDirectUpload, deleteVideoAsset } from "./videoProvider";
 
 const MAXIMUM_RETRY_MS = 60 * 60 * 1_000;
 const DELETION_LEASE_MS = 5 * 60 * 1_000;
@@ -18,11 +18,34 @@ export const reserveDeletion = internalMutation({
       downloadProviderAssetId: v.optional(v.string()),
       provider: v.union(v.literal("fake"), v.literal("mux")),
       providerAssetId: v.optional(v.string()),
+      providerUploadId: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
     const retention = await ctx.db.get(args.retentionId);
     if (!retention || retention.status === "deleted") {
+      return null;
+    }
+    const transition = await ctx.db.get(retention.transitionId);
+    const account = transition?.accountId
+      ? await ctx.db.get(transition.accountId)
+      : null;
+    if (
+      transition &&
+      account?.lastProRecoveryAt !== undefined &&
+      account.lastProRecoveryAt >= transition.scheduledFor &&
+      account.lastProRecoveryAt < retention.expiresAt &&
+      retention.status === "retained"
+    ) {
+      await ctx.db.delete(retention._id);
+      return null;
+    }
+    if (
+      transition?.status === "recovered" &&
+      transition.updatedAt < retention.expiresAt &&
+      retention.status === "retained"
+    ) {
+      await ctx.db.delete(retention._id);
       return null;
     }
     if (Date.now() < retention.expiresAt) {
@@ -68,6 +91,7 @@ export const reserveDeletion = internalMutation({
       downloadProviderAssetId: asset.downloadProviderAssetId,
       provider: asset.provider,
       providerAssetId: asset.providerAssetId,
+      providerUploadId: asset.providerUploadId,
     };
   },
 });
@@ -148,6 +172,11 @@ export const deleteRetainedVideo = internalAction({
     );
     if (!retention) return null;
     try {
+      if (retention.providerUploadId)
+        await cancelVideoDirectUpload(
+          retention.providerUploadId,
+          retention.provider,
+        );
       const targets = new Set(
         [retention.providerAssetId, retention.downloadProviderAssetId].filter(
           (id): id is string => Boolean(id),

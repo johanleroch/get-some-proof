@@ -1,3 +1,5 @@
+import { retainAccountVideo } from "./billingDowngrade";
+import { isProjectOpen } from "./projectActivity";
 import { removePublicProjection } from "./publicProjection";
 import {
   imageIdsValidator,
@@ -106,7 +108,7 @@ async function findManagedTestimonial(ctx: MutationCtx, tokenHash: string) {
     unavailable();
   }
   const organization = await ctx.db.get(testimonial.organizationId);
-  if (!organization || organization.deletionStartedAt !== undefined) {
+  if (!organization || !(await isProjectOpen(ctx, organization))) {
     unavailable();
   }
   return testimonial;
@@ -231,7 +233,7 @@ export const get = query({
               .unique()
           : null,
       ]);
-    if (!brand || !consent) return null;
+    if (!brand || !consent || !(await isProjectOpen(ctx, brand))) return null;
     const replacementAsset = revision?.videoAssetId
       ? await ctx.db.get(revision.videoAssetId)
       : null;
@@ -430,6 +432,10 @@ export const confirmRevision = mutation({
         testimonialId: testimonial._id,
         updatedAt: Date.now(),
       });
+      await retainAccountVideo(ctx, (await ctx.db.get(replacementAsset._id))!);
+      await ctx.db.patch(replacementAsset.reservationId, {
+        freeCreditPending: undefined,
+      });
       await ctx.db.patch(revision._id, {
         status: "confirmed",
         updatedAt: Date.now(),
@@ -549,6 +555,7 @@ export const reserveVideoReplacement = internalMutation({
     const now = Date.now();
     const expiresAt = now + replacementReservationTtlMs;
     const reservationId = await ctx.db.insert("videoReservations", {
+      accountId: (await ctx.db.get(testimonial.organizationId))?.accountId,
       clientSubmissionId: args.clientRevisionId,
       createdAt: now,
       expiresAt,
@@ -626,6 +633,7 @@ export const attachVideoReplacement = internalMutation({
       updatedAt: now,
     });
     const videoAssetId = await ctx.db.insert("videoAssets", {
+      accountId: reservation.accountId,
       captionsStatus: "requested",
       createdAt: now,
       fileSizeBytes: args.fileSizeBytes,
@@ -640,6 +648,7 @@ export const attachVideoReplacement = internalMutation({
       updatedAt: now,
     });
     await ctx.db.patch(revision._id, { videoAssetId, updatedAt: now });
+    await retainAccountVideo(ctx, (await ctx.db.get(videoAssetId))!);
     return videoAssetId;
   },
 });
@@ -662,7 +671,11 @@ export const completeFakeVideoReplacement = internalMutation({
       status: "ready",
       updatedAt: now,
     });
-    await ctx.db.patch(reservation._id, { status: "consumed", updatedAt: now });
+    await ctx.db.patch(reservation._id, {
+      status: "consumed",
+      freeCreditPending: reservation.plan === "free" ? true : undefined,
+      updatedAt: now,
+    });
     return null;
   },
 });
@@ -685,6 +698,7 @@ export const releaseVideoReplacement = internalMutation({
     if (reservation?.status === "reserved") {
       await ctx.db.patch(reservation._id, {
         status: "released",
+        freeCreditPending: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -732,6 +746,7 @@ export const cancelVideoReplacement = mutation({
     });
     await ctx.db.patch(reservation._id, {
       status: "released",
+      freeCreditPending: undefined,
       updatedAt: now,
     });
     return null;
@@ -992,7 +1007,7 @@ export const queueReplacementLinkRequest = internalMutation({
       )
       .unique();
     const availableBrand =
-      brand?.deletionStartedAt === undefined ? brand : null;
+      brand && (await isProjectOpen(ctx, brand)) ? brand : null;
     if (!availableBrand) return null;
     const matchingTestimonials = () =>
       ctx.db

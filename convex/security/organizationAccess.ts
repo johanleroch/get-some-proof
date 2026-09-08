@@ -59,6 +59,11 @@ export async function findActiveOrganizationAccess(
     return null;
   }
 
+  if (organization.accountId) {
+    const account = await ctx.db.get(organization.accountId);
+    if (!account || account.deletionStartedAt !== undefined) return null;
+  }
+
   const membership = await ctx.db
     .query("memberships")
     .withIndex("by_organization_user", (index) =>

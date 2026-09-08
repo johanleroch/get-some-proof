@@ -1,6 +1,9 @@
 "use client";
 
-import { CreditCard, LayoutDashboard, Settings } from "lucide-react";
+import { AppShellView } from "@/components/app-shell";
+import { NavUserView } from "@/components/account/nav-user";
+import { OrganizationSwitcherView } from "@/components/organizations/organization-switcher";
+import type { Id } from "@convex/_generated/dataModel";
 
 import { BillingCockpit } from "./organization-billing";
 
@@ -20,117 +23,133 @@ export function BillingVisualFixture({
     state === "past_due" ||
     state === "cancellation_scheduled";
   return (
-    <div className="bg-muted/30 min-h-svh p-3 md:p-6">
-      <div className="bg-background mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-[1440px] overflow-hidden rounded-2xl border shadow-xl md:min-h-[calc(100svh-3rem)] md:grid-cols-[15rem_1fr]">
-        <aside className="bg-card hidden border-r p-5 md:block">
-          <div className="mb-8">
-            <p className="text-sm font-semibold">Demo Company</p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              {role === "owner" ? "Owner" : "Admin"} preview
-            </p>
-          </div>
-          <nav aria-label="Workspace preview" className="space-y-1 text-sm">
-            <div className="text-muted-foreground flex items-center gap-2 rounded-lg px-3 py-2">
-              <LayoutDashboard aria-hidden="true" className="size-4" />
-              Overview
-            </div>
-            <div className="text-muted-foreground flex items-center gap-2 rounded-lg px-3 py-2">
-              <Settings aria-hidden="true" className="size-4" />
-              Brand settings
-            </div>
-            <div className="bg-accent flex items-center gap-2 rounded-lg px-3 py-2 font-medium">
-              <CreditCard aria-hidden="true" className="size-4" />
-              Billing
-            </div>
-          </nav>
-        </aside>
-        <main className="p-4 md:p-8">
-          <BillingCockpit
-            checkoutReturn={checkoutReturn}
-            navigateToCheckout={() => undefined}
-            navigateToPortal={() => undefined}
-            offers={
-              availability === "available"
-                ? [
-                    {
-                      amount: 2_900,
-                      currency: "eur",
-                      description:
-                        "Unlimited text and video proof for growing brands.",
-                      features: [
-                        "Unlimited text collection",
-                        "25 stored Ready videos",
-                        "No Get Some Proof promo card",
-                      ],
-                      interval: "month",
-                      lookupKey: "pro_monthly",
-                      name: "Get Some Proof Pro",
-                    },
-                  ]
-                : undefined
-            }
-            onStartCheckout={async () => ({
-              url: "https://checkout.stripe.example/session",
-            })}
-            onOpenPortal={async () => ({
-              url: "https://billing.stripe.example/session",
-            })}
-            onUpdateContact={async () => undefined}
-            onUpdateDowngradeSelection={async () => undefined}
-            downgradePlan={
-              state === "cancellation_scheduled"
-                ? {
-                    canManage: role === "owner",
-                    scheduledFor: 1_799_999_999_000,
-                    selectedTextIds: [],
-                    selectedVideoIds: [],
-                    textLimit: 13,
-                    trigger: "scheduled_cancellation",
-                    videoLimit: 2,
-                  }
-                : null
-            }
-            downgradeCandidates={[
-              ["video-1", "Alex Morgan", "video"],
-              ["video-2", "Sam Rivera", "video"],
-              ["video-3", "Taylor Chen", "video"],
-              ["text-1", "Morgan Lee", "text"],
-              ["text-2", "Jamie Smith", "text"],
-            ].map(([id, name, type], index) => ({
-              id: id as never,
-              name,
-              publishedAt: 1_799_000_000_000 - index * 86_400_000,
-              type: type as "text" | "video",
-            }))}
-            subscriptionDetails={
-              availability === "available" && state !== "missing"
-                ? {
-                    amount: 2_900,
-                    currency: "eur",
-                    interval: "month",
-                  }
-                : undefined
-            }
-            overview={{
-              availability,
-              billingContact: "accounts@demo.example.invalid",
-              canManage: role === "owner",
-              effectivePlan: premium ? "premium" : "free",
-              state: availability === "unavailable" ? "unavailable" : state,
-              subscription:
-                availability === "available" && state !== "missing"
-                  ? {
-                      cancelAtPeriodEnd: state === "cancellation_scheduled",
-                      currentPeriodEnd: 1_799_999_999,
-                      priceRevision: "price-revision-fixture",
-                      status:
-                        state === "cancellation_scheduled" ? "active" : state,
-                    }
-                  : null,
-            }}
-          />
-        </main>
-      </div>
-    </div>
+    <AppShellView
+      organizationId={"fixture-billing" as Id<"organizations">}
+      organizationName="Harbor Studio"
+      organizationPublicSlug="harbor-studio"
+      organizationSlug="harbor-studio"
+      pathname="/org/harbor-studio/billing"
+      account={{
+        effectivePlan: premium ? "premium" : "free",
+        freeProjectId: "fixture-billing" as Id<"organizations">,
+      }}
+      authorization={{
+        can: {
+          manageOwnership: role === "owner",
+          updateOrganization: role === "owner",
+        },
+      }}
+      connected
+      userMenu={
+        <NavUserView
+          user={{ name: "Alex Morgan", email: "alex@example.test" }}
+          signOut={async () => undefined}
+        />
+      }
+      projectSwitcher={
+        <OrganizationSwitcherView
+          currentName="Harbor Studio"
+          currentSlug="harbor-studio"
+          canCreateProject={premium}
+          canReadAudit={false}
+          canReadBilling={false}
+          canUpdateOrganization={role === "owner"}
+          organizations={[
+            {
+              id: "fixture-billing",
+              name: "Harbor Studio",
+              slug: "harbor-studio",
+            },
+          ]}
+          status="Exhausted"
+          loadMore={() => undefined}
+          switchProject={() => undefined}
+        />
+      }
+    >
+      <BillingCockpit
+        checkoutReturn={checkoutReturn}
+        navigateToCheckout={() => undefined}
+        navigateToPortal={() => undefined}
+        offers={
+          availability === "available"
+            ? [
+                {
+                  amount: 2_900,
+                  currency: "eur",
+                  description:
+                    "Unlimited text and video proof for growing brands.",
+                  features: [
+                    "Unlimited text collection",
+                    "25 stored Ready videos",
+                    "No Get Some Proof promo card",
+                  ],
+                  interval: "month",
+                  lookupKey: "pro_monthly",
+                  name: "Get Some Proof Pro",
+                },
+              ]
+            : undefined
+        }
+        onStartCheckout={async () => ({
+          url: "https://checkout.stripe.example/session",
+        })}
+        onOpenPortal={async () => ({
+          url: "https://billing.stripe.example/session",
+        })}
+        onUpdateContact={async () => undefined}
+        onUpdateDowngradeSelection={async () => undefined}
+        downgradePlan={
+          state === "cancellation_scheduled"
+            ? {
+                canManage: role === "owner",
+                scheduledFor: 1_799_999_999_000,
+                selectedTextIds: [],
+                selectedVideoIds: [],
+                textLimit: 13,
+                trigger: "scheduled_cancellation",
+                videoLimit: 2,
+              }
+            : null
+        }
+        downgradeCandidates={[
+          ["video-1", "Alex Morgan", "video"],
+          ["video-2", "Sam Rivera", "video"],
+          ["video-3", "Taylor Chen", "video"],
+          ["text-1", "Morgan Lee", "text"],
+          ["text-2", "Jamie Smith", "text"],
+        ].map(([id, name, type], index) => ({
+          id: id as never,
+          name,
+          publishedAt: 1_799_000_000_000 - index * 86_400_000,
+          type: type as "text" | "video",
+        }))}
+        subscriptionDetails={
+          availability === "available" && state !== "missing"
+            ? {
+                amount: 2_900,
+                currency: "eur",
+                interval: "month",
+              }
+            : undefined
+        }
+        overview={{
+          availability,
+          billingContact: "accounts@demo.example.invalid",
+          canManage: role === "owner",
+          effectivePlan: premium ? "premium" : "free",
+          state: availability === "unavailable" ? "unavailable" : state,
+          subscription:
+            availability === "available" && state !== "missing"
+              ? {
+                  cancelAtPeriodEnd: state === "cancellation_scheduled",
+                  currentPeriodEnd: 1_799_999_999,
+                  priceRevision: "price-revision-fixture",
+                  status: state === "cancellation_scheduled" ? "active" : state,
+                }
+              : null,
+        }}
+      />
+    </AppShellView>
   );
 }

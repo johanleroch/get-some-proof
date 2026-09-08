@@ -367,7 +367,7 @@ export const setStatus = mutation({
         ctx,
         access.organization._id,
       );
-      await upsertPublicProjection(ctx, testimonial, now, publicOrderKey);
+      await upsertPublicProjection(ctx, testimonial, now, publicOrderKey, true);
     } else if (existingProjection) {
       await removePublicProjection(ctx, existingProjection);
     }

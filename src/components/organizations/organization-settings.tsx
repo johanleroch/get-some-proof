@@ -6,6 +6,7 @@ import { BlobLoader } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
@@ -492,7 +493,7 @@ export function OrganizationSettingsView({
                 ? [["wall", "Public Wall"]]
                 : []),
               ...(canUpdate ? [["embed", "Embedded Wall"]] : []),
-              ...(workspaceDeletion ? [["danger", "Delete Workspace"]] : []),
+              ...(workspaceDeletion ? [["danger", "Delete Project"]] : []),
             ].map(([id, label]) => (
               <li key={id}>
                 <a
@@ -628,10 +629,12 @@ export function WorkspaceDeletionSection({
       id="danger"
     >
       <div>
-        <h2 className="type-subheading">Delete Workspace</h2>
+        <h2 className="type-subheading">Delete Project</h2>
         <p className="text-ink-2 mt-1 text-sm">
           This permanently removes the Collection Form, Public Wall, Embed,
-          private data, and every hosted video. There is no recovery window.
+          private data, and every hosted video in this project. There is no
+          recovery window. Your subscription and consumed Free credits remain
+          unchanged.
         </p>
       </div>
       <div>
@@ -645,6 +648,9 @@ export function WorkspaceDeletionSection({
           Download data first
         </Button>
       </div>
+      <Link className="text-sm underline" href="/account/billing">
+        Manage subscription
+      </Link>
       <Field>
         <Label htmlFor="delete-workspace-name">
           Type <span className="font-semibold">{brandName}</span> to continue
@@ -671,9 +677,10 @@ export function WorkspaceDeletionSection({
           <AlertDialogHeader>
             <AlertDialogTitle>Permanently delete {brandName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Public access stops immediately. Billing is canceled and all
-              private records, tokens, captions, thumbnails, renditions, and
-              source videos are deleted. This cannot be undone.
+              Public access stops immediately. Your account subscription
+              continues, even if this is your last project. All project records,
+              tokens, captions, thumbnails, renditions, and source videos are
+              deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row">
@@ -686,7 +693,7 @@ export function WorkspaceDeletionSection({
                 onClick={() => void remove()}
                 variant="destructive"
               >
-                Delete Workspace permanently
+                Delete Project permanently
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

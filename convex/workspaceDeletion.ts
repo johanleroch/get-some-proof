@@ -12,6 +12,7 @@ import {
   internalMutation,
   internalQuery,
   query,
+  type ActionCtx,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
@@ -261,16 +262,19 @@ export const prepare = internalMutation({
       });
     }
     const now = Date.now();
-    const subscriptions = await ctx.db
-      .query("billingSubscriptionStates")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .collect();
+    const subscriptions = access.organization.accountId
+      ? []
+      : await ctx.db
+          .query("billingSubscriptionStates")
+          .withIndex("by_organization", (index) =>
+            index.eq("organizationId", access.organization._id),
+          )
+          .collect();
     const subscriptionIds = subscriptions.map(
       (subscription) => subscription.stripeSubscriptionId,
     );
     const deletionId = await ctx.db.insert("workspaceDeletions", {
+      accountId: access.organization.accountId,
       actorUserId: principal.actorId,
       attempts: 1,
       createdAt: now,
@@ -485,6 +489,7 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       break;
     case "collectionCredits":
+      if (deletion.accountId) break;
       records = await ctx.db
         .query("collectionCredits")
         .withIndex("by_organization", (i) =>
@@ -589,6 +594,7 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       break;
     case "billingEmails":
+      if (deletion.accountId) break;
       records = await ctx.db
         .query("billingLifecycleEmails")
         .withIndex("by_organization", (i) =>
@@ -597,6 +603,7 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       break;
     case "billingTransitions":
+      if (deletion.accountId) break;
       records = await ctx.db
         .query("billingDowngradeTransitions")
         .withIndex("by_organization", (i) =>
@@ -638,6 +645,7 @@ async function deletePhaseBatch(
       }
       break;
     case "billingSubscriptions":
+      if (deletion.accountId) break;
       records = await ctx.db
         .query("billingSubscriptionStates")
         .withIndex("by_organization", (i) =>
@@ -646,6 +654,7 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       break;
     case "billingProfiles":
+      if (deletion.accountId) break;
       records = await ctx.db
         .query("billingProfiles")
         .withIndex("by_organization", (i) =>
@@ -890,109 +899,114 @@ export const scheduleDeletion = internalMutation({
   },
 });
 
-export const processDeletion = internalAction({
-  args: { deletionId: v.id("workspaceDeletions") },
-  returns: v.null(),
-  handler: async (ctx, args): Promise<null> => {
-    const leaseId = crypto.randomUUID();
-    const claim = await ctx.runMutation(
-      internal.workspaceDeletion.claimDeletion,
-      { deletionId: args.deletionId, leaseId },
+export async function processWorkspaceDeletion(
+  ctx: ActionCtx,
+  args: { deletionId: Id<"workspaceDeletions"> },
+): Promise<null> {
+  const leaseId = crypto.randomUUID();
+  const claim = await ctx.runMutation(
+    internal.workspaceDeletion.claimDeletion,
+    { deletionId: args.deletionId, leaseId },
+  );
+  if (!claim) return null;
+  try {
+    const pendingSubscription = await ctx.runQuery(
+      internal.workspaceDeletion.readPendingSubscription,
+      { deletionId: args.deletionId },
     );
-    if (!claim) return null;
-    try {
-      const pendingSubscription = await ctx.runQuery(
-        internal.workspaceDeletion.readPendingSubscription,
+    if (pendingSubscription) {
+      await cancelStripeSubscription(
+        pendingSubscription.stripeSubscriptionId,
+        `workspace_delete_${args.deletionId}_${pendingSubscription.stripeSubscriptionId}`,
+      );
+      await ctx.runMutation(
+        internal.workspaceDeletion.completeSubscriptionCancellation,
+        {
+          deletionId: args.deletionId,
+          markerId: pendingSubscription.markerId,
+        },
+      );
+    } else if (claim.phase === "providerCleanup") {
+      const cleanupBatch = await ctx.runQuery(
+        internal.workspaceDeletion.readProviderCleanupBatch,
         { deletionId: args.deletionId },
       );
-      if (pendingSubscription) {
-        await cancelStripeSubscription(
-          pendingSubscription.stripeSubscriptionId,
-          `workspace_delete_${args.deletionId}_${pendingSubscription.stripeSubscriptionId}`,
-        );
+      if (cleanupBatch.length === 0) {
+        await ctx.runMutation(internal.workspaceDeletion.advanceDeletionPhase, {
+          deletionId: args.deletionId,
+          leaseId,
+          phase: "media",
+        });
+      } else {
+        for (const cleanup of cleanupBatch) {
+          if (cleanup.providerAssetId) {
+            await deleteVideoAsset(cleanup.providerAssetId, cleanup.provider);
+          } else if (cleanup.providerUploadId) {
+            await cancelVideoDirectUpload(
+              cleanup.providerUploadId,
+              cleanup.provider,
+            );
+          }
+        }
         await ctx.runMutation(
-          internal.workspaceDeletion.completeSubscriptionCancellation,
+          internal.workspaceDeletion.completeProviderCleanupBatch,
           {
+            cleanupJobIds: cleanupBatch.map((cleanup) => cleanup.cleanupJobId),
             deletionId: args.deletionId,
-            markerId: pendingSubscription.markerId,
           },
         );
-      } else if (claim.phase === "providerCleanup") {
-        const cleanupBatch = await ctx.runQuery(
-          internal.workspaceDeletion.readProviderCleanupBatch,
-          { deletionId: args.deletionId },
-        );
-        if (cleanupBatch.length === 0) {
-          await ctx.runMutation(
-            internal.workspaceDeletion.advanceDeletionPhase,
-            { deletionId: args.deletionId, leaseId, phase: "media" },
-          );
-        } else {
-          for (const cleanup of cleanupBatch) {
-            if (cleanup.providerAssetId) {
-              await deleteVideoAsset(cleanup.providerAssetId, cleanup.provider);
-            } else if (cleanup.providerUploadId) {
-              await cancelVideoDirectUpload(
-                cleanup.providerUploadId,
-                cleanup.provider,
-              );
-            }
+      }
+    } else if (claim.phase === "media") {
+      const mediaBatch = await ctx.runQuery(
+        internal.workspaceDeletion.readMediaBatch,
+        { deletionId: args.deletionId },
+      );
+      if (mediaBatch.length === 0) {
+        await ctx.runMutation(internal.workspaceDeletion.advanceDeletionPhase, {
+          deletionId: args.deletionId,
+          leaseId,
+          phase: purgePhases[0],
+        });
+      } else {
+        for (const media of mediaBatch) {
+          if (media.providerUploadId) {
+            await cancelVideoDirectUpload(
+              media.providerUploadId,
+              media.provider,
+            );
           }
-          await ctx.runMutation(
-            internal.workspaceDeletion.completeProviderCleanupBatch,
-            {
-              cleanupJobIds: cleanupBatch.map(
-                (cleanup) => cleanup.cleanupJobId,
-              ),
-              deletionId: args.deletionId,
-            },
-          );
-        }
-      } else if (claim.phase === "media") {
-        const mediaBatch = await ctx.runQuery(
-          internal.workspaceDeletion.readMediaBatch,
-          { deletionId: args.deletionId },
-        );
-        if (mediaBatch.length === 0) {
-          await ctx.runMutation(
-            internal.workspaceDeletion.advanceDeletionPhase,
-            { deletionId: args.deletionId, leaseId, phase: purgePhases[0] },
-          );
-        } else {
-          for (const media of mediaBatch) {
-            if (media.providerUploadId) {
-              await cancelVideoDirectUpload(
-                media.providerUploadId,
-                media.provider,
-              );
-            }
-            for (const providerAssetId of media.providerAssetIds) {
-              await deleteVideoAsset(providerAssetId, media.provider);
-            }
+          for (const providerAssetId of media.providerAssetIds) {
+            await deleteVideoAsset(providerAssetId, media.provider);
           }
-          await ctx.runMutation(internal.workspaceDeletion.completeMediaBatch, {
-            assetIds: mediaBatch.map((media) => media.assetId),
-            deletionId: args.deletionId,
-          });
         }
-      } else if (claim.phase !== "complete") {
-        await ctx.runMutation(internal.workspaceDeletion.purgeBatch, {
+        await ctx.runMutation(internal.workspaceDeletion.completeMediaBatch, {
+          assetIds: mediaBatch.map((media) => media.assetId),
           deletionId: args.deletionId,
         });
       }
-      await ctx.runMutation(internal.workspaceDeletion.releaseDeletion, {
+    } else if (claim.phase !== "complete") {
+      await ctx.runMutation(internal.workspaceDeletion.purgeBatch, {
         deletionId: args.deletionId,
-        leaseId,
-      });
-    } catch (error) {
-      await ctx.runMutation(internal.workspaceDeletion.recordFailure, {
-        deletionId: args.deletionId,
-        error: error instanceof Error ? error.message : String(error),
-        leaseId,
       });
     }
-    return null;
-  },
+    await ctx.runMutation(internal.workspaceDeletion.releaseDeletion, {
+      deletionId: args.deletionId,
+      leaseId,
+    });
+  } catch (error) {
+    await ctx.runMutation(internal.workspaceDeletion.recordFailure, {
+      deletionId: args.deletionId,
+      error: error instanceof Error ? error.message : String(error),
+      leaseId,
+    });
+  }
+  return null;
+}
+
+export const processDeletion = internalAction({
+  args: { deletionId: v.id("workspaceDeletions") },
+  returns: v.null(),
+  handler: processWorkspaceDeletion,
 });
 
 export const remove = action({
@@ -1026,5 +1040,44 @@ export const remove = action({
       deleted: deletion?.status === "deleted",
       deletionId: prepared.deletionId,
     };
+  },
+});
+
+// Account closure drives the same bounded media cleanup as a single Project deletion.
+export const prepareAccountProject = internalMutation({
+  args: {
+    accountDeletionId: v.id("accountDeletions"),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.id("workspaceDeletions"),
+  handler: async (ctx, args) => {
+    const parent = await ctx.db.get(args.accountDeletionId);
+    const project = await ctx.db.get(args.organizationId);
+    const account = parent ? await ctx.db.get(parent.accountId) : null;
+    if (
+      !parent ||
+      !account?.deletionStartedAt ||
+      project?.accountId !== parent.accountId
+    )
+      deletionUnavailable();
+    const existing = await ctx.db
+      .query("workspaceDeletions")
+      .withIndex("by_organization", (q) => q.eq("organizationId", project._id))
+      .unique();
+    if (existing) return existing._id;
+    const now = Date.now();
+    const deletionId = await ctx.db.insert("workspaceDeletions", {
+      accountId: parent.accountId,
+      actorUserId: parent.ownerUserId,
+      organizationId: project._id,
+      attempts: 1,
+      phase: "providerCleanup",
+      status: "requested",
+      subscriptionIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.patch(project._id, { deletionStartedAt: now, updatedAt: now });
+    return deletionId;
   },
 });
