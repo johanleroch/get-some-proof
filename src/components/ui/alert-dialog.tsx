@@ -15,13 +15,34 @@ function AlertDialog(
 
 function AlertDialogContent({
   className,
+  onCloseAutoFocus,
+  onOpenAutoFocus,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+  // Same contract as DialogContent: focus returns to whatever opened the
+  // confirmation, since none of ours opens from an AlertDialogTrigger.
+  const opener = React.useRef<HTMLElement | null>(null);
   return (
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event);
+          if (event.defaultPrevented) return;
+          const target = opener.current;
+          if (target?.isConnected) {
+            event.preventDefault();
+            target.focus();
+          }
+        }}
+        onOpenAutoFocus={(event) => {
+          opener.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
+          onOpenAutoFocus?.(event);
+        }}
         className={cn(
           "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-[0.98] data-[state=open]:zoom-in-[0.98] shadow-float fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 data-[state=closed]:duration-[160ms] data-[state=closed]:ease-[var(--ease-exit)] data-[state=open]:duration-[260ms] data-[state=open]:ease-[var(--ease-settle-soft)]",
           className,
@@ -106,16 +127,24 @@ function AlertDialogCancel({
 }
 
 function AlertDialogAction({
+  asChild,
   className,
   variant = "default",
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
   Pick<VariantProps<typeof buttonVariants>, "variant">) {
+  // With `asChild` the child is a real Button that already carries its own
+  // variant (destructive, with a loading state): painting the default variant
+  // over it turned every confirmation's "Delete" brand amber.
   return (
     <AlertDialogPrimitive.Action
+      asChild={asChild}
       data-slot="alert-dialog-action"
-      data-variant={variant}
-      className={cn(buttonVariants({ variant }), className)}
+      data-variant={asChild ? undefined : variant}
+      className={cn(
+        asChild ? undefined : buttonVariants({ variant }),
+        className,
+      )}
       {...props}
     />
   );

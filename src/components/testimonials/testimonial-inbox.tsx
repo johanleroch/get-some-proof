@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   IconAlertTriangle,
   IconArchive,
@@ -51,8 +51,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BlobLoader } from "@/components/brand/blob-loader";
-import { SpeechBubbleStars } from "@/components/doodles";
+import { SpeechBubbleStars, WallFrames } from "@/components/doodles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { formatShortDate } from "@/lib/format-date";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { PageHeader } from "@/components/page-header";
@@ -148,6 +149,8 @@ export const inboxCategories = [
 
 export type InboxCategory = (typeof inboxCategories)[number]["key"];
 export type InboxCounts = Record<InboxCategory, number>;
+/** Mirrors `inboxCountCeiling` in convex/testimonialModeration.ts. */
+const inboxCountCeiling = 500;
 
 function categoryOf(key: InboxCategory) {
   return inboxCategories.find((category) => category.key === key)!;
@@ -275,7 +278,7 @@ function InboxFace({
         {testimonial.videoDurationSeconds ? (
           <span
             aria-hidden="true"
-            className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 font-mono text-[11px] leading-4 text-white tabular-nums"
+            className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 font-mono text-xs leading-4 text-white tabular-nums"
           >
             {formatDuration(testimonial.videoDurationSeconds)}
           </span>
@@ -298,7 +301,7 @@ function InboxFace({
   }
   return (
     <span
-      className="grid shrink-0 place-items-center"
+      className="grid w-12 shrink-0 place-items-center"
       data-testid="processing-video-placeholder"
     >
       <BlobLoader
@@ -347,6 +350,9 @@ function InboxWords({
 const rowButton = "h-10 md:h-9";
 const rowIconButton = "size-10 md:size-9";
 
+/** The buttons a Published row lends to keyboard reordering. */
+type InboxRowControl = "down" | "primary" | "up";
+
 /**
  * One Testimonial as a row: the face, then who said it and what, then one
  * private line (when it arrived, and the email only the Owner sees), and on
@@ -361,6 +367,7 @@ function InboxRow({
   onAction,
   onMove,
   position,
+  registerControl,
   testimonial,
 }: {
   accentColor: string;
@@ -376,6 +383,11 @@ function InboxRow({
   /** Arrow reordering, on Published rows only. */
   onMove?: (direction: -1 | 1) => void;
   position?: { index: number; count: number };
+  /** Lets the list refocus a control once a move has re-rendered the row. */
+  registerControl?: (
+    control: InboxRowControl,
+    element: HTMLButtonElement | null,
+  ) => void;
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -424,14 +436,17 @@ function InboxRow({
 
       <div className="min-w-0 self-center">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="type-ui text-ink font-semibold">
-            {testimonial.submitterName}
+          {/* The stars stay on the name's line; the role and company wrap. */}
+          <span className="flex items-center gap-x-2">
+            <span className="type-ui text-ink font-semibold">
+              {testimonial.submitterName}
+            </span>
+            {rating ? (
+              <Stars className="shrink-0" rating={rating} size={14} />
+            ) : null}
           </span>
           {identity ? (
-            <span className="type-small text-ink-2 truncate">{identity}</span>
-          ) : null}
-          {rating ? (
-            <Stars className="shrink-0" rating={rating} size={14} />
+            <span className="type-small text-ink-2 min-w-0">{identity}</span>
           ) : null}
         </div>
 
@@ -476,6 +491,7 @@ function InboxRow({
               className={rowIconButton}
               disabled={disabled || position.index === 0}
               onClick={() => onMove(-1)}
+              ref={(element) => registerControl?.("up", element)}
               size="icon-sm"
               type="button"
               variant="outline"
@@ -487,6 +503,7 @@ function InboxRow({
               className={rowIconButton}
               disabled={disabled || position.index === position.count - 1}
               onClick={() => onMove(1)}
+              ref={(element) => registerControl?.("down", element)}
               size="icon-sm"
               type="button"
               variant="outline"
@@ -514,6 +531,7 @@ function InboxRow({
             disabled={disabled}
             loading={busy}
             onClick={() => onAction("unpublish")}
+            ref={(element) => registerControl?.("primary", element)}
             size="sm"
             type="button"
             variant="outline"
@@ -595,12 +613,44 @@ export function TestimonialInboxView({
 }) {
   const draggedId = useRef<string | undefined>(undefined);
   const ordering = category === "published" && onMove !== undefined;
+  // Where focus goes once an arrow has moved a row: the same arrow on the
+  // moved row, its neighbour when that one is now disabled, else Unpublish.
+  // Without this a keyboard Owner lands on <body> after every move, because
+  // the row re-renders and, on the live page, every button disables while
+  // the order saves.
+  const focusAfterMove = useRef<{
+    direction: -1 | 1;
+    testimonialId: string;
+  } | null>(null);
+  const rowControls = useRef(
+    new Map<
+      string,
+      Partial<Record<InboxRowControl, HTMLButtonElement | null>>
+    >(),
+  );
+  const order = testimonials.map(({ testimonialId }) => testimonialId).join();
 
-  function move(from: number, to: number) {
+  useEffect(() => {
+    const pending = focusAfterMove.current;
+    if (!pending || actionsDisabled) return;
+    const controls = rowControls.current.get(pending.testimonialId);
+    const candidates =
+      pending.direction === 1
+        ? [controls?.down, controls?.up, controls?.primary]
+        : [controls?.up, controls?.down, controls?.primary];
+    const target = candidates.find((button) => button && !button.disabled);
+    target?.focus();
+    focusAfterMove.current = null;
+  }, [actionsDisabled, order]);
+
+  function move(from: number, to: number, direction?: -1 | 1) {
     if (!onMove || to < 0 || to >= testimonials.length || from === to) return;
     const ids = testimonials.map(({ testimonialId }) => testimonialId);
     const [moved] = ids.splice(from, 1);
     ids.splice(to, 0, moved!);
+    focusAfterMove.current = direction
+      ? { direction, testimonialId: String(moved) }
+      : null;
     void onMove(moved!, ids[to - 1], ids[to + 1]);
   }
 
@@ -659,11 +709,22 @@ export function TestimonialInboxView({
               onAction={(action) => onAction(testimonial, action)}
               onMove={
                 ordering
-                  ? (direction) => move(index, index + direction)
+                  ? (direction) => move(index, index + direction, direction)
                   : undefined
               }
               position={
                 ordering ? { count: testimonials.length, index } : undefined
+              }
+              registerControl={
+                ordering
+                  ? (control, element) => {
+                      const id = String(testimonial.testimonialId);
+                      rowControls.current.set(id, {
+                        ...rowControls.current.get(id),
+                        [control]: element,
+                      });
+                    }
+                  : undefined
               }
               testimonial={testimonial}
             />
@@ -676,11 +737,14 @@ export function TestimonialInboxView({
 }
 
 export function TestimonialDeleteDialog({
+  onCloseAutoFocus,
   onDelete,
   onOpenChange,
   pending,
   target,
 }: {
+  /** Where focus goes when the confirmation closes; the opener by default. */
+  onCloseAutoFocus?: (event: Event) => void;
   onDelete: () => void;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
@@ -688,7 +752,10 @@ export function TestimonialDeleteDialog({
 }) {
   return (
     <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
-      <AlertDialogContent className="max-w-lg">
+      <AlertDialogContent
+        className="max-w-[480px]"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <div className="flex items-start gap-4">
           <div className="bg-danger-soft text-danger flex size-10 shrink-0 items-center justify-center rounded-full">
             <IconAlertTriangle aria-hidden="true" className="size-5" />
@@ -697,12 +764,12 @@ export function TestimonialDeleteDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {target
-                  ? `Delete ${target.submitterName}'s testimonial?`
-                  : "Delete testimonial"}
+                  ? `Delete ${target.submitterName}'s Testimonial?`
+                  : "Delete Testimonial"}
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-base leading-relaxed">
-                Are you sure you want to delete this testimonial? This action is
-                permanent.
+              <AlertDialogDescription className="type-body">
+                This permanently removes the Testimonial and its media. There is
+                no undo.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-6">
@@ -760,8 +827,10 @@ export function InboxCategoryTabs({
             <TabsTrigger key={category.key} value={category.key}>
               {category.label}{" "}
               {count > 0 ? (
-                <span className="text-ink-3 [[data-state=active]_&]:text-ink-2 font-medium tabular-nums">
-                  {count}
+                // Inherits the tab's colour so an inactive count keeps AA
+                // contrast; weight alone separates it from the label.
+                <span className="font-medium tabular-nums">
+                  {count > inboxCountCeiling ? `${inboxCountCeiling}+` : count}
                 </span>
               ) : null}
             </TabsTrigger>
@@ -822,9 +891,10 @@ function InboxLoadMore({
 }
 
 function actionError(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "The Testimonial action could not be completed.";
+  return convexErrorMessage(
+    error,
+    "The Testimonial action could not be completed.",
+  );
 }
 
 async function runInboxAction({
@@ -909,12 +979,55 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   // One Testimonial at a time, so the list never dims as a whole and the
   // Owner can see which record is being acted on.
   const [pendingId, setPendingId] = useState<Id<"testimonials"> | null>(null);
+  // Which control opened the dialog on screen, so closing it gives focus
+  // back to that control (the still, the row's menu button) rather than to
+  // the top of the page. "gone" is a row the dialog just deleted: the active
+  // tab is the nearest place left to stand.
+  const dialogOpener = useRef<{
+    kind: "gone" | "menu" | "still";
+    testimonialId: Id<"testimonials">;
+  } | null>(null);
 
-  if (organization === undefined || paginationStatus === "LoadingFirstPage") {
+  function returnFocus(event: Event) {
+    const opener = dialogOpener.current;
+    dialogOpener.current = null;
+    if (!opener) return;
+    const row =
+      opener.kind === "gone"
+        ? null
+        : document.querySelector<HTMLElement>(
+            `[data-testid="inbox-testimonial-${opener.testimonialId}"]`,
+          );
+    const target =
+      row?.querySelector<HTMLElement>(
+        opener.kind === "still"
+          ? 'button[aria-label^="Preview "]'
+          : 'button[aria-label^="More actions"]',
+      ) ??
+      document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if (!target) return;
+    event.preventDefault();
+    target.focus();
+  }
+
+  if (organization === undefined) {
     return <OverviewPageSkeleton />;
   }
   if (organization === null) {
-    return <p className="text-muted-foreground text-sm">Brand unavailable.</p>;
+    // Checked before the list's own loading state: with no Brand the list
+    // query is skipped and would otherwise keep the skeleton up forever.
+    return (
+      <section className="grid min-h-[50vh] place-items-center px-6">
+        <EmptyState
+          description="This Brand does not exist, or you no longer have access to it."
+          illustration={<WallFrames className="h-32" />}
+          title="Brand unavailable"
+        />
+      </section>
+    );
+  }
+  if (paginationStatus === "LoadingFirstPage") {
+    return <OverviewPageSkeleton />;
   }
   const activeOrganization = organization;
   const wallVisibility: WallVisibility | undefined = wallSettings?.visibility;
@@ -961,6 +1074,10 @@ export function TestimonialInbox({ slug }: { slug: string }) {
       onStart: () => startAction(deleteTarget.testimonialId),
       onSuccess: () => {
         setMessage("Testimonial permanently deleted.");
+        dialogOpener.current = {
+          kind: "gone",
+          testimonialId: deleteTarget.testimonialId,
+        };
         setDeleteTarget(null);
       },
       run: () => remove(args),
@@ -979,7 +1096,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         setMessage(
           action === "mark"
             ? "Testimonial moved to seven-day Spam quarantine."
-            : "Spam report undone and collection capacity updated.",
+            : "Spam report undone. The Testimonial is Pending again.",
         );
       },
       run: () =>
@@ -1014,20 +1131,28 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     testimonial: InboxTestimonial,
     action: InboxTestimonialAction,
   ) {
+    const opener = (kind: "menu" | "still") => {
+      dialogOpener.current = { kind, testimonialId: testimonial.testimonialId };
+    };
     switch (action) {
       case "highlight":
+        opener("menu");
         setHighlightTarget(testimonial);
         return;
       case "thumbnail":
+        opener("menu");
         setThumbnailTarget(testimonial);
         return;
       case "preview":
+        opener("still");
         setPreviewTarget(testimonial);
         return;
       case "wall-display":
+        opener("menu");
         setWallDisplayTarget(testimonial);
         return;
       case "delete":
+        opener("menu");
         setDeleteTarget(testimonial);
         return;
       case "spam":
@@ -1108,6 +1233,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           isPublished={highlightTarget.moderationStatus === "published"}
           key={highlightTarget.testimonialId}
           onClose={() => setHighlightTarget(null)}
+          onCloseAutoFocus={returnFocus}
           onSave={async (richText) => {
             await saveHighlights({
               organizationId: activeOrganization.id,
@@ -1134,6 +1260,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           isPublished={thumbnailTarget.moderationStatus === "published"}
           key={thumbnailTarget.testimonialId}
           onClose={() => setThumbnailTarget(null)}
+          onCloseAutoFocus={returnFocus}
           onSave={async (choice) => {
             const target = {
               organizationId: activeOrganization.id,
@@ -1172,6 +1299,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           accentColor={wallSettings?.accentColor}
           key={previewTarget.testimonialId}
           onClose={() => setPreviewTarget(null)}
+          onCloseAutoFocus={returnFocus}
           submitterName={previewTarget.submitterName}
           testimonial={previewTarget.card}
         />
@@ -1182,6 +1310,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           accentColor={wallSettings?.accentColor}
           key={wallDisplayTarget.testimonialId}
           onClose={() => setWallDisplayTarget(null)}
+          onCloseAutoFocus={returnFocus}
           onSave={async (overrides) => {
             await setVisibility({
               organizationId: activeOrganization.id,
@@ -1201,6 +1330,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
       ) : null}
 
       <TestimonialDeleteDialog
+        onCloseAutoFocus={returnFocus}
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         pending={pendingId !== null}

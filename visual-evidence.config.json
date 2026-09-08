@@ -283,7 +283,7 @@
       "title": "Permanent Testimonial deletion confirmation",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-delete",
-      "heading": "Delete Remy Jupille's testimonial?",
+      "heading": "Delete Remy Jupille's Testimonial?",
       "theme": "light",
       "requiresAuth": true
     },

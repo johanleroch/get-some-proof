@@ -462,7 +462,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   `--brand-strong`, active translates down 1px, focus shows a 3px
   `--brand-ring`. Secondary is `--surface` with a `--line-2` border. Ghost has
   no border and a `--surface-2` hover. Destructive is `--danger` fill with
-  white text. Every async button has a `loading` state with a small inline spinner
+  `--danger-ink` text: white in the light theme, ink in the dark one, where
+  the red is lighter and white would fall under AA (measured 2.67:1).
+  Every async button has a `loading` state with a small inline spinner
   and a stable width; swapping the label to "Saving..." is retired.
 - Images that change under the hand (a newly chosen video still, a swapped
   photo): the image on screen stays until the next one has finished loading,
@@ -516,7 +518,13 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   max 480px (560px for content-heavy). One exception, at 672px: the video
   thumbnail picker, because its preview is the real published card beside
   eight moments of the video, and a narrower preview truncated the name. Destructive confirmations keep no close
-  icon and require the typed name where they do today.
+  icon and require the typed name where they do today. A dialog gives focus
+  back to the control that opened it when it closes (the still, the row's
+  "…" button, the active tab once the row is gone): none of ours opens from
+  a Radix trigger, so `DialogContent` and `AlertDialogContent` remember the
+  opener themselves, and a screen never opens a dialog by focusing nothing.
+  A confirmation's "Delete" is `--danger`, never the brand amber: the
+  primitive leaves an `asChild` Button its own variant.
 - Toasts: the mascot tells them. `blobToast.success|info|warning|error|
 loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   sonner, rendered through `toast.custom`) shows the blob at 48px on the

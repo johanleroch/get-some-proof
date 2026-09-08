@@ -222,6 +222,9 @@ const inboxPageValidator = v.object({
   splitCursor: v.optional(v.union(v.string(), v.null())),
 });
 
+/** Past this many in one category, the Inbox tab shows "500+". */
+export const inboxCountCeiling = 500;
+
 /**
  * How many Testimonials sit in each category, for the Inbox tabs. Read from
  * the status index so the numbers are the ones the tabs will show, whatever
@@ -241,6 +244,8 @@ export const countInbox = query({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
+    // Bounded on purpose: a tab says "500+" past this, and the query never
+    // reads more than 501 rows per status however large a Brand grows.
     const statuses = ["pending", "published", "archived", "spam"] as const;
     const counts = await Promise.all(
       statuses.map(async (status) => {
@@ -251,7 +256,7 @@ export const countInbox = query({
               .eq("organizationId", access.organization._id)
               .eq("moderationStatus", status),
           )
-          .collect();
+          .take(inboxCountCeiling + 1);
         return rows.length;
       }),
     );
@@ -291,18 +296,23 @@ export const listInbox = query({
           message: "Only Published Testimonials have a Wall order.",
         });
       }
-      const projections = await ctx.db
+      const orderedProjections = ctx.db
         .query("publicTestimonialProjections")
         .withIndex("by_organization_order_key", (index) =>
           index.eq("organizationId", access.organization._id),
         )
-        .order("desc")
-        .paginate(args.paginationOpts);
+        .order("desc");
+      // The type filter runs before pagination, like the status branch, so a
+      // page is never empty while isDone is still false.
+      const projections = await (
+        args.submissionType
+          ? orderedProjections.filter((filter) =>
+              filter.eq(filter.field("type"), args.submissionType),
+            )
+          : orderedProjections
+      ).paginate(args.paginationOpts);
       const items = await Promise.all(
         projections.page.map(async (projection) => {
-          if (args.submissionType && projection.type !== args.submissionType) {
-            return null;
-          }
           const testimonial = await ctx.db.get(projection.testimonialId);
           return testimonial && testimonial.moderationStatus === "published"
             ? inboxItem(ctx, testimonial)

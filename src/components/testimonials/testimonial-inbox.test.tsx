@@ -141,12 +141,12 @@ describe("TestimonialInboxView", () => {
 
     expect(
       screen.getByRole("alertdialog", {
-        name: "Delete Camille Test's testimonial?",
+        name: "Delete Camille Test's Testimonial?",
       }),
     ).toBeVisible();
     expect(
       screen.getByText(
-        "Are you sure you want to delete this testimonial? This action is permanent.",
+        "This permanently removes the Testimonial and its media. There is no undo.",
       ),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));

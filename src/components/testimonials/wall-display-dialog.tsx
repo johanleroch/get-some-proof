@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ConvexError } from "convex/values";
 
 import { defaultPrimaryColor } from "@convex/domain/brand";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,18 +76,7 @@ export function resolveWallVisibility(
 }
 
 function saveError(error: unknown) {
-  if (error instanceof ConvexError && typeof error.data === "string") {
-    return error.data;
-  }
-  if (
-    error instanceof ConvexError &&
-    typeof (error.data as { message?: unknown })?.message === "string"
-  ) {
-    return (error.data as { message: string }).message;
-  }
-  return error instanceof Error
-    ? error.message
-    : "Could not save what the card shows.";
+  return convexErrorMessage(error, "Could not save what the card shows.");
 }
 
 /**
@@ -99,6 +88,7 @@ function saveError(error: unknown) {
 export function WallDisplayDialog({
   accentColor = defaultPrimaryColor,
   onClose,
+  onCloseAutoFocus,
   onSave,
   overrides,
   submitterName,
@@ -107,6 +97,8 @@ export function WallDisplayDialog({
 }: {
   accentColor?: string;
   onClose: () => void;
+  /** Where focus goes when the dialog closes; the opener by default. */
+  onCloseAutoFocus?: (event: Event) => void;
   onSave: (overrides: WallVisibilityOverrides) => Promise<unknown>;
   overrides?: WallVisibilityOverrides;
   submitterName: string;
@@ -148,7 +140,10 @@ export function WallDisplayDialog({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-[560px]">
+      <DialogContent
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-[560px]"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle>Details on {submitterName}&rsquo;s card</DialogTitle>
           <DialogDescription>

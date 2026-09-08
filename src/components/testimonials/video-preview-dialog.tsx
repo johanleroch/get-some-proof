@@ -21,18 +21,24 @@ import { videoAspect } from "@/components/testimonials/testimonial-card-markup";
 export function VideoPreviewDialog({
   accentColor = defaultPrimaryColor,
   onClose,
+  onCloseAutoFocus,
   submitterName,
   testimonial,
 }: {
   accentColor?: string;
   onClose: () => void;
+  /** Where focus goes when the dialog closes; the opener by default. */
+  onCloseAutoFocus?: (event: Event) => void;
   submitterName: string;
   testimonial: TestimonialCardVideoValue;
 }) {
   const [ratioWidth, ratioHeight] = videoAspect(testimonial.aspectRatio);
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent
+        className="sm:max-w-[560px]"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle>{submitterName}&rsquo;s video</DialogTitle>
           <DialogDescription>

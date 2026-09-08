@@ -222,9 +222,8 @@ export const screenSections: ScreenSection[] = [
         title: "Inbox, Published",
         description:
           "The Published category is the Public Wall in its Curated Order: grip, arrows, Unpublish, and the details each card shows.",
+        // Sample only: the live route always opens on Pending.
         fixturePath: "/visual-evidence/testimonial-inbox-published",
-        livePath: "/org/:organizationSlug/inbox",
-        requiresAuth: true,
       },
       {
         slug: "settings",

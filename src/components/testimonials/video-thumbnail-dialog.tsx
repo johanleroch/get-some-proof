@@ -84,6 +84,7 @@ export function VideoThumbnailDialog({
   durationSeconds,
   isPublished = false,
   onClose,
+  onCloseAutoFocus,
   onSave,
   submitterName,
   testimonial,
@@ -94,6 +95,8 @@ export function VideoThumbnailDialog({
   /** A Published Testimonial changes on the public Wall the moment we save. */
   isPublished?: boolean;
   onClose: () => void;
+  /** Where focus goes when the dialog closes; the opener by default. */
+  onCloseAutoFocus?: (event: Event) => void;
   onSave: (choice: VideoThumbnailChoice) => Promise<unknown>;
   submitterName: string;
   testimonial: TestimonialCardVideoValue;
@@ -164,7 +167,10 @@ export function VideoThumbnailDialog({
         if (!open && !saving) onClose();
       }}
     >
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        className="max-h-[90svh] overflow-y-auto sm:max-w-2xl"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle>Choose a thumbnail</DialogTitle>
           <DialogDescription>
