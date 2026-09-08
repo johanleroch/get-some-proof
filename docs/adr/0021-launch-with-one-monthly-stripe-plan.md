@@ -1,3 +1,5 @@
 # Launch with one monthly Stripe plan
 
+Annual-billing scope superseded by [ADR 0037](0037-annual-pro-and-account-invoices.md).
+
 The MVP launches with one Pro subscription at EUR 29 per month through Stripe Checkout and delegates payment-method and subscription management to Stripe Customer Portal. Stripe owns the current amount and presentation of the single active EUR monthly offer behind the stable `pro_monthly` lookup key, while the application owns the Pro Plan identity, entitlements, quotas, and permissions; changing the future price therefore requires a replacement Stripe Price rather than a code deployment. The product launches without a trial, annual billing, coupons, or custom proration rules, and Pro is granted only when a signature-verified synchronized Subscription matches both the Customer and the exact Price mapping persisted server-side during Checkout; an Organization metadata match or Checkout return URL alone is insufficient.

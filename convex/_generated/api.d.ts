@@ -19,6 +19,7 @@ import type * as billingDowngrade from "../billingDowngrade.js";
 import type * as billingDowngradeEmail from "../billingDowngradeEmail.js";
 import type * as billingDowngradeVideo from "../billingDowngradeVideo.js";
 import type * as billingEntitlements from "../billingEntitlements.js";
+import type * as billingInvoices from "../billingInvoices.js";
 import type * as billingMigrationQueries from "../billingMigrationQueries.js";
 import type * as billingMigrations from "../billingMigrations.js";
 import type * as billingService from "../billingService.js";
@@ -96,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   billingDowngradeEmail: typeof billingDowngradeEmail;
   billingDowngradeVideo: typeof billingDowngradeVideo;
   billingEntitlements: typeof billingEntitlements;
+  billingInvoices: typeof billingInvoices;
   billingMigrationQueries: typeof billingMigrationQueries;
   billingMigrations: typeof billingMigrations;
   billingService: typeof billingService;

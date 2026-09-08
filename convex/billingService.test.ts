@@ -43,7 +43,7 @@ function fakeProvider(): BillingProvider {
 }
 
 describe("Organization Checkout service", () => {
-  it("returns only the allowlisted monthly Pro offer without exposing its Price ID", async () => {
+  it("returns the allowlisted monthly and annual Pro offers without exposing its Price ID", async () => {
     const provider = fakeProvider();
     vi.mocked(provider.resolveOffer).mockImplementation(async (lookupKey) => ({
       amount: 2_900,
@@ -56,19 +56,14 @@ describe("Organization Checkout service", () => {
       priceId: `price_${lookupKey}`,
     }));
 
-    await expect(listPublicOffers(provider)).resolves.toEqual([
-      {
-        amount: 2_900,
-        currency: "eur",
-        description: "Collect and publish customer proof.",
-        features: ["Unlimited text collection", "25 stored Ready videos"],
-        interval: "month",
-        lookupKey: "pro_monthly",
-        name: "Get Some Proof Pro",
-      },
+    const offers = await listPublicOffers(provider);
+    expect(offers.map(({ lookupKey }) => lookupKey)).toEqual([
+      "pro_monthly",
+      "pro_annual",
     ]);
-    expect(provider.resolveOffer).toHaveBeenCalledOnce();
-    expect(provider.resolveOffer).toHaveBeenCalledWith("pro_monthly");
+    expect(offers.every((offer) => !("priceId" in offer))).toBe(true);
+    expect(provider.resolveOffer).toHaveBeenCalledTimes(2);
+    expect(provider.resolveOffer).toHaveBeenCalledWith("pro_annual");
   });
 
   it("creates one idempotent Organization Customer and uses the server-resolved Price", async () => {
