@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import { useEffect } from "react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -188,9 +190,7 @@ export function OrganizationSwitcher({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             {!organizations ? (
-              <div className="text-muted-foreground px-2 py-1.5 text-xs">
-                Loading Organizations…
-              </div>
+              <BlobLoadingText label="Loading Organizations…" />
             ) : null}
             {organizations?.length === 0 ? (
               <DropdownMenuItem asChild>

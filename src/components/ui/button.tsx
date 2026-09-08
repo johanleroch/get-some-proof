@@ -75,7 +75,7 @@ function Button({
           >
             <IconLoader2
               data-slot="button-spinner"
-              className="animate-spin motion-reduce:animate-none"
+              className="size-4 animate-spin motion-reduce:animate-none"
             />
           </span>
           <span className="inline-flex items-center gap-[inherit] opacity-0">

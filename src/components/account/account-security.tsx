@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -292,9 +294,7 @@ export function AccountSecurity() {
 
         <div className="mt-5 divide-y rounded-lg border">
           {sessions === null ? (
-            <p className="text-muted-foreground p-4 text-sm">
-              Loading Sessions…
-            </p>
+            <BlobLoadingText label="Loading Sessions…" />
           ) : sessions.length === 0 ? (
             <p className="text-muted-foreground p-4 text-sm">
               No active Sessions found.

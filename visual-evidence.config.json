@@ -2,6 +2,27 @@
   "project": "get-some-proof",
   "screens": [
     {
+      "slug": "full-page-loading",
+      "title": "Full-page loading",
+      "path": "/visual-evidence/full-page-loading",
+      "heading": "Loading\u2026",
+      "theme": "light"
+    },
+    {
+      "slug": "loading-states",
+      "title": "Loading states",
+      "path": "/visual-evidence/loading-states",
+      "heading": "Loading states",
+      "theme": "light"
+    },
+    {
+      "slug": "managed-video-processing",
+      "title": "Private video replacement processing",
+      "path": "/visual-evidence/managed-video-processing",
+      "heading": "Manage your testimonial",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in",
       "title": "Sign in",
       "path": "/sign-in",

@@ -151,9 +151,8 @@
       color: #fff;
       pointer-events: none;
     }
-    .video-loader svg { width: 40px; height: 40px; animation: gsp-spin 800ms linear infinite; }
+    .video-loader svg { width: 48px; height: 48px; }
     .video-shell[data-loading="true"] .video-loader { display: grid; }
-    @keyframes gsp-spin { to { transform: rotate(360deg); } }
     .play {
       display: grid;
       width: 48px;
