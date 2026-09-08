@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { EnvelopeStamp } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
@@ -97,6 +98,12 @@ export function SignUpForm({
       <Button className="w-full" loading={pending} type="submit">
         Create account
       </Button>
+      <GoogleSignInButton
+        callbackURL={callbackURL}
+        pending={pending}
+        setPending={setPending}
+        setError={setError}
+      />
       <p className="text-ink-2 text-center text-sm">
         Already have an account?{" "}
         <Link

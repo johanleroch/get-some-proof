@@ -34,7 +34,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { productName } from "@/lib/brand";
 import { organizationSwitchRoute } from "@/lib/organization-switch-route";
 
 function organizationInitials(name: string) {
@@ -146,9 +145,6 @@ export function OrganizationSwitcherView({
               </Avatar>
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{currentName}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {productName}
-                </span>
               </div>
               <IconSelector className="ml-auto size-4" />
             </SidebarMenuButton>
