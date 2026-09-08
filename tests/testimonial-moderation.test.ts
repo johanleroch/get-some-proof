@@ -343,6 +343,74 @@ describe("Testimonial moderation and Public Projection", () => {
     ]);
   });
 
+  it("counts each category and lists Published in the Wall's Curated Order", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "acme-proof",
+    });
+    const first = await createPendingTestimonial(
+      t,
+      "acme-proof",
+      "first-submission",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    const second = await createPendingTestimonial(
+      t,
+      "acme-proof",
+      "second-submission",
+    );
+    await createPendingTestimonial(t, "acme-proof", "third-submission");
+    for (const testimonialId of [first.testimonialId, second.testimonialId]) {
+      await owner.client.mutation(api.testimonialModeration.setStatus, {
+        organizationId: brand.id,
+        status: "published",
+        testimonialId,
+      });
+    }
+
+    await expect(
+      owner.client.query(api.testimonialModeration.countInbox, {
+        organizationId: brand.id,
+      }),
+    ).resolves.toEqual({ archived: 0, pending: 1, published: 2, spam: 0 });
+
+    // Newly Published proof begins first, then the Owner's order wins.
+    const wall = () =>
+      owner.client
+        .query(api.testimonialModeration.listInbox, {
+          organizationId: brand.id,
+          paginationOpts: { cursor: null, numItems: 20 },
+          sort: "wall",
+          status: "published",
+        })
+        .then((page) => page.page.map(({ testimonialId }) => testimonialId));
+    await expect(wall()).resolves.toEqual([
+      second.testimonialId,
+      first.testimonialId,
+    ]);
+    await owner.client.mutation(api.wallCustomization.movePublished, {
+      afterTestimonialId: second.testimonialId,
+      organizationId: brand.id,
+      testimonialId: first.testimonialId,
+    });
+    await expect(wall()).resolves.toEqual([
+      first.testimonialId,
+      second.testimonialId,
+    ]);
+
+    await expect(
+      owner.client.query(api.testimonialModeration.listInbox, {
+        organizationId: brand.id,
+        paginationOpts: { cursor: null, numItems: 20 },
+        sort: "wall",
+        status: "pending",
+      }),
+    ).rejects.toMatchObject({ data: { code: "INVALID_INBOX_SORT" } });
+  });
+
   it("publishes only consented public-safe fields and audits every transition", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);

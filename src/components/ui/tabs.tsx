@@ -26,7 +26,10 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "border-line inline-flex w-fit max-w-full items-center gap-5 overflow-x-auto border-b",
+        // Scrollable when the labels outgrow a phone, but never with a visible
+        // scrollbar: the 1px the active underline hangs below the list used to
+        // summon one beside the last tab.
+        "border-line inline-flex w-fit max-w-full [scrollbar-width:none] items-center gap-5 overflow-x-auto border-b [&::-webkit-scrollbar]:hidden",
         className,
       )}
       {...props}

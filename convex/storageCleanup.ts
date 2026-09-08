@@ -62,6 +62,7 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
         profile,
         organization,
         testimonial,
+        poster,
         uploadReservation,
         attachment,
       ] = await Promise.all([
@@ -84,6 +85,12 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
           )
           .first(),
         ctx.db
+          .query("testimonials")
+          .withIndex("by_poster_storage_id", (index) =>
+            index.eq("posterStorageId", storedFile._id),
+          )
+          .first(),
+        ctx.db
           .query("submissionAvatarUploads")
           .withIndex("by_storage_id", (index) =>
             index.eq("storageId", storedFile._id),
@@ -98,6 +105,7 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
         !profile &&
         !organization &&
         !testimonial &&
+        !poster &&
         !uploadReservation &&
         !attachment
       ) {

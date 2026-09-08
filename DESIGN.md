@@ -202,7 +202,8 @@ Scale (size / line-height, Figtree unless noted):
 | display    | 32px | 36px | 700    | -0.015em | Gelica  | Dashboard page titles                  |
 | heading    | 24px | 30px | 600    | -0.01em  | Gelica  | Section titles, dialog titles          |
 | subheading | 18px | 26px | 600    | -0.005em | Gelica  | Card titles, empty-state titles        |
-| body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs, testimonial quotes         |
+| body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs                             |
+| quote      | 17px | 26px | 400    | -0.011em | Figtree | The words on a Testimonial card        |
 | ui         | 14px | 20px | 500    | -0.008em | Figtree | Buttons, inputs, navigation, table     |
 | small      | 13px | 18px | 400    | -0.004em | Figtree | Metadata, helper text                  |
 | micro      | 12px | 16px | 600    | +0.06em  | Figtree | Eyebrows and group labels, uppercase   |
@@ -334,6 +335,33 @@ pages still start at the top and scroll normally.
   (micro), `display` title, one primary action on the right. Data lives in
   lists and tables with `--surface-2` row hover, not in stacks of cards.
   Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+- Inbox: the four categories as tabs with their counts, Pending first
+  because it is the queue, and nothing else to set: no type or sort
+  controls, newest first. Under the tabs, one list panel (`--surface`,
+  `--line` hairline, `--radius-lg`) of rows with dividers and `--surface-2`
+  hover, never a wall of cards: the Wall is where cards are judged, the
+  Inbox is where decisions are made. A row starts with the face (the
+  Customer's 48px photo, the display quote mark in the Brand accent, or the
+  video still in the video's own shape, 48px wide when portrait and 64px
+  when not, with its duration in a corner, which opens the real playable
+  card in a dialog; while there is no still yet, the blob looking around or
+  the failed mark stands alone, with no box drawn around it; the face is
+  centred on its row like the actions and sits 16px from the edge, the same
+  air the row keeps above and below it), then the name at `ui` 600 with
+  role, company and
+  14px stars on the same line, the words in full at `body` (a marked phrase
+  keeps its swash), one private line at `small` in one style (received
+  date, the email only the Owner sees, the Spam deletion date), and on the
+  right the one decision the category allows: Publish and Archive,
+  Unpublish, or Not Spam. A video that is not Ready shows its Video Asset
+  state as a status Badge (Processing, Uploading, Failed) beside one
+  sentence, and Publish is disabled without a note of its own.
+  The tools that shape the card (Highlight a phrase, Change thumbnail, Show
+  or hide details) and the two rare acts (Spam, Delete) live in the "…"
+  menu, the rare ones behind a rule. Published is the Public Wall itself in
+  its Curated Order: a grip, arrows, and no separate "wall order" screen.
+  Buttons in a row are 36px on desktop and 40px on touch widths; below
+  768px the actions wrap under the words.
 - Authentication: split screen from 1024px, form first. Left column holds the
   product name, the form and the footer line in one 400px block centered in
   the column, so wide screens never leave the form stuck to the edge; right panel on
@@ -434,8 +462,16 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   `--brand-strong`, active translates down 1px, focus shows a 3px
   `--brand-ring`. Secondary is `--surface` with a `--line-2` border. Ghost has
   no border and a `--surface-2` hover. Destructive is `--danger` fill with
-  white text. Every async button has a `loading` state with a small inline
-  spinner and a stable width; swapping the label to "Saving..." is retired.
+  `--danger-ink` text: white in the light theme, ink in the dark one, where
+  the red is lighter and white would fall under AA (measured 2.67:1).
+  Every async button has a `loading` state with a small inline spinner
+  and a stable width; swapping the label to "Saving..." is retired.
+- Images that change under the hand (a newly chosen video still, a swapped
+  photo): the image on screen stays until the next one has finished loading,
+  with a 2px `--brand` line pulsing along its bottom edge meanwhile. Never a
+  dark or empty box between two pictures; the preview of a poster reuses the
+  card's own URL so it opens already loaded (`StillPreview` in
+  `src/components/testimonials/video-thumbnail-dialog.tsx`).
 - Inputs and textareas: height 40px, `--radius-md`, `--surface` fill, 1px
   `--line-2` border, `--ink-3` placeholder, focus ring 3px `--brand-ring` with
   a `--brand` border. Label above at `ui` weight 500, helper text below at
@@ -454,16 +490,21 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
   (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
   24px padding. The stars open the card at 14px in the Brand accent with
-  unfilled stars at 25%, 16px above the quote. The quote then reads at 17px on
-  1.7 leading in `--ink` — one step above `body`, the card's own size, because
-  the proof is what was said. The signature follows 20px below on one row: the
+  unfilled stars at 25%, 16px above the quote. The quote then reads at `quote`
+  (17px on 26px) in `--ink` — one step above `body`, because the proof is what
+  was said; tune it at `/kit` like any other style. The signature follows 20px
+  below on one row: the
   display quote mark in the Brand accent (`--font-display`, 48px, weight 700,
   kept out of the row height so a name with no role still ends on the padding),
   or the Customer's avatar 32px round when there is one to show; then the name
   at `ui` weight 600 and the role and company at `small` in `--ink-2`. Initials
   are never drawn: they are filler, not proof. Video cards keep the source
-  ratio, the play button is 48px round on `--surface` with `--shadow-float`.
-  Reviewed at `/kit/testimonials`.
+  ratio and follow the same grammar on the bottom shade: the stars sit 12px
+  above the signature row, which reads exactly as on the text card (display
+  mark, name at `ui`, role at `small`, in white), with the 48px play button
+  on `--surface` with `--shadow-float` on the right. Never spread the stars
+  to the top corner: on a face they look lost. Reviewed at
+  `/kit/testimonials`.
 - Highlighted words: the `MarkerHighlight` swash painted behind the phrase,
   never a coloured box. `mark` carries it site-wide from `globals.css` in
   amber; a Testimonial card overrides it with the customer Brand accent
@@ -474,8 +515,16 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   paper, never a pastel tint (the generic "AI pill"). `brand`
   is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
-  max 480px (560px for content-heavy). Destructive confirmations keep no close
-  icon and require the typed name where they do today.
+  max 480px (560px for content-heavy). One exception, at 672px: the video
+  thumbnail picker, because its preview is the real published card beside
+  eight moments of the video, and a narrower preview truncated the name. Destructive confirmations keep no close
+  icon and require the typed name where they do today. A dialog gives focus
+  back to the control that opened it when it closes (the still, the row's
+  "…" button, the active tab once the row is gone): none of ours opens from
+  a Radix trigger, so `DialogContent` and `AlertDialogContent` remember the
+  opener themselves, and a screen never opens a dialog by focusing nothing.
+  A confirmation's "Delete" is `--danger`, never the brand amber: the
+  primitive leaves an `asChild` Button its own variant.
 - Toasts: the mascot tells them. `blobToast.success|info|warning|error|
 loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   sonner, rendered through `toast.custom`) shows the blob at 48px on the

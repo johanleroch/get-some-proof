@@ -29,13 +29,15 @@ import {
 import { ManagedSubmissionView } from "@/components/submissions/managed-submission";
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
+  type InboxCategory,
+  type InboxTestimonial,
   InboxFeedback,
   InboxCategoryTabs,
-  InboxFilters,
   TestimonialDeleteDialog,
   TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
-import { PublishedCurationView } from "@/components/testimonials/published-curation";
+import { VideoPreviewDialog } from "@/components/testimonials/video-preview-dialog";
+import { WallDisplayDialog } from "@/components/testimonials/wall-display-dialog";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
@@ -310,8 +312,10 @@ const testimonialFixture = {
 };
 
 const videoTestimonialFixture = {
+  // Portrait, as a phone records it for the Collection Form.
+  aspectRatio: "9:16",
   card: {
-    aspectRatio: "4:3",
+    aspectRatio: "9:16",
     avatarUrl: null,
     captionsAvailable: true,
     id: "fixture-video-testimonial",
@@ -331,6 +335,7 @@ const videoTestimonialFixture = {
   submitterEmail: "remy@example.invalid",
   submitterName: "Remy Jupille",
   testimonialId: "fixture-video-testimonial" as Id<"testimonials">,
+  videoDurationSeconds: 42,
   videoStatus: "ready" as const,
 };
 
@@ -363,7 +368,61 @@ const spamTestimonialFixture = {
   testimonialId: "fixture-spam-testimonial" as Id<"testimonials">,
 };
 
-export function TestimonialInboxScreenFixture() {
+/**
+ * The Inbox with one Testimonial in every state the list draws: a video
+ * still processing, a text Testimonial, a Ready video, then the Published
+ * category in its Wall order and one Spam row. The tabs switch between local
+ * lists so the gallery can be walked like the real page.
+ */
+export function TestimonialInboxScreenFixture({
+  initialCategory = "pending",
+}: {
+  initialCategory?: InboxCategory;
+}) {
+  const [category, setCategory] = useState<InboxCategory>(initialCategory);
+  // The still opens the real card, here as on the live page.
+  const [preview, setPreview] = useState<InboxTestimonial | null>(null);
+  // The Wall order moves for real, so the arrows and the drag can be tried.
+  const [published, setPublished] = useState<InboxTestimonial[]>([
+    { ...videoTestimonialFixture, moderationStatus: "published" as const },
+    {
+      ...testimonialFixture,
+      moderationStatus: "published" as const,
+      publicVisibilityOverrides: { company: false },
+    },
+  ]);
+  const lists: Record<InboxCategory, InboxTestimonial[]> = {
+    archived: [],
+    pending: [
+      processingVideoTestimonialFixture,
+      testimonialFixture,
+      videoTestimonialFixture,
+    ],
+    published,
+    spam: [spamTestimonialFixture],
+  };
+  const move = async (
+    testimonialId: Id<"testimonials">,
+    beforeTestimonialId: Id<"testimonials"> | undefined,
+    afterTestimonialId: Id<"testimonials"> | undefined,
+  ) => {
+    setPublished((current) => {
+      const moved = current.find(
+        (item) => item.testimonialId === testimonialId,
+      );
+      if (!moved) return current;
+      const rest = current.filter((item) => item !== moved);
+      const beforeIndex = rest.findIndex(
+        (item) => item.testimonialId === beforeTestimonialId,
+      );
+      const afterIndex = rest.findIndex(
+        (item) => item.testimonialId === afterTestimonialId,
+      );
+      const at =
+        beforeIndex >= 0 ? beforeIndex + 1 : afterIndex >= 0 ? afterIndex : 0;
+      return [...rest.slice(0, at), moved, ...rest.slice(at)];
+    });
+  };
   return (
     <section className="space-y-6">
       <PageHeader
@@ -384,48 +443,58 @@ export function TestimonialInboxScreenFixture() {
       />
       <InboxFeedback error={null} message={null} />
       <InboxCategoryTabs
-        filters={
-          <InboxFilters
-            onSortChange={() => undefined}
-            onSubmissionTypeChange={() => undefined}
-            sort="newest"
-            submissionType="all"
-          />
-        }
-        moderationStatus="pending"
-        onModerationStatusChange={() => undefined}
+        counts={{ archived: 0, pending: 3, published: 2, spam: 1 }}
+        moderationStatus={category}
+        onModerationStatusChange={setCategory}
       >
         <TestimonialInboxView
           accentColor={collectionFormFixtureBrand.primaryColor}
-          category="pending"
-          onAction={() => undefined}
+          category={category}
+          emptyAction={
+            category === "pending" ? null : (
+              <Button onClick={() => setCategory("pending")} variant="outline">
+                Go to Pending
+              </Button>
+            )
+          }
+          onAction={(testimonial, action) => {
+            if (action === "preview") setPreview(testimonial);
+          }}
+          onMove={category === "published" ? move : undefined}
           pendingId={null}
-          testimonials={[
-            processingVideoTestimonialFixture,
-            spamTestimonialFixture,
-            { ...videoTestimonialFixture, moderationStatus: "published" },
-            testimonialFixture,
-          ]}
+          testimonials={lists[category]}
         />
       </InboxCategoryTabs>
-      <PublishedCurationView
-        onMove={async () => undefined}
-        onSetVisibility={async () => undefined}
-        testimonials={[
-          {
-            submissionType: "video",
-            submitterName: "Remy Jupille",
-            testimonialId: "fixture-published-video" as Id<"testimonials">,
-          },
-          {
-            overrides: { company: false },
-            submissionType: "text",
-            submitterName: "Alice Martin",
-            testimonialId: "fixture-published-text" as Id<"testimonials">,
-          },
-        ]}
-      />
+      {preview?.card?.type === "video" ? (
+        <VideoPreviewDialog
+          accentColor={collectionFormFixtureBrand.primaryColor}
+          onClose={() => setPreview(null)}
+          submitterName={preview.submitterName}
+          testimonial={preview.card}
+        />
+      ) : null}
     </section>
+  );
+}
+
+export function TestimonialInboxPublishedScreenFixture() {
+  return <TestimonialInboxScreenFixture initialCategory="published" />;
+}
+
+/** The details dialog open on a Published text card, one detail overridden. */
+export function TestimonialInboxDetailsScreenFixture() {
+  return (
+    <>
+      <TestimonialInboxScreenFixture initialCategory="published" />
+      <WallDisplayDialog
+        accentColor={collectionFormFixtureBrand.primaryColor}
+        onClose={() => undefined}
+        onSave={async () => undefined}
+        overrides={{ company: false }}
+        submitterName={testimonialFixture.submitterName}
+        testimonial={testimonialFixture.card}
+      />
+    </>
   );
 }
 

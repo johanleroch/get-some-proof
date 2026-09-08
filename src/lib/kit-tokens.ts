@@ -312,6 +312,18 @@ export const typeStyles: TypeStyle[] = [
     sample: "Sign in to continue to your proof dashboard.",
   },
   {
+    name: "quote",
+    label: "Quote",
+    family: "sans",
+    size: 1.0625,
+    leading: 1.625,
+    weight: 400,
+    tracking: -0.011,
+    use: "The words on a Testimonial card",
+    sample:
+      "Fernhill turned a folder of kind emails into proof we can actually show.",
+  },
+  {
     name: "ui",
     label: "UI",
     family: "sans",

@@ -155,6 +155,7 @@ export const get = query({
         v.object({
           playbackId: v.string(),
           posterTimeSeconds: v.optional(v.number()),
+          posterUrl: v.optional(v.string()),
         }),
       ),
       moderationStatus: v.union(
@@ -247,8 +248,14 @@ export const get = query({
         currentVideoAsset?.status === "ready" && currentVideoAsset.playbackId
           ? {
               playbackId: currentVideoAsset.playbackId,
-              posterTimeSeconds: currentVideoAsset.durationSeconds
-                ? currentVideoAsset.durationSeconds / 2
+              posterTimeSeconds:
+                testimonial.posterTimeSeconds ??
+                (currentVideoAsset.durationSeconds
+                  ? currentVideoAsset.durationSeconds / 2
+                  : undefined),
+              posterUrl: testimonial.posterStorageId
+                ? ((await ctx.storage.getUrl(testimonial.posterStorageId)) ??
+                  undefined)
                 : undefined,
             }
           : undefined,

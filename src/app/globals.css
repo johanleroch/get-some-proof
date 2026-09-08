@@ -49,6 +49,7 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
 
@@ -137,6 +138,8 @@
   --warning-soft: oklch(from var(--warning) 0.95 0.05 h);
   --danger: oklch(0.52 0.19 27);
   --danger-soft: oklch(from var(--danger) 0.95 0.04 h);
+  /* Text on a --danger fill: white here, ink in the dark theme (DESIGN.md 7). */
+  --danger-ink: oklch(1 0 0);
   --info: oklch(0.52 0.09 250);
   --info-soft: oklch(from var(--info) 0.95 0.03 h);
 
@@ -167,6 +170,10 @@
   --type-body-leading: 1.5rem;
   --type-body-weight: 400;
   --type-body-tracking: -0.011em;
+  --type-quote-size: 1.0625rem;
+  --type-quote-leading: 1.625rem;
+  --type-quote-weight: 400;
+  --type-quote-tracking: -0.011em;
   --type-ui-size: 0.875rem;
   --type-ui-leading: 1.25rem;
   --type-ui-weight: 500;
@@ -291,6 +298,7 @@
   --warning-soft: oklch(from var(--warning) 0.3 0.06 h);
   --danger: oklch(0.72 0.17 25);
   --danger-soft: oklch(from var(--danger) 0.3 0.06 h);
+  --danger-ink: oklch(0.2 0.03 27);
   --info: oklch(0.75 0.09 250);
   --info-soft: oklch(from var(--info) 0.3 0.04 h);
 
@@ -431,6 +439,15 @@
   line-height: var(--type-body-leading);
   font-weight: var(--type-body-weight);
   letter-spacing: var(--type-body-tracking);
+}
+
+/* The words on a Testimonial card: one step above body, for a wall column. */
+@utility type-quote {
+  font-family: var(--font-figtree), system-ui, sans-serif;
+  font-size: var(--type-quote-size);
+  line-height: var(--type-quote-leading);
+  font-weight: var(--type-quote-weight);
+  letter-spacing: var(--type-quote-tracking);
 }
 
 @utility type-ui {

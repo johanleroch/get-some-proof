@@ -48,6 +48,7 @@ export function HighlightTestimonialDialog({
   accentColor = defaultPrimaryColor,
   isPublished = false,
   onClose,
+  onCloseAutoFocus,
   onSave,
   submitterName,
   testimonial,
@@ -56,6 +57,8 @@ export function HighlightTestimonialDialog({
   /** A Published Testimonial changes on the public Wall the moment we save. */
   isPublished?: boolean;
   onClose: () => void;
+  /** Where focus goes when the dialog closes; the opener by default. */
+  onCloseAutoFocus?: (event: Event) => void;
   onSave: (richText: TestimonialRichText) => Promise<unknown>;
   submitterName: string;
   testimonial: TestimonialCardTextValue;
@@ -73,7 +76,10 @@ export function HighlightTestimonialDialog({
         if (!open && !saving) onClose();
       }}
     >
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className="max-h-[90svh] overflow-y-auto sm:max-w-xl"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle>Highlight a phrase</DialogTitle>
           <DialogDescription>

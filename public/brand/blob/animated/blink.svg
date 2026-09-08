@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" id="blob-anim-blink" viewBox="176 140 648 648" overflow="visible" fill="none" role="img" aria-label="Get Some Proof mascot, blink">
 <style>
-#blob-anim-blink .body, #blob-anim-blink .eyes, #blob-anim-blink .eye, #blob-anim-blink .arches { transform-box: fill-box; will-change: transform; }
+#blob-anim-blink .body, #blob-anim-blink .eyes, #blob-anim-blink .eye, #blob-anim-blink .arches { transform-box: fill-box; }
 #blob-anim-blink .body { transform-origin: 50% 100%; }
 #blob-anim-blink .eyes, #blob-anim-blink .eye, #blob-anim-blink .arches { transform-origin: 50% 50%; }
 #blob-anim-blink .arches { opacity: 0; }

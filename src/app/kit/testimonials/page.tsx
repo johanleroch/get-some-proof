@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { TestimonialCardVariants } from "@/components/kit/testimonial-card-variants";
+import { TestimonialCardDesigns } from "@/components/kit/testimonial-card-designs";
 
 export const metadata: Metadata = {
   title: "Testimonial card kit",
@@ -12,5 +12,5 @@ export default function TestimonialCardKitRoute() {
     notFound();
   }
 
-  return <TestimonialCardVariants />;
+  return <TestimonialCardDesigns />;
 }

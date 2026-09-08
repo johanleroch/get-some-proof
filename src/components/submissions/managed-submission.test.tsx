@@ -72,6 +72,35 @@ describe("ManagedSubmissionView", () => {
     expect(container.innerHTML).toContain("current-playback-id");
   });
 
+  it("shows the thumbnail the Brand uploaded instead of a frame", () => {
+    render(
+      <ManagedSubmissionView
+        submission={{
+          avatarUrl: null,
+          brandName: "Acme Studio",
+          consentAcceptedAt: Date.UTC(2026, 8, 3),
+          contentVersion: 1,
+          currentVideo: {
+            playbackId: "current-playback-id",
+            posterTimeSeconds: 12,
+            posterUrl: "https://files.example/poster.jpg",
+          },
+          moderationStatus: "published",
+          privacyContact: "privacy@acme.example",
+          publicSlug: "acme-proof",
+          submissionType: "video",
+          submitterEmail: "alice@example.com",
+          submitterName: "Alice Martin",
+          text: "",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("img", { name: "Current video testimonial" }),
+    ).toHaveAttribute("src", "https://files.example/poster.jpg");
+  });
+
   it("shows and cancels replacement upload progress", async () => {
     const release = vi.fn().mockResolvedValue(null);
     const uploadVideo = vi.fn(
