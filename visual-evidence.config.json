@@ -16,6 +16,13 @@
       "theme": "light"
     },
     {
+      "slug": "managed-video-processing",
+      "title": "Private video replacement processing",
+      "path": "/visual-evidence/managed-video-processing",
+      "heading": "Manage your testimonial",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in",
       "title": "Sign in",
       "path": "/sign-in",

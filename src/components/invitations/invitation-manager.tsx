@@ -2,7 +2,7 @@
 
 import { BlobLoadingText } from "@/components/brand/blob-loader";
 
-import { AnimatedBlob } from "@/components/brand/animated-blob";
+import { SkeletonMascot } from "@/components/ui/page-skeletons";
 
 import { type FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation } from "convex/react";
@@ -162,9 +162,7 @@ export function InvitationManager({
 
       {!showList ? null : filteredInvitations === undefined ? (
         <div aria-label="Loading Pending Invitations" role="status">
-          <div className="flex justify-center py-3">
-            <AnimatedBlob size={48} variant="look" />
-          </div>
+          <SkeletonMascot />
           <div className="dashboard-skeleton h-12 rounded-md" />
           <div className="dashboard-skeleton mt-2 h-20 rounded-md" />
           <span className="sr-only">Loading Pending Invitations</span>
