@@ -58,6 +58,60 @@ describe("Public Wall mediated refresh", () => {
     vi.useRealTimers();
   });
 
+  it("refreshes every loaded page without losing depth or retaining stale second-page content", async () => {
+    const second = {
+      ...page,
+      pagination: { cursor: null },
+      testimonials: [
+        {
+          ...page.testimonials[0],
+          id: "second",
+          text: "Second page before refresh.",
+        },
+      ],
+    } as PublicWallResponse;
+    let refreshed = false;
+    const fetch = vi.fn((path: string) =>
+      respond(
+        path.includes("?cursor=")
+          ? ({
+              ...second,
+              testimonials: [
+                {
+                  ...second.testimonials[0],
+                  text: refreshed
+                    ? "Second page refreshed."
+                    : "Second page before refresh.",
+                },
+              ],
+            } as PublicWallResponse)
+          : page,
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    render(element());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Load more testimonials" }),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("Second page before refresh.")).toBeVisible();
+    refreshed = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(screen.getByText("Our first customer proof.")).toBeVisible();
+    expect(screen.getByText("Second page refreshed.")).toBeVisible();
+    expect(screen.queryByText("Second page before refresh.")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Load more testimonials" }),
+    ).toBeNull();
+  });
+
   it("loads signed pages and immediately hides all pages on privacy invalidation", async () => {
     const fetch = vi
       .fn()

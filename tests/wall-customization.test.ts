@@ -75,6 +75,35 @@ describe("Public Wall customization and curation", () => {
     return created.testimonialId;
   }
 
+  it("invalidates loaded public identity fields for Brand and Testimonial visibility changes", async () => {
+    const current = await setup();
+    const testimonialId = await createAndPublish(current, "privacy");
+    const revision = () =>
+      current.t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      });
+    const before = (await revision())!;
+    await current.owner.client.mutation(api.wallCustomization.updateSettings, {
+      organizationId: current.brand.id,
+      accentColor: "#123abc",
+      hideAttribution: false,
+      theme: "light",
+      transparentEmbed: false,
+      visibility: { avatar: false, company: false, role: false, rating: true },
+    });
+    expect(await revision()).toBeGreaterThan(before);
+    const after = (await revision())!;
+    await current.owner.client.mutation(
+      api.wallCustomization.setTestimonialVisibility,
+      {
+        organizationId: current.brand.id,
+        testimonialId,
+        overrides: { rating: false },
+      },
+    );
+    expect(await revision()).toBeGreaterThan(after);
+  });
+
   it("puts newly Published proof first and moves one item atomically", async () => {
     const current = await setup();
     const first = await createAndPublish(current, "first");

@@ -39,6 +39,7 @@ function unavailable(): never {
 export async function resolveUploadContext(
   ctx: MutationCtx,
   args: { clientSubmissionId: string; publicSlug: string; token?: string },
+  kind: "image" | "avatar" = "image",
 ) {
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(args.clientSubmissionId)) unavailable();
   const brand = await ctx.db
@@ -59,7 +60,7 @@ export async function resolveUploadContext(
     if (
       !testimonial ||
       testimonial.organizationId !== brand._id ||
-      testimonial.submissionType !== "text" ||
+      (kind === "image" && testimonial.submissionType !== "text") ||
       testimonial.moderationStatus === "spam" ||
       (testimonial.managementTokenExpiresAt !== undefined &&
         testimonial.managementTokenExpiresAt <= Date.now())

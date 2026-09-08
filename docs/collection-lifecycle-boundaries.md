@@ -18,7 +18,7 @@ Cleanup jobs are idempotent by provider target and retried after provider failur
 
 ## Management-link recovery
 
-Well-formed recovery requests pass a global admission budget of 1,000 per hour before target-specific work. Invalid input, missing Brands, deleting Brands and addresses without matching testimonials do not create target buckets, replacement requests or delivery jobs. Expired target buckets are purged in bounded batches. Existing per-address and per-Brand budgets, grouped delivery, outbox leases and rotation only after successful delivery remain in place. Public responses retain the same accepted shape; this does not promise identical network timing.
+Well-formed recovery requests pass a global admission budget of 1,000 per hour before target-specific work. Invalid input, missing Brands, deleting Brands and addresses without matching testimonials do not create target buckets, replacement requests or delivery jobs. Expired target buckets are purged in bounded batches. An indexed existence probe precedes target admission; full matching history is loaded only after active-request and target/Brand checks. Existing grouped delivery, outbox leases and atomic rotation only after successful delivery remain in place. This existing grouped hydration is not paginated and remains subject to Convex transaction-size limits for unusually large histories; this change bounds admission, not every admitted request’s work. Public responses retain the same accepted shape; this does not promise identical network timing.
 
 ## Invitations during deletion
 

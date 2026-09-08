@@ -175,6 +175,8 @@ export const updateSettings = mutation({
       publicWallTheme: args.theme,
       publicWallTransparentEmbed: args.transparentEmbed,
       publicWallVisibility: args.visibility,
+      publicWallPrivacyRevision:
+        (access.organization.publicWallPrivacyRevision ?? 0) + 1,
       updatedAt: now,
     });
     return null;
@@ -215,6 +217,10 @@ export const setTestimonialVisibility = mutation({
     });
     await ctx.db.patch(projection._id, {
       visibilityOverrides: args.overrides,
+    });
+    await ctx.db.patch(access.organization._id, {
+      publicWallPrivacyRevision:
+        (access.organization.publicWallPrivacyRevision ?? 0) + 1,
     });
     return null;
   },

@@ -712,7 +712,8 @@ export const cancelVideoReplacement = mutation({
       revision.testimonialId !== testimonial._id ||
       revision.reservationId !== args.reservationId ||
       !reservation ||
-      reservation.status !== "reserved" ||
+      (reservation.status !== "reserved" &&
+        reservation.status !== "consumed") ||
       reservation.organizationId !== testimonial.organizationId
     ) {
       return null;
@@ -720,7 +721,6 @@ export const cancelVideoReplacement = mutation({
     const asset = revision.videoAssetId
       ? await ctx.db.get(revision.videoAssetId)
       : null;
-    if (asset?.status === "ready") return null;
     const now = Date.now();
     if (asset) {
       await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
@@ -992,17 +992,16 @@ export const queueReplacementLinkRequest = internalMutation({
       .unique();
     const availableBrand =
       brand?.deletionStartedAt === undefined ? brand : null;
-    const testimonials = availableBrand
-      ? await ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_submitter_email", (index) =>
-            index
-              .eq("organizationId", availableBrand._id)
-              .eq("submitterEmail", email),
-          )
-          .collect()
-      : [];
-    if (!availableBrand || testimonials.length === 0) return null;
+    if (!availableBrand) return null;
+    const matchingTestimonials = () =>
+      ctx.db
+        .query("testimonials")
+        .withIndex("by_organization_submitter_email", (index) =>
+          index
+            .eq("organizationId", availableBrand._id)
+            .eq("submitterEmail", email),
+        );
+    if (!(await matchingTestimonials().first())) return null;
     const requestKey = await hashSubmissionManagementToken(
       `${publicSlug}:${email}`,
     );
@@ -1043,6 +1042,8 @@ export const queueReplacementLinkRequest = internalMutation({
     ) {
       return null;
     }
+    // Preserve the existing grouped-email/atomic-rotation contract, but hydrate only admitted requests.
+    const testimonials = await matchingTestimonials().collect();
     const expiresAt = windowStartedAt + replacementRequestWindowMs * 2;
     if (targetBucket) {
       await ctx.db.patch(targetBucket._id, { count: targetBucket.count + 1 });

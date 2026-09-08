@@ -37,6 +37,7 @@ export function PublicWallLive({
     privacyRevision: initialPrivacyRevision,
   });
   const [loadingMore, setLoadingMore] = useState(false);
+  const pageCount = useRef(1);
   const request = useRef<AbortController | null>(null);
   const expiry = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,39 +49,63 @@ export function PublicWallLive({
       const timeout = setTimeout(() => controller.abort(), 10_000);
       try {
         const path = `/api/public-wall/${encodeURIComponent(initialWall.publicSlug)}`;
-        const response = await fetch(
-          cursor ? `${path}?cursor=${encodeURIComponent(cursor)}` : path,
-          {
-            cache: "no-store",
-            signal: controller.signal,
-          },
-        );
-        if (!response.ok) throw new Error("Public Wall unavailable.");
-        const value = (await response.json()) as PublicWallResponse;
-        if (controller !== request.current || controller.signal.aborted) return;
-        if (
-          privacyRevision !== undefined &&
-          value.privacyRevision !== privacyRevision
-        )
-          return;
+        const depth = cursor ? 1 : pageCount.current;
+        let nextCursor = cursor;
+        let value: PublicWallResponse | undefined;
+        let loadedPages = 0;
+        const testimonials: PublicWallResponse["testimonials"] = [];
+        do {
+          const response = await fetch(
+            nextCursor
+              ? `${path}?cursor=${encodeURIComponent(nextCursor)}`
+              : path,
+            {
+              cache: "no-store",
+              signal: controller.signal,
+            },
+          );
+          if (!response.ok) throw new Error("Public Wall unavailable.");
+          const page = (await response.json()) as PublicWallResponse;
+          if (controller !== request.current || controller.signal.aborted)
+            return;
+          if (
+            (privacyRevision !== undefined &&
+              page.privacyRevision !== privacyRevision) ||
+            (value && page.privacyRevision !== value.privacyRevision)
+          )
+            throw new Error("Public Wall changed.");
+          value = page;
+          testimonials.push(
+            ...page.testimonials.filter(
+              (item) => !testimonials.some((old) => old.id === item.id),
+            ),
+          );
+          nextCursor = page.pagination.cursor;
+          loadedPages += 1;
+        } while (nextCursor && loadedPages < depth);
+        if (!value) return;
+        const current = { ...value, testimonials };
+        pageCount.current = cursor
+          ? pageCount.current + loadedPages
+          : loadedPages;
         setSnapshot((previous) => ({
           wall: {
-            ...wallFromResponse(value),
+            ...wallFromResponse(current),
             testimonials:
-              cursor && previous.privacyRevision === value.privacyRevision
+              cursor && previous.privacyRevision === current.privacyRevision
                 ? [
                     ...previous.wall.testimonials,
-                    ...value.testimonials.filter(
+                    ...current.testimonials.filter(
                       (item) =>
                         !previous.wall.testimonials.some(
                           (old) => old.id === item.id,
                         ),
                     ),
                   ]
-                : value.testimonials,
+                : current.testimonials,
           },
-          cursor: value.pagination.cursor,
-          privacyRevision: value.privacyRevision,
+          cursor: current.pagination.cursor,
+          privacyRevision: current.privacyRevision,
         }));
         if (!cursor) {
           if (expiry.current) clearTimeout(expiry.current);

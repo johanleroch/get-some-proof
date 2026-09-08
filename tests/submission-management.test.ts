@@ -211,6 +211,42 @@ describe("Submission Management Links", () => {
 
   afterEach(() => vi.unstubAllEnvs());
 
+  it("allows managed video avatars while refusing forged and cross-Brand links", async () => {
+    const t = createConvexTest();
+    await createManagedVideo(t);
+    const args = {
+      clientSubmissionId: "managed-avatar-video",
+      publicSlug: "acme-proof",
+      token: originalToken,
+    };
+    await expect(
+      t.mutation(api.submissions.generateAvatarUploadUrl, args),
+    ).resolves.toHaveProperty("uploadUrl");
+    await expect(
+      t.mutation(api.submissions.generateAvatarUploadUrl, {
+        ...args,
+        token: "b".repeat(64),
+      }),
+    ).rejects.toBeDefined();
+    const otherOwner = await authenticatedUser(t, {
+      email: "other@example.com",
+      userId: "other-owner",
+    });
+    await otherOwner.client.mutation(api.organizations.create, {
+      name: "Other Brand",
+      publicSlug: "other-brand",
+    });
+    await expect(
+      t.mutation(api.submissions.generateAvatarUploadUrl, {
+        ...args,
+        publicSlug: "other-brand",
+      }),
+    ).rejects.toBeDefined();
+    await expect(
+      t.mutation(api.testimonialImages.generateUploadUrl, args),
+    ).rejects.toBeDefined();
+  });
+
   it("exposes only the Submission selected by a valid, unexpired token", async () => {
     const t = createConvexTest();
     const { testimonialId } = await createManagedText(t);
@@ -622,65 +658,74 @@ describe("Submission Management Links", () => {
     });
   });
 
-  it("releases an interrupted replacement upload so the Submitter can retry", async () => {
-    const t = createConvexTest();
-    const { testimonialId, videoAssetId } = await createManagedVideo(t);
-    const tokenHash = await hashSubmissionManagementToken(originalToken);
-    const reserved = await t.mutation(
-      internal.submissionManagement.reserveVideoReplacement,
-      {
-        clientRevisionId: "revision-cancelled-video",
-        expectedContentVersion: 1,
-        tokenHash,
-      },
-    );
-    const replacementAssetId = await t.mutation(
-      internal.submissionManagement.attachVideoReplacement,
-      {
-        fileSizeBytes: 2_000,
-        mimeType: "video/mp4",
-        provider: "mux",
-        providerUploadId: "cancelled-replacement-upload",
-        reservationId: reserved.reservationId,
-        revisionId: reserved.revisionId,
-        spokenLanguage: "en",
-        tokenHash,
-      },
-    );
+  it.each(["awaiting_upload", "ready"] as const)(
+    "releases an unconfirmed %s replacement so the Submitter can retry",
+    async (status) => {
+      const t = createConvexTest();
+      const { testimonialId, videoAssetId } = await createManagedVideo(t);
+      const tokenHash = await hashSubmissionManagementToken(originalToken);
+      const reserved = await t.mutation(
+        internal.submissionManagement.reserveVideoReplacement,
+        {
+          clientRevisionId: "revision-cancelled-video",
+          expectedContentVersion: 1,
+          tokenHash,
+        },
+      );
+      const replacementAssetId = await t.mutation(
+        internal.submissionManagement.attachVideoReplacement,
+        {
+          fileSizeBytes: 2_000,
+          mimeType: "video/mp4",
+          provider: "mux",
+          providerUploadId: "cancelled-replacement-upload",
+          reservationId: reserved.reservationId,
+          revisionId: reserved.revisionId,
+          spokenLanguage: "en",
+          tokenHash,
+        },
+      );
 
-    await expect(
-      t.mutation(api.submissionManagement.cancelVideoReplacement, {
-        reservationId: reserved.reservationId,
-        revisionId: reserved.revisionId,
-        token: originalToken,
-      }),
-    ).resolves.toBeNull();
+      if (status === "ready")
+        await t.run(async (ctx) => {
+          await ctx.db.patch(replacementAssetId, { status: "ready" });
+          await ctx.db.patch(reserved.reservationId, { status: "consumed" });
+        });
 
-    const cancelled = await t.run(async (ctx) => ({
-      current: await ctx.db.get(videoAssetId),
-      replacement: await ctx.db.get(replacementAssetId),
-      reservation: await ctx.db.get(reserved.reservationId),
-      revision: await ctx.db.get(reserved.revisionId),
-      cleanup: await ctx.db.query("videoProviderCleanupJobs").collect(),
-    }));
-    expect(cancelled.current?.testimonialId).toBe(testimonialId);
-    expect(cancelled.replacement).toBeNull();
-    expect(cancelled.reservation?.status).toBe("released");
-    expect(cancelled.revision?.status).toBe("superseded");
-    expect(cancelled.cleanup).toEqual([
-      expect.objectContaining({
-        providerUploadId: "cancelled-replacement-upload",
-        testimonialId,
-      }),
-    ]);
-    await expect(
-      t.mutation(internal.submissionManagement.reserveVideoReplacement, {
-        clientRevisionId: "revision-after-cancel",
-        expectedContentVersion: 1,
-        tokenHash,
-      }),
-    ).resolves.toMatchObject({ testimonialId });
-  });
+      await expect(
+        t.mutation(api.submissionManagement.cancelVideoReplacement, {
+          reservationId: reserved.reservationId,
+          revisionId: reserved.revisionId,
+          token: originalToken,
+        }),
+      ).resolves.toBeNull();
+
+      const cancelled = await t.run(async (ctx) => ({
+        current: await ctx.db.get(videoAssetId),
+        replacement: await ctx.db.get(replacementAssetId),
+        reservation: await ctx.db.get(reserved.reservationId),
+        revision: await ctx.db.get(reserved.revisionId),
+        cleanup: await ctx.db.query("videoProviderCleanupJobs").collect(),
+      }));
+      expect(cancelled.current?.testimonialId).toBe(testimonialId);
+      expect(cancelled.replacement).toBeNull();
+      expect(cancelled.reservation?.status).toBe("released");
+      expect(cancelled.revision?.status).toBe("superseded");
+      expect(cancelled.cleanup).toEqual([
+        expect.objectContaining({
+          providerUploadId: "cancelled-replacement-upload",
+          testimonialId,
+        }),
+      ]);
+      await expect(
+        t.mutation(internal.submissionManagement.reserveVideoReplacement, {
+          clientRevisionId: "revision-after-cancel",
+          expectedContentVersion: 1,
+          tokenHash,
+        }),
+      ).resolves.toMatchObject({ testimonialId });
+    },
+  );
 
   it("blocks replacement video storage during payment grace", async () => {
     const t = createConvexTest();

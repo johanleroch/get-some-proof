@@ -150,10 +150,14 @@ export const generateAvatarUploadUrl = mutation({
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const { brand, testimonialId } = await resolveUploadContext(ctx, {
-      ...args,
-      publicSlug: args.publicSlug.trim().toLowerCase(),
-    }).catch(() => collectionUnavailable());
+    const { brand, testimonialId } = await resolveUploadContext(
+      ctx,
+      {
+        ...args,
+        publicSlug: args.publicSlug.trim().toLowerCase(),
+      },
+      "avatar",
+    ).catch(() => collectionUnavailable());
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,
     );

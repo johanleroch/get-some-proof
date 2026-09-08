@@ -4,17 +4,17 @@ The hosted Wall, its metadata and the JSON endpoint use the same Next.js server 
 
 ## Entry-point inventory
 
-| Entry                                                         | Access and bounds                                                                                                                         |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Hosted `/w/[publicSlug]`, including metadata                  | Shared server adapter; React request-local memoization; same lookup and read admission as JSON                                            |
-| JSON `/api/public-wall/[publicSlug]`                          | Public gateway; signed Brand-bound cursors; global and requester admission; public projection only                                        |
-| Browser complete Wall reads                                   | JSON adapter; 30-second refresh; pagination resets on refreshed snapshots; stale content clears on refresh failure                        |
-| Convex `publicWall.getBrand` and `publicWall.list`            | Trusted-server credential; no anonymous complete projection access                                                                        |
-| Convex `publicWall.privacyRevision`                           | Intentionally public, single indexed Brand lookup; only a revision number or null, without testimonial, storage or private identity reads |
-| Alternate Next.js deployment hostnames                        | Same adapter and bounds; when the optional gateway lock is enabled, the same origin authentication applies                                |
-| Collection, management links and authenticated workspace APIs | Retain their own existing authentication and admission contracts                                                                          |
+| Entry                                                         | Access and bounds                                                                                                                              |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosted `/w/[publicSlug]`, including metadata                  | Shared server adapter; React request-local memoization; same lookup and read admission as JSON                                                 |
+| JSON `/api/public-wall/[publicSlug]`                          | Public gateway; signed Brand-bound cursors; global and requester admission; public projection only                                             |
+| Browser complete Wall reads                                   | JSON adapter; 30-second refresh; refresh retains loaded pagination depth through bounded signed reads; stale content clears on refresh failure |
+| Convex `publicWall.getBrand` and `publicWall.list`            | Trusted-server credential; no anonymous complete projection access                                                                             |
+| Convex `publicWall.privacyRevision`                           | Intentionally public, single indexed Brand lookup; only a revision number or null, without testimonial, storage or private identity reads      |
+| Alternate Next.js deployment hostnames                        | Same adapter and bounds; when the optional gateway lock is enabled, the same origin authentication applies                                     |
+| Collection, management links and authenticated workspace APIs | Retain their own existing authentication and admission contracts                                                                               |
 
-The minimal reactive revision is a privacy invalidation signal. Removing a projection increments it in the same transaction. Starting Brand deletion makes it null. A client immediately hides **all** loaded pages on a mismatch and requests a new admitted snapshot. This preserves the immediate-removal intent of ADR 0026 for connected clients without granting a browser the complete projection credential. Browser suspension or loss of connectivity cannot guarantee instantaneous delivery; the client also refreshes on return to visibility and expires a successful snapshot after 60 seconds. No content cache with a positive freshness lifetime is introduced.
+The minimal reactive revision is a privacy invalidation signal. Removing a projection or changing public visibility increments it in the same transaction. Starting Brand deletion makes it null. A client immediately hides **all** loaded pages on a mismatch and requests a new admitted snapshot. This preserves the immediate-removal intent of ADR 0026 for connected clients without granting a browser the complete projection credential. Browser suspension or loss of connectivity cannot guarantee instantaneous delivery; the client also refreshes on return to visibility and expires a successful snapshot after 60 seconds. No content cache with a positive freshness lifetime is introduced.
 
 ## Credentials and requester identity
 
