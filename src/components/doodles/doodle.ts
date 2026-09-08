@@ -3,8 +3,8 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 export type DoodleProps = Omit<ComponentProps<"svg">, "children"> & {
-  /** Draws the strokes in once on mount (600ms). Never loops. */
-  draw?: boolean;
+  /** Keeps each object of the drawing on a slow, out-of-phase drift. */
+  float?: boolean;
 };
 
 /**
@@ -12,12 +12,12 @@ export type DoodleProps = Omit<ComponentProps<"svg">, "children"> & {
  * round caps, and a stroke width that does not scale with the artwork.
  */
 export function doodleProps(
-  { className, draw = false, ...props }: DoodleProps,
+  { className, float = false, ...props }: DoodleProps,
   viewBox: string,
 ) {
   return {
     "aria-hidden": true as const,
-    className: cn("shrink-0", draw && "doodle-draw", className),
+    className: cn("shrink-0", float && "doodle-float", className),
     fill: "none",
     focusable: false,
     stroke: "currentColor",
@@ -30,7 +30,7 @@ export function doodleProps(
   };
 }
 
+/** Shared per-stroke attribute: the width never scales with the artwork. */
 export const strokeAttributes = {
-  pathLength: 1,
   vectorEffect: "non-scaling-stroke" as const,
 };

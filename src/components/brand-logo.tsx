@@ -3,12 +3,15 @@ import Image from "next/image";
 import { productName } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-const lockupRatio = 631 / 103;
+const lockupRatio = 687 / 111;
 
 /**
  * The official lockup (blob mark and wordmark) from `public/brand/logo.svg`,
- * with the paper-filled wordmark on dark surfaces. Keep `height` at 24px or
- * more so the blob's eyes stay readable (docs/design/app-icons/DESIGN.md 10.1).
+ * with the paper-filled wordmark on dark surfaces. The mark is about the
+ * height of the wordmark, so it sits quietly next to it; that also makes it
+ * smaller than the mark-only lockup at the same height. Keep `height` at 26px
+ * or more so the blob's eyes stay readable, and reach for `BrandMark` rather
+ * than shrinking the lockup (docs/design/app-icons/DESIGN.md 10.1).
  */
 export function BrandLogo({
   className,

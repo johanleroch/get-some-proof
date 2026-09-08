@@ -174,11 +174,11 @@ bevels with visible facets, noise or grain, glass morphism.
 
 ## 6. The family
 
-All ten live in `public/brand/icons/` as SVG (source of truth) and in
-`docs/design/app-icons/png/` as 1024 px PNG exports. Review sheet:
-`docs/design/app-icons/sheet.png`.
-
-![Review sheet](./sheet.png)
+`node scripts/app-icons/build.mjs` writes all ten into
+`public/brand/icons/`, and `render.mjs` adds the 1024 px PNG exports and the
+review sheet. None of it is kept in the repository: the script is the source
+of truth, and the product ships the founder's own exports (sections 10.1 and
+10.2). Run `render.mjs` to look at the sheet again.
 
 | #   | File                 | Family       | Ground | Subject                                     | Best for                                              |
 | --- | -------------------- | ------------ | ------ | ------------------------------------------- | ----------------------------------------------------- |
@@ -317,13 +317,18 @@ code so the family stays consistent and editable.
   `node scripts/app-icons/render.mjs` (uses the Playwright Chromium already
   installed for the e2e suite). Add `--install` to rewrite the site icons in
   `src/app/` from the flagship.
-- `public/brand/icons/*.svg`: the family, source of truth (01 to 10 the
-  subjects, 11 to 20 the mascots), plus the flagship's flat and mark builds
-  (section 6) and the lockup marks: `08-blob-mascot-mark.svg` and
-  `12-star-tilt-mascot-mark.svg` (transparent, shaded, room for the cast
-  shadow) with their `-mark-flat.svg` twins for Figma and small sizes.
-- `docs/design/app-icons/png/*.png`: 1024 px exports, transparent corners.
-- `docs/design/app-icons/sheet.png`: review sheet, regenerated with the PNGs.
+- The family itself is not kept in the repository. It was the exploration
+  that led to the flagship, the product ships the founder's own Figma exports
+  (sections 10.1 and 10.2), and every file is one command away:
+  `node scripts/app-icons/build.mjs` writes all twenty back into
+  `public/brand/icons/` — 01 to 10 the subjects, 11 to 20 the mascots, plus
+  the flagship's flat and mark builds (section 6) and the lockup marks
+  `08-blob-mascot-mark.svg` and `12-star-tilt-mascot-mark.svg` with their
+  `-mark-flat.svg` twins. The script is the source of truth; the SVGs were a
+  cache of it.
+- `render.mjs` also writes `docs/design/app-icons/png/*.png` (1024 px,
+  transparent corners) and `sheet.png`. Neither is kept either: together they
+  were 11 MB of pictures of files the script can draw again.
 
 ### 10.1 The official logo
 

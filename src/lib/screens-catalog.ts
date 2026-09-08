@@ -201,10 +201,19 @@ export const screenSections: ScreenSection[] = [
     screens: [
       {
         slug: "dashboard",
-        title: "Brand overview",
+        title: "Brand overview, nothing waiting",
         description:
-          "Home of the workspace: collection link, publishing stats, and recent activity.",
+          "A new workspace: the Collection Form leads, because sharing it is the only job left.",
         fixturePath: "/visual-evidence/dashboard",
+        livePath: "/org/:organizationSlug/dashboard",
+        requiresAuth: true,
+      },
+      {
+        slug: "dashboard-pending",
+        title: "Brand overview, Submissions waiting",
+        description:
+          "The queue leads and links to the Inbox; the Collection Form steps back.",
+        fixturePath: "/visual-evidence/dashboard-pending",
         livePath: "/org/:organizationSlug/dashboard",
         requiresAuth: true,
       },
@@ -265,6 +274,13 @@ export const screenSections: ScreenSection[] = [
         title: "Workspace deletion in progress",
         description: "Retry state while the deletion is still running.",
         fixturePath: "/visual-evidence/workspace-delete-progress",
+      },
+      {
+        slug: "testimonial-highlight",
+        title: "Highlight a phrase",
+        description:
+          "Marking one phrase of a Testimonial: the words stay locked, the mark previews in the Brand's own colour.",
+        fixturePath: "/visual-evidence/rich-testimonial",
       },
       {
         slug: "toast-success",

@@ -42,8 +42,10 @@ export function Toaster(props: ToasterProps) {
           success: "[&_[data-icon]]:text-success",
           title: "!font-semibold !tracking-[-0.008em]",
           // Custom (unstyled) toasts draw their own bubble; the float shadow
-          // only belongs to the toasts sonner still styles itself.
-          toast: "!font-sans data-[styled=true]:!shadow-float",
+          // and sonner's per-type text colour only belong to the toasts sonner
+          // still styles itself.
+          toast:
+            "!font-sans data-[styled=true]:!shadow-float data-[styled=false]:!text-ink",
           warning: "[&_[data-icon]]:text-warning",
         },
       }}

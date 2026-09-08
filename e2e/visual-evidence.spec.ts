@@ -145,23 +145,26 @@ for (const screen of config.screens) {
     if (fixtureMode && screen.slug === "testimonial-inbox-options") {
       await page
         .getByRole("button", {
-          name: "Options for Remy Jupille's Testimonial",
+          name: "More actions for Remy Jupille's Testimonial",
         })
         .click();
+      // Unpublish moved onto the card; the menu keeps only the rare acts.
       await expect(
-        page.getByRole("menuitem", { name: "Unpublish" }),
+        page.getByRole("menuitem", { name: "Delete permanently" }),
       ).toBeVisible();
     }
+    // The mascot tells every toast, so they are custom sonner toasts: assert
+    // on the message the visitor reads, not on sonner's own styling hooks.
     if (fixtureMode && screen.slug === "toast-error") {
-      await expect(
-        page.locator('[data-sonner-toast][data-type="error"]'),
-      ).toContainText("Unable to save your changes. Please try again.");
+      await expect(page.locator("[data-sonner-toast]")).toContainText(
+        "Unable to save your changes. Please try again.",
+      );
     }
 
     if (fixtureMode && screen.slug === "toast-success") {
-      await expect(
-        page.locator('[data-sonner-toast][data-type="success"]'),
-      ).toContainText("Testimonial permanently deleted.");
+      await expect(page.locator("[data-sonner-toast]")).toContainText(
+        "Testimonial permanently deleted.",
+      );
     }
 
     if (screen.slug === "account-project-selector") {

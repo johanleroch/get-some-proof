@@ -69,10 +69,7 @@ export function HostedWall({
             <p className="type-micro text-muted-foreground">Customer proof</p>
             <h1 className="type-display-xl flex items-start gap-3 text-balance">
               <span>{wall.brandName}</span>
-              <Sparkle
-                className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10"
-                draw
-              />
+              <Sparkle className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10" />
             </h1>
           </div>
           {wall.testimonials.length > 0 ? (

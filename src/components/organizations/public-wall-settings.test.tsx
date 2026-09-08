@@ -19,8 +19,14 @@ describe("PublicWallSettings", () => {
 
     fireEvent.keyDown(screen.getByLabelText("Theme"), { key: "ArrowDown" });
     fireEvent.click(screen.getByRole("option", { name: "Dark" }));
-    fireEvent.change(screen.getByLabelText("Accent color"), {
+    // The accent is our own picker now, not the operating system's panel:
+    // the custom well opens it and the hex field is the exact way in.
+    fireEvent.click(screen.getByRole("button", { name: "Custom color" }));
+    fireEvent.change(screen.getByLabelText("Hex"), {
       target: { value: "#f97316" },
+    });
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
     });
     fireEvent.click(
       screen.getByLabelText("Use a transparent Embedded Wall background"),

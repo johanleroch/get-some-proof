@@ -30,10 +30,10 @@ import { ManagedSubmissionView } from "@/components/submissions/managed-submissi
 import { HostedWall } from "@/components/public-wall/hosted-wall";
 import {
   InboxFeedback,
+  InboxCategoryTabs,
   InboxFilters,
   TestimonialDeleteDialog,
   TestimonialInboxView,
-  WallCurationPanel,
 } from "@/components/testimonials/testimonial-inbox";
 import { PublishedCurationView } from "@/components/testimonials/published-curation";
 import { Button } from "@/components/ui/button";
@@ -107,7 +107,7 @@ export function OnboardingScreenFixture() {
       <div className="mx-auto max-w-5xl space-y-10">
         <BrandLogo />
         <PageHeader
-          description="Set the public identity and Collection Form your customers will see."
+          description="This is the identity your customers see when you ask them for a Testimonial. Only the name is needed; we write the rest for you."
           eyebrow="First step"
           title="Create your Brand"
         />
@@ -382,44 +382,49 @@ export function TestimonialInboxScreenFixture() {
         eyebrow="Workspace"
         title="Inbox"
       />
-      <InboxFilters
-        moderationStatus="all"
-        onModerationStatusChange={() => undefined}
-        onSortChange={() => undefined}
-        onSubmissionTypeChange={() => undefined}
-        sort="newest"
-        submissionType="all"
-      />
       <InboxFeedback error={null} message={null} />
-      <TestimonialInboxView
-        accentColor={collectionFormFixtureBrand.primaryColor}
-        onAction={() => undefined}
-        testimonials={[
-          processingVideoTestimonialFixture,
-          spamTestimonialFixture,
-          { ...videoTestimonialFixture, moderationStatus: "published" },
-          testimonialFixture,
-        ]}
-      />
-      <WallCurationPanel>
-        <PublishedCurationView
-          onMove={async () => undefined}
-          onSetVisibility={async () => undefined}
+      <InboxCategoryTabs
+        filters={
+          <InboxFilters
+            onSortChange={() => undefined}
+            onSubmissionTypeChange={() => undefined}
+            sort="newest"
+            submissionType="all"
+          />
+        }
+        moderationStatus="pending"
+        onModerationStatusChange={() => undefined}
+      >
+        <TestimonialInboxView
+          accentColor={collectionFormFixtureBrand.primaryColor}
+          category="pending"
+          onAction={() => undefined}
+          pendingId={null}
           testimonials={[
-            {
-              submissionType: "video",
-              submitterName: "Remy Jupille",
-              testimonialId: "fixture-published-video" as Id<"testimonials">,
-            },
-            {
-              overrides: { company: false },
-              submissionType: "text",
-              submitterName: "Alice Martin",
-              testimonialId: "fixture-published-text" as Id<"testimonials">,
-            },
+            processingVideoTestimonialFixture,
+            spamTestimonialFixture,
+            { ...videoTestimonialFixture, moderationStatus: "published" },
+            testimonialFixture,
           ]}
         />
-      </WallCurationPanel>
+      </InboxCategoryTabs>
+      <PublishedCurationView
+        onMove={async () => undefined}
+        onSetVisibility={async () => undefined}
+        testimonials={[
+          {
+            submissionType: "video",
+            submitterName: "Remy Jupille",
+            testimonialId: "fixture-published-video" as Id<"testimonials">,
+          },
+          {
+            overrides: { company: false },
+            submissionType: "text",
+            submitterName: "Alice Martin",
+            testimonialId: "fixture-published-text" as Id<"testimonials">,
+          },
+        ]}
+      />
     </section>
   );
 }
@@ -588,9 +593,11 @@ export function WorkspaceDeletionProgressScreenFixture() {
 }
 
 export function DashboardBackgroundScreenFixture({
+  pendingCount = 0,
   plan = "free",
   inactive = false,
 }: {
+  pendingCount?: number;
   plan?: "free" | "premium";
   inactive?: boolean;
 }) {
@@ -656,7 +663,9 @@ export function DashboardBackgroundScreenFixture({
         billingHref={`/org/${project.slug}/billing`}
         copyCollectionUrl={async () => undefined}
         name={project.name}
-        pendingCount={0}
+        pendingCount={pendingCount}
+        collectionUrl={`https://getsomeproof.com/c/${project.slug}`}
+        slug={project.slug}
         publicSlug={project.slug}
       />
     </AppShellView>
@@ -697,6 +706,11 @@ export function ManagedVideoProcessingScreenFixture() {
       }}
     />
   );
+}
+
+/** The same Overview once Submissions are waiting: the queue leads. */
+export function DashboardPendingScreenFixture() {
+  return <DashboardBackgroundScreenFixture pendingCount={3} />;
 }
 
 export function AccountDeletionScreenFixture() {

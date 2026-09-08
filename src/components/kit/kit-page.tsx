@@ -9,10 +9,11 @@ import {
   IconStar,
   IconTemplate,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
+import { blobToast } from "@/components/brand/blob-toast";
+import { MotionShowcase } from "@/components/kit/motion-showcase";
 import { PageHeader } from "@/components/page-header";
 import {
   ArrowNote,
@@ -129,6 +130,7 @@ const sections = [
   { id: "shape", title: "Shape and depth" },
   { id: "spacing", title: "Spacing" },
   { id: "doodles", title: "Doodles" },
+  { id: "motion", title: "Motion" },
   { id: "buttons", title: "Buttons" },
   { id: "forms", title: "Forms" },
   { id: "shell", title: "Page header" },
@@ -310,10 +312,12 @@ export function KitPage() {
     try {
       await navigator.clipboard.writeText(cssSnippet);
       setCopied(true);
-      toast.success("Token values copied as CSS.");
+      blobToast.success("Token values copied as CSS.");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Could not copy. Select the snippet at the bottom instead.");
+      blobToast.error(
+        "Could not copy. Select the snippet at the bottom instead.",
+      );
     }
   }
 
@@ -970,7 +974,7 @@ export function KitPage() {
               <EmptyState
                 action={<Button>Copy collection link</Button>}
                 description="Share your Collection Form and the first proof lands here, ready to review."
-                illustration={<SpeechBubbleStars className="h-32" draw />}
+                illustration={<SpeechBubbleStars className="h-32" />}
                 title="No Testimonials yet"
               />
             </div>
@@ -1020,27 +1024,37 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
+            description="Every curve of DESIGN.md section 8, plotted and replayed on the same travel. Mass decides the overshoot: a switch thumb may bounce, a dialog may not."
+            id="motion"
+            title="Motion"
+          >
+            <MotionShowcase />
+          </KitSection>
+
+          <KitSection
             description="Toasts, skeletons and separators."
             id="feedback"
             title="Feedback"
           >
             <div className="flex flex-wrap items-center gap-3">
               <Button
-                onClick={() => toast.success("Testimonial published.")}
+                onClick={() => blobToast.success("Testimonial published.")}
                 variant="outline"
               >
                 Success toast
               </Button>
               <Button
                 onClick={() =>
-                  toast.error("Upload failed. Try a smaller file.")
+                  blobToast.error("Upload failed. Try a smaller file.")
                 }
                 variant="outline"
               >
                 Error toast
               </Button>
               <Button
-                onClick={() => toast.info("Your wall updates within a minute.")}
+                onClick={() =>
+                  blobToast.info("Your wall updates within a minute.")
+                }
                 variant="outline"
               >
                 Info toast
@@ -1306,7 +1320,7 @@ function AlertDialogDemo() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep it</AlertDialogCancel>
-            <AlertDialogAction className="bg-danger hover:bg-danger/90 text-white">
+            <AlertDialogAction variant="destructive">
               Delete permanently
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1338,22 +1352,18 @@ function SheetDemo() {
 }
 
 function DoodleShowcase() {
-  const [drawKey, setDrawKey] = useState(0);
   return (
-    <div className="space-y-6" key={drawKey}>
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-8">
         <div className="space-y-2">
-          <Sparkle className="text-brand size-12" draw />
+          <Sparkle className="text-brand size-12" />
           <p className="text-ink-2 type-small">Sparkle</p>
         </div>
         <div className="space-y-2">
           <p className="type-display">
             Get some{" "}
             <span className="relative inline-block whitespace-nowrap">
-              <MarkerHighlight
-                className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]"
-                draw
-              />
+              <MarkerHighlight className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]" />
               <span className="relative">proof</span>
             </span>
           </p>
@@ -1362,30 +1372,33 @@ function DoodleShowcase() {
         <div className="space-y-2">
           <span className="relative inline-block px-4 py-1">
             <span className="type-kpi">12</span>
-            <CircleAround
-              className="absolute -inset-x-2 -inset-y-1 h-[calc(100%+0.5rem)] w-[calc(100%+1rem)]"
-              draw
-            />
+            <CircleAround className="absolute -inset-x-2 -inset-y-1 h-[calc(100%+0.5rem)] w-[calc(100%+1rem)]" />
           </span>
           <p className="text-ink-2 type-small">CircleAround</p>
         </div>
         <div className="space-y-2">
-          <ArrowNote draw>this is what your customers see</ArrowNote>
+          <ArrowNote>this is what your customers see</ArrowNote>
           <p className="text-ink-2 type-small">ArrowNote · curve</p>
         </div>
         <div className="space-y-2">
-          <ArrowNote arrow="flat" direction="left" draw>
+          <ArrowNote arrow="flat" direction="left">
             share this to start collecting
           </ArrowNote>
           <p className="text-ink-2 type-small">ArrowNote · flat</p>
         </div>
+        <div className="space-y-2">
+          <ArrowNote arrow="rise" className="mt-6" direction="left">
+            share this to start collecting
+          </ArrowNote>
+          <p className="text-ink-2 type-small">ArrowNote · rise</p>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          ["SpeechBubbleStars", <SpeechBubbleStars draw key="bubble" />],
-          ["CameraTripod", <CameraTripod draw key="camera" />],
-          ["EnvelopeStamp", <EnvelopeStamp draw key="envelope" />],
-          ["WallFrames", <WallFrames draw key="wall" />],
+          ["SpeechBubbleStars", <SpeechBubbleStars key="bubble" />],
+          ["CameraTripod", <CameraTripod key="camera" />],
+          ["EnvelopeStamp", <EnvelopeStamp key="envelope" />],
+          ["WallFrames", <WallFrames key="wall" />],
         ].map(([name, element]) => (
           <div
             className="bg-card space-y-2 rounded-lg border p-4"
@@ -1398,14 +1411,6 @@ function DoodleShowcase() {
           </div>
         ))}
       </div>
-      <Button
-        onClick={() => setDrawKey((key) => key + 1)}
-        size="sm"
-        variant="outline"
-      >
-        <IconRefresh aria-hidden="true" />
-        Replay draw-in
-      </Button>
     </div>
   );
 }

@@ -20,6 +20,13 @@ import { normalizeVideoMimeType } from "@convex/domain/video";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type RecorderDevice = Pick<MediaDeviceInfo, "deviceId" | "kind" | "label">;
 type RecorderState = {
@@ -82,12 +89,6 @@ function formatElapsedTime(seconds: number) {
     .padStart(2, "0");
   return `${minutes}:${(seconds % 60).toString().padStart(2, "0")}`;
 }
-
-// Device pickers stay native: their option lists change while a stream is
-// live and the recorder tests drive them through change events. They wear
-// the same skin as the Select primitive.
-const deviceSelectClassName =
-  "border-input bg-surface text-ink focus-visible:border-brand focus-visible:ring-ring h-11 w-full cursor-pointer rounded-md border px-3 text-sm tracking-[-0.008em] outline-none focus-visible:ring-[3px]";
 
 export function BrowserVideoRecorder({
   onFileChange,
@@ -589,18 +590,23 @@ function RecorderView({
             <Label className="flex items-center gap-2" htmlFor="video-camera">
               <IconCamera aria-hidden="true" className="size-4" /> Camera
             </Label>
-            <select
-              className={deviceSelectClassName}
-              id="video-camera"
-              onChange={(event) => onCameraChange(event.target.value)}
-              value={cameraId}
+            <Select
+              onValueChange={onCameraChange}
+              value={cameraId || undefined}
             >
-              {cameras.map((device, index) => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Camera ${index + 1}`}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11 w-full" id="video-camera">
+                <SelectValue placeholder="Camera" />
+              </SelectTrigger>
+              <SelectContent>
+                {cameras
+                  .filter((device) => device.deviceId)
+                  .map((device, index) => (
+                    <SelectItem key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Camera ${index + 1}`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label
@@ -610,18 +616,23 @@ function RecorderView({
               <IconMicrophone aria-hidden="true" className="size-4" />{" "}
               Microphone
             </Label>
-            <select
-              className={deviceSelectClassName}
-              id="video-microphone"
-              onChange={(event) => onMicrophoneChange(event.target.value)}
-              value={microphoneId}
+            <Select
+              onValueChange={onMicrophoneChange}
+              value={microphoneId || undefined}
             >
-              {microphones.map((device, index) => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Microphone ${index + 1}`}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11 w-full" id="video-microphone">
+                <SelectValue placeholder="Microphone" />
+              </SelectTrigger>
+              <SelectContent>
+                {microphones
+                  .filter((device) => device.deviceId)
+                  .map((device, index) => (
+                    <SelectItem key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Microphone ${index + 1}`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       ) : null}

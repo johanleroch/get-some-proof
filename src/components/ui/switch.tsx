@@ -20,7 +20,7 @@ function Switch({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="bg-surface pointer-events-none block size-5 rounded-full transition-transform duration-150 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
+        className="bg-surface pointer-events-none block size-5 rounded-full transition-transform duration-[var(--motion-base)] ease-[var(--ease-settle)] data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
       />
     </SwitchPrimitive.Root>
   );

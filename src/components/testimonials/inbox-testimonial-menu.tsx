@@ -1,28 +1,20 @@
-import {
-  IconArchive,
-  IconArrowBackUp,
-  IconDots,
-  IconEyeOff,
-  IconHighlight,
-  IconSend,
-  IconShieldX,
-  IconTrash,
-} from "@tabler/icons-react";
+"use client";
 
-import { Button } from "@/components/ui/button";
+import { IconDots, IconShieldX, IconTrash } from "@tabler/icons-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 export type InboxTestimonialAction =
-  | "highlight"
   | "archive"
   | "delete"
+  | "highlight"
   | "publish"
   | "spam"
   | "undo-spam"
@@ -35,6 +27,12 @@ export type InboxTestimonialMenuValue = {
   videoStatus?: "awaiting_upload" | "processing" | "ready" | "failed";
 };
 
+/**
+ * What is left in the "..." menu once the routine work moved onto the card:
+ * only the two acts an Owner should have to look for. Marking abuse and
+ * deleting for good are rare and hard to take back, so they do not sit next
+ * to Publish (DESIGN.md section 7 keeps destructive actions apart).
+ */
 export function InboxTestimonialMenu({
   disabled = false,
   onAction,
@@ -45,74 +43,36 @@ export function InboxTestimonialMenu({
   testimonial: InboxTestimonialMenuValue;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
-  const videoReady =
-    testimonial.submissionType !== "video" ||
-    testimonial.videoStatus === "ready";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          aria-label={`Options for ${testimonial.submitterName}'s Testimonial`}
-          className="bg-surface/90 backdrop-blur-sm"
+          aria-label={`More actions for ${testimonial.submitterName}'s Testimonial`}
           disabled={disabled}
-          size="icon"
-          variant="outline"
+          size="icon-sm"
+          variant="ghost"
         >
           <IconDots aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuLabel className="capitalize">
-          {testimonial.moderationStatus}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {isSpam ? (
-          <DropdownMenuItem onSelect={() => onAction("undo-spam")}>
-            <IconArrowBackUp aria-hidden="true" />
-            Undo Spam
-          </DropdownMenuItem>
-        ) : (
+        {isSpam ? null : (
           <>
-            {testimonial.submissionType === "text" ? (
-              <DropdownMenuItem onSelect={() => onAction("highlight")}>
-                <IconHighlight aria-hidden="true" /> Highlight a phrase
-              </DropdownMenuItem>
-            ) : null}
-            {testimonial.moderationStatus === "published" ? (
-              <DropdownMenuItem onSelect={() => onAction("unpublish")}>
-                <IconEyeOff aria-hidden="true" />
-                Unpublish
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                disabled={!videoReady}
-                onSelect={() => onAction("publish")}
-              >
-                <IconSend aria-hidden="true" />
-                Publish
-              </DropdownMenuItem>
-            )}
-            {testimonial.moderationStatus === "pending" ? (
-              <DropdownMenuItem onSelect={() => onAction("archive")}>
-                <IconArchive aria-hidden="true" />
-                Archive
-              </DropdownMenuItem>
-            ) : null}
             <DropdownMenuItem onSelect={() => onAction("spam")}>
               <IconShieldX aria-hidden="true" />
               Mark as Spam
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => onAction("delete")}
-              variant="destructive"
-            >
-              <IconTrash aria-hidden="true" />
-              Delete permanently
-            </DropdownMenuItem>
           </>
         )}
+        <DropdownMenuItem
+          onSelect={() => onAction("delete")}
+          variant="destructive"
+        >
+          <IconTrash aria-hidden="true" />
+          Delete permanently
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

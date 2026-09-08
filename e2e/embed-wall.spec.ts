@@ -40,13 +40,10 @@ const projection = [
 ];
 
 function testimonialHtml(testimonial: (typeof projection)[number]) {
-  const avatar =
-    testimonial.avatarVisible === false
-      ? ""
-      : `<span class="avatar" aria-hidden="true">${testimonial.name
-          .split(" ")
-          .map((part) => part[0])
-          .join("")}</span>`;
+  const signature =
+    testimonial.avatarVisible !== false && testimonial.avatarUrl
+      ? `<span class="avatar"><img alt="" src="${testimonial.avatarUrl}"></span>`
+      : '<span class="quote-mark" aria-hidden="true">\u201c</span>';
   const video =
     testimonial.type === "video"
       ? `<div class="video-shell" data-video-aspect-ratio="${testimonial.aspectRatio}" style="aspect-ratio:${testimonial.aspectRatio.replace(":", " / ")}"><span aria-hidden="true" aria-label="Loading video" class="video-loader" data-gsp-video-loader role="status"></span><img alt="Video from ${testimonial.name}" class="poster" data-gsp-video-poster src="https://image.mux.com/${testimonial.playbackId}/thumbnail.webp?width=960&amp;time=0.5"><span class="video-shade"></span><span class="video-overlay"><span><span class="video-name">${testimonial.name}</span></span><button aria-label="Play ${testimonial.name}'s testimonial" class="play" data-gsp-play data-pause-label="Pause ${testimonial.name}'s testimonial" data-play-label="Play ${testimonial.name}'s testimonial" type="button"><span class="play-icon"><svg data-gsp-play-icon fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9z"></path></svg><svg class="hidden" data-gsp-pause-icon fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></svg></span></button></span></div>`
@@ -59,7 +56,9 @@ function testimonialHtml(testimonial: (typeof projection)[number]) {
     ? `<div aria-label="${testimonial.rating} out of 5 stars" class="stars" role="img">★★★★★</div>`
     : "";
 
-  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content"><div class="identity">${avatar}<div class="person"><p class="name">${testimonial.name}</p></div></div>${stars}${text}</div></article>`;
+  // Mirrors testimonialCardHtml: the stars open the card, the quote reads, then
+  // the signature row where a face or the quote mark stands beside the name.
+  return `<article class="card${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card style="--wall-accent:#7c3aed">${video}<div class="content">${stars}${text}<div class="identity">${signature}<div class="person"><p class="name">${testimonial.name}</p></div></div></div></article>`;
 }
 
 function response(

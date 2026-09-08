@@ -1,68 +1,52 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Value } from "platejs";
 import { HighlightPlugin } from "@platejs/basic-nodes/react";
-import {
-  Plate,
-  PlateContent,
-  usePlateEditor,
-  useEditorRef,
-  useEditorSelector,
-} from "platejs/react";
-import { IconHighlight } from "@tabler/icons-react";
+import { Plate, PlateContent, usePlateEditor } from "platejs/react";
+
 import {
   richTextFromPlain,
   richTextToPlain,
   type TestimonialRichText,
 } from "@convex/domain/testimonialRichText";
-import { Button } from "@/components/ui/button";
-
-function HighlightButton() {
-  const editor = useEditorRef();
-  const selected = useEditorSelector((editor) => editor.api.isExpanded(), []);
-  const active = useEditorSelector(
-    (editor) => Boolean(editor.api.marks()?.highlight),
-    [],
-  );
-  return (
-    <Button
-      aria-label="Highlight selected text"
-      aria-pressed={active}
-      disabled={!selected}
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={() => {
-        editor.tf.toggleMark("highlight");
-        editor.tf.focus();
-      }}
-      size="sm"
-      type="button"
-      variant="ghost"
-    >
-      <IconHighlight aria-hidden="true" /> Highlight
-    </Button>
-  );
-}
+import { markerHighlightImage } from "@/lib/marker-highlight";
+import { accentHighlight } from "@/lib/color-contrast";
+import { cn } from "@/lib/utils";
+import {
+  HighlightPill,
+  toggleHighlight,
+} from "./testimonial-highlight-controls";
 
 export function TestimonialEditor({
-  id,
-  text,
-  richText,
-  onChange,
-  formatOnly = false,
+  accentColor,
   autoFocus = false,
+  disabled = false,
+  formatOnly = false,
+  id,
+  label = "Your testimonial",
+  onChange,
+  richText,
+  text,
 }: {
-  id: string;
-  text: string;
-  richText?: TestimonialRichText;
-  onChange: (text: string, richText: TestimonialRichText) => void;
-  formatOnly?: boolean;
+  /** Customer Brand accent, so a mark previews in the colour it ships in. */
+  accentColor?: string;
   autoFocus?: boolean;
+  /** Freezes the surface while a save is in flight. */
+  disabled?: boolean;
+  /** Marking mode: the words are locked, only highlights change. */
+  formatOnly?: boolean;
+  id: string;
+  label?: string;
+  onChange: (text: string, richText: TestimonialRichText) => void;
+  richText?: TestimonialRichText;
+  text: string;
 }) {
   const editor = usePlateEditor({
     plugins: [HighlightPlugin],
     value: richText ?? richTextFromPlain(text),
   });
+  const boxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!autoFocus) return;
     const frame = requestAnimationFrame(() =>
@@ -99,40 +83,101 @@ export function TestimonialEditor({
         onChangeRef.current(richTextToPlain(content), content);
     });
   }, []);
+  const markerStyle = useMemo(
+    () =>
+      accentColor
+        ? ({
+            "--marker-image": markerHighlightImage(
+              accentHighlight(accentColor),
+            ),
+          } as React.CSSProperties)
+        : undefined,
+    [accentColor],
+  );
+
   return (
-    <div className="border-input bg-background focus-within:ring-ring/40 overflow-hidden rounded-lg border focus-within:ring-2">
-      <Plate editor={editor} onValueChange={persistValue}>
-        <div className="border-b px-1 py-1">
-          <HighlightButton />
-        </div>
-        <PlateContent
-          aria-label="Your testimonial"
-          className="h-40 [scrollbar-gutter:stable] overflow-y-auto overscroll-contain px-3 py-3 text-sm leading-7 outline-none [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:text-stone-900"
-          data-step-focus
-          id={id}
-          placeholder="What changed for you?"
-          onFocus={() => {
-            if (!editor.selection && !formatOnly)
-              editor.tf.focus({ at: [], edge: "end" });
-          }}
-          readOnly={formatOnly}
-          onPaste={
-            formatOnly
-              ? undefined
-              : (event) => {
-                  event.preventDefault();
-                  editor.tf.insertFragment(
-                    richTextFromPlain(
-                      event.clipboardData
-                        .getData("text/plain")
-                        .replace(/\r\n?/g, "\n"),
-                    ),
-                  );
-                  return true;
-                }
+    <Plate editor={editor} onValueChange={persistValue}>
+      {/* The pill sits outside the clipped box so it can hang below the last
+          line, and inside this wrapper so it stays within the dialog it
+          belongs to rather than escaping to the document. */}
+      <div
+        className={cn("relative", disabled && "pointer-events-none opacity-70")}
+        ref={boxRef}
+        onKeyDownCapture={(event) => {
+          const highlightShortcut =
+            (event.metaKey || event.ctrlKey) &&
+            event.shiftKey &&
+            event.key.toLowerCase() === "h";
+          if (highlightShortcut) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!disabled) toggleHighlight(editor);
+          } else if (
+            (formatOnly || disabled) &&
+            (event.key === "Backspace" || event.key === "Delete")
+          ) {
+            // Backspace navigates back in WebKit when the quote is read-only.
+            event.preventDefault();
           }
-        />
-      </Plate>
-    </div>
+        }}
+      >
+        <div
+          className={cn(
+            "phrase-marker overflow-hidden",
+            // Marking mode reads as the quote it is, not as a field to fill.
+            formatOnly
+              ? "border-line bg-surface rounded-lg border"
+              : "border-input bg-background focus-within:ring-ring/40 rounded-lg border focus-within:ring-2",
+          )}
+          style={markerStyle}
+        >
+          <div
+            className={cn(
+              "border-b",
+              formatOnly ? "bg-surface-2/60 px-2 py-1" : "px-1 py-1",
+            )}
+          >
+            <p className="text-ink-2 type-small px-1 py-1.5">
+              Select a few words in the quote below.
+            </p>
+          </div>
+          <PlateContent
+            aria-label={label}
+            className={cn(
+              "[scrollbar-gutter:stable] overflow-y-auto overscroll-contain outline-none",
+              formatOnly
+                ? "max-h-56 px-5 py-5 text-[15px] leading-7"
+                : "h-40 px-3 py-3 text-sm leading-7",
+            )}
+            data-step-focus
+            id={id}
+            placeholder={formatOnly ? undefined : "What changed for you?"}
+            onFocus={() => {
+              if (!editor.selection && !formatOnly)
+                editor.tf.focus({ at: [], edge: "end" });
+            }}
+            aria-readonly={formatOnly || disabled}
+            readOnly={formatOnly || disabled}
+            tabIndex={formatOnly ? 0 : undefined}
+            onPaste={
+              formatOnly || disabled
+                ? undefined
+                : (event) => {
+                    event.preventDefault();
+                    editor.tf.insertFragment(
+                      richTextFromPlain(
+                        event.clipboardData
+                          .getData("text/plain")
+                          .replace(/\r\n?/g, "\n"),
+                      ),
+                    );
+                    return true;
+                  }
+            }
+          />
+        </div>
+        <HighlightPill boxRef={boxRef} disabled={disabled} />
+      </div>
+    </Plate>
   );
 }
