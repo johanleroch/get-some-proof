@@ -186,12 +186,13 @@ function ReplacementLinkRequest({
           value={email}
         />
         <Button
-          disabled={!email || submitting}
+          disabled={!email}
+          loading={submitting}
           onClick={() => void requestLink()}
           type="button"
           variant="outline"
         >
-          {submitting ? "Requesting…" : "Email new link"}
+          Email new link
         </Button>
       </div>
       {error ? <ErrorToast message={error} /> : null}

@@ -57,10 +57,10 @@ export function AcceptInvitation({ token }: { token: string }) {
         {error ? <ErrorToast message={error} /> : null}
         <Button
           className="mt-6 w-full"
-          disabled={pending}
+          loading={pending}
           onClick={() => void acceptInvitation()}
         >
-          {pending ? "Accepting…" : "Accept Invitation"}
+          Accept Invitation
         </Button>
       </div>
     </main>

@@ -395,8 +395,8 @@ export function ProjectManager({
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button disabled={pending} type="submit">
-                  {pending ? "Saving…" : "Save Project"}
+                <Button loading={pending} type="submit">
+                  Save Project
                 </Button>
               </DialogFooter>
             </form>
@@ -425,11 +425,11 @@ export function ProjectManager({
               </AlertDialogCancel>
               <AlertDialogAction asChild>
                 <Button
-                  disabled={pending}
+                  loading={pending}
                   onClick={() => void confirmDelete()}
                   variant="destructive"
                 >
-                  {pending ? "Deleting…" : "Delete permanently"}
+                  Delete permanently
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>

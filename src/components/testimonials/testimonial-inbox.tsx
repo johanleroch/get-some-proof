@@ -1,12 +1,13 @@
 "use client";
 
+import { AnimatedBlob } from "@/components/brand/animated-blob";
+
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   IconAlertTriangle,
   IconChevronDown,
   IconExternalLink,
-  IconLoader2,
 } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -143,10 +144,7 @@ function VideoAssetPlaceholder({
     >
       <div className="absolute top-3 right-3">{menu}</div>
       <div className="max-w-64">
-        <IconLoader2
-          aria-hidden="true"
-          className="mx-auto size-8 animate-spin motion-reduce:animate-none"
-        />
+        <AnimatedBlob size={64} variant="look" />
         <p className="mt-4 font-medium">
           {videoStatusLabel(testimonial.videoStatus)}
         </p>

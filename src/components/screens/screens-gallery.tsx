@@ -1,5 +1,7 @@
 "use client";
 
+import { AnimatedBlob } from "@/components/brand/animated-blob";
+
 import {
   Component,
   type ReactNode,
@@ -496,6 +498,7 @@ function SessionStatus({
           state === "ready" ? "bg-emerald-500" : "bg-muted-foreground/50",
         )}
       />
+      {state === "loading" ? <AnimatedBlob size={24} variant="look" /> : null}
       {label}
     </span>
   );
@@ -749,7 +752,12 @@ function ScreenPanel({
                 </span>
               </TooltipTrigger>
               {liveBlocked ? (
-                <TooltipContent>{liveBlocked}</TooltipContent>
+                <TooltipContent>
+                  {sessionState === "loading" ? (
+                    <AnimatedBlob size={24} variant="look" />
+                  ) : null}
+                  {liveBlocked}
+                </TooltipContent>
               ) : null}
             </Tooltip>
           ) : hasFixture ? (

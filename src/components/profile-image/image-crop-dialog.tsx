@@ -137,11 +137,12 @@ export function ImageCropDialog({
             Cancel
           </Button>
           <Button
-            disabled={busy || !area}
+            disabled={!area}
+            loading={busy}
             onClick={() => void confirm()}
             type="button"
           >
-            {busy ? "Uploading…" : "Set new picture"}
+            Set new picture
           </Button>
         </DialogFooter>
       </DialogContent>

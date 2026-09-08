@@ -9,6 +9,13 @@
       "theme": "light"
     },
     {
+      "slug": "loading-states",
+      "title": "Loading states",
+      "path": "/visual-evidence/loading-states",
+      "heading": "Loading states",
+      "theme": "light"
+    },
+    {
       "slug": "sign-in",
       "title": "Sign in",
       "path": "/sign-in",

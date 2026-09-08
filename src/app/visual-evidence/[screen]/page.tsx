@@ -1,3 +1,4 @@
+import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { notFound } from "next/navigation";
@@ -29,6 +30,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
   "rich-testimonial": RichTestimonialScreenFixture,
   "collection-form": CollectionFormScreenFixture,

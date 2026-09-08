@@ -1,5 +1,9 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
+import { AnimatedBlob } from "@/components/brand/animated-blob";
+
 import { type FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -158,6 +162,9 @@ export function InvitationManager({
 
       {!showList ? null : filteredInvitations === undefined ? (
         <div aria-label="Loading Pending Invitations" role="status">
+          <div className="flex justify-center py-3">
+            <AnimatedBlob size={48} variant="look" />
+          </div>
           <div className="dashboard-skeleton h-12 rounded-md" />
           <div className="dashboard-skeleton mt-2 h-20 rounded-md" />
           <span className="sr-only">Loading Pending Invitations</span>
@@ -210,7 +217,14 @@ export function InvitationManager({
                             : "bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
                         }
                       >
-                        {statusLabel}
+                        {!expired && invitation.deliveryStatus === "pending" ? (
+                          <BlobLoadingText
+                            label={statusLabel}
+                            className="text-xs"
+                          />
+                        ) : (
+                          statusLabel
+                        )}
                       </span>
                     </div>
                     <p className="text-muted-foreground mt-0.5 truncate text-xs">
@@ -250,6 +264,7 @@ export function InvitationManager({
                   <div className="flex items-center gap-1 sm:justify-end">
                     <Button
                       disabled={isBusy}
+                      loading={isBusy && pendingAction?.kind === "resend"}
                       onClick={() =>
                         void runRowAction(invitation, "resend", () =>
                           resendInvitation({
@@ -261,10 +276,7 @@ export function InvitationManager({
                       size="sm"
                       variant="outline"
                     >
-                      {pendingAction?.invitationId === invitation.id &&
-                      pendingAction.kind === "resend"
-                        ? "Sending…"
-                        : "Resend"}
+                      Resend
                     </Button>
                     <Button
                       disabled={isBusy}
@@ -329,8 +341,8 @@ export function InvitationManager({
               >
                 Cancel
               </Button>
-              <Button disabled={invitePending} type="submit">
-                {invitePending ? "Sending invitation…" : "Send invitation"}
+              <Button loading={invitePending} type="submit">
+                Send invitation
               </Button>
             </DialogFooter>
           </form>
@@ -359,6 +371,7 @@ export function InvitationManager({
               <AlertDialogAction asChild>
                 <Button
                   disabled={pendingAction !== null}
+                  loading={pendingAction?.kind === "revoke"}
                   onClick={() =>
                     void runRowAction(revokeTarget, "revoke", () =>
                       revokeInvitation({
@@ -369,7 +382,7 @@ export function InvitationManager({
                   }
                   variant="destructive"
                 >
-                  {pendingAction?.kind === "revoke" ? "Revoking…" : "Revoke"}
+                  Revoke
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>
