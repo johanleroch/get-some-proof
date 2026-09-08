@@ -405,10 +405,13 @@ pages still start at the top and scroll normally.
   tags) and one template rendered live on the right. Above the stage: the
   name at `heading`, one sentence and a single action ("Open preview"),
   then a toolbar with the preview width (desktop, tablet, phone), four
-  Brand accent swatches plus a custom picker, and the wall theme. One arrow
+  Brand accent swatches plus a custom picker, and the wall theme. Proof Amber
+  leads the swatches and is what a preview opens on, the same preselected
+  colour the product uses everywhere: chosen by the founder on 2026-09-08 over
+  the earlier rule that kept our amber out of the preview frame. One arrow
   note ("this is what your visitors see") is the region's hand-drawn
   element and the only caption. The stage is a CSS container on the wall
-  theme with the sample accent (never our amber inside the frame), so a
+  theme with the chosen accent, so a
   390px preview really shows the phone layout; the first preview is visible
   without scrolling on a 1280 x 800 laptop; the arrow keys move through the
   list and the choice lives in the URL (`?template=`). Below 1024px the rail
@@ -656,9 +659,11 @@ Order of work, each step verified in `/screens` (sample and live) and with
    fixtures' sample data (names, companies, quotes) to the new voice.
 
 App icons (App Store, dock, favicon, social avatars) follow their own spec in
-`docs/design/app-icons/DESIGN.md`, built on the same tokens. Ten candidates
-live in `public/brand/icons/`; the flagship is 03 quote marks, installed as
-the favicon, the Apple touch icon and the in-app brand mark.
+`docs/design/app-icons/DESIGN.md`, built on the same tokens. The ten
+candidates are regenerated on demand by `scripts/app-icons/build.mjs` rather
+than kept in the repository; the flagship is 03 quote marks, and the icons
+the product actually ships are the founder's own Figma exports in
+`public/brand/`.
 
 Open decisions, tracked here until settled: the final accent hue (amber is
 provisional), a possible logo refresh once the palette is live (see the app

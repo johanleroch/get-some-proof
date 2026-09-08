@@ -57,7 +57,7 @@ describe("TemplatesGallery", () => {
       screen.getByRole("link", { name: "Open full page" }),
     ).toHaveAttribute(
       "href",
-      "/templates/masonry-wall?accent=%230f766e&theme=light",
+      "/templates/masonry-wall?accent=%23ffbb16&theme=light",
     );
   });
 
@@ -73,7 +73,7 @@ describe("TemplatesGallery", () => {
     expect(window.location.search).toBe("?template=rating-badge");
     expect(screen.getByRole("link", { name: "Open preview" })).toHaveAttribute(
       "href",
-      "/templates/rating-badge?accent=%230f766e&theme=light",
+      "/templates/rating-badge?accent=%23ffbb16&theme=light",
     );
     expect(railButton("Rating badge")).toHaveAttribute("aria-current", "true");
   });
