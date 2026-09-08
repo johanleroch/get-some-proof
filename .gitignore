@@ -15,10 +15,6 @@
 /playwright-report
 /test-results
 /visual-evidence
-# Licensed display font (Gelica, Monotype). The repository is public, so the
-# files stay on each machine; see DESIGN.md section 3.
-/src/app/fonts/gelica/
-/src/app/fonts/display-font.ts
 
 /public/embed/mux-player.js
 /public/embed/video-player-policy.js

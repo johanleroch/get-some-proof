@@ -144,7 +144,8 @@
   --info-soft: oklch(from var(--info) 0.95 0.03 h);
 
   /* Display family: --font-gelica is set by next/font/local in layout.tsx
-     (self-hosted Gelica). The stacks below fall back to Figtree. */
+     (Gelica, self-hosted from src/app/fonts/gelica/). The stacks below fall
+     back to Figtree while the font file loads. */
 
   /* Type scale (DESIGN.md section 3). Tune live in /kit, then copy here.
      Gelica ships 200 to 700 then 900 (no 800), and a soft slab wants less

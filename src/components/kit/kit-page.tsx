@@ -1386,6 +1386,12 @@ function DoodleShowcase() {
           </ArrowNote>
           <p className="text-ink-2 type-small">ArrowNote · flat</p>
         </div>
+        <div className="space-y-2">
+          <ArrowNote arrow="rise" className="mt-6" direction="left">
+            share this to start collecting
+          </ArrowNote>
+          <p className="text-ink-2 type-small">ArrowNote · rise</p>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[

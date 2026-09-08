@@ -662,9 +662,11 @@ export function WorkspaceDeletionProgressScreenFixture() {
 }
 
 export function DashboardBackgroundScreenFixture({
+  pendingCount = 0,
   plan = "free",
   inactive = false,
 }: {
+  pendingCount?: number;
   plan?: "free" | "premium";
   inactive?: boolean;
 }) {
@@ -730,7 +732,9 @@ export function DashboardBackgroundScreenFixture({
         billingHref={`/org/${project.slug}/billing`}
         copyCollectionUrl={async () => undefined}
         name={project.name}
-        pendingCount={0}
+        pendingCount={pendingCount}
+        collectionUrl={`https://getsomeproof.com/c/${project.slug}`}
+        slug={project.slug}
         publicSlug={project.slug}
       />
     </AppShellView>
@@ -771,6 +775,11 @@ export function ManagedVideoProcessingScreenFixture() {
       }}
     />
   );
+}
+
+/** The same Overview once Submissions are waiting: the queue leads. */
+export function DashboardPendingScreenFixture() {
+  return <DashboardBackgroundScreenFixture pendingCount={3} />;
 }
 
 export function AccountDeletionScreenFixture() {
