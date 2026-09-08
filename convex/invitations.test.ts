@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -58,11 +58,15 @@ describe("Member Invitations", () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
     delete process.env.EMAIL_PROVIDER;
     delete process.env.SITE_URL;
   });
 
   it("closes Invitation operations once Brand deletion is prepared", async () => {
+    // Hold the background purge at the prepared boundary under test.
+    vi.useFakeTimers();
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
     const organization = await owner.client.mutation(api.organizations.create, {
