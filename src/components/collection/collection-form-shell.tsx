@@ -1228,6 +1228,8 @@ export function CollectionFormShellView({
           // Shared controls resolve these tokens within the customer surface.
           "--brand": brand.primaryColor,
           "--brand-ink": accentInk(brand.primaryColor),
+          // Deliberate: on the customer surface the hovered primary button keeps
+          // the Brand's exact colour, asserted by e2e/collection-brand.spec.ts.
           "--brand-strong": brand.primaryColor,
           "--brand-soft":
             "color-mix(in srgb, var(--brand-accent) 12%, var(--surface))",

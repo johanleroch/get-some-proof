@@ -122,7 +122,9 @@
     }
     .promo-cta:hover { background: var(--gsp-promo-cta-hover); }
     .promo-cta:focus-visible {
-      outline: 3px solid var(--gsp-promo-cta);
+      /* The panel flips between ink and paper per theme; the promo text token
+         flips with it, so the ring keeps its contrast (WCAG 2.2 SC 1.4.11). */
+      outline: 3px solid var(--gsp-promo-text);
       outline-offset: 3px;
     }
     .video-shell {

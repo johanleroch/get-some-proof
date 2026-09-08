@@ -495,10 +495,10 @@ body {
 .dashboard-page-title {
   color: var(--foreground);
   font-family: var(--font-gelica), var(--font-figtree), system-ui, sans-serif;
-  font-size: 2rem;
-  line-height: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  font-size: var(--type-display-size);
+  line-height: var(--type-display-leading);
+  font-weight: var(--type-display-weight);
+  letter-spacing: var(--type-display-tracking);
 }
 
 .dashboard-page-description {
