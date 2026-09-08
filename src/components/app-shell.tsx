@@ -42,6 +42,7 @@ type NavigationItem = {
   icon: Icon;
   href: Route;
   visible: boolean;
+  newTab?: boolean;
 };
 
 type NavigationSection = {
@@ -84,34 +85,38 @@ function Navigation({
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {visibleItems.map(({ href, icon: IconComponent, label }) => {
-                  const active =
-                    pathname === href ||
-                    (pathname.startsWith(`${href}/`) && href !== "/");
-                  return (
-                    <SidebarMenuItem key={href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        tooltip={label}
-                      >
-                        <Link
-                          aria-current={active ? "page" : undefined}
-                          href={href}
+                {visibleItems.map(
+                  ({ href, icon: IconComponent, label, newTab }) => {
+                    const active =
+                      pathname === href ||
+                      (pathname.startsWith(`${href}/`) && href !== "/");
+                    return (
+                      <SidebarMenuItem key={href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          tooltip={label}
                         >
-                          {active ? (
-                            <span
-                              aria-hidden="true"
-                              className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
-                            />
-                          ) : null}
-                          <IconComponent aria-hidden="true" />
-                          <span>{label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                          <Link
+                            aria-current={active ? "page" : undefined}
+                            href={href}
+                            target={newTab ? "_blank" : undefined}
+                            rel={newTab ? "noopener noreferrer" : undefined}
+                          >
+                            {active ? (
+                              <span
+                                aria-hidden="true"
+                                className="bg-brand absolute top-1.5 bottom-1.5 -left-2 w-[3px] rounded-full"
+                              />
+                            ) : null}
+                            <IconComponent aria-hidden="true" />
+                            <span>{label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  },
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -209,6 +214,7 @@ export function AppShellView({
     },
     {
       label: "Public Wall",
+      newTab: true,
       icon: IconWorld,
       href: `/w/${organizationPublicSlug}` as Route,
       visible: true,
