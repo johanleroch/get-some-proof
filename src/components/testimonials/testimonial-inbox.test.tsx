@@ -234,10 +234,7 @@ describe("TestimonialInboxView", () => {
       />,
     );
 
-    const processing = screen.getByTestId("processing-video-placeholder");
-    expect(processing).toBeVisible();
-    // A portrait clip keeps its shape while it processes: no landscape crop.
-    expect(processing).toHaveStyle({ aspectRatio: "9 / 16", width: "48px" });
+    expect(screen.getByTestId("processing-video-placeholder")).toBeVisible();
     expect(screen.getByText("Processing")).toBeVisible();
     expect(screen.getByText("Publish once the video is Ready.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();

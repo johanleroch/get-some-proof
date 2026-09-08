@@ -344,8 +344,11 @@ pages still start at the top and scroll normally.
   Customer's 48px photo, the display quote mark in the Brand accent, or the
   video still in the video's own shape, 48px wide when portrait and 64px
   when not, with its duration in a corner, which opens the real playable
-  card in a dialog; the face column is 64px wide and, like the actions,
-  centred on its row), then the name at `ui` 600 with role, company and
+  card in a dialog; while there is no still yet, the blob looking around or
+  the failed mark stands alone, with no box drawn around it; the face is
+  centred on its row like the actions and sits 16px from the edge, the same
+  air the row keeps above and below it), then the name at `ui` 600 with
+  role, company and
   14px stars on the same line, the words in full at `body` (a marked phrase
   keeps its swash), one private line at `small` in one style (received
   date, the email only the Owner sees, the Spam deletion date), and on the

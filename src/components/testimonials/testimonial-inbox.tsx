@@ -205,9 +205,7 @@ function videoState(testimonial: VideoInboxTestimonial) {
 /**
  * The still keeps the video's own shape, never a landscape crop of a portrait
  * clip: 48px wide when the video is portrait (what a phone records for the
- * Collection Form, 9:16 by default), 64px wide when it is not. The same box
- * stands in while the Video Asset is processing or failed, so a row keeps
- * its shape the moment the video becomes Ready.
+ * Collection Form, 9:16 by default), 64px wide when it is not.
  */
 function stillBox(aspectRatio?: string): CSSProperties {
   const [width, height] = videoAspect(aspectRatio);
@@ -285,27 +283,27 @@ function InboxFace({
       </button>
     );
   }
+  // No still yet, so nothing is drawn around what stands in for it: the
+  // failed mark or the blob looking around sit alone in the face column.
   if (testimonial.videoStatus === "failed") {
     return (
       <span
         aria-hidden="true"
-        className="bg-surface-2 text-danger grid shrink-0 place-items-center rounded-md"
+        className="text-danger grid size-12 shrink-0 place-items-center"
         data-testid="failed-video-placeholder"
-        style={stillBox(testimonial.aspectRatio)}
       >
-        <IconVideoOff className="size-5" />
+        <IconVideoOff className="size-6" />
       </span>
     );
   }
   return (
     <span
-      className="bg-surface-2 grid shrink-0 place-items-center rounded-md"
+      className="grid shrink-0 place-items-center"
       data-testid="processing-video-placeholder"
-      style={stillBox(testimonial.aspectRatio)}
     >
       <BlobLoader
         label={`${testimonial.submitterName}'s video is processing`}
-        size={32}
+        size={40}
       />
     </span>
   );
@@ -397,7 +395,7 @@ function InboxRow({
   return (
     <li
       aria-busy={busy || undefined}
-      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 px-4 py-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-5"
+      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]"
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
       draggable={ordering && !disabled ? true : undefined}
       onDragEnd={drag?.onEnd}
@@ -406,9 +404,10 @@ function InboxRow({
       onDrop={drag?.onDrop}
     >
       {/*
-        The face is a column of its own: centred on the row like the actions,
-        and always 64px wide so the words start on the same line whatever
-        stands in it (a 48px photo, the quote mark, a portrait still).
+        The face is a column of its own, centred on the row like the actions
+        and sitting 16px from the edge, the same air the row keeps above and
+        below it. A photo, the quote mark and a portrait still are all 48px
+        wide, so the words start on the same line from one row to the next.
       */}
       <div className="flex items-center gap-2 md:gap-3">
         {ordering ? (
@@ -417,12 +416,10 @@ function InboxRow({
             className="text-ink-3 hidden size-5 shrink-0 cursor-grab md:block"
           />
         ) : null}
-        <div className="grid w-16 shrink-0 place-items-center">
-          <InboxFace
-            onPreview={() => onAction("preview")}
-            testimonial={testimonial}
-          />
-        </div>
+        <InboxFace
+          onPreview={() => onAction("preview")}
+          testimonial={testimonial}
+        />
       </div>
 
       <div className="min-w-0 self-center">

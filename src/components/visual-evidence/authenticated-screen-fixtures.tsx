@@ -378,22 +378,46 @@ export function TestimonialInboxScreenFixture({
   const [category, setCategory] = useState<InboxCategory>(initialCategory);
   // The still opens the real card, here as on the live page.
   const [preview, setPreview] = useState<InboxTestimonial | null>(null);
-  const lists = {
+  // The Wall order moves for real, so the arrows and the drag can be tried.
+  const [published, setPublished] = useState<InboxTestimonial[]>([
+    { ...videoTestimonialFixture, moderationStatus: "published" as const },
+    {
+      ...testimonialFixture,
+      moderationStatus: "published" as const,
+      publicVisibilityOverrides: { company: false },
+    },
+  ]);
+  const lists: Record<InboxCategory, InboxTestimonial[]> = {
     archived: [],
     pending: [
       processingVideoTestimonialFixture,
       testimonialFixture,
       videoTestimonialFixture,
     ],
-    published: [
-      { ...videoTestimonialFixture, moderationStatus: "published" as const },
-      {
-        ...testimonialFixture,
-        moderationStatus: "published" as const,
-        publicVisibilityOverrides: { company: false },
-      },
-    ],
+    published,
     spam: [spamTestimonialFixture],
+  };
+  const move = async (
+    testimonialId: Id<"testimonials">,
+    beforeTestimonialId: Id<"testimonials"> | undefined,
+    afterTestimonialId: Id<"testimonials"> | undefined,
+  ) => {
+    setPublished((current) => {
+      const moved = current.find(
+        (item) => item.testimonialId === testimonialId,
+      );
+      if (!moved) return current;
+      const rest = current.filter((item) => item !== moved);
+      const beforeIndex = rest.findIndex(
+        (item) => item.testimonialId === beforeTestimonialId,
+      );
+      const afterIndex = rest.findIndex(
+        (item) => item.testimonialId === afterTestimonialId,
+      );
+      const at =
+        beforeIndex >= 0 ? beforeIndex + 1 : afterIndex >= 0 ? afterIndex : 0;
+      return [...rest.slice(0, at), moved, ...rest.slice(at)];
+    });
   };
   return (
     <section className="space-y-6">
@@ -432,7 +456,7 @@ export function TestimonialInboxScreenFixture({
           onAction={(testimonial, action) => {
             if (action === "preview") setPreview(testimonial);
           }}
-          onMove={category === "published" ? async () => undefined : undefined}
+          onMove={category === "published" ? move : undefined}
           pendingId={null}
           testimonials={lists[category]}
         />
