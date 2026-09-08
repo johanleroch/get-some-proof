@@ -5,7 +5,6 @@ import {
   IconArrowRight,
   IconCopy,
   IconExternalLink,
-  IconLink,
 } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -17,13 +16,6 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 
 /**
@@ -67,33 +59,16 @@ function ReviewQueue({
   );
 }
 
-/**
- * The same slot when the queue is empty. A large zero would be a figure
- * dressed up as news; the drawing and one sentence say the true thing, which
- * is that the work now is to share the link above.
- */
-function EmptyQueue() {
-  return (
-    <div className="border-line bg-surface flex flex-col gap-4 rounded-lg border p-5 sm:flex-row sm:items-center sm:gap-6">
-      <EnvelopeStamp aria-hidden="true" className="text-ink h-16 shrink-0" />
-      <div className="min-w-0">
-        <p className="type-subheading">Nothing waiting for review</p>
-        <p className="text-ink-2 type-small mt-1">
-          New Submissions land in your Inbox, where you read them privately and
-          decide what reaches your Wall.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function BrandDashboardView({
+  collectionUrl,
   copyCollectionUrl,
   name,
   pendingCount,
   publicSlug,
   slug,
 }: {
+  /** The full address a Submitter opens, which is what Copy puts in hand. */
+  collectionUrl: string;
   copyCollectionUrl: () => Promise<void>;
   name: string;
   pendingCount: number;
@@ -117,69 +92,72 @@ export function BrandDashboardView({
     }
   }
 
-  const collectionForm = (
-    <Card>
-      <CardHeader>
-        <CardDescription>Your Collection Form</CardDescription>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <CardTitle className="flex items-center gap-2">
-            <IconLink aria-hidden="true" className="text-ink-2 size-4" />
-            <span className="font-mono text-base font-medium tracking-normal">
-              /c/{publicSlug}
-            </span>
-          </CardTitle>
-          {/* The note belongs to the empty workspace, where sharing the link
-              is the only job left to do. */}
-          {waiting ? null : (
-            <ArrowNote
-              arrow="flat"
-              className="hidden sm:inline-flex"
-              direction="left"
-            >
-              share this to start collecting
-            </ArrowNote>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Button asChild variant="outline">
-          <Link href={collectionPath} target="_blank">
-            Open Collection Form
-            <IconExternalLink aria-hidden="true" />
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="space-y-8">
+      {/* No action in the header: the only one worth having belongs beside the
+          address it copies, three lines below. */}
       <PageHeader
-        actions={
-          <Button onClick={copyLink} type="button">
-            <IconCopy aria-hidden="true" />
-            Copy link
-          </Button>
-        }
         description="Collect customer proof, review it privately, and publish only what you choose."
         eyebrow="Workspace"
         title={name}
       />
 
-      {/* The page reorders itself around the work that is actually waiting:
-          Submissions to read come first, and an empty queue steps aside for
-          the link that fills it. */}
+      {/* The page reorders itself around the work that is waiting. With an
+          empty queue the link is the whole job, so it takes the hero. */}
       <section aria-label="Brand overview" className="space-y-4">
         {waiting ? (
-          <>
-            <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
-            {collectionForm}
-          </>
-        ) : (
-          <>
-            {collectionForm}
-            <EmptyQueue />
-          </>
+          <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
+        ) : null}
+
+        <div className="border-line bg-surface rounded-lg border p-6 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
+            <div className="min-w-0 space-y-3">
+              <p className="type-micro text-ink-2">Your Collection Form</p>
+              <p className="type-heading font-mono break-all">
+                {collectionUrl}
+              </p>
+              {waiting ? null : (
+                <ArrowNote
+                  arrow="flat"
+                  className="hidden sm:inline-flex"
+                  direction="left"
+                >
+                  share this to start collecting
+                </ArrowNote>
+              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button onClick={copyLink} type="button">
+                  <IconCopy aria-hidden="true" />
+                  Copy link
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={collectionPath} target="_blank">
+                    Open Collection Form
+                    <IconExternalLink aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <EnvelopeStamp
+              aria-hidden="true"
+              className="text-ink hidden h-28 shrink-0 sm:block"
+            />
+          </div>
+        </div>
+
+        {/* An empty queue is a sentence, not a figure: a large zero would be a
+            number dressed up as news. */}
+        {waiting ? null : (
+          <p className="text-ink-2 type-small px-1">
+            Nothing waiting for review. New Submissions land in your{" "}
+            <Link
+              className="text-ink font-semibold underline underline-offset-4"
+              href={inboxPath}
+            >
+              Inbox
+            </Link>
+            , where you read them privately and decide what reaches your Wall.
+          </p>
         )}
       </section>
       {error ? <ErrorToast message={error} /> : null}
@@ -211,13 +189,14 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
 
   if (pendingCount === undefined) return <OverviewPageSkeleton />;
 
+  // Only ever reached on the client: the server renders the skeleton while
+  // the queries are undefined, so reading the origin here cannot mismatch.
+  const collectionUrl = `${window.location.origin}/c/${organization.publicSlug}`;
+
   return (
     <BrandDashboardView
-      copyCollectionUrl={() =>
-        navigator.clipboard.writeText(
-          `${window.location.origin}/c/${organization.publicSlug}`,
-        )
-      }
+      collectionUrl={collectionUrl}
+      copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
       name={organization.name}
       pendingCount={pendingCount}
       publicSlug={organization.publicSlug}

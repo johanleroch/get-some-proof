@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BrandDashboardView } from "./organization-dashboard";
 
 const base = {
+  collectionUrl: "getsomeproof.com/c/acme-studio",
   name: "Acme Studio",
   publicSlug: "acme-studio",
   slug: "acme-studio-ab12",
@@ -24,11 +25,15 @@ describe("BrandDashboardView", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Acme Studio" })).toBeVisible();
-    expect(screen.getByText("Nothing waiting for review")).toBeVisible();
+    expect(screen.getByText(/Nothing waiting for review/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
+      "href",
+      "/org/acme-studio-ab12/inbox",
+    );
     // An empty queue is a sentence, not a figure dressed up as news.
     expect(screen.queryByText("0")).toBeNull();
     expect(screen.queryByRole("link", { name: /Review/ })).toBeNull();
-    expect(screen.getByText("/c/acme-studio")).toBeVisible();
+    expect(screen.getByText("getsomeproof.com/c/acme-studio")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Open Collection Form" }),
     ).toHaveAttribute("href", "/c/acme-studio");
@@ -52,7 +57,7 @@ describe("BrandDashboardView", () => {
     const queue = screen.getByRole("link", { name: /waiting for review/ });
     expect(queue).toHaveAttribute("href", "/org/acme-studio-ab12/inbox");
     expect(queue).toHaveTextContent("3");
-    expect(screen.queryByText("Nothing waiting for review")).toBeNull();
+    expect(screen.queryByText(/Nothing waiting for review/)).toBeNull();
 
     // The queue comes before the Collection Form once there is work in it.
     const sections = screen.getByRole("region", { name: "Brand overview" });

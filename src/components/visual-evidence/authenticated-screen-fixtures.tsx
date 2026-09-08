@@ -666,6 +666,7 @@ export function DashboardBackgroundScreenFixture({
           </header>
           <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 p-5 md:p-8">
             <BrandDashboardView
+              collectionUrl="getsomeproof.com/c/fernhill-studio"
               copyCollectionUrl={async () => undefined}
               name="Fernhill Studio"
               pendingCount={pendingCount}
