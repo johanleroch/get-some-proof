@@ -86,6 +86,44 @@ describe("OrganizationOnboardingForm", () => {
     );
   });
 
+  it("reveals an invalid privacy email after its disclosure was collapsed", async () => {
+    render(<OrganizationOnboardingForm />);
+    fireEvent.change(screen.getByLabelText("Brand name"), {
+      target: { value: "Northwind Bakery" },
+    });
+    const disclosure = screen.getByRole("button", {
+      name: "Write your own wording",
+    });
+    fireEvent.click(disclosure);
+    const privacyContact = screen.getByLabelText("Privacy contact");
+    fireEvent.change(privacyContact, { target: { value: "invalid-email" } });
+    fireEvent.click(disclosure);
+    expect(privacyContact).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+
+    await waitFor(() => expect(privacyContact).toHaveFocus());
+    expect(privacyContact).toBeVisible();
+    expect(privacyContact).toBeInvalid();
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    expect(
+      document.getElementById(disclosure.getAttribute("aria-controls")!),
+    ).toContainElement(privacyContact);
+    expect(mocks.create).not.toHaveBeenCalled();
+
+    fireEvent.change(privacyContact, {
+      target: { value: "privacy@northwind.example" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    await waitFor(() =>
+      expect(mocks.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          privacyContact: "privacy@northwind.example",
+        }),
+      ),
+    );
+  });
+
   it("creates a configured Brand and uploads its optional logo", async () => {
     mocks.generateUploadUrl.mockResolvedValue("https://upload.example");
     render(<OrganizationOnboardingForm />);

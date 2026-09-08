@@ -295,7 +295,11 @@ export function OrganizationOnboardingFormView({
             />
             Write your own wording
           </button>
-          <div className="space-y-5 pt-5" hidden={!wordingIsOpen}>
+          <div
+            className="space-y-5 pt-5"
+            hidden={!wordingIsOpen}
+            id="collection-form-wording"
+          >
             <Field>
               <Label htmlFor="collection-form-title">
                 Collection Form title
@@ -336,6 +340,16 @@ export function OrganizationOnboardingFormView({
                 id="privacy-contact"
                 name="privacyContact"
                 onChange={(event) => setPrivacyContact(event.target.value)}
+                onInvalid={(event) => {
+                  if (wordingIsOpen) return;
+                  event.preventDefault();
+                  const input = event.currentTarget;
+                  setWordingIsOpen(true);
+                  window.requestAnimationFrame(() => {
+                    input.focus();
+                    input.reportValidity();
+                  });
+                }}
                 placeholder="privacy@yourbrand.com"
                 type="email"
                 value={privacyContact}
