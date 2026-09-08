@@ -810,6 +810,7 @@ export const createVideoReplacementUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       const videoAssetId: Id<"videoAssets"> = await ctx.runMutation(

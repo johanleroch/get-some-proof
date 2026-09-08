@@ -696,6 +696,7 @@ export const createDirectUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachProviderUpload, {
@@ -1325,6 +1326,7 @@ export const createRetryDirectUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       await ctx.runMutation(internal.video.attachRetryProviderUpload, {

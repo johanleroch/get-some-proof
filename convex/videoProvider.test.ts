@@ -22,6 +22,7 @@ describe("video upload provider", () => {
       createVideoDirectUpload({
         corsOrigin: "http://localhost:3000",
         passthrough: "reservation-1",
+        organizationId: "organization-1",
         spokenLanguage: "fr",
       }),
     ).resolves.toMatchObject({ provider: "fake" });
@@ -49,6 +50,7 @@ describe("video upload provider", () => {
       createVideoDirectUpload({
         corsOrigin: "https://proof.example",
         passthrough: "reservation-1",
+        organizationId: "organization-1",
         spokenLanguage: "fr",
       }),
     ).resolves.toEqual({
@@ -66,6 +68,11 @@ describe("video upload provider", () => {
           },
         ],
         passthrough: "reservation-1",
+        meta: {
+          title: "Témoignage vidéo · reservation-1",
+          creator_id: "organization-1",
+          external_id: "reservation-1",
+        },
         playback_policies: ["public"],
         max_resolution_tier: "1080p",
         video_quality: "basic",
@@ -84,6 +91,7 @@ describe("video upload provider", () => {
       createVideoDirectUpload({
         corsOrigin: "http://localhost:3000",
         passthrough: "reservation-1",
+        organizationId: "organization-1",
         spokenLanguage: "en",
       }),
     ).rejects.toThrow("MUX_PROVIDER must be explicitly set");
