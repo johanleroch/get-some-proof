@@ -431,6 +431,10 @@ export default defineSchema({
     text: v.string(),
     richText: v.optional(richTextValidator),
     imageIds: v.optional(v.array(v.id("testimonialImages"))),
+    // The video thumbnail the Owner chose: a frame of the video, or an image
+    // they uploaded. Both absent means the middle of the video.
+    posterTimeSeconds: v.optional(v.number()),
+    posterStorageId: v.optional(v.id("_storage")),
     submitterName: v.string(),
     submitterEmail: v.string(),
     avatarStorageId: v.optional(v.id("_storage")),
@@ -463,7 +467,8 @@ export default defineSchema({
       "submitterEmail",
     ])
     .index("by_management_token_hash", ["managementTokenHash"])
-    .index("by_avatar_storage_id", ["avatarStorageId"]),
+    .index("by_avatar_storage_id", ["avatarStorageId"])
+    .index("by_poster_storage_id", ["posterStorageId"]),
   collectionCredits: defineTable({
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
@@ -554,6 +559,7 @@ export default defineSchema({
         aspectRatio: v.optional(v.string()),
         captionsAvailable: v.boolean(),
         posterTimeSeconds: v.optional(v.number()),
+        posterStorageId: v.optional(v.id("_storage")),
         name: v.string(),
         avatarStorageId: v.optional(v.id("_storage")),
         role: v.optional(v.string()),

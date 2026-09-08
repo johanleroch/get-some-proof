@@ -221,10 +221,18 @@ export const screenSections: ScreenSection[] = [
         slug: "inbox",
         title: "Testimonial inbox",
         description:
-          "Review, play, publish, unpublish, and delete incoming Testimonials.",
+          "Pending first: one list of rows, each with its decision. Publish, Archive, preview a video, and reach the tools from the menu.",
         fixturePath: "/visual-evidence/testimonial-inbox",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,
+      },
+      {
+        slug: "inbox-published",
+        title: "Inbox, Published",
+        description:
+          "The Published category is the Public Wall in its Curated Order: grip, arrows, Unpublish, and the details each card shows.",
+        // Sample only: the live route always opens on Pending.
+        fixturePath: "/visual-evidence/testimonial-inbox-published",
       },
       {
         slug: "settings",
@@ -258,6 +266,13 @@ export const screenSections: ScreenSection[] = [
     title: "Dialogs and feedback",
     screens: [
       {
+        slug: "testimonial-details",
+        title: "Details shown on the Wall",
+        description:
+          "Which of a Published card's details the Public Wall shows, with the real card as preview.",
+        fixturePath: "/visual-evidence/testimonial-inbox-details",
+      },
+      {
         slug: "testimonial-delete",
         title: "Delete a Testimonial",
         description: "Permanent deletion confirmation from the inbox.",
@@ -281,6 +296,13 @@ export const screenSections: ScreenSection[] = [
         description:
           "Marking one phrase of a Testimonial: the words stay locked, the mark previews in the Brand's own colour.",
         fixturePath: "/visual-evidence/rich-testimonial",
+      },
+      {
+        slug: "video-thumbnail",
+        title: "Change thumbnail",
+        description:
+          "Choosing the still of a video Testimonial: a frame scrubbed from the video, or an image the Owner uploads, previewed on the real card.",
+        fixturePath: "/visual-evidence/video-thumbnail",
       },
       {
         slug: "toast-success",

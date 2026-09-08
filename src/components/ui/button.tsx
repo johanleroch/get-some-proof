@@ -12,7 +12,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-brand text-brand-ink hover:bg-brand-strong",
         destructive:
-          "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/40",
+          "bg-danger text-danger-ink hover:bg-danger/90 focus-visible:ring-danger/40",
         outline: "border-line-2 bg-surface text-ink border hover:bg-surface-2",
         secondary: "bg-surface-2 text-ink hover:bg-accent",
         ghost: "text-ink hover:bg-surface-2",

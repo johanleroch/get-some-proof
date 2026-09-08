@@ -29,6 +29,7 @@ export const testimonialCardValueValidator = v.union(
     captionsAvailable: v.boolean(),
     playbackId: v.string(),
     posterTimeSeconds: v.optional(v.number()),
+    posterUrl: v.optional(v.string()),
     type: v.literal("video"),
   }),
 );
@@ -56,6 +57,7 @@ type TestimonialCardContent =
       | "captionsAvailable"
       | "playbackId"
       | "posterTimeSeconds"
+      | "posterUrl"
       | "type"
     >;
 
@@ -74,6 +76,7 @@ export function testimonialCardValue(
     | "captionsAvailable"
     | "playbackId"
     | "posterTimeSeconds"
+    | "posterUrl"
     | "type"
   >,
 ): TestimonialCardVideoValue;

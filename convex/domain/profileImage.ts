@@ -36,6 +36,17 @@ export async function validateExclusiveStoredImage(
       code: "STORED_IMAGE_UNAVAILABLE",
       message: "That image is already in use.",
     });
+  const poster = await ctx.db
+    .query("testimonials")
+    .withIndex("by_poster_storage_id", (q) =>
+      q.eq("posterStorageId", storageId),
+    )
+    .first();
+  if (poster)
+    throw new ConvexError({
+      code: "STORED_IMAGE_UNAVAILABLE",
+      message: "That image is already in use.",
+    });
 
   const [profile, organization, testimonial] = await Promise.all([
     ctx.db

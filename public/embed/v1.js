@@ -203,7 +203,7 @@
       align-items: end;
       justify-content: space-between;
       gap: 16px;
-      padding: 20px;
+      padding: 24px;
       color: #fff;
       pointer-events: none;
       transition: opacity 200ms ease-out;
@@ -216,26 +216,27 @@
       .video-shell[data-video-playing]:has(.play:focus-visible) .video-shade,
       .video-shell[data-video-playing]:has(.play:focus-visible) .video-overlay { opacity: 1; }
     }
-    .video-overlay .stars { margin-bottom: 8px; }
-    .video-overlay .star { width: 16px; height: 16px; }
+    /* On the shade, the stars sit right above the signature row, which mirrors the text card: mark, name, role. */
+    .video-overlay .stars { margin-bottom: 12px; }
+    .video-identity { display: flex; min-width: 0; align-items: center; gap: 12px; }
     .video-name {
       display: block;
       overflow: hidden;
       color: #fff;
-      font-size: 20px;
+      font-size: 14px;
       font-weight: 600;
-      letter-spacing: -0.025em;
-      line-height: 1.25;
+      letter-spacing: -0.008em;
+      line-height: 20px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .video-meta {
       display: block;
       overflow: hidden;
-      margin-top: 2px;
       color: rgb(255 255 255 / 0.75);
-      font-size: 14px;
-      line-height: 1.4;
+      font-size: 13px;
+      letter-spacing: -0.004em;
+      line-height: 18px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -299,12 +300,14 @@
     .star { width: 14px; height: 14px; }
     .star[data-filled="true"] { fill: currentColor; }
     .star[data-filled="false"] { color: color-mix(in srgb, var(--gsp-muted) 25%, transparent); }
+    /* Mirrors the quote type style in globals.css; keep the four in step. */
     blockquote {
       color: var(--gsp-text);
       font-family: inherit;
       font-size: 17px;
       font-weight: 400;
-      line-height: 1.7;
+      letter-spacing: -0.011em;
+      line-height: 26px;
       text-wrap: pretty;
     }
     @container (min-width: 42rem) { .grid { column-count: 2; } }

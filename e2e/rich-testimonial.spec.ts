@@ -22,7 +22,10 @@ test("writes paragraphs, highlights a phrase, and adds/removes images", async ({
   await page.goto("/visual-evidence/rich-testimonial");
   const editor = page.getByRole("textbox", { name: "Your testimonial" });
   await editor.click();
-  await editor.press("ControlOrMeta+A");
+  await editor.evaluate((element) => {
+    window.getSelection()!.selectAllChildren(element);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
   await editor.press("Backspace");
   await editor.pressSequentially("We saved five hours every week.");
   await editor.press("Enter");

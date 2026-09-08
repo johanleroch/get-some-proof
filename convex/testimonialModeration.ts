@@ -4,6 +4,7 @@ import {
   normalizeRichText,
 } from "./domain/testimonialRichText";
 import { resolveTestimonialImages } from "./testimonialImages";
+import { validateExclusiveStoredImage } from "./domain/profileImage";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -77,6 +78,8 @@ const inboxItemValidator = v.union(
       v.literal("failed"),
     ),
     submissionType: v.literal("video"),
+    /** Known once the asset is ready; the thumbnail picker scrubs within it. */
+    videoDurationSeconds: v.optional(v.number()),
     videoStatus: v.union(
       v.literal("awaiting_upload"),
       v.literal("processing"),
@@ -105,26 +108,135 @@ async function findTestimonial(
   return testimonial;
 }
 
-export const listInbox = query({
-  args: {
-    organizationId: v.id("organizations"),
-    paginationOpts: paginationOptsValidator,
-    sort: v.union(v.literal("newest"), v.literal("oldest")),
-    status: v.optional(inboxStatusValidator),
-    submissionType: v.optional(v.union(v.literal("text"), v.literal("video"))),
-  },
-  returns: v.object({
-    continueCursor: v.string(),
-    isDone: v.boolean(),
-    page: v.array(inboxItemValidator),
-    pageStatus: v.optional(
-      v.union(
-        v.literal("SplitRecommended"),
-        v.literal("SplitRequired"),
-        v.null(),
-      ),
+/**
+ * One Testimonial as the Inbox shows it: the private facts the Owner needs
+ * (who sent it, when, what state it is in) beside the exact card value the
+ * Public Wall would draw. Shared by every Inbox listing so a Testimonial reads
+ * the same whichever category or order it arrives in.
+ */
+async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
+  const [avatarUrl, posterUrl, consent, videoAsset, quarantine] =
+    await Promise.all([
+      testimonial.avatarStorageId
+        ? ctx.storage.getUrl(testimonial.avatarStorageId)
+        : null,
+      testimonial.posterStorageId
+        ? ctx.storage.getUrl(testimonial.posterStorageId)
+        : null,
+      ctx.db
+        .query("publicationConsents")
+        .withIndex("by_testimonial", (index) =>
+          index.eq("testimonialId", testimonial._id),
+        )
+        .unique(),
+      testimonial.submissionType === "video"
+        ? ctx.db
+            .query("videoAssets")
+            .withIndex("by_testimonial", (index) =>
+              index.eq("testimonialId", testimonial._id),
+            )
+            .unique()
+        : null,
+      testimonial.moderationStatus === "spam"
+        ? ctx.db
+            .query("spamQuarantines")
+            .withIndex("by_testimonial", (index) =>
+              index.eq("testimonialId", testimonial._id),
+            )
+            .order("desc")
+            .first()
+        : null,
+    ]);
+  if (!consent) testimonialUnavailable();
+  const identity = {
+    consentAcceptedAt: consent.acceptedAt,
+    createdAt: testimonial.createdAt,
+    moderationStatus: testimonial.moderationStatus,
+    quarantineExpiresAt: quarantine?.expiresAt,
+    spamCreditRestored: quarantine?.creditRestored,
+    submitterEmail: testimonial.submitterEmail,
+    submitterName: testimonial.submitterName,
+    testimonialId: testimonial._id,
+    publicVisibilityOverrides: testimonial.publicVisibilityOverrides,
+  };
+  const cardIdentity = {
+    avatarUrl,
+    company: testimonial.company,
+    id: testimonial._id,
+    name: testimonial.submitterName,
+    publishedAt: testimonial.createdAt,
+    rating: testimonial.rating,
+    role: testimonial.role,
+  };
+  if (testimonial.submissionType === "text") {
+    return {
+      ...identity,
+      card: testimonialCardValue(cardIdentity, {
+        text: testimonial.text,
+        richText: testimonial.richText,
+        images: testimonial.imageIds?.length
+          ? await resolveTestimonialImages(ctx, testimonial.imageIds)
+          : undefined,
+        type: "text" as const,
+      }),
+      submissionType: "text" as const,
+    };
+  }
+  if (!videoAsset) testimonialUnavailable();
+  return {
+    ...identity,
+    aspectRatio: videoAsset.aspectRatio,
+    card:
+      videoAsset.status === "ready" && videoAsset.playbackId
+        ? testimonialCardValue(cardIdentity, {
+            aspectRatio: videoAsset.aspectRatio,
+            captionsAvailable: videoAsset.captionsStatus === "ready",
+            playbackId: videoAsset.playbackId,
+            posterTimeSeconds:
+              testimonial.posterTimeSeconds ??
+              (videoAsset.durationSeconds
+                ? videoAsset.durationSeconds / 2
+                : 0.5),
+            posterUrl: posterUrl ?? undefined,
+            type: "video" as const,
+          })
+        : null,
+    captionsStatus: videoAsset.captionsStatus,
+    submissionType: "video" as const,
+    videoDurationSeconds: videoAsset.durationSeconds,
+    videoStatus: videoAsset.status,
+  };
+}
+
+const inboxPageValidator = v.object({
+  continueCursor: v.string(),
+  isDone: v.boolean(),
+  page: v.array(inboxItemValidator),
+  pageStatus: v.optional(
+    v.union(
+      v.literal("SplitRecommended"),
+      v.literal("SplitRequired"),
+      v.null(),
     ),
-    splitCursor: v.optional(v.union(v.string(), v.null())),
+  ),
+  splitCursor: v.optional(v.union(v.string(), v.null())),
+});
+
+/** Past this many in one category, the Inbox tab shows "500+". */
+export const inboxCountCeiling = 500;
+
+/**
+ * How many Testimonials sit in each category, for the Inbox tabs. Read from
+ * the status index so the numbers are the ones the tabs will show, whatever
+ * page of each list is loaded.
+ */
+export const countInbox = query({
+  args: { organizationId: v.id("organizations") },
+  returns: v.object({
+    archived: v.number(),
+    pending: v.number(),
+    published: v.number(),
+    spam: v.number(),
   }),
   handler: async (ctx, args) => {
     const access = await requireOrganizationPermission(
@@ -132,6 +244,86 @@ export const listInbox = query({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
+    // Bounded on purpose: a tab says "500+" past this, and the query never
+    // reads more than 501 rows per status however large a Brand grows.
+    const statuses = ["pending", "published", "archived", "spam"] as const;
+    const counts = await Promise.all(
+      statuses.map(async (status) => {
+        const rows = await ctx.db
+          .query("testimonials")
+          .withIndex("by_organization_status", (index) =>
+            index
+              .eq("organizationId", access.organization._id)
+              .eq("moderationStatus", status),
+          )
+          .take(inboxCountCeiling + 1);
+        return rows.length;
+      }),
+    );
+    return {
+      pending: counts[0],
+      published: counts[1],
+      archived: counts[2],
+      spam: counts[3],
+    };
+  },
+});
+
+export const listInbox = query({
+  args: {
+    organizationId: v.id("organizations"),
+    paginationOpts: paginationOptsValidator,
+    /**
+     * `wall` lists Published Testimonials in the Curated Order the Public
+     * Wall shows them in, so the Inbox's Published category is the Wall; it
+     * is only meaningful with `status: "published"`.
+     */
+    sort: v.union(v.literal("newest"), v.literal("oldest"), v.literal("wall")),
+    status: v.optional(inboxStatusValidator),
+    submissionType: v.optional(v.union(v.literal("text"), v.literal("video"))),
+  },
+  returns: inboxPageValidator,
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    if (args.sort === "wall") {
+      if (args.status !== "published") {
+        throw new ConvexError({
+          code: "INVALID_INBOX_SORT",
+          message: "Only Published Testimonials have a Wall order.",
+        });
+      }
+      const orderedProjections = ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_organization_order_key", (index) =>
+          index.eq("organizationId", access.organization._id),
+        )
+        .order("desc");
+      // The type filter runs before pagination, like the status branch, so a
+      // page is never empty while isDone is still false.
+      const projections = await (
+        args.submissionType
+          ? orderedProjections.filter((filter) =>
+              filter.eq(filter.field("type"), args.submissionType),
+            )
+          : orderedProjections
+      ).paginate(args.paginationOpts);
+      const items = await Promise.all(
+        projections.page.map(async (projection) => {
+          const testimonial = await ctx.db.get(projection.testimonialId);
+          return testimonial && testimonial.moderationStatus === "published"
+            ? inboxItem(ctx, testimonial)
+            : null;
+        }),
+      );
+      return {
+        ...projections,
+        page: items.filter((item) => item !== null),
+      };
+    }
     const indexedQuery = args.status
       ? ctx.db
           .query("testimonials")
@@ -153,93 +345,8 @@ export const listInbox = query({
     const page = await visibleQuery
       .order(args.sort === "newest" ? "desc" : "asc")
       .paginate(args.paginationOpts);
-
     const inboxItems = await Promise.all(
-      page.page.map(async (testimonial) => {
-        const [avatarUrl, consent, videoAsset, quarantine] = await Promise.all([
-          testimonial.avatarStorageId
-            ? ctx.storage.getUrl(testimonial.avatarStorageId)
-            : null,
-          ctx.db
-            .query("publicationConsents")
-            .withIndex("by_testimonial", (index) =>
-              index.eq("testimonialId", testimonial._id),
-            )
-            .unique(),
-          testimonial.submissionType === "video"
-            ? ctx.db
-                .query("videoAssets")
-                .withIndex("by_testimonial", (index) =>
-                  index.eq("testimonialId", testimonial._id),
-                )
-                .unique()
-            : null,
-          testimonial.moderationStatus === "spam"
-            ? ctx.db
-                .query("spamQuarantines")
-                .withIndex("by_testimonial", (index) =>
-                  index.eq("testimonialId", testimonial._id),
-                )
-                .order("desc")
-                .first()
-            : null,
-        ]);
-        if (!consent) testimonialUnavailable();
-        const identity = {
-          consentAcceptedAt: consent.acceptedAt,
-          createdAt: testimonial.createdAt,
-          moderationStatus: testimonial.moderationStatus,
-          quarantineExpiresAt: quarantine?.expiresAt,
-          spamCreditRestored: quarantine?.creditRestored,
-          submitterEmail: testimonial.submitterEmail,
-          submitterName: testimonial.submitterName,
-          testimonialId: testimonial._id,
-          publicVisibilityOverrides: testimonial.publicVisibilityOverrides,
-        };
-        const cardIdentity = {
-          avatarUrl,
-          company: testimonial.company,
-          id: testimonial._id,
-          name: testimonial.submitterName,
-          publishedAt: testimonial.createdAt,
-          rating: testimonial.rating,
-          role: testimonial.role,
-        };
-        if (testimonial.submissionType === "text") {
-          return {
-            ...identity,
-            card: testimonialCardValue(cardIdentity, {
-              text: testimonial.text,
-              richText: testimonial.richText,
-              images: testimonial.imageIds?.length
-                ? await resolveTestimonialImages(ctx, testimonial.imageIds)
-                : undefined,
-              type: "text" as const,
-            }),
-            submissionType: "text" as const,
-          };
-        }
-        if (!videoAsset) testimonialUnavailable();
-        return {
-          ...identity,
-          aspectRatio: videoAsset.aspectRatio,
-          card:
-            videoAsset.status === "ready" && videoAsset.playbackId
-              ? testimonialCardValue(cardIdentity, {
-                  aspectRatio: videoAsset.aspectRatio,
-                  captionsAvailable: videoAsset.captionsStatus === "ready",
-                  playbackId: videoAsset.playbackId,
-                  posterTimeSeconds: videoAsset.durationSeconds
-                    ? videoAsset.durationSeconds / 2
-                    : 0.5,
-                  type: "video" as const,
-                })
-              : null,
-          captionsStatus: videoAsset.captionsStatus,
-          submissionType: "video" as const,
-          videoStatus: videoAsset.status,
-        };
-      }),
+      page.page.map((testimonial) => inboxItem(ctx, testimonial)),
     );
     return { ...page, page: inboxItems };
   },
@@ -742,6 +849,122 @@ export const setHighlights = mutation({
       await upsertPublicProjection(
         ctx,
         { ...testimonial, richText },
+        projection.publishedAt,
+      );
+    }
+    return null;
+  },
+});
+
+const posterChoiceValidator = v.union(
+  v.object({ kind: v.literal("frame"), timeSeconds: v.number() }),
+  v.object({ kind: v.literal("image"), storageId: v.id("_storage") }),
+);
+
+async function findReadyVideo(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  testimonialId: Id<"testimonials">,
+) {
+  const testimonial = await findTestimonial(ctx, organizationId, testimonialId);
+  if (
+    testimonial.submissionType !== "video" ||
+    testimonial.moderationStatus === "spam"
+  )
+    testimonialUnavailable();
+  const videoAsset = await ctx.db
+    .query("videoAssets")
+    .withIndex("by_testimonial", (q) => q.eq("testimonialId", testimonial._id))
+    .unique();
+  if (!videoAsset || videoAsset.status !== "ready") testimonialUnavailable();
+  return { testimonial, videoAsset };
+}
+
+export const generatePosterUploadUrl = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    await findReadyVideo(ctx, access.organization._id, args.testimonialId);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * The thumbnail of a video Testimonial: a frame of the video, or an image the
+ * Owner uploaded. The choice lives on the testimonial and is projected to the
+ * Wall like the highlighted phrase; a replaced upload is deleted at once.
+ */
+export const setPoster = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    poster: posterChoiceValidator,
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const access = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const { testimonial, videoAsset } = await findReadyVideo(
+      ctx,
+      access.organization._id,
+      args.testimonialId,
+    );
+    let patch: {
+      posterStorageId: Id<"_storage"> | undefined;
+      posterTimeSeconds: number | undefined;
+    };
+    if (args.poster.kind === "frame") {
+      const end = videoAsset.durationSeconds ?? Number.POSITIVE_INFINITY;
+      if (
+        !Number.isFinite(args.poster.timeSeconds) ||
+        args.poster.timeSeconds < 0 ||
+        args.poster.timeSeconds > end
+      )
+        throw new ConvexError({
+          code: "INVALID_POSTER_TIME",
+          message: "Pick a moment inside the video.",
+        });
+      patch = {
+        posterStorageId: undefined,
+        posterTimeSeconds: Math.round(args.poster.timeSeconds * 10) / 10,
+      };
+    } else {
+      if (testimonial.posterStorageId !== args.poster.storageId)
+        await validateExclusiveStoredImage(ctx, args.poster.storageId, {
+          kind: "testimonial",
+          testimonialId: testimonial._id,
+        });
+      patch = {
+        posterStorageId: args.poster.storageId,
+        posterTimeSeconds: undefined,
+      };
+    }
+    const previousStorageId = testimonial.posterStorageId;
+    await ctx.db.patch(testimonial._id, { ...patch, updatedAt: Date.now() });
+    if (previousStorageId && previousStorageId !== patch.posterStorageId)
+      await ctx.storage.delete(previousStorageId);
+    if (testimonial.moderationStatus === "published") {
+      const projection = await ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (!projection) testimonialUnavailable();
+      await upsertPublicProjection(
+        ctx,
+        { ...testimonial, ...patch },
         projection.publishedAt,
       );
     }

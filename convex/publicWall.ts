@@ -149,6 +149,10 @@ export const list = query({
                 captionsAvailable: projection.captionsAvailable,
                 playbackId: projection.playbackId,
                 posterTimeSeconds: projection.posterTimeSeconds,
+                posterUrl: projection.posterStorageId
+                  ? ((await ctx.storage.getUrl(projection.posterStorageId)) ??
+                    undefined)
+                  : undefined,
                 type: "video" as const,
               })
             : testimonialCardValue(identity, {

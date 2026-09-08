@@ -90,7 +90,7 @@ export function Blob({
         width={size}
       >
         <style>{`
-${scope} .body, ${scope} .face-idle, ${scope} .face-swap { transform-box: fill-box; will-change: transform; }
+${scope} .body, ${scope} .face-idle, ${scope} .face-swap { transform-box: fill-box; }
 ${scope} .body { transform-origin: 50% 100%; }
 ${scope} .face-idle, ${scope} .face-swap { transform-origin: 50% 50%; }
 ${scope} .face-swap[data-swap] { animation: blob-swap ${TRANSITION}ms cubic-bezier(0.3, 0, 0.2, 1) both; }

@@ -1,6 +1,7 @@
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
+import { VideoThumbnailScreenFixture } from "@/components/visual-evidence/video-thumbnail-fixture";
 import { notFound } from "next/navigation";
 
 import {
@@ -27,6 +28,8 @@ import {
   ProPublicWallScreenFixture,
   PublicWallScreenFixture,
   TestimonialDeleteScreenFixture,
+  TestimonialInboxDetailsScreenFixture,
+  TestimonialInboxPublishedScreenFixture,
   TestimonialInboxScreenFixture,
   ToastErrorScreenFixture,
   ToastSuccessScreenFixture,
@@ -41,6 +44,7 @@ const screens = {
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
   "rich-testimonial": RichTestimonialScreenFixture,
+  "video-thumbnail": VideoThumbnailScreenFixture,
   "collection-form": CollectionFormScreenFixture,
   "collection-form-closed": CollectionFormClosedScreenFixture,
   "collection-form-details": CollectionFormDetailsScreenFixture,
@@ -54,6 +58,8 @@ const screens = {
   "public-wall-empty": EmptyPublicWallScreenFixture,
   "public-wall-pro": ProPublicWallScreenFixture,
   "testimonial-inbox": TestimonialInboxScreenFixture,
+  "testimonial-inbox-published": TestimonialInboxPublishedScreenFixture,
+  "testimonial-inbox-details": TestimonialInboxDetailsScreenFixture,
   "toast-error": ToastErrorScreenFixture,
   "toast-success": ToastSuccessScreenFixture,
   "testimonial-delete": TestimonialDeleteScreenFixture,
