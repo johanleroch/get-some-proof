@@ -109,9 +109,12 @@ export async function upsertPublicProjection(
           aspectRatio: videoAsset.aspectRatio,
           captionsAvailable: videoAsset.captionsStatus === "ready",
           playbackId: videoAsset.playbackId!,
-          posterTimeSeconds: videoAsset.durationSeconds
-            ? videoAsset.durationSeconds / 2
-            : undefined,
+          posterStorageId: testimonial.posterStorageId,
+          posterTimeSeconds:
+            testimonial.posterTimeSeconds ??
+            (videoAsset.durationSeconds
+              ? videoAsset.durationSeconds / 2
+              : undefined),
           type: "video" as const,
         }
       : {

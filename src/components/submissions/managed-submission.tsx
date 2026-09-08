@@ -65,6 +65,7 @@ type ManagedSubmissionValue = {
   currentVideo?: {
     playbackId: string;
     posterTimeSeconds?: number;
+    posterUrl?: string;
   };
   moderationStatus: "pending" | "published" | "archived" | "spam";
   privacyContact: string;
@@ -107,12 +108,17 @@ function errorMessage(error: unknown) {
 function CurrentManagedVideo({
   playbackId,
   posterTimeSeconds,
+  posterUrl,
 }: {
   playbackId: string;
   posterTimeSeconds?: number;
+  /** The image the Brand uploaded as the thumbnail, when there is one. */
+  posterUrl?: string;
 }) {
   const [playing, setPlaying] = useState(false);
-  const poster = `https://image.mux.com/${encodeURIComponent(playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${posterTimeSeconds ?? 0.5}`;
+  const poster =
+    posterUrl ??
+    `https://image.mux.com/${encodeURIComponent(playbackId)}/thumbnail.png?width=416&height=740&fit_mode=smartcrop&time=${posterTimeSeconds ?? 0.5}`;
 
   return (
     <div

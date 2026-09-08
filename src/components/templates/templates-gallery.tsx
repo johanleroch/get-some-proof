@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
-  type Icon,
   IconDeviceDesktop,
   IconDeviceMobile,
   IconDeviceTablet,
@@ -13,6 +12,7 @@ import {
 
 import { ArrowNote } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
+import { type Segment, Segmented } from "@/components/ui/segmented";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { sampleBrandName, sampleTestimonials } from "@/lib/template-samples";
 import {
@@ -28,8 +28,6 @@ import { TemplateRender } from "./template-registry";
 import { TemplateStage } from "./template-stage";
 
 export type TemplatesGalleryMode = "kit" | "public";
-
-type Segment<T extends string> = { icon: Icon; key: T; label: string };
 
 const devices = [
   {
@@ -334,52 +332,5 @@ function RailItem({
         />
       ) : null}
     </button>
-  );
-}
-
-function Segmented<T extends string>({
-  className,
-  label,
-  onChange,
-  options,
-  value,
-}: {
-  className?: string;
-  label: string;
-  onChange: (value: T) => void;
-  options: ReadonlyArray<Segment<T>>;
-  value: T;
-}) {
-  return (
-    <div
-      aria-label={label}
-      className={cn(
-        "bg-surface-2 inline-flex h-11 items-center gap-1 rounded-md p-1",
-        className,
-      )}
-      role="group"
-    >
-      {options.map((option) => {
-        const active = option.key === value;
-        const OptionIcon = option.icon;
-        return (
-          <button
-            aria-pressed={active}
-            className={cn(
-              "focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-sm font-semibold tracking-[-0.008em] transition-[background-color,border-color,color] duration-150 outline-none focus-visible:ring-[3px]",
-              active
-                ? "bg-surface border-line text-ink"
-                : "text-ink-2 hover:text-ink border-transparent",
-            )}
-            key={option.key}
-            onClick={() => onChange(option.key)}
-            type="button"
-          >
-            <OptionIcon aria-hidden="true" className="size-4" />
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }

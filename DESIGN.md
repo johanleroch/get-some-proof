@@ -202,7 +202,8 @@ Scale (size / line-height, Figtree unless noted):
 | display    | 32px | 36px | 700    | -0.015em | Gelica  | Dashboard page titles                  |
 | heading    | 24px | 30px | 600    | -0.01em  | Gelica  | Section titles, dialog titles          |
 | subheading | 18px | 26px | 600    | -0.005em | Gelica  | Card titles, empty-state titles        |
-| body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs, testimonial quotes         |
+| body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs                             |
+| quote      | 17px | 26px | 400    | -0.011em | Figtree | The words on a Testimonial card        |
 | ui         | 14px | 20px | 500    | -0.008em | Figtree | Buttons, inputs, navigation, table     |
 | small      | 13px | 18px | 400    | -0.004em | Figtree | Metadata, helper text                  |
 | micro      | 12px | 16px | 600    | +0.06em  | Figtree | Eyebrows and group labels, uppercase   |
@@ -436,6 +437,12 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   no border and a `--surface-2` hover. Destructive is `--danger` fill with
   white text. Every async button has a `loading` state with an inline spinner
   and a stable width; swapping the label to "Saving..." is retired.
+- Images that change under the hand (a newly chosen video still, a swapped
+  photo): the image on screen stays until the next one has finished loading,
+  with a 2px `--brand` line pulsing along its bottom edge meanwhile. Never a
+  dark or empty box between two pictures; the preview of a poster reuses the
+  card's own URL so it opens already loaded (`StillPreview` in
+  `src/components/testimonials/video-thumbnail-dialog.tsx`).
 - Inputs and textareas: height 40px, `--radius-md`, `--surface` fill, 1px
   `--line-2` border, `--ink-3` placeholder, focus ring 3px `--brand-ring` with
   a `--brand` border. Label above at `ui` weight 500, helper text below at
@@ -454,16 +461,21 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
   (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
   24px padding. The stars open the card at 14px in the Brand accent with
-  unfilled stars at 25%, 16px above the quote. The quote then reads at 17px on
-  1.7 leading in `--ink` — one step above `body`, the card's own size, because
-  the proof is what was said. The signature follows 20px below on one row: the
+  unfilled stars at 25%, 16px above the quote. The quote then reads at `quote`
+  (17px on 26px) in `--ink` — one step above `body`, because the proof is what
+  was said; tune it at `/kit` like any other style. The signature follows 20px
+  below on one row: the
   display quote mark in the Brand accent (`--font-display`, 48px, weight 700,
   kept out of the row height so a name with no role still ends on the padding),
   or the Customer's avatar 32px round when there is one to show; then the name
   at `ui` weight 600 and the role and company at `small` in `--ink-2`. Initials
   are never drawn: they are filler, not proof. Video cards keep the source
-  ratio, the play button is 48px round on `--surface` with `--shadow-float`.
-  Reviewed at `/kit/testimonials`.
+  ratio and follow the same grammar on the bottom shade: the stars sit 12px
+  above the signature row, which reads exactly as on the text card (display
+  mark, name at `ui`, role at `small`, in white), with the 48px play button
+  on `--surface` with `--shadow-float` on the right. Never spread the stars
+  to the top corner: on a face they look lost. Reviewed at
+  `/kit/testimonials`.
 - Highlighted words: the `MarkerHighlight` swash painted behind the phrase,
   never a coloured box. `mark` carries it site-wide from `globals.css` in
   amber; a Testimonial card overrides it with the customer Brand accent
@@ -474,7 +486,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   paper, never a pastel tint (the generic "AI pill"). `brand`
   is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
-  max 480px (560px for content-heavy). Destructive confirmations keep no close
+  max 480px (560px for content-heavy). One exception, at 672px: the video
+  thumbnail picker, because its preview is the real published card beside
+  eight moments of the video, and a narrower preview truncated the name. Destructive confirmations keep no close
   icon and require the typed name where they do today.
 - Toasts: the mascot tells them. `blobToast.success|info|warning|error|
 loading` (`src/components/brand/blob-toast.tsx`, same call shape as

@@ -235,6 +235,13 @@ export const screenSections: ScreenSection[] = [
         fixturePath: "/visual-evidence/rich-testimonial",
       },
       {
+        slug: "video-thumbnail",
+        title: "Change thumbnail",
+        description:
+          "Choosing the still of a video Testimonial: a frame scrubbed from the video, or an image the Owner uploads, previewed on the real card.",
+        fixturePath: "/visual-evidence/video-thumbnail",
+      },
+      {
         slug: "toast-success",
         title: "Success toast",
         description: "Transient confirmation after a successful action.",

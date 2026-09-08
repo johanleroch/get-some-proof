@@ -17,6 +17,7 @@ export type InboxTestimonialAction =
   | "highlight"
   | "publish"
   | "spam"
+  | "thumbnail"
   | "undo-spam"
   | "unpublish";
 

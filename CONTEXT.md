@@ -76,6 +76,10 @@ _Avoid_: Avatar, Video Asset
 Visual emphasis applied to existing Testimonial words by the Submitter or Owner, without changing those words.
 _Avoid_: Owner edit, Rewrite
 
+**Thumbnail**:
+The still shown for a video Testimonial before playback: a moment of the video chosen by the Owner, an image the Owner uploaded, or by default the middle of the video. It travels with the Testimonial to public display and never alters the Video Asset.
+_Avoid_: Poster (in copy), Cover, Preview
+
 **Pending**:
 The moderation state of a newly collected Testimonial that has never been public.
 _Avoid_: Unapproved, Draft

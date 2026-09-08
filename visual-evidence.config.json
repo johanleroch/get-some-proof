@@ -329,6 +329,13 @@
       "theme": "light"
     },
     {
+      "slug": "video-thumbnail",
+      "title": "Video thumbnail picker",
+      "path": "/visual-evidence/video-thumbnail",
+      "heading": "Change thumbnail",
+      "theme": "light"
+    },
+    {
       "slug": "collection-form-write-long",
       "title": "Collection Form - long text with fixed editor height",
       "path": "/visual-evidence/collection-form-write",

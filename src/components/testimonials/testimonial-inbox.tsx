@@ -10,6 +10,7 @@ import {
   IconEyeOff,
   IconHighlight,
   IconLoader2,
+  IconPhoto,
   IconSend,
 } from "@tabler/icons-react";
 import type { Route } from "next";
@@ -22,6 +23,7 @@ import {
 } from "convex/react";
 
 import { HighlightTestimonialDialog } from "./highlight-testimonial-dialog";
+import { VideoThumbnailDialog } from "./video-thumbnail-dialog";
 
 import { api } from "@convex/_generated/api";
 import { defaultPrimaryColor } from "@convex/domain/brand";
@@ -40,6 +42,7 @@ import { SpeechBubbleStars } from "@/components/doodles";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatShortDate } from "@/lib/format-date";
+import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -93,6 +96,7 @@ type InboxTestimonial =
       aspectRatio?: string;
       captionsStatus: "requested" | "ready" | "failed";
       submissionType: "video";
+      videoDurationSeconds?: number;
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
     });
 
@@ -339,6 +343,20 @@ function InboxTestimonialCard({
           >
             <IconHighlight aria-hidden="true" />
             Highlight a phrase
+          </Button>
+        ) : null}
+
+        {!isSpam &&
+        testimonial.submissionType === "video" &&
+        testimonial.videoStatus === "ready" ? (
+          <Button
+            disabled={disabled}
+            onClick={() => onAction("thumbnail")}
+            size="sm"
+            variant="ghost"
+          >
+            <IconPhoto aria-hidden="true" />
+            Change thumbnail
           </Button>
         ) : null}
 
@@ -662,6 +680,12 @@ export function TestimonialInbox({ slug }: { slug: string }) {
   const saveHighlights = useMutation(api.testimonialModeration.setHighlights);
   const [highlightTarget, setHighlightTarget] =
     useState<InboxTestimonial | null>(null);
+  const savePoster = useMutation(api.testimonialModeration.setPoster);
+  const generatePosterUploadUrl = useMutation(
+    api.testimonialModeration.generatePosterUploadUrl,
+  );
+  const [thumbnailTarget, setThumbnailTarget] =
+    useState<InboxTestimonial | null>(null);
   const wallSettings = useQuery(
     api.wallCustomization.getSettings,
     organization ? { organizationId: organization.id } : "skip",
@@ -771,6 +795,9 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     switch (action) {
       case "highlight":
         setHighlightTarget(testimonial);
+        return;
+      case "thumbnail":
+        setThumbnailTarget(testimonial);
         return;
       case "delete":
         setDeleteTarget(testimonial);
@@ -913,6 +940,47 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           }}
           submitterName={highlightTarget.submitterName}
           testimonial={highlightTarget.card}
+        />
+      ) : null}
+
+      {thumbnailTarget?.submissionType === "video" &&
+      thumbnailTarget.card?.type === "video" ? (
+        <VideoThumbnailDialog
+          accentColor={wallSettings?.accentColor}
+          durationSeconds={thumbnailTarget.videoDurationSeconds}
+          isPublished={thumbnailTarget.moderationStatus === "published"}
+          key={thumbnailTarget.testimonialId}
+          onClose={() => setThumbnailTarget(null)}
+          onSave={async (choice) => {
+            const target = {
+              organizationId: activeOrganization.id,
+              testimonialId: thumbnailTarget.testimonialId,
+            };
+            if (choice.kind === "image") {
+              const uploadUrl = await generatePosterUploadUrl(target);
+              const storageId = await uploadProfileImage(
+                choice.file,
+                uploadUrl,
+              );
+              await savePoster({
+                ...target,
+                poster: { kind: "image", storageId },
+              });
+            } else {
+              await savePoster({
+                ...target,
+                poster: { kind: "frame", timeSeconds: choice.timeSeconds },
+              });
+            }
+            setError(null);
+            setMessage(
+              thumbnailTarget.moderationStatus === "published"
+                ? `${thumbnailTarget.submitterName}'s new thumbnail is live on your Public Wall.`
+                : `${thumbnailTarget.submitterName}'s video has a new thumbnail.`,
+            );
+          }}
+          submitterName={thumbnailTarget.submitterName}
+          testimonial={thumbnailTarget.card}
         />
       ) : null}
       <TestimonialDeleteDialog

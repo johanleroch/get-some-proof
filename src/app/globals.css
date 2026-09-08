@@ -166,6 +166,10 @@
   --type-body-leading: 1.5rem;
   --type-body-weight: 400;
   --type-body-tracking: -0.011em;
+  --type-quote-size: 1.0625rem;
+  --type-quote-leading: 1.625rem;
+  --type-quote-weight: 400;
+  --type-quote-tracking: -0.011em;
   --type-ui-size: 0.875rem;
   --type-ui-leading: 1.25rem;
   --type-ui-weight: 500;
@@ -430,6 +434,15 @@
   line-height: var(--type-body-leading);
   font-weight: var(--type-body-weight);
   letter-spacing: var(--type-body-tracking);
+}
+
+/* The words on a Testimonial card: one step above body, for a wall column. */
+@utility type-quote {
+  font-family: var(--font-figtree), system-ui, sans-serif;
+  font-size: var(--type-quote-size);
+  line-height: var(--type-quote-leading);
+  font-weight: var(--type-quote-weight);
+  letter-spacing: var(--type-quote-tracking);
 }
 
 @utility type-ui {
