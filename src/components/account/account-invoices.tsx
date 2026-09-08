@@ -15,6 +15,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const invoiceDate = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeZone: "UTC",
+});
+const invoiceCurrencies = new Map<string, Intl.NumberFormat>();
+function formatInvoiceAmount(amount: number, currency: string) {
+  let formatter = invoiceCurrencies.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en", { style: "currency", currency });
+    invoiceCurrencies.set(currency, formatter);
+  }
+  return formatter.format(amount / 100);
+}
+
 export function AccountInvoices({
   canManageBilling,
 }: {
@@ -163,11 +177,7 @@ export function AccountInvoicesView({
                     {invoice.number ?? "Invoice"}
                   </p>
                   <p className="text-muted-foreground text-sm">
-                    {new Intl.DateTimeFormat("en", {
-                      dateStyle: "medium",
-                      timeZone: "UTC",
-                    }).format(invoice.created * 1000)}{" "}
-                    ·{" "}
+                    {invoiceDate.format(invoice.created * 1000)} ·{" "}
                     {invoice.status === "paid"
                       ? "Paid"
                       : invoice.status === "open"
@@ -181,10 +191,7 @@ export function AccountInvoicesView({
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-medium">
-                    {new Intl.NumberFormat("en", {
-                      style: "currency",
-                      currency: invoice.currency,
-                    }).format(invoice.amount / 100)}
+                    {formatInvoiceAmount(invoice.amount, invoice.currency)}
                   </span>
                   {invoice.pdfUrl ? (
                     <Button asChild variant="outline" size="sm">

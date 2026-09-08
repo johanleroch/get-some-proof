@@ -22,6 +22,15 @@ export function AccountBilling() {
         <AccountClosure />
       </main>
     );
+  const accountControls = account ? (
+    <>
+      <AccountInvoices
+        key={account.id}
+        canManageBilling={account.canManageSubscription}
+      />
+      <AccountClosure />
+    </>
+  ) : null;
   const billingProject = projects.find(
     ({ id }) => id === account?.freeProjectId,
   );
@@ -29,13 +38,7 @@ export function AccountBilling() {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6">
         <OrganizationBilling slug={billingProject.slug} />
-        {account ? (
-          <AccountInvoices
-            key={account.id}
-            canManageBilling={account.canManageSubscription}
-          />
-        ) : null}
-        {account ? <AccountClosure /> : null}
+        {accountControls}
       </div>
     );
   }
@@ -71,13 +74,7 @@ export function AccountBilling() {
           </Button>
         </div>
       </section>
-      {account ? (
-        <AccountInvoices
-          key={account.id}
-          canManageBilling={account.canManageSubscription}
-        />
-      ) : null}
-      {account ? <AccountClosure /> : null}
+      {accountControls}
     </main>
   );
 }

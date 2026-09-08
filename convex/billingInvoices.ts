@@ -88,29 +88,31 @@ export async function listAccountInvoicesHandler(
     limit: 20,
     starting_after: args.cursor,
   });
+  const invoices: InvoicePage["invoices"] = [];
+  for (const invoice of page.data) {
+    const owner =
+      typeof invoice.customer === "string"
+        ? invoice.customer
+        : invoice.customer?.id;
+    if (
+      owner !== customerId ||
+      invoice.status === "draft" ||
+      invoice.status === null
+    )
+      continue;
+    invoices.push({
+      id: invoice.id,
+      number: invoice.number,
+      created: invoice.created,
+      amount: invoice.total,
+      currency: invoice.currency,
+      status: invoice.status,
+      pdfUrl: stripeInvoiceUrl(invoice.invoice_pdf),
+      hostedUrl: stripeInvoiceUrl(invoice.hosted_invoice_url),
+    });
+  }
   return {
-    invoices: page.data
-      .filter((invoice) => {
-        const owner =
-          typeof invoice.customer === "string"
-            ? invoice.customer
-            : invoice.customer?.id;
-        return (
-          owner === customerId &&
-          invoice.status !== "draft" &&
-          invoice.status !== null
-        );
-      })
-      .map((invoice) => ({
-        id: invoice.id,
-        number: invoice.number,
-        created: invoice.created,
-        amount: invoice.total,
-        currency: invoice.currency,
-        status: invoice.status!,
-        pdfUrl: stripeInvoiceUrl(invoice.invoice_pdf),
-        hostedUrl: stripeInvoiceUrl(invoice.hosted_invoice_url),
-      })),
+    invoices,
     nextCursor: page.has_more
       ? (page.data[page.data.length - 1]?.id ?? null)
       : null,
