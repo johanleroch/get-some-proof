@@ -1,3 +1,7 @@
+import {
+  enqueueAssetCleanup,
+  enqueueVideoAssetCleanup,
+} from "./testimonialDeletion";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -110,7 +114,9 @@ async function failAsset(
   asset: Doc<"videoAssets">,
   reason: string,
 ) {
-  if (asset.status === "ready" || asset.status === "failed") return false;
+  if (asset.status === "ready") return false;
+  await enqueueVideoAssetCleanup(ctx, asset);
+  if (asset.status === "failed") return false;
   await ctx.db.patch(asset._id, {
     failureReason: reason.slice(0, 200),
     status: "failed",
@@ -179,7 +185,53 @@ export const applyEvent = internalMutation({
     const data = eventData(event.data);
     let outcome = "ignored";
     if (asset) {
-      if (event.type === "video.upload.asset_created") {
+      const reservation = await ctx.db.get(asset.reservationId);
+      const providerAssetId =
+        event.type === "video.upload.asset_created"
+          ? typeof data.asset_id === "string"
+            ? data.asset_id
+            : asset.providerAssetId
+          : [
+                "video.asset.ready",
+                "video.asset.errored",
+                "video.asset.updated",
+              ].includes(event.type) && typeof data.id === "string"
+            ? data.id
+            : asset.providerAssetId;
+      if (
+        asset.status === "failed" ||
+        !reservation ||
+        reservation.status === "released" ||
+        (reservation.expiresAt <= Date.now() &&
+          !(asset.status === "ready" && asset.testimonialId))
+      ) {
+        const retiredAsset = { ...asset, providerAssetId };
+        await ctx.db.patch(asset._id, {
+          providerAssetId,
+          status: "failed",
+          updatedAt: Date.now(),
+        });
+        await enqueueVideoAssetCleanup(ctx, retiredAsset);
+        // A late asset event can introduce a new target after upload cleanup was queued.
+        if (providerAssetId)
+          await enqueueAssetCleanup(ctx, {
+            organizationId: asset.organizationId,
+            provider: asset.provider,
+            providerAssetId,
+            testimonialId: asset.testimonialId,
+          });
+        if (reservation && reservation.status !== "released")
+          await ctx.db.patch(reservation._id, {
+            status: "released",
+            updatedAt: Date.now(),
+          });
+        if (asset.testimonialId)
+          await createVideoRetryLink(ctx, retiredAsset, {
+            hash: retryTokenHash,
+            seed: retryTokenSeed,
+          });
+        outcome = "released";
+      } else if (event.type === "video.upload.asset_created") {
         if (asset.status === "awaiting_upload") {
           await ctx.db.patch(asset._id, {
             providerAssetId:
@@ -195,7 +247,7 @@ export const applyEvent = internalMutation({
         }
       } else if (event.type === "video.asset.updated") {
         const aspectRatio = videoAspectRatio(data.aspect_ratio);
-        if (asset.status !== "failed" && aspectRatio) {
+        if (aspectRatio) {
           await updateVideoAspectRatio(ctx, asset, aspectRatio);
           outcome = "metadata_updated";
         }
@@ -210,7 +262,7 @@ export const applyEvent = internalMutation({
           "Video processing failed.",
         );
         outcome = asset.status === "ready" ? "already_ready" : "failed";
-        if ((failedNow || asset.status === "failed") && asset.testimonialId) {
+        if (failedNow && asset.testimonialId) {
           await createVideoRetryLink(ctx, asset, {
             hash: retryTokenHash,
             seed: retryTokenSeed,

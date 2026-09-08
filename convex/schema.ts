@@ -3,6 +3,17 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  collectionAdmissions: defineTable({
+    organizationId: v.id("organizations"),
+    clientSubmissionId: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    imageUses: v.number(),
+    avatarUses: v.number(),
+    submissionUsed: v.boolean(),
+  })
+    .index("by_token_hash", ["tokenHash"])
+    .index("by_organization", ["organizationId"]),
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
@@ -13,6 +24,7 @@ export default defineSchema({
     collectionFormTitle: v.string(),
     collectionFormDescription: v.string(),
     privacyContact: v.string(),
+    publicWallPrivacyRevision: v.optional(v.number()),
     publicWallTheme: v.optional(
       v.union(v.literal("light"), v.literal("dark"), v.literal("system")),
     ),
@@ -613,6 +625,7 @@ export default defineSchema({
     testimonialId: v.optional(v.id("testimonials")),
     provider: v.union(v.literal("fake"), v.literal("mux")),
     providerUploadId: v.string(),
+    cleanupScheduled: v.optional(v.boolean()),
     providerAssetId: v.optional(v.string()),
     playbackId: v.optional(v.string()),
     // Cleanup-only compatibility for derived assets created before MP4 export
@@ -725,7 +738,7 @@ export default defineSchema({
   videoProviderCleanupJobs: defineTable({
     attempts: v.number(),
     organizationId: v.id("organizations"),
-    testimonialId: v.id("testimonials"),
+    testimonialId: v.optional(v.id("testimonials")),
     provider: v.union(v.literal("fake"), v.literal("mux")),
     providerAssetId: v.optional(v.string()),
     providerUploadId: v.optional(v.string()),

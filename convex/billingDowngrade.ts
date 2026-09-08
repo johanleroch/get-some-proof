@@ -1,3 +1,4 @@
+import { removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -444,7 +445,7 @@ export const processTransitionBatch = internalMutation({
         ) {
           return;
         }
-        await ctx.db.delete(projection._id);
+        await removePublicProjection(ctx, projection);
         await ctx.db.patch(testimonial._id, {
           moderationStatus: "archived",
           updatedAt: now,

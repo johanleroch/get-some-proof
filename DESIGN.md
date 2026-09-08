@@ -431,8 +431,8 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   `--brand-strong`, active translates down 1px, focus shows a 3px
   `--brand-ring`. Secondary is `--surface` with a `--line-2` border. Ghost has
   no border and a `--surface-2` hover. Destructive is `--danger` fill with
-  white text. Every async button has a `loading` state with an inline spinner
-  and a stable width; swapping the label to "Saving..." is retired.
+  white text. Every async button has a `loading` state with a small inline
+  spinner and a stable width; swapping the label to "Saving..." is retired.
 - Inputs and textareas: height 40px, `--radius-md`, `--surface` fill, 1px
   `--line-2` border, `--ink-3` placeholder, focus ring 3px `--brand-ring` with
   a `--brand` border. Label above at `ui` weight 500, helper text below at
@@ -516,8 +516,9 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
   transitions through the root `loading.tsx`, a form submitting, a video
-  processing. Never a spinner, except the inline one inside a loading
-  button.
+  processing. Use the mascot for every visible wait, including compact labels,
+  upload progress, video buffering, and page skeletons. Loading buttons use
+  a small 16px spinner instead.
 - Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
   1.75. Lucide is removed once the last usages are migrated.
 
@@ -656,9 +657,12 @@ Order of work, each step verified in `/screens` (sample and live) and with
    fixtures' sample data (names, companies, quotes) to the new voice.
 
 App icons (App Store, dock, favicon, social avatars) follow their own spec in
-`docs/design/app-icons/DESIGN.md`, built on the same tokens. Ten candidates
-live in `public/brand/icons/`; the flagship is 03 quote marks, installed as
-the favicon, the Apple touch icon and the in-app brand mark.
+`docs/design/app-icons/DESIGN.md`, built on the same tokens. The official icon
+is the founder's own drawing, the upright blob on a paper tile
+(`public/brand/icon.svg`, section 10.2 there), installed as the favicon, the
+Apple touch icon and the in-app brand mark. The twenty generated candidates in
+`public/brand/icons/` are the exploration that led to it and stay as a bank of
+alternates for stickers, seasonal tiles and social posts.
 
 Open decisions, tracked here until settled: the final accent hue (amber is
 provisional), a possible logo refresh once the palette is live (see the app

@@ -25,7 +25,7 @@ async function requireTrustedInvitationManager(
   actorId: string,
 ) {
   const organization = await ctx.db.get(organizationId);
-  if (!organization) {
+  if (!organization || organization.deletionStartedAt !== undefined) {
     return organizationUnavailable();
   }
   const membership = await ctx.db
@@ -82,7 +82,7 @@ export const getMagicLinkDelivery = internalQuery({
       return null;
     }
     const organization = await ctx.db.get(invitation.organizationId);
-    if (!organization) {
+    if (!organization || organization.deletionStartedAt !== undefined) {
       return null;
     }
     return {

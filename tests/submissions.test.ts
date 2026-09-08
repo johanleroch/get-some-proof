@@ -1,3 +1,4 @@
+import { admittedUpload } from "./convex-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -315,10 +316,13 @@ describe("text Submission collection", () => {
       name: "Acme Studio",
       publicSlug: "acme-proof",
     });
-    const upload = await t.mutation(api.submissions.generateAvatarUploadUrl, {
-      clientSubmissionId: validSubmission.clientSubmissionId,
-      publicSlug: validSubmission.publicSlug,
-    });
+    const upload = await t.mutation(
+      api.submissions.generateAvatarUploadUrl,
+      await admittedUpload(t, {
+        clientSubmissionId: validSubmission.clientSubmissionId,
+        publicSlug: validSubmission.publicSlug,
+      }),
+    );
     const storageId = await t.run(async (ctx) => {
       const id = await ctx.storage.store(new Blob(["avatar"]));
       await ctx.db.patch(id, { contentType: "image/jpeg" });
@@ -362,25 +366,37 @@ describe("text Submission collection", () => {
       publicSlug: "acme-proof",
     });
 
-    await t.mutation(api.submissions.generateAvatarUploadUrl, {
-      clientSubmissionId: validSubmission.clientSubmissionId,
-      publicSlug: validSubmission.publicSlug,
-    });
-    await t.mutation(api.submissions.generateAvatarUploadUrl, {
-      clientSubmissionId: validSubmission.clientSubmissionId,
-      publicSlug: validSubmission.publicSlug,
-    });
-    await t.mutation(api.submissions.generateAvatarUploadUrl, {
-      clientSubmissionId: validSubmission.clientSubmissionId,
-      publicSlug: validSubmission.publicSlug,
-    });
-    await expect(
-      t.mutation(api.submissions.generateAvatarUploadUrl, {
+    await t.mutation(
+      api.submissions.generateAvatarUploadUrl,
+      await admittedUpload(t, {
         clientSubmissionId: validSubmission.clientSubmissionId,
         publicSlug: validSubmission.publicSlug,
       }),
+    );
+    await t.mutation(
+      api.submissions.generateAvatarUploadUrl,
+      await admittedUpload(t, {
+        clientSubmissionId: validSubmission.clientSubmissionId,
+        publicSlug: validSubmission.publicSlug,
+      }),
+    );
+    await t.mutation(
+      api.submissions.generateAvatarUploadUrl,
+      await admittedUpload(t, {
+        clientSubmissionId: validSubmission.clientSubmissionId,
+        publicSlug: validSubmission.publicSlug,
+      }),
+    );
+    await expect(
+      t.mutation(
+        api.submissions.generateAvatarUploadUrl,
+        await admittedUpload(t, {
+          clientSubmissionId: validSubmission.clientSubmissionId,
+          publicSlug: validSubmission.publicSlug,
+        }),
+      ),
     ).rejects.toMatchObject({
-      data: { code: "AVATAR_UPLOAD_LIMIT_REACHED" },
+      data: { code: "COLLECTION_ADMISSION_UNAVAILABLE" },
     });
   });
 
@@ -395,10 +411,13 @@ describe("text Submission collection", () => {
         name: "Acme Studio",
         publicSlug: "acme-proof",
       });
-      const upload = await t.mutation(api.submissions.generateAvatarUploadUrl, {
-        clientSubmissionId: validSubmission.clientSubmissionId,
-        publicSlug: validSubmission.publicSlug,
-      });
+      const upload = await t.mutation(
+        api.submissions.generateAvatarUploadUrl,
+        await admittedUpload(t, {
+          clientSubmissionId: validSubmission.clientSubmissionId,
+          publicSlug: validSubmission.publicSlug,
+        }),
+      );
       const orphanStorageId = await t.run(async (ctx) =>
         ctx.storage.store(new Blob(["orphan avatar"])),
       );
@@ -436,14 +455,20 @@ describe("text Submission collection", () => {
         publicSlug: "acme-proof",
       });
       const [first, second] = await Promise.all([
-        t.mutation(api.submissions.generateAvatarUploadUrl, {
-          clientSubmissionId: "avatar-submission-one",
-          publicSlug: "acme-proof",
-        }),
-        t.mutation(api.submissions.generateAvatarUploadUrl, {
-          clientSubmissionId: "avatar-submission-two",
-          publicSlug: "acme-proof",
-        }),
+        t.mutation(
+          api.submissions.generateAvatarUploadUrl,
+          await admittedUpload(t, {
+            clientSubmissionId: "avatar-submission-one",
+            publicSlug: "acme-proof",
+          }),
+        ),
+        t.mutation(
+          api.submissions.generateAvatarUploadUrl,
+          await admittedUpload(t, {
+            clientSubmissionId: "avatar-submission-two",
+            publicSlug: "acme-proof",
+          }),
+        ),
       ]);
       vi.setSystemTime(new Date(startedAt.getTime() + 3 * 60 * 60 * 1_000 + 1));
 
@@ -475,14 +500,20 @@ describe("text Submission collection", () => {
         name: "Acme Studio",
         publicSlug: "acme-proof",
       });
-      const first = await t.mutation(api.submissions.generateAvatarUploadUrl, {
-        clientSubmissionId: "avatar-stale-sweep-one",
-        publicSlug: "acme-proof",
-      });
-      const second = await t.mutation(api.submissions.generateAvatarUploadUrl, {
-        clientSubmissionId: "avatar-stale-sweep-two",
-        publicSlug: "acme-proof",
-      });
+      const first = await t.mutation(
+        api.submissions.generateAvatarUploadUrl,
+        await admittedUpload(t, {
+          clientSubmissionId: "avatar-stale-sweep-one",
+          publicSlug: "acme-proof",
+        }),
+      );
+      const second = await t.mutation(
+        api.submissions.generateAvatarUploadUrl,
+        await admittedUpload(t, {
+          clientSubmissionId: "avatar-stale-sweep-two",
+          publicSlug: "acme-proof",
+        }),
+      );
       vi.setSystemTime(new Date(startedAt.getTime() + 3 * 60 * 60 * 1_000 + 1));
       await t.mutation(internal.submissions.expireAvatarUpload, {
         reservationId: first.reservationId,

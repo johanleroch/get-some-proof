@@ -70,9 +70,16 @@ for (const screen of config.screens) {
     await page.goto(
       destination.replace(":organizationSlug", organizationSlug ?? ""),
     );
-    await expect(
-      page.getByRole("heading", { name: screen.heading, exact: true }),
-    ).toBeVisible();
+    if (screen.slug === "full-page-loading") {
+      await expect(
+        page.getByRole("status").getByText("Loading…", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByRole("status").locator("svg")).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole("heading", { name: screen.heading, exact: true }),
+      ).toBeVisible();
+    }
     await page.waitForTimeout(250);
     if (fixtureMode && screen.slug.startsWith("template")) {
       // The gallery is tall and its video posters load lazily: walk the page

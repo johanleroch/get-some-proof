@@ -21,6 +21,53 @@ describe("Video Testimonial collection", () => {
     vi.unstubAllGlobals();
   });
 
+  it("labels a Mux upload with its server-resolved brand and reservation", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      publicSlug: "acme-proof",
+    });
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "fixture-mux-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "fixture-mux-secret");
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "mux-metadata-upload",
+              url: "https://upload.example/video",
+            },
+          }),
+          { status: 201 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const upload = await t.action(api.video.createDirectUpload, {
+      clientSubmissionId: "metadata-submission",
+      fileSizeBytes: 1_024,
+      mimeType: "video/mp4",
+      publicSlug: "acme-proof",
+      spokenLanguage: "fr",
+    });
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(String(request.body)).new_asset_settings).toMatchObject({
+      meta: {
+        title: `Témoignage vidéo · ${upload.reservationId}`,
+        creator_id: brand.id,
+        external_id: upload.reservationId,
+      },
+      passthrough: upload.reservationId,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("atomically reserves only the two Free lifetime video credits", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -562,6 +609,19 @@ describe("Video Testimonial collection", () => {
     expect(restored.reservation?.status).toBe("released");
     expect(restored.retry?.usedAt).toBeUndefined();
 
+    vi.stubEnv("MUX_TOKEN_ID", "fixture-mux-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "fixture-mux-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
+    );
+    const pendingCleanup = await t.run((ctx) =>
+      ctx.db.query("videoProviderCleanupJobs").collect(),
+    );
+    for (const job of pendingCleanup)
+      await t.action(internal.videoMedia.processProviderCleanup, {
+        cleanupJobId: job._id,
+      });
     vi.stubEnv("MUX_PROVIDER", "fake");
     await expect(
       t.action(api.video.createRetryDirectUpload, {

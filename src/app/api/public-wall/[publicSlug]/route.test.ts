@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { fetchMutation, fetchQuery } = vi.hoisted(() => ({
   fetchMutation: vi.fn(),
@@ -21,6 +21,7 @@ function mockProjection() {
       attributionRequired: true,
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,
+      privacyRevision: 0,
       publicSlug: "acme-proof",
       theme: "system",
       transparentEmbed: false,
@@ -42,8 +43,10 @@ function mockProjection() {
 }
 
 describe("GET /api/public-wall/:publicSlug", () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("VERCEL", "");
     vi.stubEnv(
       "PUBLIC_READ_RATE_LIMIT_SECRET",
       "test-rate-limit-secret-at-least-32-chars",
@@ -80,6 +83,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
       },
       pagination: { cursor: expect.any(String) },
       schemaVersion: 1,
+      privacyRevision: 0,
       testimonials: [
         {
           avatarUrl: null,
@@ -93,6 +97,11 @@ describe("GET /api/public-wall/:publicSlug", () => {
       ],
     });
     expect(fetchMutation).toHaveBeenCalledTimes(2);
+    expect(response.headers.has("x-ratelimit-remaining")).toBe(false);
+    expect(response.headers.has("x-ratelimit-reset")).toBe(false);
+    expect(JSON.stringify(body)).not.toContain(
+      process.env.PUBLIC_READ_RATE_LIMIT_SECRET,
+    );
     expect(JSON.stringify(body)).not.toContain("Powered by Get Some Proof");
   });
 
@@ -105,6 +114,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
         attributionRequired: false,
         brandName: "Acme Studio",
         hasPublishedTestimonials: true,
+        privacyRevision: 0,
         publicSlug: "acme-proof",
         theme: "dark",
         transparentEmbed: true,
@@ -223,6 +233,7 @@ describe("GET /api/public-wall/:publicSlug", () => {
 
     expect(response.status).toBe(200);
     expect(fetchQuery).toHaveBeenNthCalledWith(2, expect.anything(), {
+      secret: "test-rate-limit-secret-at-least-32-chars",
       paginationOpts: { cursor: "next-page", numItems: 50 },
       publicSlug: "acme-proof",
     });
@@ -301,16 +312,79 @@ describe("GET /api/public-wall/:publicSlug", () => {
     expect(fetchMutation.mock.calls[0]?.[1]).not.toHaveProperty("publicSlug");
   });
 
+  it("requires the configured gateway credential on every origin hostname", async () => {
+    vi.stubEnv(
+      "PUBLIC_WALL_ORIGIN_GATEWAY_SECRET",
+      "gateway-service-test-credential-32-characters",
+    );
+    for (const hostname of [
+      "proof.example",
+      "preview.example",
+      "alternate.example",
+    ]) {
+      const result = await GET(
+        new Request(`https://${hostname}/api/public-wall/acme-proof`, {
+          headers: {
+            "x-gsp-origin-secret": "forged",
+            "cf-connecting-ip": "203.0.113.20",
+          },
+        }),
+        context,
+      );
+      expect(result.status).toBe(403);
+      expect(result.headers.get("cache-control")).toBe("no-store");
+    }
+    expect(fetchMutation).not.toHaveBeenCalled();
+    expect(fetchQuery).not.toHaveBeenCalled();
+    const result = await GET(
+      new Request("https://proof.example/api/public-wall/acme-proof", {
+        headers: {
+          "x-gsp-origin-secret": process.env.PUBLIC_WALL_ORIGIN_GATEWAY_SECRET!,
+        },
+      }),
+      context,
+    );
+    expect(result.status).toBe(200);
+    expect(await result.text()).not.toContain(
+      process.env.PUBLIC_WALL_ORIGIN_GATEWAY_SECRET,
+    );
+  });
+
+  it("ignores client-controlled forwarded headers outside managed ingress", async () => {
+    vi.useFakeTimers();
+    try {
+      for (const ip of ["203.0.113.10", "203.0.113.11"]) {
+        await GET(
+          new Request("https://proof.example/api/public-wall/acme-proof", {
+            headers: {
+              "x-vercel-forwarded-for": ip,
+              "x-forwarded-for": ip,
+              "cf-connecting-ip": ip,
+            },
+          }),
+          context,
+        );
+        mockProjection();
+      }
+      expect(fetchMutation.mock.calls[0][1].requesterKey).toBe(
+        fetchMutation.mock.calls[2][1].requesterKey,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("isolates requester keys without storing a public IP", async () => {
+    vi.stubEnv("VERCEL", "1");
     const firstRequest = new Request(
       "https://proof.example/api/public-wall/acme-proof",
-      { headers: { "x-vercel-forwarded-for": "203.0.113.10" } },
+      { headers: { "x-forwarded-for": "203.0.113.10" } },
     );
     await GET(firstRequest, context);
     mockProjection();
     const secondRequest = new Request(
       "https://proof.example/api/public-wall/acme-proof",
-      { headers: { "x-vercel-forwarded-for": "203.0.113.11" } },
+      { headers: { "x-forwarded-for": "203.0.113.11" } },
     );
     await GET(secondRequest, context);
 
