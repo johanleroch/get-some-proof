@@ -88,7 +88,8 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "project-settings-shell" ||
+  return screen === "profile" ||
+    screen === "project-settings-shell" ||
     screen === "full-page-loading" ||
     screen === "onboarding" ||
     screen === "dashboard" ||

@@ -90,14 +90,56 @@ export function ToastSuccessScreenFixture() {
 export function ProfileScreenFixture() {
   const image = useFixtureImage();
   return (
-    <AccountProfileView
-      currentImage={image.imageUrl}
-      email="visual-evidence@example.invalid"
-      initialName="Visual Evidence User"
-      onRemoveImage={image.remove}
-      onSaveName={async () => undefined}
-      onUploadImage={image.upload}
-    />
+    <AppShellView
+      organizationId={"fixture-harbor" as Id<"organizations">}
+      organizationName="Harbor Studio"
+      organizationPublicSlug="harbor-studio"
+      organizationSlug="harbor-studio"
+      pathname="/account/profile"
+      account={{
+        effectivePlan: "free",
+        freeProjectId: "fixture-harbor" as Id<"organizations">,
+      }}
+      authorization={{
+        can: { manageOwnership: true, updateOrganization: true },
+      }}
+      connected
+      userMenu={
+        <NavUserView
+          user={{ name: "Alex Morgan", email: "alex@example.test" }}
+          signOut={async () => undefined}
+        />
+      }
+      projectSwitcher={
+        <OrganizationSwitcherView
+          canCreateProject={false}
+          canReadAudit={false}
+          canReadBilling={false}
+          canUpdateOrganization
+          currentName="Harbor Studio"
+          currentSlug="harbor-studio"
+          organizations={[
+            {
+              id: "fixture-harbor",
+              name: "Harbor Studio",
+              slug: "harbor-studio",
+            },
+          ]}
+          status="Exhausted"
+          loadMore={() => undefined}
+          switchProject={() => undefined}
+        />
+      }
+    >
+      <AccountProfileView
+        currentImage={image.imageUrl}
+        email="visual-evidence@example.invalid"
+        initialName="Visual Evidence User"
+        onRemoveImage={image.remove}
+        onSaveName={async () => undefined}
+        onUploadImage={image.upload}
+      />
+    </AppShellView>
   );
 }
 

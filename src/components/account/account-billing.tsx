@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountClosure } from "./account-closure";
+import { OrganizationBilling } from "@/components/billing/organization-billing";
 import { useState } from "react";
 import Link from "next/link";
 import { useAction, useQuery } from "convex/react";
@@ -38,6 +39,17 @@ export function AccountBilling() {
         <AccountClosure />
       </main>
     );
+  const billingProject = projects.find(
+    ({ id }) => id === account?.freeProjectId,
+  );
+  if (billingProject) {
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-6">
+        <OrganizationBilling slug={billingProject.slug} />
+        {account ? <AccountClosure /> : null}
+      </div>
+    );
+  }
   return (
     <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <PageHeader
@@ -69,19 +81,11 @@ export function AccountBilling() {
               Manage subscription
             </Button>
           ) : null}
-          <Button asChild>
-            <Link
-              href={
-                projects[0] ? `/org/${projects[0].slug}/billing` : "/onboarding"
-              }
-            >
-              {projects[0]
-                ? pro
-                  ? "View plan details"
-                  : "Upgrade to Pro"
-                : "Create project"}
-            </Link>
-          </Button>
+          {projects.length === 0 ? (
+            <Button asChild>
+              <Link href="/onboarding">Create project</Link>
+            </Button>
+          ) : null}
           <Button asChild variant="ghost">
             <Link href="/account/profile">Account profile</Link>
           </Button>

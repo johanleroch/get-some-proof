@@ -187,6 +187,15 @@ for (const screen of config.screens) {
       await expect(page.getByRole("alertdialog")).toBeVisible();
     }
 
+    if (
+      screen.slug === "profile-image" &&
+      testInfo.project.name.startsWith("mobile")
+    ) {
+      await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+      await expect(
+        page.getByRole("link", { name: "Back to project" }),
+      ).toBeVisible();
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );

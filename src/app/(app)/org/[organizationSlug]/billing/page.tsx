@@ -1,11 +1,13 @@
-import { OrganizationBilling } from "@/components/billing/organization-billing";
+import { redirect } from "next/navigation";
 
 export default async function OrganizationBillingPage({
-  params,
+  searchParams,
 }: {
-  params: Promise<{ organizationSlug: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }) {
-  const { organizationSlug } = await params;
-
-  return <OrganizationBilling slug={organizationSlug} />;
+  const { checkout } = await searchParams;
+  const query = new URLSearchParams();
+  if (checkout) query.set("checkout", checkout);
+  if (query.size) redirect(`/account/billing?${query}`);
+  redirect("/account/billing");
 }

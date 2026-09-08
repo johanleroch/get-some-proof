@@ -55,7 +55,7 @@ describe("AppShell", () => {
     expect(screen.getByText("Free plan")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Upgrade to Pro" }),
-    ).toHaveAttribute("href", "/org/harbor-1234/billing");
+    ).toHaveAttribute("href", "/account/billing");
   });
   beforeEach(() => {
     cleanup();
@@ -122,28 +122,49 @@ describe("AppShell", () => {
     expect(screen.getByText("Project")).toBeInTheDocument();
   });
 
-  it("switches to personal Account navigation without changing the shell", () => {
-    mocks.pathname = "/account/profile";
-    render(
-      <AppShell
-        organizationId={"organization-1" as never}
-        organizationName="Acme"
-        organizationPublicSlug="acme"
-        organizationSlug="acme-1234"
-      >
-        Profile content
-      </AppShell>,
-    );
+  it.each(["profile", "security", "billing"])(
+    "keeps a route back to Overview from Account %s",
+    (page) => {
+      mocks.pathname = `/account/${page}`;
+      render(
+        <AppShell
+          organizationId={"organization-1" as never}
+          organizationName="Acme"
+          organizationPublicSlug="acme"
+          organizationSlug="acme-1234"
+        >
+          Profile content
+        </AppShell>,
+      );
 
-    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(screen.getByRole("link", { name: "Security" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Overview" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
-    expect(screen.getByText("Account")).toBeInTheDocument();
-  });
+      expect(
+        screen.getByRole("link", {
+          name:
+            page === "profile"
+              ? "Profile"
+              : page === "security"
+                ? "Security"
+                : "Billing",
+        }),
+      ).toHaveAttribute("aria-current", "page");
+      expect(
+        screen.getByRole("link", { name: "Security" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Back to project" }),
+      ).toHaveAttribute("href", "/org/acme-1234/dashboard");
+      expect(
+        screen.getByRole("link", { name: "Back to project" }),
+      ).not.toHaveAttribute("aria-current");
+      expect(screen.queryByRole("link", { name: "Overview" })).toBeNull();
+      expect(screen.getByRole("link", { name: "Billing" })).toHaveAttribute(
+        "href",
+        "/account/billing",
+      );
+      expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
+      expect(screen.getByText("Account")).toBeInTheDocument();
+    },
+  );
 
   it("hides privileged destinations for lower roles", () => {
     mocks.pathname = "/org/acme-1234/settings";

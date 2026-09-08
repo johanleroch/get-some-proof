@@ -274,7 +274,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   return (
     <BrandDashboardView
       account={account}
-      billingHref={`/org/${slug}/billing`}
+      billingHref="/account/billing"
       collectionUrl={collectionUrl}
       copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
       name={organization.name}
