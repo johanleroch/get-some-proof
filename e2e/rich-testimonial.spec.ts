@@ -74,8 +74,14 @@ test("preserves pasted paragraphs and strips pasted HTML formatting", async ({
   await page.goto("/visual-evidence/rich-testimonial");
   const editor = page.getByRole("textbox", { name: "Your testimonial" });
   await editor.click();
-  await editor.press("ControlOrMeta+A");
+  await expect(async () => {
+    await editor.press("ControlOrMeta+A");
+    await expect(
+      page.getByRole("button", { name: "Highlight selected text" }),
+    ).toBeEnabled();
+  }).toPass();
   await editor.press("Backspace");
+  await expect(editor).not.toContainText("We saved five hours");
   await editor.evaluate((element) => {
     const data = new DataTransfer();
     data.setData("text/plain", "First paragraph.\nSecond paragraph.");

@@ -289,7 +289,7 @@ export const accept = mutation({
       });
     }
     const organization = await ctx.db.get(invitation.organizationId);
-    if (!organization) {
+    if (!organization || organization.deletionStartedAt !== undefined) {
       return invitationUnavailable();
     }
     const membership = await ctx.db

@@ -1,3 +1,8 @@
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@convex/_generated/api";
@@ -109,6 +114,7 @@ describe("complete local MVP happy paths", () => {
     );
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden",
       }),
@@ -120,6 +126,7 @@ describe("complete local MVP happy paths", () => {
       testimonialId: submitted.testimonialId,
     });
     const published = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "proof-garden",
     });
@@ -160,6 +167,7 @@ describe("complete local MVP happy paths", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden",
       }),
@@ -171,6 +179,7 @@ describe("complete local MVP happy paths", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden",
       }),
@@ -190,6 +199,7 @@ describe("complete local MVP happy paths", () => {
     ).resolves.toEqual({ withdrawn: true });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden",
       }),
@@ -263,6 +273,7 @@ describe("complete local MVP happy paths", () => {
       testimonialId: submitted.testimonialId,
     });
     const firstPublication = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "proof-garden-video",
     });
@@ -310,6 +321,7 @@ describe("complete local MVP happy paths", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden-video",
       }),
@@ -320,6 +332,7 @@ describe("complete local MVP happy paths", () => {
       testimonialId: submitted.testimonialId,
     });
     const republished = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "proof-garden-video",
     });
@@ -338,6 +351,7 @@ describe("complete local MVP happy paths", () => {
     expect(removed).toEqual({ assets: [], testimonial: null });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "proof-garden-video",
       }),

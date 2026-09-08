@@ -562,6 +562,19 @@ describe("Video Testimonial collection", () => {
     expect(restored.reservation?.status).toBe("released");
     expect(restored.retry?.usedAt).toBeUndefined();
 
+    vi.stubEnv("MUX_TOKEN_ID", "fixture-mux-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "fixture-mux-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
+    );
+    const pendingCleanup = await t.run((ctx) =>
+      ctx.db.query("videoProviderCleanupJobs").collect(),
+    );
+    for (const job of pendingCleanup)
+      await t.action(internal.videoMedia.processProviderCleanup, {
+        cleanupJobId: job._id,
+      });
     vi.stubEnv("MUX_PROVIDER", "fake");
     await expect(
       t.action(api.video.createRetryDirectUpload, {

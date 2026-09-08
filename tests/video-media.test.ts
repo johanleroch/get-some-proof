@@ -1,3 +1,8 @@
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -236,6 +241,7 @@ describe("Video media ownership", () => {
     ).rejects.toMatchObject({ data: { code: "VIDEO_DELETION_IN_PROGRESS" } });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
@@ -400,6 +406,7 @@ describe("Video media ownership", () => {
     ).rejects.toThrow("Mux asset deletion failed (503)");
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
