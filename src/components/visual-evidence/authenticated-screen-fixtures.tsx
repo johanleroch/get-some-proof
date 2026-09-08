@@ -588,7 +588,11 @@ export function WorkspaceDeletionProgressScreenFixture() {
   );
 }
 
-export function DashboardBackgroundScreenFixture() {
+export function DashboardBackgroundScreenFixture({
+  pendingCount = 0,
+}: {
+  pendingCount?: number;
+}) {
   return (
     <div
       className="dashboard-frame flex h-svh overflow-hidden"
@@ -664,8 +668,9 @@ export function DashboardBackgroundScreenFixture() {
             <BrandDashboardView
               copyCollectionUrl={async () => undefined}
               name="Fernhill Studio"
-              pendingCount={0}
+              pendingCount={pendingCount}
               publicSlug="fernhill-studio"
+              slug="fernhill-studio-l5pg"
             />
           </div>
         </div>
@@ -700,4 +705,9 @@ export function ManagedVideoProcessingScreenFixture() {
       }}
     />
   );
+}
+
+/** The same Overview once Submissions are waiting: the queue leads. */
+export function DashboardPendingScreenFixture() {
+  return <DashboardBackgroundScreenFixture pendingCount={3} />;
 }

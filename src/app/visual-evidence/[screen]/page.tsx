@@ -12,6 +12,7 @@ import {
   CollectionFormVideoScreenFixture,
   CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
+  DashboardPendingScreenFixture,
   EmptyPublicWallScreenFixture,
   ManagedSubmissionScreenFixture,
   ManagedVideoProcessingScreenFixture,
@@ -55,6 +56,7 @@ const screens = {
   "workspace-delete": WorkspaceDeletionScreenFixture,
   "workspace-delete-progress": WorkspaceDeletionProgressScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
+  "dashboard-pending": DashboardPendingScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
   profile: ProfileScreenFixture,
@@ -79,6 +81,7 @@ export default async function VisualEvidenceFixturePage({
   return screen === "full-page-loading" ||
     screen === "onboarding" ||
     screen === "dashboard" ||
+    screen === "dashboard-pending" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
     screen === "video-retry" ||
