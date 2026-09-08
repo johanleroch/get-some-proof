@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { accentHighlight } from "@convex/domain/color-contrast";
+import { accentHighlight } from "@convex/domain/colorContrast";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { Sparkle } from "@/components/doodles";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -199,7 +199,7 @@ function QuoteFirstCard({
   );
 }
 
-/** B. Editorial: a display quote mark in the accent, the quote at reading size. */
+/** B. Editorial: the stars open the card, a display quote mark signs the name. */
 function EditorialCard({
   testimonial,
 }: {
@@ -209,32 +209,30 @@ function EditorialCard({
   return (
     <Card>
       <div className="p-6">
-        <div className="flex items-start justify-between gap-4">
+        {testimonial.rating ? (
+          <Stars className="mb-4" rating={testimonial.rating} size={14} />
+        ) : null}
+        <blockquote className="text-ink text-[17px] leading-[1.7] text-pretty">
+          {testimonial.text}
+        </blockquote>
+        <div className="mt-5 flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="font-display -mt-1 block text-4xl leading-none font-bold text-(--wall-accent) select-none"
+            className="font-display block shrink-0 translate-y-[0.18em] text-5xl leading-[0] font-bold text-(--wall-accent) select-none"
           >
             &ldquo;
           </span>
-          {testimonial.rating ? (
-            <Stars
-              className="mt-1 shrink-0"
-              rating={testimonial.rating}
-              size={14}
-            />
-          ) : null}
+          <p className="min-w-0">
+            <span className="type-ui text-ink block truncate font-semibold">
+              {testimonial.name}
+            </span>
+            {meta ? (
+              <span className="type-small text-ink-2 block truncate">
+                {meta}
+              </span>
+            ) : null}
+          </p>
         </div>
-        <blockquote className="text-ink mt-3 text-[17px] leading-[1.7] text-pretty">
-          {testimonial.text}
-        </blockquote>
-        <p className="mt-5">
-          <span className="type-ui text-ink block font-semibold">
-            {testimonial.name}
-          </span>
-          {meta ? (
-            <span className="type-small text-ink-2 block">{meta}</span>
-          ) : null}
-        </p>
       </div>
     </Card>
   );
@@ -374,7 +372,7 @@ const variants = [
     Render: EditorialCard,
     key: "editorial",
     name: "B · Editorial",
-    note: "A display quote mark in the Brand accent, the quote at 17px with open leading, no avatar. The most signature, best in one or two columns.",
+    note: "The stars open the card, the quote runs at 17px with open leading, and a display quote mark in the Brand accent stands where the avatar would, signing the name. The most signature, best in one or two columns.",
   },
   {
     Render: CompactCard,

@@ -105,7 +105,15 @@ describe("TemplatesGallery", () => {
     expect(stage()?.dataset.wallTheme).toBe("dark");
     expect(stage()?.style.getPropertyValue("--wall-accent")).toBe("#ffbb16");
 
+    // The frame around the stage takes the device width, so the whole card
+    // resizes instead of a phone-wide preview marooned in a desktop-wide one.
     fireEvent.click(screen.getByRole("button", { name: "Phone" }));
-    expect(stage()?.style.maxWidth).toBe("390px");
+    expect(stage()?.style.maxWidth).toBe("100%");
+    expect(stage()?.parentElement?.style.maxWidth).toContain("390px");
+
+    // Desktop is a percentage, never `none`: a keyword has no value to travel
+    // from, so the frame would jump between widths instead of settling.
+    fireEvent.click(screen.getByRole("button", { name: "Desktop" }));
+    expect(stage()?.parentElement?.style.maxWidth).toBe("100%");
   });
 });

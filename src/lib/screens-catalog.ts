@@ -228,6 +228,13 @@ export const screenSections: ScreenSection[] = [
         fixturePath: "/visual-evidence/workspace-delete-progress",
       },
       {
+        slug: "testimonial-highlight",
+        title: "Highlight a phrase",
+        description:
+          "Marking one phrase of a Testimonial: the words stay locked, the mark previews in the Brand's own colour.",
+        fixturePath: "/visual-evidence/rich-testimonial",
+      },
+      {
         slug: "toast-success",
         title: "Success toast",
         description: "Transient confirmation after a successful action.",

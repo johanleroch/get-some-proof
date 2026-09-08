@@ -3,12 +3,7 @@
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import {
-  IconCheck,
-  IconMessage2,
-  IconStar,
-  IconVideo,
-} from "@tabler/icons-react";
+import { IconCheck, IconStar } from "@tabler/icons-react";
 import Image from "next/image";
 
 import { uploadTestimonialImages } from "@/lib/upload-testimonial-images";
@@ -27,12 +22,17 @@ import {
 import { BrowserVideoRecorder } from "@/components/collection/browser-video-recorder";
 import { TurnstileChallenge } from "@/components/collection/turnstile-challenge";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
-import { Sparkle, WallFrames } from "@/components/doodles";
+import {
+  CameraTripod,
+  Sparkle,
+  SpeechBubbleStars,
+  WallFrames,
+} from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
-import { Field, FieldDescription } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClientSubmissionId } from "@/lib/client-submission-id";
@@ -117,6 +117,25 @@ const accentButtonClassName =
 
 const stepTitles = ["Choose a format", "Your story", "About you", "Done"];
 
+const proofFormats = [
+  {
+    hint: "Write 20 to 2,000 characters",
+    key: "text",
+    label: "Send a text testimonial",
+    Spot: SpeechBubbleStars,
+    unavailable: "Text testimonials are currently unavailable",
+    verb: "Write it",
+  },
+  {
+    hint: "Up to 2 minutes",
+    key: "video",
+    label: "Record or upload a video",
+    Spot: CameraTripod,
+    unavailable: "Video testimonials are currently unavailable",
+    verb: "Film it",
+  },
+] as const;
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -170,7 +189,7 @@ function ReplacementLinkRequest({
     <div className="space-y-3 border-t pt-5">
       <div>
         <p className="text-sm font-medium">Already submitted?</p>
-        <p className="text-muted-foreground mt-1 text-xs leading-5">
+        <p className="text-ink-2 type-small mt-1">
           Enter the original email to receive a new private management link.
         </p>
       </div>
@@ -203,88 +222,111 @@ function ReplacementLinkRequest({
 function BrandPanel({ brand, step }: { brand: PublicBrand; step: number }) {
   return (
     <aside
-      className="px-5 py-8 sm:px-8 lg:flex lg:min-h-svh lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16"
+      className="px-5 py-8 sm:px-8 lg:flex lg:min-h-svh lg:flex-col lg:px-12 lg:py-12 xl:px-16"
       style={{
         background: "color-mix(in srgb, var(--brand-accent) 8%, var(--paper))",
       }}
     >
-      <div className="flex items-center gap-3">
-        {brand.logoUrl ? (
-          <Image
-            alt={`${brand.name} logo`}
-            className="size-12 rounded-xl object-cover"
-            height={48}
-            src={brand.logoUrl}
-            unoptimized
-            width={48}
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="grid size-12 shrink-0 place-items-center rounded-xl text-base font-semibold"
-            style={{
-              background: "var(--brand-accent)",
-              color: "var(--brand-accent-ink)",
-            }}
+      {/* Brand lockup and title read as one composition, centred between the
+          top of the panel and the privacy line, rather than three fragments
+          floating apart on a tall screen. */}
+      <div className="lg:mx-auto lg:my-auto lg:w-full lg:max-w-md">
+        <div className="flex items-center gap-3">
+          {brand.logoUrl ? (
+            <Image
+              alt={`${brand.name} logo`}
+              className="size-12 rounded-xl object-cover"
+              height={48}
+              src={brand.logoUrl}
+              unoptimized
+              width={48}
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="grid size-12 shrink-0 place-items-center rounded-xl text-base font-semibold"
+              style={{
+                background: "var(--brand-accent)",
+                color: "var(--brand-accent-ink)",
+              }}
+            >
+              {initials(brand.name) || "GP"}
+            </span>
+          )}
+          <p className="text-ink text-sm font-semibold tracking-[-0.008em]">
+            {brand.name}
+          </p>
+        </div>
+        {/* `my-auto` centres the title between the Brand header and the privacy
+          line, and collapses to nothing once the panel outgrows the screen. */}
+        {/* DESIGN.md section 6 asks for a compact Brand header below 1024px.
+            The welcome earns its full size on the entry screen; from step 2 a
+            phone would scroll past the whole poster to reach the fields it
+            came for, so the title drops to `heading` and the sentence steps
+            aside. The title stays an h1 at every step: a page owes its reader
+            one, whatever else is folded away. */}
+        <div className="mt-6 max-w-md space-y-3 lg:mt-10">
+          <h1
+            className={cn(
+              "text-balance",
+              step > 1 ? "type-heading lg:type-display-xl" : "type-display-xl",
+            )}
           >
-            {initials(brand.name) || "GP"}
-          </span>
-        )}
-        <p className="text-ink text-sm font-semibold tracking-[-0.008em]">
-          {brand.name}
-        </p>
-      </div>
-      <div className="mt-6 max-w-md space-y-3 lg:mt-0">
-        <h1 className="font-display text-[2rem] leading-9 font-extrabold tracking-[-0.03em] text-balance lg:text-[2.5rem] lg:leading-[2.75rem]">
-          {brand.collectionFormTitle}
-        </h1>
-        <p className="type-body text-ink-2">
-          {brand.collectionFormDescription}
-        </p>
-        <ol aria-label="Steps" className="hidden pt-4 lg:block">
-          {stepTitles.map((title, index) => {
-            const number = index + 1;
-            const state =
-              number < step ? "done" : number === step ? "current" : "todo";
-            return (
-              <li
-                aria-current={state === "current" ? "step" : undefined}
-                className="flex items-center gap-3 py-1.5 text-sm"
-                key={title}
-              >
-                <span
-                  className={cn(
-                    "grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold",
-                    state === "todo" && "border-line-2 text-ink-3 border",
-                  )}
-                  style={
-                    state === "todo"
-                      ? undefined
-                      : {
-                          background: "var(--brand-accent)",
-                          color: "var(--brand-accent-ink)",
-                        }
-                  }
+            {brand.collectionFormTitle}
+          </h1>
+          <p
+            className={cn(
+              "type-body text-ink-2",
+              step > 1 && "hidden lg:block",
+            )}
+          >
+            {brand.collectionFormDescription}
+          </p>
+          <ol aria-label="Steps" className="hidden pt-4 lg:block">
+            {stepTitles.map((title, index) => {
+              const number = index + 1;
+              const state =
+                number < step ? "done" : number === step ? "current" : "todo";
+              return (
+                <li
+                  aria-current={state === "current" ? "step" : undefined}
+                  className="flex items-center gap-3 py-1.5 text-sm"
+                  key={title}
                 >
-                  {state === "done" ? (
-                    <IconCheck aria-hidden="true" className="size-3.5" />
-                  ) : (
-                    number
-                  )}
-                </span>
-                <span
-                  className={
-                    state === "current"
-                      ? "text-ink font-semibold"
-                      : "text-ink-2"
-                  }
-                >
-                  {title}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+                  <span
+                    className={cn(
+                      "grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold",
+                      state === "todo" && "border-line-2 text-ink-3 border",
+                    )}
+                    style={
+                      state === "todo"
+                        ? undefined
+                        : {
+                            background: "var(--brand-accent)",
+                            color: "var(--brand-accent-ink)",
+                          }
+                    }
+                  >
+                    {state === "done" ? (
+                      <IconCheck aria-hidden="true" className="size-3.5" />
+                    ) : (
+                      number
+                    )}
+                  </span>
+                  <span
+                    className={
+                      state === "current"
+                        ? "text-ink font-semibold"
+                        : "text-ink-2"
+                    }
+                  >
+                    {title}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
       <p className="type-small text-ink-2 hidden lg:block">
         Your details stay private. Nothing is published without your consent.
@@ -335,10 +377,16 @@ function VideoStep({
   validating: boolean;
   videoFile: File | undefined;
 }) {
+  const videoInput = useRef<HTMLInputElement>(null);
   return (
     <section className="space-y-5" aria-labelledby="add-video">
       <div>
-        <h2 className="type-subheading" id="add-video">
+        <h2
+          className="type-subheading"
+          data-step-focus
+          id="add-video"
+          tabIndex={-1}
+        >
           Record your story
         </h2>
         <p className="text-ink-2 mt-1 text-sm">
@@ -347,7 +395,7 @@ function VideoStep({
       </div>
       <div className="bg-surface-2 rounded-lg border p-4 text-sm">
         <p className="font-medium">A simple story works best</p>
-        <ul className="text-ink-2 mt-2 space-y-1 text-xs leading-5">
+        <ul className="text-ink-2 type-small mt-2 space-y-1">
           <li>What was happening before?</li>
           <li>What changed after working with us?</li>
           <li>What would you tell someone considering it?</li>
@@ -373,22 +421,41 @@ function VideoStep({
       </div>
       <Field>
         <Label htmlFor="testimonial-video">Upload a video</Label>
-        <Input
+        {/* Same reason as the photo field: the native control paints its own
+            button and its own empty-state text in the operating system's
+            language. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() => videoInput.current?.click()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {videoFile ? "Replace video" : "Choose a video"}
+          </Button>
+          {videoFile ? (
+            <span className="type-small min-w-0 truncate font-medium">
+              {videoFile.name}
+            </span>
+          ) : null}
+        </div>
+        <input
           accept="video/mp4,video/quicktime,video/webm"
-          data-step-focus
+          className="hidden"
           id="testimonial-video"
           onChange={(event) => onFileChange(event.target.files?.[0])}
+          ref={videoInput}
           type="file"
         />
         <FieldDescription>
           MP4, MOV or WebM, up to 2 minutes. Your file uploads only after you
           confirm.
         </FieldDescription>
-        {videoFile ? (
-          <p className="text-xs font-medium">Selected: {videoFile.name}</p>
-        ) : null}
       </Field>
-      {error ? <ErrorToast message={error} /> : null}
+      {/* The message stays in the form, where the Submitter is looking, and
+          keeps announcing itself; a toast here would say the same thing twice
+          to a screen reader and vanish before a phone user looked up. */}
+      {error ? <FieldError>{error}</FieldError> : null}
       <div className="flex gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
@@ -441,45 +508,52 @@ function ProofTypeStep({
           Choose one format. Nothing is saved until you confirm.
         </p>
       </div>
-      <button
-        aria-label="Send a text testimonial"
-        data-step-focus
-        className="bg-surface flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={!textAvailable}
-        onClick={onText}
-        type="button"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-(--brand-accent) text-(--brand-accent-ink)">
-          <IconMessage2 aria-hidden="true" className="size-5" />
-        </span>
-        <span>
-          <span className="block font-medium">Send a text testimonial</span>
-          <span className="text-ink-2 text-sm">
-            {textAvailable
-              ? "Write 20 to 2,000 characters"
-              : "Text testimonials are currently unavailable"}
-          </span>
-        </span>
-      </button>
-      <button
-        aria-label="Record or upload a video"
-        className="bg-surface flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={!videoAvailable}
-        onClick={onVideo}
-        type="button"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-(--brand-accent) text-(--brand-accent-ink)">
-          <IconVideo aria-hidden="true" className="size-5" />
-        </span>
-        <span>
-          <span className="block font-medium">Record or upload a video</span>
-          <span className="text-ink-2 text-sm">
-            {videoAvailable
-              ? "Up to 2 minutes"
-              : "Video testimonials are currently unavailable"}
-          </span>
-        </span>
-      </button>
+      {/* One markup, two arrangements: bands below 640px where a narrow
+          column can only stack, tiles side by side above it where the
+          drawing has room to lead. The hand-drawn spot replaces the filled
+          icon tile that made the step read as generated, and the accent
+          arrives on hover and on focus instead of sitting in a square.
+          `aria-label` keeps the name stable across both layouts, so the
+          Submitter hears the same control whatever the width. */}
+      <ul className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
+        {proofFormats.map((format) => {
+          const available =
+            format.key === "text" ? textAvailable : videoAvailable;
+          const Spot = format.Spot;
+          return (
+            <li key={format.key}>
+              <button
+                aria-describedby={`proof-format-${format.key}-hint`}
+                aria-label={format.label}
+                className="border-line bg-surface flex h-full w-full cursor-pointer items-center gap-4 rounded-lg border py-4 pr-4 pl-5 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand-accent) enabled:hover:border-(--brand-accent) disabled:cursor-not-allowed disabled:opacity-50 sm:flex-col sm:items-center sm:gap-4 sm:px-5 sm:py-6 sm:text-center"
+                data-step-focus={format.key === "text" ? true : undefined}
+                disabled={!available}
+                onClick={format.key === "text" ? onText : onVideo}
+                type="button"
+              >
+                <Spot
+                  aria-hidden="true"
+                  className="text-ink h-14 shrink-0 sm:order-first sm:h-20"
+                />
+                <span className="min-w-0 flex-1 sm:flex-none">
+                  <span className="type-subheading block">{format.verb}</span>
+                  {/* The full sentence belongs to the band, where there is
+                      room for it; the tile keeps the drawing and the count. */}
+                  <span className="text-ink-2 type-small mt-0.5 block sm:hidden">
+                    {format.label}
+                  </span>
+                  <span
+                    className="text-ink-2 type-small block"
+                    id={`proof-format-${format.key}-hint`}
+                  >
+                    {available ? format.hint : format.unavailable}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
@@ -524,11 +598,9 @@ function TextStep({
           richText={richText}
           onChange={onChange}
         />
-        <TestimonialImagesInput
-          files={imageFiles}
-          onFilesChange={onImageFilesChange}
-        />
-        <div className="flex justify-between text-xs">
+        {/* The count belongs against the box it counts; adding images is a
+            separate, optional act and sits after it. */}
+        <div className="type-small flex justify-between">
           <span
             className={
               textLength > 0 && textLength < 20 ? "text-danger" : "text-ink-2"
@@ -538,6 +610,10 @@ function TextStep({
           </span>
           <span className="text-ink-2 tabular-nums">{textLength} / 2,000</span>
         </div>
+        <TestimonialImagesInput
+          files={imageFiles}
+          onFilesChange={onImageFilesChange}
+        />
       </Field>
       <div className="flex gap-3">
         <Button onClick={onBack} type="button" variant="outline">
@@ -631,7 +707,7 @@ function IdentityStep({
   identityValid: boolean;
   name: string;
   onAgeConfirmedChange: (value: boolean) => void;
-  onAvatarChange: (file: File) => void;
+  onAvatarChange: (file: File | undefined) => void;
   onBack: () => void;
   onCompanyChange: (value: string) => void;
   onConsentAcceptedChange: (value: boolean) => void;
@@ -650,11 +726,13 @@ function IdentityStep({
   botChallenge?: ReactNode;
   botVerificationReady: boolean;
 }) {
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInput = useRef<HTMLInputElement>(null);
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       <div>
         <h2 className="type-subheading">About you</h2>
-        <p className="text-ink-2 mt-1 text-sm">
+        <p className="text-ink-2 type-body mt-1">
           Your email stays private and is used for your management link.
         </p>
       </div>
@@ -704,16 +782,56 @@ function IdentityStep({
       </div>
       <Field>
         <Label htmlFor="submitter-avatar">Photo (optional)</Label>
-        <Input
+        {/* The native file control paints its own button and its own "no file
+            chosen" in the operating system's language, which lands as French
+            text in an English form. The input stays, reachable and labelled;
+            only its appearance moves into our own button. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() => avatarInput.current?.click()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {avatar ? "Replace photo" : "Choose a photo"}
+          </Button>
+          <span className="text-ink-2 type-small min-w-0 truncate">
+            {avatar ? avatar.name : "PNG, JPG or WebP, up to 5 MB."}
+          </span>
+        </div>
+        <input
           accept="image/png,image/jpeg,image/webp"
+          aria-describedby={avatarError ? "submitter-avatar-error" : undefined}
+          aria-invalid={avatarError ? true : undefined}
+          className="hidden"
           id="submitter-avatar"
+          ref={avatarInput}
           onChange={(event) => {
             const file = event.target.files?.[0];
-            if (file && file.size <= 5 * 1024 * 1024) onAvatarChange(file);
+            if (!file) return;
+            // Phone photos routinely pass 5 MB, and the file picker shows the
+            // name whatever we do with it: say no out loud, and drop any
+            // photo already accepted so the consent text below matches what
+            // will actually be published.
+            const accepted =
+              ["image/png", "image/jpeg", "image/webp"].includes(file.type) &&
+              file.size <= 5 * 1024 * 1024;
+            if (!accepted) {
+              setAvatarError(
+                "Choose a PNG, JPG, or WebP image smaller than 5 MB.",
+              );
+              event.target.value = "";
+              onAvatarChange(undefined);
+              return;
+            }
+            setAvatarError(null);
+            onAvatarChange(file);
           }}
           type="file"
         />
-        {avatar ? <FieldDescription>{avatar.name}</FieldDescription> : null}
+        {avatarError ? (
+          <FieldError id="submitter-avatar-error">{avatarError}</FieldError>
+        ) : null}
       </Field>
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium tracking-[-0.008em]">
@@ -762,7 +880,7 @@ function IdentityStep({
           />
           <span>I give Publication Consent.</span>
         </label>
-        <p className="text-ink-2 text-xs leading-5">{consentText}</p>
+        <p className="text-ink-2 type-body">{consentText}</p>
       </div>
       {botChallenge}
       {videoUploadPhase !== "idle" ? (
@@ -774,16 +892,16 @@ function IdentityStep({
           progress={videoProgress}
         />
       ) : null}
-      {error ? <ErrorToast message={error} /> : null}
+      {error ? <FieldError>{error}</FieldError> : null}
+      {videoSelectionLocked ? (
+        <p className="text-ink-2 type-small">
+          Your video is uploaded. Retry the submission before changing it.
+        </p>
+      ) : null}
       <div className="flex gap-3">
         <Button
           disabled={videoSelectionLocked}
           onClick={onBack}
-          title={
-            videoSelectionLocked
-              ? "Retry submission before changing the uploaded video."
-              : undefined
-          }
           type="button"
           variant="outline"
         >
@@ -1199,6 +1317,12 @@ export function CollectionFormShellView({
   useEffect(() => {
     if (previousStepRef.current === step) return;
     previousStepRef.current = step;
+    // One `error` serves the whole flow, so a message from the step the
+    // Submitter just left would follow them: a rejected video file used to
+    // resurface above Submit while they were writing a text Testimonial. The
+    // guard above is what keeps this safe — a failed submission leaves `step`
+    // untouched, so its own error survives.
+    setError(null);
     flowRef.current?.querySelector<HTMLElement>("[data-step-focus]")?.focus();
   }, [proofType, step]);
   const textLength = Array.from(text.trim()).length;
@@ -1237,8 +1361,8 @@ export function CollectionFormShellView({
       }
     >
       <BrandPanel brand={brand} step={step} />
-      <section className="px-5 py-8 sm:px-8 lg:px-16 lg:py-12">
-        <div className="mx-auto w-full max-w-[520px] space-y-6 lg:mx-0">
+      <section className="px-5 py-8 sm:px-8 lg:flex lg:flex-col lg:px-16 lg:py-12">
+        <div className="mx-auto w-full max-w-[520px] space-y-6 lg:my-auto">
           <StepLabel step={step} />
 
           {step === 1 ? (
@@ -1391,7 +1515,7 @@ export function CollectionFormShellView({
             />
           ) : null}
 
-          <p className="text-ink-2 text-xs">
+          <p className="text-ink-2 type-small">
             Read the{" "}
             <a
               className="underline underline-offset-2"
@@ -1401,10 +1525,16 @@ export function CollectionFormShellView({
             </a>
             .
           </p>
-          <ReplacementLinkRequest
-            publicSlug={brand.publicSlug}
-            requestReplacementLink={requestReplacementLink}
-          />
+          {/* Recovering a lost management link belongs on the entry screen
+              only. Repeated under every step it competed with the primary
+              action, and under the thank-you it invited the Submitter to
+              doubt the submission they had just finished. */}
+          {step === 1 ? (
+            <ReplacementLinkRequest
+              publicSlug={brand.publicSlug}
+              requestReplacementLink={requestReplacementLink}
+            />
+          ) : null}
         </div>
       </section>
     </main>

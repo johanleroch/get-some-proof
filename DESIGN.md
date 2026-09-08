@@ -321,6 +321,14 @@ Containers: dashboard content max 1200px, public Wall max 1280px, Collection
 Form max 1040px in its split layout. CSS Grid for page structure, flex for
 rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
 
+**Every block is centred in the column that holds it**, horizontally and
+vertically. A column is wider than its content on a large screen, so a block
+pinned to one edge reads as a mistake and leaves a void beside it: `mx-auto`
+on the content, `my-auto` on the block inside a `flex-col` column, and never
+an `lg:mx-0` that quietly cancels the centring at the width where it matters
+most. Both collapse to nothing when the content outgrows the column, so long
+pages still start at the top and scroll normally.
+
 - Dashboard: sidebar 260px on `--paper`, content on `--paper` with white
   panels only where grouping helps. Page header is left-aligned: eyebrow
   (micro), `display` title, one primary action on the right. Data lives in
@@ -336,12 +344,48 @@ rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
   scribble star above the title.
 - Onboarding: two columns, the form on the left and a live preview card of
   the Collection Form on the right with an arrow note "this is what your
-  customers see". Single column on mobile, preview after the form.
+  customers see". Single column on mobile, preview after the form. The form
+  asks one question, the Brand name, because `organizations.create` already
+  derives the public address, seeds Proof Amber and writes the Collection
+  Form copy. The address reads as a consequence under the name ("Your public
+  address will be /c/northwind-bakery") with a "Change" that swaps the line
+  for the field; the color is the accent swatches; the Collection Form
+  wording and the privacy contact wait behind one disclosure, each with the
+  real default as its placeholder. Never present a field the domain already
+  fills as a required one, and never let the preview show a wording the
+  mutation would not write.
 - Collection Form (public): split from 1024px. Brand panel on the left
   (logo, title in `display-xl`, one sentence, the step list) tinted with the
   customer accent at 8%; form steps on the right at max 520px. Progress is a
   segmented bar of four pills, not a percentage line. Below 1024px it becomes
   one column with a compact brand header. Touch targets stay at 44px.
+  Both columns sit vertically centred (`my-auto`, which collapses to nothing
+  once the content outgrows the screen), and the Brand lockup, title and step
+  list read as one composition with the privacy line alone at the bottom:
+  three blocks spread by `justify-between` left the panel looking like
+  fragments floating in a void. The compact header below 1024px is literal —
+  from step 2 the phone shows the lockup only, because a Submitter who has
+  started scrolls past the welcome to reach the fields. Recovering a lost
+  management link belongs to step 1 alone; repeated under every step it
+  competed with the primary action, and under the thank-you it invited doubt
+  about the Submission just made. Errors stay in the form as `FieldError`
+  where the Submitter is looking, never only in a toast that leaves after four
+  seconds, and one navigation clears the message of the step just left.
+  The format choice carries the hand-drawn signature rather than a filled
+  accent icon tile: that stack of identical cards each wearing a coloured
+  square is the house style of every assistant on the internet and it makes
+  the product look generated. `SpeechBubbleStars` and `CameraTripod` do the
+  explaining, drawn in `--ink` so they follow the theme. One markup, two
+  arrangements: below 640px a band per format, the verb at `heading`
+  ("Write it", "Film it") with the sentence and the count each on their own
+  line and the drawing balancing on the right; from 640px two tiles side by
+  side, the drawing on top at 80px, the verb, the count, and the sentence
+  dropped because the drawing already said it. `aria-label` names the button
+  with the full sentence at both widths, so the control the Submitter hears
+  does not change with their screen. The accent arrives on hover and on focus,
+  never as a fill. The onboarding preview is as narrow as a phone, so it shows
+  the band — a preview that flatters is a preview that lies. Reviewed at
+  `/kit/collection`.
 - Public Wall: header left-aligned with the Brand logo, `display-xl` name,
   a scribble star in the Brand accent, and the count of proofs. Masonry of
   1, 2 or 3 columns (below 640px, 640 to 1024px, above), gap 20px. The
@@ -406,12 +450,17 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   distinguishable at a glance.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
   (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
-  20px padding. The quote leads at `body` in `--ink`, because the proof is
-  what was said; the signature follows 20px below on one row: avatar 32px
-  round, name at `small` weight 600, role and company at `small` in `--ink-2`,
-  and the stars pushed right at 14px in the Brand accent with unfilled stars
-  at 25%. Video cards keep the source ratio, the play button is 48px round on
-  `--surface` with `--shadow-float`. Reviewed at `/kit/testimonials`.
+  24px padding. The stars open the card at 14px in the Brand accent with
+  unfilled stars at 25%, 16px above the quote. The quote then reads at 17px on
+  1.7 leading in `--ink` — one step above `body`, the card's own size, because
+  the proof is what was said. The signature follows 20px below on one row: the
+  display quote mark in the Brand accent (`--font-display`, 48px, weight 700,
+  kept out of the row height so a name with no role still ends on the padding),
+  or the Customer's avatar 32px round when there is one to show; then the name
+  at `ui` weight 600 and the role and company at `small` in `--ink-2`. Initials
+  are never drawn: they are filler, not proof. Video cards keep the source
+  ratio, the play button is 48px round on `--surface` with `--shadow-float`.
+  Reviewed at `/kit/testimonials`.
 - Highlighted words: the `MarkerHighlight` swash painted behind the phrase,
   never a coloured box. `mark` carries it site-wide from `globals.css` in
   amber; a Testimonial card overrides it with the customer Brand accent
@@ -438,6 +487,31 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   stays the engine (stacking, timing, swipe to dismiss); `richColors` and
   its icons are retired. The designer menu (⌘.) has a "Test toast" entry to
   check placement on any screen.
+- Color picker: our own panel, never the operating system's. `ColorPicker`
+  (`src/components/ui/color-picker.tsx`) is the one way to choose a colour
+  anywhere in the product: the accent presets as 28px dots inside 44px touch
+  targets, Proof Amber first because it is the product's own colour and what a
+  new Brand is seeded with, then a custom well that opens a `Popover` on
+  `--surface`. Inside, a square for saturation and brightness, a hue slider,
+  and the hex itself, in our type and our radii. The native `input[type=color]`
+  is retired everywhere: it arrived in the OS font and the OS blue and told the
+  customer they had left the product. The square is a two-axis control the
+  arrow keys drive (Shift takes the bigger step) and the hex field is the exact
+  way in beside it; the hue is one axis, so it stays a real `input[type=range]`
+  wearing our paint, 44px tall for the touch target with a 12px visible track.
+  A `fieldset` cannot be the target of `label for`, so the visible label
+  carries an id and the group points at it with `aria-labelledby`.
+- Highlight pill: marking a phrase is a control that comes to the words, not
+  a toolbar the words travel to. Selecting text raises a rounded `--surface`
+  pill with `--shadow-float` at the bottom right of the selection, 8px below
+  it, clamped inside the editor's width; it says "Highlight", or "Remove
+  highlight" with `aria-pressed` when the selection already carries the mark.
+  A bare caret inside a mark raises the same pill, which is how a highlight
+  comes off without re-selecting its exact words. It follows the selection by
+  writing to the node in a layout effect, never a render per pixel, and lives
+  outside the clipped quote box so it can hang below the last line. The
+  keyboard keeps its own way in through `mod+shift+h`, since no floating
+  control is reachable by Tab. Reviewed at `/visual-evidence/rich-testimonial`.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
@@ -462,10 +536,17 @@ Five tokens in `globals.css`, and nothing else. Never write a raw
 | Token                | Value                               | Use                                                                                  |
 | -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
 | `--ease-out-soft`    | `cubic-bezier(0.2, 0, 0, 1)`        | Colour, opacity, hover, focus rings. No motion.                                      |
-| `--ease-settle`      | `cubic-bezier(0.34, 1.4, 0.64, 1)`  | Small things arriving: menus, tooltips, toasts, the switch thumb, the checkbox mark. |
-| `--ease-settle-soft` | `cubic-bezier(0.34, 1.15, 0.64, 1)` | Heavier surfaces: dialogs, sheets, preview frames.                                   |
+| `--ease-settle`      | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Small things arriving: menus, tooltips, toasts, the switch thumb, the checkbox mark. |
+| `--ease-settle-soft` | `cubic-bezier(0.34, 1.35, 0.64, 1)` | Heavier surfaces: dialogs, sheets, preview frames.                                   |
 | `--ease-exit`        | `cubic-bezier(0.4, 0, 0.9, 0.6)`    | Anything leaving. It never overshoots.                                               |
 | `--ease-sine`        | `cubic-bezier(0.45, 0, 0.55, 1)`    | The only curve allowed to loop (the mascot).                                         |
+
+**Overshoot is measured, not guessed.** `--ease-settle` peaks about 10 percent
+past its mark, `--ease-settle-soft` about 4. Below 3 percent the eye reads the
+move as linear, which is the whole reason this vocabulary exists.
+`easeOvershoot` in `src/lib/motion-tokens.ts` computes it, the `/kit` Motion
+section prints it beside each curve, and a guard test keeps the settle curves
+above the floor.
 
 **Mass decides the overshoot.** A switch thumb may bounce; a dialog may not.
 The bigger the surface, the flatter the curve and the longer the settle. A

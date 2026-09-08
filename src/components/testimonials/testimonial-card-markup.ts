@@ -7,7 +7,7 @@ import {
   accentHighlight,
   accentInk,
   accentSoft,
-} from "@convex/domain/color-contrast";
+} from "@convex/domain/colorContrast";
 import { markerHighlightStyle } from "@/lib/marker-highlight";
 
 export type {
@@ -37,15 +37,6 @@ function escapeHtml(value: string) {
   );
 }
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
 export function testimonialPoster(testimonial: TestimonialCardVideoValue) {
   return `https://image.mux.com/${encodeURIComponent(testimonial.playbackId)}/thumbnail.webp?width=960&time=${testimonial.posterTimeSeconds ?? 0.5}`;
 }
@@ -62,12 +53,18 @@ export function videoAspectRatioStyle(aspectRatio?: string) {
   return `${Number(match[1])} / ${Number(match[2])}`;
 }
 
-function avatarMarkup(testimonial: TestimonialCardValue) {
-  if (testimonial.avatarVisible === false) return "";
-  if (testimonial.avatarUrl) {
+/**
+ * The signature slot, always one glyph wide: the Customer's face when the
+ * Owner has one to show, otherwise the display quote mark in the Brand accent.
+ * `leading-[0]` keeps the mark out of the row height so a name with no role
+ * still ends on the padding, and `translate-y` centres the ink of a glyph that
+ * sits high in its own line box.
+ */
+function signatureMarkup(testimonial: TestimonialCardValue) {
+  if (testimonial.avatarVisible !== false && testimonial.avatarUrl) {
     return `<span class="avatar"><img alt="" class="size-8 rounded-full object-cover" height="32" loading="lazy" src="${escapeHtml(testimonial.avatarUrl)}" width="32"></span>`;
   }
-  return `<span aria-hidden="true" class="avatar bg-muted grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold">${escapeHtml(initials(testimonial.name))}</span>`;
+  return `<span aria-hidden="true" class="quote-mark font-display block shrink-0 translate-y-[0.18em] text-5xl leading-[0] font-bold text-(--wall-accent) select-none">&ldquo;</span>`;
 }
 
 function starIconsMarkup(rating: number, sizeClass = "size-3.5") {
@@ -79,7 +76,7 @@ function starIconsMarkup(rating: number, sizeClass = "size-3.5") {
 
 function starsMarkup(rating?: number) {
   if (!rating) return "";
-  return `<div aria-label="${rating} out of 5 stars" class="stars flex shrink-0 gap-1 text-(--wall-accent)" role="img">${starIconsMarkup(rating)}</div>`;
+  return `<div aria-label="${rating} out of 5 stars" class="stars mb-4 flex gap-1 text-(--wall-accent)" role="img">${starIconsMarkup(rating)}</div>`;
 }
 
 function videoLoaderMarkup() {
@@ -88,17 +85,24 @@ function videoLoaderMarkup() {
 
 /**
  * One markup for the Wall, the Inbox and the embed (DESIGN.md section 7): the
- * quote leads, then the signature row with a 32px avatar and the stars on the
- * right. A marked phrase is painted with the hand-drawn marker swash in the
- * Brand accent.
+ * stars open the card, the quote reads at 17px, then the signature row where a
+ * face or the display quote mark stands beside the name. A marked phrase is
+ * painted with the hand-drawn marker swash in the Brand accent.
  */
 export function testimonialCardHtml({
   accentColor,
   menuMount = false,
+  statusMount = false,
   testimonial,
 }: {
   accentColor: string;
   menuMount?: boolean;
+  /**
+   * Opt-in anchor for the moderation status Badge. Strictly private: only the
+   * Inbox passes it, so the Public Wall and the embed never emit moderation
+   * state, which CONTEXT.md keeps on the Owner's side of the product.
+   */
+  statusMount?: boolean;
   testimonial: TestimonialCardValue;
 }) {
   const identity = [testimonial.role, testimonial.company]
@@ -113,7 +117,7 @@ export function testimonialCardHtml({
     : "";
   const text =
     testimonial.type === "text"
-      ? `<blockquote style="white-space:pre-wrap" class="quote text-[15px] leading-7 tracking-[-0.01em]">${testimonial.richText ? testimonial.richText.map((block) => block.children.map((leaf) => (leaf.highlight ? `<mark style="${markerHighlightStyle(accentHighlight(accentColor))}">${escapeHtml(leaf.text)}</mark>` : escapeHtml(leaf.text))).join("")).join("<br>") : escapeHtml(testimonial.text).replace(/\n/g, "<br>")}</blockquote>`
+      ? `<blockquote style="white-space:pre-wrap" class="quote text-[17px] leading-[1.7] text-pretty">${testimonial.richText ? testimonial.richText.map((block) => block.children.map((leaf) => (leaf.highlight ? `<mark style="${markerHighlightStyle(accentHighlight(accentColor))}">${escapeHtml(leaf.text)}</mark>` : escapeHtml(leaf.text))).join("")).join("<br>") : escapeHtml(testimonial.text).replace(/\n/g, "<br>")}</blockquote>`
       : "";
   const attachments =
     testimonial.type === "text" && testimonial.images?.length
@@ -122,11 +126,14 @@ export function testimonialCardHtml({
   const body =
     testimonial.type === "video"
       ? video
-      : `<div class="content p-5${menuMount ? " pr-12" : ""}">${text}${attachments}<div class="identity mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">${avatarMarkup(testimonial)}<div class="person min-w-[7rem] flex-1"><p class="name truncate text-[13px] leading-[1.125rem] font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div>${starsMarkup(testimonial.rating)}</div></div>`;
+      : `<div class="content p-6${menuMount ? " pr-12" : ""}${statusMount ? " pt-14" : ""}">${starsMarkup(testimonial.rating)}${text}${attachments}<div class="identity mt-5 flex items-center gap-3">${signatureMarkup(testimonial)}<div class="person min-w-0 flex-1"><p class="name truncate text-[14px] leading-5 font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div></div>`;
 
   const menu = menuMount
     ? '<span class="absolute right-3 top-3 z-20" data-gsp-card-menu=""></span>'
     : "";
+  const status = statusMount
+    ? '<span class="absolute left-3 top-3 z-20" data-gsp-card-status=""></span>'
+    : "";
 
-  return `<article class="card relative mb-5 break-inside-avoid overflow-hidden rounded-lg border bg-card text-card-foreground${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)};--wall-accent-ink:${accentInk(accentColor)};--wall-accent-soft:${accentSoft(accentColor)}">${menu}${body}</article>`;
+  return `<article class="card relative mb-5 break-inside-avoid overflow-hidden rounded-lg border bg-card text-card-foreground${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)};--wall-accent-ink:${accentInk(accentColor)};--wall-accent-soft:${accentSoft(accentColor)}">${status}${menu}${body}</article>`;
 }

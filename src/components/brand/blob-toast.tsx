@@ -94,7 +94,7 @@ export function BlobToast({
           size={48}
         />
       )}
-      <div className="toast-bubble bg-card shadow-float relative min-w-0 flex-1 rounded-lg border px-3.5 py-3">
+      <div className="toast-bubble bg-card text-card-foreground shadow-float relative min-w-0 flex-1 rounded-lg border px-3.5 py-3">
         <span
           aria-hidden="true"
           className="bg-card absolute bottom-[18px] -left-[7px] size-3 rotate-45 border-b border-l"

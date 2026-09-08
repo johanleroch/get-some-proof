@@ -7,6 +7,7 @@ import { ImageCropDialog } from "@/components/profile-image/image-crop-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import { cn } from "@/lib/utils";
 
 const maximumImageBytes = 5 * 1024 * 1024;
 
@@ -19,6 +20,7 @@ export function ProfileImageControl({
   onRemove,
   onUpload,
   readOnly = false,
+  size = "md",
 }: {
   alt: string;
   cropShape: "round" | "rect";
@@ -28,6 +30,8 @@ export function ProfileImageControl({
   onRemove: () => Promise<void>;
   onUpload: (blob: Blob) => Promise<void>;
   readOnly?: boolean;
+  /** `sm` where the image is optional and must not outweigh the fields. */
+  size?: "md" | "sm";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [source, setSource] = useState<string | null>(null);
@@ -80,15 +84,18 @@ export function ProfileImageControl({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="group relative w-fit">
         <Avatar
-          className={cropShape === "round" ? "size-24" : "size-24 rounded-xl"}
+          className={cn(
+            size === "sm" ? "size-16" : "size-24",
+            cropShape === "rect" && "rounded-xl",
+          )}
         >
           {imageUrl ? <AvatarImage alt={alt} src={imageUrl} /> : null}
           <AvatarFallback
-            className={
-              cropShape === "round"
-                ? "text-xl font-semibold"
-                : "rounded-xl text-xl font-semibold"
-            }
+            className={cn(
+              "font-semibold",
+              size === "sm" ? "text-base" : "text-xl",
+              cropShape === "rect" && "rounded-xl",
+            )}
           >
             {fallback}
           </AvatarFallback>

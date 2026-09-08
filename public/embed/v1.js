@@ -81,7 +81,7 @@
       text-transform: none;
     }
     .card.video-card { padding: 0; }
-    .content { padding: 20px; }
+    .content { padding: 24px; }
     .promo-card {
       padding: 24px;
       border-color: transparent;
@@ -244,7 +244,19 @@
     .play-icon svg { width: 20px; height: 20px; }
     .play-icon [data-gsp-play-icon] { margin-left: 2px; }
     .play-icon .hidden { display: none; }
-    .identity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 20px; }
+    .content > .stars { margin-bottom: 16px; }
+    .identity { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+    .quote-mark {
+      display: block;
+      flex: 0 0 auto;
+      color: var(--gsp-accent);
+      font-family: inherit;
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 0;
+      transform: translateY(0.18em);
+      user-select: none;
+    }
     .avatar {
       display: grid;
       width: 32px;
@@ -260,15 +272,15 @@
       font-weight: 600;
     }
     .avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
-    .person { min-width: 7rem; flex: 1; }
+    .person { min-width: 0; flex: 1; }
     .name, .meta, .stars, blockquote { margin: 0; }
     .name {
       overflow: hidden;
       color: var(--gsp-text);
       font-family: inherit;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      line-height: 1.4;
+      line-height: 20px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -284,14 +296,15 @@
     }
     .stars { display: flex; flex-shrink: 0; gap: 4px; color: var(--gsp-accent); }
     .star { width: 14px; height: 14px; }
+    .star[data-filled="true"] { fill: currentColor; }
     .star[data-filled="false"] { color: color-mix(in srgb, var(--gsp-muted) 25%, transparent); }
     blockquote {
       color: var(--gsp-text);
       font-family: inherit;
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 400;
-      letter-spacing: -0.01em;
-      line-height: 1.75;
+      line-height: 1.7;
+      text-wrap: pretty;
     }
     @container (min-width: 42rem) { .grid { column-count: 2; } }
     @media (prefers-reduced-motion: reduce) {

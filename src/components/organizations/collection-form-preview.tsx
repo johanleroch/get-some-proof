@@ -1,6 +1,6 @@
-import { IconMessage2, IconVideo } from "@tabler/icons-react";
 import Image from "next/image";
 
+import { CameraTripod, SpeechBubbleStars } from "@/components/doodles";
 import { accentInk } from "@/lib/color-contrast";
 
 /**
@@ -29,7 +29,6 @@ export function CollectionFormPreview({
       className="bg-surface overflow-hidden rounded-xl border"
       data-slot="collection-form-preview"
     >
-      <div className="h-1.5" style={{ background: accentColor }} />
       <div className="space-y-5 p-6">
         <div className="flex items-center gap-3">
           {logoUrl ? (
@@ -73,34 +72,39 @@ export function CollectionFormPreview({
         </div>
         <div className="space-y-2">
           <p className="type-ui font-semibold">What would you like to share?</p>
-          {[
-            {
-              hint: "Write 20 to 2,000 characters",
-              icon: IconMessage2,
-              label: "Send a text testimonial",
-            },
-            {
-              hint: "Up to 2 minutes",
-              icon: IconVideo,
-              label: "Record or upload a video",
-            },
-          ].map(({ hint, icon: Icon, label }) => (
-            <div
-              className="flex items-center gap-3 rounded-lg border p-3"
-              key={label}
-            >
-              <span
-                className="grid size-10 shrink-0 place-items-center rounded-md"
-                style={{ background: accentColor, color: ink }}
+          {/* Mirrors the real Collection Form: this card is as narrow as a
+              phone, so it shows the band the phone shows. A preview that
+              flatters is a preview that lies. */}
+          <ul className="space-y-2">
+            {[
+              {
+                hint: "Write 20 to 2,000 characters",
+                label: "Send a text testimonial",
+                Spot: SpeechBubbleStars,
+                verb: "Write it",
+              },
+              {
+                hint: "Up to 2 minutes",
+                label: "Record or upload a video",
+                Spot: CameraTripod,
+                verb: "Film it",
+              },
+            ].map(({ hint, label, Spot, verb }) => (
+              <li
+                className="border-line flex items-center gap-3 rounded-lg border py-3 pr-3 pl-4"
+                key={label}
               >
-                <Icon className="size-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="type-ui block truncate">{label}</span>
-                <span className="text-ink-2 type-small block">{hint}</span>
-              </span>
-            </div>
-          ))}
+                <span className="min-w-0 flex-1">
+                  <span className="type-subheading block">{verb}</span>
+                  <span className="text-ink-2 type-small mt-0.5 block truncate">
+                    {label}
+                  </span>
+                  <span className="text-ink-2 type-small block">{hint}</span>
+                </span>
+                <Spot className="text-ink h-12 shrink-0" />
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

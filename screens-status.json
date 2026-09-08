@@ -1,1 +1,27 @@
-{}
+{
+  "billing": "todo",
+  "billing-downgrade": "ok",
+  "collection-form": "todo",
+  "collection-form-details": "todo",
+  "collection-form-success": "todo",
+  "collection-form-video": "todo",
+  "dashboard": "todo",
+  "forgot-password": "ok",
+  "inbox": "todo",
+  "onboarding": "ok",
+  "privacy-notice": "ok",
+  "profile": "ok",
+  "public-wall": "todo",
+  "reset-password": "ok",
+  "settings": "ok",
+  "sign-in": "ok",
+  "sign-up": "ok",
+  "testimonial-delete": "todo",
+  "testimonial-highlight": "todo",
+  "toast-error": "todo",
+  "toast-success": "todo",
+  "two-factor": "ok",
+  "video-upload-progress": "todo",
+  "workspace-delete": "todo",
+  "workspace-delete-progress": "ok"
+}

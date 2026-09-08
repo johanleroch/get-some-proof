@@ -32,7 +32,7 @@ export function TemplateStage({
   return (
     <div
       className={cn(
-        "public-wall-theme bg-background text-foreground @container w-full transition-[max-width] duration-250 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none",
+        "public-wall-theme bg-background text-foreground @container w-full transition-[max-width] duration-[var(--motion-settle)] ease-[var(--ease-settle-soft)] motion-reduce:transition-none",
         className,
       )}
       data-template-stage=""

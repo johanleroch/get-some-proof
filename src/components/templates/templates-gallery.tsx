@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   type Icon,
-  IconCheck,
-  IconColorPicker,
   IconDeviceDesktop,
   IconDeviceMobile,
   IconDeviceTablet,
@@ -15,7 +13,7 @@ import {
 
 import { ArrowNote } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
-import { accentInk } from "@/lib/color-contrast";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { sampleBrandName, sampleTestimonials } from "@/lib/template-samples";
 import {
   accentPresets,
@@ -245,7 +243,15 @@ export function TemplatesGallery({
             value={deviceKey}
           />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <AccentPicker onChange={setAccent} value={accent} />
+            <div className="flex items-center">
+              <span className="type-small text-ink-2 mr-1">Accent</span>
+              <ColorPicker
+                legend="Brand accent for the preview"
+                onChange={setAccent}
+                presets={accentPresets}
+                value={accent}
+              />
+            </div>
             <Segmented
               label="Wall theme"
               onChange={setTheme}
@@ -255,28 +261,41 @@ export function TemplatesGallery({
           </div>
         </div>
 
-        <ArrowNote className="-mb-1 hidden md:inline-flex" draw>
+        <ArrowNote className="-mb-1 hidden md:inline-flex">
           this is what your visitors see
         </ArrowNote>
 
-        <div className="bg-surface-2 rounded-lg border p-3 sm:p-5">
-          <div>
-            <TemplateStage
+        {/* The frame takes the device width, not the stage alone: capping
+            only the stage left a desktop-wide card with a phone-wide preview
+            marooned in the middle of it. The calc gives back the frame's own
+            padding and the stage's hairline, so the stage lands exactly on
+            the device width and its container queries still see it. Desktop
+            is `100%`, never `none`: a keyword has no value to travel from, so
+            the frame would jump to the tablet width instead of settling into
+            it. Percentages and lengths interpolate, so the width stays free
+            and the move keeps its rebound. */}
+        <div
+          className="bg-surface-2 mx-auto rounded-lg border p-3 transition-[max-width] duration-[var(--motion-settle)] ease-[var(--ease-settle-soft)] [--frame-pad:0.75rem] motion-reduce:transition-none sm:p-5 sm:[--frame-pad:1.25rem]"
+          style={{
+            maxWidth: device?.width
+              ? `calc(${device.width}px + 2 * var(--frame-pad) + 2px)`
+              : "100%",
+          }}
+        >
+          <TemplateStage
+            accentColor={accent}
+            centered={template.preview === "center"}
+            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both rounded-lg border duration-[var(--motion-settle)] ease-[var(--ease-settle-soft)]"
+            key={template.slug}
+            theme={theme}
+          >
+            <TemplateRender
               accentColor={accent}
-              centered={template.preview === "center"}
-              className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both mx-auto rounded-lg border duration-200"
-              key={template.slug}
-              maxWidth={device?.width}
-              theme={theme}
-            >
-              <TemplateRender
-                accentColor={accent}
-                brandName={sampleBrandName}
-                slug={template.slug}
-                testimonials={sampleTestimonials}
-              />
-            </TemplateStage>
-          </div>
+              brandName={sampleBrandName}
+              slug={template.slug}
+              testimonials={sampleTestimonials}
+            />
+          </TemplateStage>
         </div>
       </section>
     </div>
@@ -362,74 +381,5 @@ function Segmented<T extends string>({
         );
       })}
     </div>
-  );
-}
-
-function AccentPicker({
-  onChange,
-  value,
-}: {
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const custom = !accentPresets.some(
-    (preset) => preset.value.toLowerCase() === value.toLowerCase(),
-  );
-  return (
-    <fieldset className="flex items-center">
-      <legend className="sr-only">Brand accent for the preview</legend>
-      <span className="type-small text-ink-2 mr-1">Accent</span>
-      {accentPresets.map((preset) => {
-        const active = preset.value.toLowerCase() === value.toLowerCase();
-        return (
-          <button
-            aria-label={preset.label}
-            aria-pressed={active}
-            className="focus-visible:ring-ring grid size-11 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-[3px]"
-            key={preset.value}
-            onClick={() => onChange(preset.value)}
-            type="button"
-          >
-            <span
-              className={cn(
-                "border-line-2 ring-offset-background grid size-7 place-items-center rounded-full border ring-2 ring-offset-2 transition-transform duration-150",
-                active ? "ring-ink" : "ring-transparent hover:scale-110",
-              )}
-              style={{ background: preset.value }}
-            >
-              {active ? (
-                <IconCheck
-                  aria-hidden="true"
-                  className="size-4"
-                  style={{ color: accentInk(preset.value) }}
-                />
-              ) : null}
-            </span>
-          </button>
-        );
-      })}
-      <label className="relative grid size-11 cursor-pointer place-items-center">
-        <span className="sr-only">Custom accent</span>
-        <span
-          aria-hidden="true"
-          className={cn(
-            "border-line-2 ring-offset-background grid size-7 place-items-center rounded-full border-2 transition-transform duration-150",
-            custom ? "ring-ink ring-2 ring-offset-2" : "hover:scale-110",
-          )}
-          style={custom ? { background: value, borderColor: value } : undefined}
-        >
-          <IconColorPicker
-            className="size-4"
-            style={{ color: custom ? accentInk(value) : undefined }}
-          />
-        </span>
-        <input
-          className="absolute inset-0 size-full cursor-pointer opacity-0"
-          onChange={(event) => onChange(event.target.value)}
-          type="color"
-          value={value}
-        />
-      </label>
-    </fieldset>
   );
 }

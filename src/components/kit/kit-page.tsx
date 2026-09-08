@@ -9,10 +9,11 @@ import {
   IconStar,
   IconTemplate,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
+import { blobToast } from "@/components/brand/blob-toast";
+import { MotionShowcase } from "@/components/kit/motion-showcase";
 import { PageHeader } from "@/components/page-header";
 import {
   ArrowNote,
@@ -129,6 +130,7 @@ const sections = [
   { id: "shape", title: "Shape and depth" },
   { id: "spacing", title: "Spacing" },
   { id: "doodles", title: "Doodles" },
+  { id: "motion", title: "Motion" },
   { id: "buttons", title: "Buttons" },
   { id: "forms", title: "Forms" },
   { id: "shell", title: "Page header" },
@@ -310,10 +312,12 @@ export function KitPage() {
     try {
       await navigator.clipboard.writeText(cssSnippet);
       setCopied(true);
-      toast.success("Token values copied as CSS.");
+      blobToast.success("Token values copied as CSS.");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Could not copy. Select the snippet at the bottom instead.");
+      blobToast.error(
+        "Could not copy. Select the snippet at the bottom instead.",
+      );
     }
   }
 
@@ -1020,27 +1024,37 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
+            description="Every curve of DESIGN.md section 8, plotted and replayed on the same travel. Mass decides the overshoot: a switch thumb may bounce, a dialog may not."
+            id="motion"
+            title="Motion"
+          >
+            <MotionShowcase />
+          </KitSection>
+
+          <KitSection
             description="Toasts, skeletons and separators."
             id="feedback"
             title="Feedback"
           >
             <div className="flex flex-wrap items-center gap-3">
               <Button
-                onClick={() => toast.success("Testimonial published.")}
+                onClick={() => blobToast.success("Testimonial published.")}
                 variant="outline"
               >
                 Success toast
               </Button>
               <Button
                 onClick={() =>
-                  toast.error("Upload failed. Try a smaller file.")
+                  blobToast.error("Upload failed. Try a smaller file.")
                 }
                 variant="outline"
               >
                 Error toast
               </Button>
               <Button
-                onClick={() => toast.info("Your wall updates within a minute.")}
+                onClick={() =>
+                  blobToast.info("Your wall updates within a minute.")
+                }
                 variant="outline"
               >
                 Info toast
@@ -1306,7 +1320,7 @@ function AlertDialogDemo() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep it</AlertDialogCancel>
-            <AlertDialogAction className="bg-danger hover:bg-danger/90 text-white">
+            <AlertDialogAction variant="destructive">
               Delete permanently
             </AlertDialogAction>
           </AlertDialogFooter>
