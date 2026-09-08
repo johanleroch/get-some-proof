@@ -122,7 +122,9 @@
     }
     .promo-cta:hover { background: var(--gsp-promo-cta-hover); }
     .promo-cta:focus-visible {
-      outline: 3px solid var(--gsp-promo-cta);
+      /* The panel flips between ink and paper per theme; the promo text token
+         flips with it, so the ring keeps its contrast (WCAG 2.2 SC 1.4.11). */
+      outline: 3px solid var(--gsp-promo-text);
       outline-offset: 3px;
     }
     .video-shell {
@@ -151,9 +153,8 @@
       color: #fff;
       pointer-events: none;
     }
-    .video-loader svg { width: 40px; height: 40px; animation: gsp-spin 800ms linear infinite; }
+    .video-loader svg { width: 48px; height: 48px; }
     .video-shell[data-loading="true"] .video-loader { display: grid; }
-    @keyframes gsp-spin { to { transform: rotate(360deg); } }
     .play {
       display: grid;
       width: 48px;

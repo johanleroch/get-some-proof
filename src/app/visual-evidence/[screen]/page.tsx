@@ -1,3 +1,5 @@
+import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { notFound } from "next/navigation";
 
@@ -10,8 +12,13 @@ import {
   CollectionFormVideoScreenFixture,
   CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
+  AccountDeletionScreenFixture,
+  AccountFreeProjectScreenFixture,
+  ProProjectsScreenFixture,
+  InactiveProjectScreenFixture,
   EmptyPublicWallScreenFixture,
   ManagedSubmissionScreenFixture,
+  ManagedVideoProcessingScreenFixture,
   OnboardingScreenFixture,
   OrganizationSettingsScreenFixture,
   ProfileScreenFixture,
@@ -28,6 +35,8 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "loading-states": LoadingStatesFixture,
+  "full-page-loading": BlobLoaderScreen,
   "rich-testimonial": RichTestimonialScreenFixture,
   "collection-form": CollectionFormScreenFixture,
   "collection-form-closed": CollectionFormClosedScreenFixture,
@@ -36,6 +45,7 @@ const screens = {
   "collection-form-video": CollectionFormVideoScreenFixture,
   "collection-form-write": CollectionFormWriteScreenFixture,
   "managed-submission": ManagedSubmissionScreenFixture,
+  "managed-video-processing": ManagedVideoProcessingScreenFixture,
   "privacy-notice": BrandPrivacyNoticeScreenFixture,
   "public-wall": PublicWallScreenFixture,
   "public-wall-empty": EmptyPublicWallScreenFixture,
@@ -49,6 +59,10 @@ const screens = {
   "workspace-delete": WorkspaceDeletionScreenFixture,
   "workspace-delete-progress": WorkspaceDeletionProgressScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
+  "account-deletion": AccountDeletionScreenFixture,
+  "account-free-project": AccountFreeProjectScreenFixture,
+  "account-pro": ProProjectsScreenFixture,
+  "inactive-project": InactiveProjectScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
   profile: ProfileScreenFixture,
@@ -70,8 +84,11 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "onboarding" ||
+  return screen === "full-page-loading" ||
+    screen === "onboarding" ||
     screen === "dashboard" ||
+    screen === "account-pro" ||
+    screen === "inactive-project" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
     screen === "video-retry" ||

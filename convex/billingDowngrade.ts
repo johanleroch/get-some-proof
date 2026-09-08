@@ -1,3 +1,4 @@
+import { projectionIsPublic, removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -11,8 +12,12 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { authzForOrganization } from "./authorization";
-import { getOrganizationBillingEntitlement } from "./billingEntitlements";
+import {
+  getAccountBillingEntitlement,
+  getOrganizationBillingEntitlement,
+} from "./billingEntitlements";
 import { requireOrganizationPermission } from "./security/organizationAccess";
+import { resolveFreeProject } from "./projectActivity";
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const MAXIMUM_SCHEDULE_HOP_MS = 20 * DAY_MS;
@@ -63,11 +68,12 @@ function transitionTarget(snapshot: {
 async function authoritativeTransition(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
+  accountId?: Id<"accounts">,
 ) {
-  const entitlement = await getOrganizationBillingEntitlement(
-    ctx,
-    organizationId,
-  );
+  accountId ??= (await ctx.db.get(organizationId))?.accountId;
+  const entitlement = accountId
+    ? await getAccountBillingEntitlement(ctx, accountId)
+    : await getOrganizationBillingEntitlement(ctx, organizationId);
   const stripeSubscriptionId = entitlement.subscription?.stripeSubscriptionId;
   if (!stripeSubscriptionId) return { entitlement, transition: null };
   const transition = await ctx.db
@@ -79,8 +85,23 @@ async function authoritativeTransition(
   return {
     entitlement,
     transition:
-      transition?.organizationId === organizationId ? transition : null,
+      transition?.organizationId === organizationId ||
+      (accountId && transition?.accountId === accountId)
+        ? transition
+        : null,
   };
+}
+
+async function downgradeProjectId(
+  ctx: QueryCtx | MutationCtx,
+  project: Doc<"organizations">,
+) {
+  const account = project.accountId
+    ? await ctx.db.get(project.accountId)
+    : null;
+  return account
+    ? ((await resolveFreeProject(ctx, account))?._id ?? project._id)
+    : project._id;
 }
 
 async function scheduleTransitionTick(
@@ -96,9 +117,32 @@ async function scheduleTransitionTick(
   );
 }
 
+// Persist the revocation before a webhook can replace an expired entitlement.
+// Scheduled workers may not have executed at the instant payment recovers.
+export async function freezeExpiredAccountPublications(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  accountId: Id<"accounts">,
+) {
+  const { entitlement, transition } = await authoritativeTransition(
+    ctx,
+    organizationId,
+    accountId,
+  );
+  if (
+    entitlement.effectivePlan === "free" &&
+    transition &&
+    transition.status !== "recovered" &&
+    transition.scheduledFor <= Date.now()
+  ) {
+    await freezeAccountPublications(ctx, transition);
+  }
+}
+
 export async function syncBillingDowngradeLifecycle(
   ctx: MutationCtx,
   snapshot: {
+    accountId?: Id<"accounts">;
     cancelAtPeriodEnd: boolean;
     currentPeriodEnd: number;
     organizationId: Id<"organizations">;
@@ -107,6 +151,28 @@ export async function syncBillingDowngradeLifecycle(
     stripeSubscriptionId: string;
   },
 ) {
+  const accountId =
+    snapshot.accountId ??
+    (await ctx.db.get(snapshot.organizationId))?.accountId;
+  const recoveredToPro =
+    (accountId
+      ? await getAccountBillingEntitlement(ctx, accountId)
+      : await getOrganizationBillingEntitlement(ctx, snapshot.organizationId)
+    ).effectivePlan === "premium";
+  if (accountId && recoveredToPro) {
+    const recoveredAt = Date.now();
+    await ctx.db.patch(accountId, { lastProRecoveryAt: recoveredAt });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.billingDowngrade.recoverAccountTransitions,
+      {
+        accountId,
+        recoveredAt,
+        currentSubscriptionId: snapshot.stripeSubscriptionId,
+        cursor: null,
+      },
+    );
+  }
   const existing = await ctx.db
     .query("billingDowngradeTransitions")
     .withIndex("by_stripe_subscription", (index) =>
@@ -116,21 +182,34 @@ export async function syncBillingDowngradeLifecycle(
   const target = transitionTarget(snapshot);
   const now = Date.now();
   if (existing?.status === "applied") {
-    if (target) return;
+    if (target || !recoveredToPro) return;
     await ctx.db.patch(existing._id, {
       status: "recovered",
       updatedAt: now,
       version: existing.version + 1,
     });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.billingDowngrade.cancelRecoveredRetentions,
+      { transitionId: existing._id, version: existing.version + 1 },
+    );
     return;
   }
   if (!target) {
-    if (existing?.status === "scheduled" || existing?.status === "processing") {
+    if (
+      recoveredToPro &&
+      (existing?.status === "scheduled" || existing?.status === "processing")
+    ) {
       await ctx.db.patch(existing._id, {
         status: "recovered",
         updatedAt: now,
         version: existing.version + 1,
       });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.billingDowngrade.cancelRecoveredRetentions,
+        { transitionId: existing._id, version: existing.version + 1 },
+      );
     }
     return;
   }
@@ -145,6 +224,7 @@ export async function syncBillingDowngradeLifecycle(
 
   const version = (existing?.version ?? 0) + 1;
   const transition = {
+    accountId,
     appliedAt: undefined,
     createdAt: existing?.createdAt ?? now,
     organizationId: snapshot.organizationId,
@@ -160,6 +240,9 @@ export async function syncBillingDowngradeLifecycle(
   const transitionId = existing
     ? (await ctx.db.replace(existing._id, transition), existing._id)
     : await ctx.db.insert("billingDowngradeTransitions", transition);
+  if (accountId && target.scheduledFor <= now && !recoveredToPro) {
+    await freezeAccountPublications(ctx, (await ctx.db.get(transitionId))!);
+  }
   await scheduleTransitionTick(
     ctx,
     transitionId,
@@ -177,6 +260,9 @@ async function resolvedKeepers(
   type: "text" | "video",
   limit: number,
 ) {
+  const account = transition.accountId
+    ? await ctx.db.get(transition.accountId)
+    : null;
   const selectedIds =
     type === "text"
       ? transition.selectedTextIds.slice(0, limit)
@@ -195,7 +281,18 @@ async function resolvedKeepers(
   ).filter(
     (projection): projection is Doc<"publicTestimonialProjections"> =>
       projection?.organizationId === transition.organizationId &&
-      projection.type === type,
+      projection.type === type &&
+      projectionIsPublic(account, projection),
+  );
+  const preserved = await Promise.all(
+    (account?.preservedPublicationIds ?? []).map((testimonialId) =>
+      ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", testimonialId),
+        )
+        .unique(),
+    ),
   );
   const recent = await ctx.db
     .query("publicTestimonialProjections")
@@ -206,7 +303,18 @@ async function resolvedKeepers(
     .take(limit + selectedIds.length);
   return [
     ...pickKeepers(
-      [...selectedProjections, ...recent],
+      [
+        ...selectedProjections,
+        ...preserved.filter(
+          (projection): projection is Doc<"publicTestimonialProjections"> =>
+            projection?.organizationId === transition.organizationId &&
+            projection.type === type &&
+            projectionIsPublic(account, projection),
+        ),
+        ...recent.filter((projection) =>
+          projectionIsPublic(account, projection),
+        ),
+      ],
       selectedProjections.map((item) => item.testimonialId),
       limit,
     ),
@@ -223,7 +331,7 @@ function pickKeepers(
   );
   const selected = selectedIds.filter((id) => eligible.has(id)).slice(0, limit);
   const selectedSet = new Set(selected);
-  const ordered = [...projections].sort(
+  const ordered = [...eligible.values()].sort(
     (left, right) =>
       right.publishedAt - left.publishedAt ||
       String(right.testimonialId).localeCompare(String(left.testimonialId)),
@@ -318,6 +426,7 @@ export const processTransition = internalMutation({
     const authoritative = await authoritativeTransition(
       ctx,
       transition.organizationId,
+      transition.accountId,
     );
     if (authoritative.transition?._id !== transition._id) {
       await ctx.db.patch(transition._id, {
@@ -362,12 +471,37 @@ export const processTransition = internalMutation({
       });
       return { outcome: "recovered" };
     }
+    const account = transition.accountId
+      ? await ctx.db.get(transition.accountId)
+      : null;
+    const activeProject = account
+      ? await resolveFreeProject(ctx, account)
+      : null;
+    const keeperTransition = activeProject
+      ? { ...transition, organizationId: activeProject._id }
+      : transition;
     const [resolvedTextIds, resolvedVideoIds] = await Promise.all([
-      resolvedKeepers(ctx, transition, "text", FREE_TEXT_LIMIT),
-      resolvedKeepers(ctx, transition, "video", FREE_VIDEO_LIMIT),
+      resolvedKeepers(ctx, keeperTransition, "text", FREE_TEXT_LIMIT),
+      resolvedKeepers(ctx, keeperTransition, "video", FREE_VIDEO_LIMIT),
     ]);
+    await freezeAccountPublications(ctx, transition);
+    const firstProjects = transition.accountId
+      ? await ctx.db
+          .query("organizations")
+          .withIndex("by_account_open", (q) =>
+            q
+              .eq("accountId", transition.accountId)
+              .eq("deletionStartedAt", undefined),
+          )
+          .paginate({ cursor: null, numItems: 1 })
+      : null;
     await ctx.db.patch(transition._id, {
+      processingProjectId: firstProjects?.page[0]?._id,
+      projectCursor: firstProjects?.continueCursor,
+      projectsExhausted: firstProjects?.isDone,
+      activeProjectId: activeProject?._id,
       processingCursor: undefined,
+      processingAssets: undefined,
       resolvedTextIds,
       resolvedVideoIds,
       status: "processing",
@@ -409,6 +543,7 @@ export const processTransitionBatch = internalMutation({
     const authoritative = await authoritativeTransition(
       ctx,
       transition.organizationId,
+      transition.accountId,
     );
     if (
       authoritative.transition?._id !== transition._id ||
@@ -416,12 +551,15 @@ export const processTransitionBatch = internalMutation({
     ) {
       await ctx.db.patch(transition._id, {
         processingCursor: undefined,
+        processingAssets: undefined,
         status: "recovered",
         updatedAt: now,
         version: transition.version + 1,
       });
       return { outcome: "recovered" };
     }
+    if (transition.accountId)
+      return processAccountTransitionBatch(ctx, transition);
     const page = await ctx.db
       .query("publicTestimonialProjections")
       .withIndex("by_organization_published_at", (index) =>
@@ -444,7 +582,7 @@ export const processTransitionBatch = internalMutation({
         ) {
           return;
         }
-        await ctx.db.delete(projection._id);
+        await removePublicProjection(ctx, projection);
         await ctx.db.patch(testimonial._id, {
           moderationStatus: "archived",
           updatedAt: now,
@@ -512,6 +650,7 @@ export const processTransitionBatch = internalMutation({
     await ctx.db.patch(transition._id, {
       appliedAt: Date.now(),
       processingCursor: undefined,
+      processingAssets: undefined,
       status: "applied",
       updatedAt: Date.now(),
     });
@@ -538,6 +677,144 @@ export const processTransitionBatch = internalMutation({
     return { outcome: "applied" };
   },
 });
+
+async function processAccountTransitionBatch(
+  ctx: MutationCtx,
+  transition: Doc<"billingDowngradeTransitions">,
+) {
+  let projectId = transition.processingProjectId;
+  let processingAssets = transition.processingAssets ?? false;
+  let projectCursor = transition.projectCursor;
+  let projectsExhausted = transition.projectsExhausted ?? false;
+  if (!projectId && !projectsExhausted) {
+    const projects = await ctx.db
+      .query("organizations")
+      .withIndex("by_account_open", (q) =>
+        q
+          .eq("accountId", transition.accountId)
+          .eq("deletionStartedAt", undefined),
+      )
+      .paginate({ cursor: projectCursor ?? null, numItems: 1 });
+    projectId = projects.page[0]?._id;
+    projectCursor = projects.continueCursor;
+    projectsExhausted = projects.isDone;
+    await ctx.db.patch(transition._id, {
+      processingProjectId: projectId,
+      projectCursor,
+      projectsExhausted,
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.billingDowngrade.processTransitionBatch,
+      {
+        transitionId: transition._id,
+        version: transition.version,
+        cursor: null,
+      },
+    );
+    return { outcome: "processing" };
+  }
+  const now = Date.now();
+  let nextCursor: string | undefined;
+  if (projectId && processingAssets) {
+    const page = await ctx.db
+      .query("videoAssets")
+      .withIndex("by_organization", (q) => q.eq("organizationId", projectId!))
+      .paginate({ cursor: transition.processingCursor ?? null, numItems: 50 });
+    for (const asset of page.page) await retainAccountVideo(ctx, asset);
+    if (page.isDone) {
+      projectId = undefined;
+      processingAssets = false;
+    } else nextCursor = page.continueCursor;
+  } else if (projectId) {
+    const page = await ctx.db
+      .query("testimonials")
+      .withIndex("by_organization", (q) => q.eq("organizationId", projectId!))
+      .paginate({ cursor: transition.processingCursor ?? null, numItems: 50 });
+    const keepers = new Set([
+      ...(transition.resolvedTextIds ?? []),
+      ...(transition.resolvedVideoIds ?? []),
+    ]);
+    for (const testimonial of page.page) {
+      if (
+        projectId === transition.activeProjectId &&
+        keepers.has(testimonial._id)
+      )
+        continue;
+      const projection = await ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", testimonial._id),
+        )
+        .unique();
+      if (projection) await removePublicProjection(ctx, projection);
+      if (testimonial.moderationStatus === "published") {
+        await ctx.db.patch(testimonial._id, {
+          moderationStatus: "archived",
+          updatedAt: now,
+        });
+      }
+    }
+    if (page.isDone) processingAssets = true;
+    else nextCursor = page.continueCursor;
+  }
+  if (!projectId && projectsExhausted) {
+    await ctx.db.patch(transition._id, {
+      status: "applied",
+      appliedAt: now,
+      updatedAt: now,
+      processingCursor: undefined,
+      processingAssets: undefined,
+      processingProjectId: undefined,
+      projectCursor,
+      projectsExhausted,
+    });
+    const retention = await ctx.db
+      .query("videoDowngradeRetentions")
+      .withIndex("by_transition", (q) => q.eq("transitionId", transition._id))
+      .first();
+    if (retention) {
+      await ensureLifecycleEmail(
+        ctx,
+        transition,
+        "video_retention_started",
+        now,
+      );
+      await ensureLifecycleEmail(
+        ctx,
+        transition,
+        "video_retention_d7",
+        now + 23 * DAY_MS,
+      );
+      await ensureLifecycleEmail(
+        ctx,
+        transition,
+        "video_retention_d1",
+        now + 29 * DAY_MS,
+      );
+    }
+    return { outcome: "applied" };
+  }
+  await ctx.db.patch(transition._id, {
+    processingCursor: nextCursor,
+    processingProjectId: projectId,
+    processingAssets,
+    projectCursor,
+    projectsExhausted,
+    updatedAt: now,
+  });
+  await ctx.scheduler.runAfter(
+    0,
+    internal.billingDowngrade.processTransitionBatch,
+    {
+      transitionId: transition._id,
+      version: transition.version,
+      cursor: nextCursor ?? null,
+    },
+  );
+  return { outcome: "processing" };
+}
 
 export const getPlan = query({
   args: { organizationId: v.id("organizations") },
@@ -579,10 +856,14 @@ export const listCandidates = query({
       { organizationId: args.organizationId },
       "billing:read",
     );
+    const selectedProjectId = await downgradeProjectId(
+      ctx,
+      access.organization,
+    );
     const page = await ctx.db
       .query("publicTestimonialProjections")
       .withIndex("by_organization_published_at", (index) =>
-        index.eq("organizationId", access.organization._id),
+        index.eq("organizationId", selectedProjectId),
       )
       .order("desc")
       .paginate(args.paginationOpts);
@@ -639,6 +920,10 @@ export const updateSelection = mutation({
         message: "No downgrade selection is currently required.",
       });
     }
+    const selectedProjectId = await downgradeProjectId(
+      ctx,
+      access.organization,
+    );
     const selected = [...args.textIds, ...args.videoIds];
     const textIds = new Set(args.textIds);
     for (const testimonialId of selected) {
@@ -654,9 +939,9 @@ export const updateSelection = mutation({
       const expectedType = textIds.has(testimonialId) ? "text" : "video";
       if (
         !testimonial ||
-        testimonial.organizationId !== access.organization._id ||
+        testimonial.organizationId !== selectedProjectId ||
         testimonial.submissionType !== expectedType ||
-        projection?.organizationId !== access.organization._id
+        projection?.organizationId !== selectedProjectId
       ) {
         throw new ConvexError({
           code: "INVALID_DOWNGRADE_SELECTION",
@@ -685,3 +970,203 @@ export const cancelVideoRetentionForReactivation = async (
     .unique();
   if (retention?.status === "retained") await ctx.db.delete(retention._id);
 };
+
+export const cancelRecoveredRetentions = internalMutation({
+  args: {
+    transitionId: v.id("billingDowngradeTransitions"),
+    version: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const transition = await ctx.db.get(args.transitionId);
+    if (
+      !transition ||
+      transition.status !== "recovered" ||
+      transition.version !== args.version
+    )
+      return null;
+    const rows = await ctx.db
+      .query("videoDowngradeRetentions")
+      .withIndex("by_transition_status_expiry", (q) =>
+        q
+          .eq("transitionId", transition._id)
+          .eq("status", "retained")
+          .gt("expiresAt", transition.updatedAt),
+      )
+      .take(50);
+    for (const row of rows) await ctx.db.delete(row._id);
+    if (rows.length === 50)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.billingDowngrade.cancelRecoveredRetentions,
+        args,
+      );
+    return null;
+  },
+});
+
+export const recoverAccountTransitions = internalMutation({
+  args: {
+    accountId: v.id("accounts"),
+    recoveredAt: v.number(),
+    currentSubscriptionId: v.string(),
+    cursor: v.union(v.string(), v.null()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account || account.deletionStartedAt !== undefined) return null;
+    const page = await ctx.db
+      .query("billingDowngradeTransitions")
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+      .paginate({ cursor: args.cursor, numItems: 32 });
+    for (const transition of page.page) {
+      if (
+        transition.status === "recovered" ||
+        transition.scheduledFor > args.recoveredAt ||
+        transition.stripeSubscriptionId === args.currentSubscriptionId
+      )
+        continue;
+      const version = transition.version + 1;
+      await ctx.db.patch(transition._id, {
+        status: "recovered",
+        updatedAt: args.recoveredAt,
+        version,
+      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.billingDowngrade.cancelRecoveredRetentions,
+        { transitionId: transition._id, version },
+      );
+    }
+    if (!page.isDone)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.billingDowngrade.recoverAccountTransitions,
+        { ...args, cursor: page.continueCursor },
+      );
+    return null;
+  },
+});
+
+async function freezeAccountPublications(
+  ctx: MutationCtx,
+  transition: Doc<"billingDowngradeTransitions">,
+) {
+  if (!transition.accountId) return;
+  const account = await ctx.db.get(transition.accountId);
+  const key = `${transition._id}:${transition.version}`;
+  if (
+    !account ||
+    account.deletionStartedAt !== undefined ||
+    account.publicationTransitionKey === key
+  )
+    return;
+  const project = await resolveFreeProject(ctx, account);
+  const scoped = project
+    ? { ...transition, organizationId: project._id }
+    : transition;
+  const [texts, videos] = project
+    ? await Promise.all([
+        resolvedKeepers(ctx, scoped, "text", FREE_TEXT_LIMIT),
+        resolvedKeepers(ctx, scoped, "video", FREE_VIDEO_LIMIT),
+      ])
+    : [[], []];
+  await ctx.db.patch(account._id, {
+    publicationGeneration: (account.publicationGeneration ?? 0) + 1,
+    publicationTransitionKey: key,
+    preservedPublicationIds: [...texts, ...videos],
+  });
+}
+
+// Asset-level retention also covers uploads and replacements awaiting a testimonial.
+export async function retainAccountVideo(
+  ctx: MutationCtx,
+  asset: Doc<"videoAssets">,
+) {
+  const project = await ctx.db.get(asset.organizationId);
+  if (!project?.accountId) return;
+  const { entitlement, transition } = await authoritativeTransition(
+    ctx,
+    project._id,
+    project.accountId,
+  );
+  if (
+    entitlement.effectivePlan !== "free" ||
+    !transition ||
+    transition.status === "recovered" ||
+    transition.scheduledFor > Date.now()
+  )
+    return;
+  const reservation = await ctx.db.get(asset.reservationId);
+  if (
+    reservation?.plan === "free" &&
+    reservation.createdAt >= transition.scheduledFor
+  )
+    return;
+  await freezeAccountPublications(ctx, transition);
+  const account = await ctx.db.get(project.accountId);
+  const prior = await ctx.db
+    .query("videoDowngradeRetentions")
+    .withIndex("by_video_asset", (q) => q.eq("videoAssetId", asset._id))
+    .unique();
+  if (
+    asset.testimonialId &&
+    account?.preservedPublicationIds?.includes(asset.testimonialId)
+  ) {
+    if (prior?.status === "retained") await ctx.db.delete(prior._id);
+    return;
+  }
+  if (prior?.status === "deleting") return;
+  if (asset.testimonialId) {
+    const previous = await ctx.db
+      .query("videoDowngradeRetentions")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", asset.testimonialId),
+      )
+      .take(2);
+    for (const record of previous)
+      if (record.videoAssetId !== asset._id)
+        await ctx.db.patch(record._id, { testimonialId: undefined });
+  }
+  if (prior?.status === "retained" && prior.transitionId === transition._id) {
+    if (prior.testimonialId !== asset.testimonialId)
+      await ctx.db.patch(prior._id, { testimonialId: asset.testimonialId });
+    return;
+  }
+  const now = Date.now();
+  const expiresAt = transition.scheduledFor + VIDEO_RETENTION_MS;
+  const value = {
+    organizationId: project._id,
+    transitionId: transition._id,
+    testimonialId: asset.testimonialId,
+    videoAssetId: asset._id,
+    retainedAt: now,
+    expiresAt,
+    status: "retained" as const,
+    attempts: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const retentionId = prior
+    ? (await ctx.db.replace(prior._id, value), prior._id)
+    : await ctx.db.insert("videoDowngradeRetentions", value);
+  await ctx.scheduler.runAt(
+    Math.max(now, expiresAt),
+    internal.billingDowngradeVideo.deleteRetainedVideo,
+    { retentionId },
+  );
+  await ensureLifecycleEmail(ctx, transition, "video_retention_started", now);
+  await ensureLifecycleEmail(
+    ctx,
+    transition,
+    "video_retention_d7",
+    expiresAt - 7 * DAY_MS,
+  );
+  await ensureLifecycleEmail(
+    ctx,
+    transition,
+    "video_retention_d1",
+    expiresAt - DAY_MS,
+  );
+}

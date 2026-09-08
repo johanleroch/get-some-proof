@@ -75,3 +75,7 @@ Stripe Billing is optional and must first pass the complete sandbox rehearsal in
 Enabling live billing is a separate production change. It requires explicit approval for the exact Platform Stripe Account and Convex production deployment before any live-mode webhook, `sk_live_` secret, production `whsec_` secret, Price, Portal configuration, or `--prod` command is created or changed. Do not copy test-mode object IDs or secrets into live mode.
 
 After approval, repeat the documented setup in Stripe live mode with the final production origin and the production webhook URL. Store `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in the Convex production environment. Then repeat the verification matrix with a deliberately controlled live charge and refund plan agreed by the operator before opening traffic. Documentation or sandbox success alone is not authorization to perform these actions.
+
+## Public Wall server boundary
+
+Configure the matching server-side read credential in Next.js and the selected Convex deployment before serving hosted or embedded Walls. See [Public Wall delivery boundary](public-wall-boundary.md) for credential placement, requester trust, rotation, entry-point inventory and the optional gateway origin lock. This document describes configuration requirements; repository changes do not establish deployment state.

@@ -2,23 +2,14 @@
 
 import { type ReactNode, useEffect, useReducer } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { AppShell } from "@/components/app-shell";
 
 function organizationSlugFromPathname(pathname: string) {
   return pathname.match(/^\/org\/([^/]+)/)?.[1] ?? null;
-}
-
-function WorkspaceLoading() {
-  return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
-      <p className="text-muted-foreground text-sm" role="status">
-        Loading your workspace…
-      </p>
-    </main>
-  );
 }
 
 export function AuthenticatedApplicationShell({
@@ -28,11 +19,21 @@ export function AuthenticatedApplicationShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const organizations = useQuery(api.organizations.listMine, {});
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const account = useQuery(api.accounts.getMine, isAuthenticated ? {} : "skip");
+  const organizations = useQuery(
+    api.organizations.listMine,
+    isAuthenticated ? {} : "skip",
+  );
   const routeOrganizationSlug = organizationSlugFromPathname(pathname);
   const [lastOrganizationSlug, rememberOrganizationSlug] = useReducer(
     (_current: string | null, next: string) => next,
     routeOrganizationSlug,
+  );
+  const querySlug = routeOrganizationSlug ?? lastOrganizationSlug;
+  const routeOrganization = useQuery(
+    api.organizations.getBySlug,
+    isAuthenticated && querySlug ? { slug: querySlug } : "skip",
   );
 
   useEffect(() => {
@@ -42,30 +43,49 @@ export function AuthenticatedApplicationShell({
   }, [routeOrganizationSlug]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      if (!isLoading) router.replace("/sign-in?callbackURL=/dashboard");
+      return;
+    }
+    if (
+      account?.deletionStartedAt !== undefined &&
+      pathname !== "/account/billing"
+    ) {
+      router.replace("/account/billing");
+      return;
+    }
     if (organizations && pathname === "/onboarding" && organizations[0]) {
       router.replace(`/org/${organizations[0].slug}/dashboard`);
       return;
     }
     if (
+      account !== undefined &&
       organizations?.length === 0 &&
       pathname !== "/onboarding" &&
       !pathname.startsWith("/account")
     ) {
-      router.replace("/onboarding");
+      router.replace(account ? "/account/billing" : "/onboarding");
     }
-  }, [organizations, pathname, router]);
+  }, [account, organizations, pathname, router, isAuthenticated, isLoading]);
+
+  if (!isAuthenticated) return <BlobLoaderScreen />;
+
+  if (account?.deletionStartedAt !== undefined)
+    return pathname === "/account/billing" ? children : <BlobLoaderScreen />;
 
   if (pathname === "/onboarding") {
-    return organizations?.length === 0 ? children : <WorkspaceLoading />;
+    return organizations?.length === 0 ? children : <BlobLoaderScreen />;
   }
 
   if (!organizations) {
-    return <WorkspaceLoading />;
+    return <BlobLoaderScreen />;
   }
 
   const preferredSlug =
     routeOrganizationSlug ?? lastOrganizationSlug ?? organizations[0]?.slug;
-  const organization = organizations.find(({ slug }) => slug === preferredSlug);
+  const organization =
+    routeOrganization ??
+    organizations.find(({ slug }) => slug === preferredSlug);
 
   if (!organization) {
     return children;

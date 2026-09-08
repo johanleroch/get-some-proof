@@ -90,6 +90,45 @@ export function resolveLivePath(
 
 export const screenSections: ScreenSection[] = [
   {
+    id: "account-projects",
+    title: "Account and Projects",
+    screens: [
+      {
+        slug: "account-pro-projects",
+        title: "Pro Account",
+        description: "Shared subscription and usage across Projects.",
+        fixturePath: "/visual-evidence/account-pro",
+        livePath: "/org/:organizationSlug/dashboard",
+        requiresAuth: true,
+      },
+      {
+        slug: "account-inactive-project",
+        title: "Inactive Project",
+        description: "Private access after the Account returns to Free.",
+        fixturePath: "/visual-evidence/inactive-project",
+        requiresAuth: true,
+      },
+      {
+        slug: "account-free-project",
+        title: "Free Project choice",
+        description: "Choose which Project remains active after Pro ends.",
+        fixturePath: "/visual-evidence/account-free-project",
+        livePath: "/org/:organizationSlug/billing",
+        requiresAuth: true,
+      },
+      {
+        slug: "account-deletion",
+        title: "Delete Account",
+        description:
+          "Explicit confirmation of every Project and subscription deletion.",
+        fixturePath: "/visual-evidence/account-deletion",
+        livePath: "/account/billing",
+        requiresAuth: true,
+      },
+    ],
+  },
+
+  {
     id: "authentication",
     title: "Authentication",
     screens: [

@@ -1,3 +1,8 @@
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -183,6 +188,7 @@ describe("Testimonial moderation and Public Projection", () => {
       testimonialId: submitted.testimonialId,
     });
     const wallBeforeMetadataUpdate = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -221,6 +227,7 @@ describe("Testimonial moderation and Public Projection", () => {
       ],
     });
     const wall = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -255,6 +262,7 @@ describe("Testimonial moderation and Public Projection", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
@@ -356,9 +364,11 @@ describe("Testimonial moderation and Public Projection", () => {
       testimonialId: created.testimonialId,
     });
     const brandInfo = await t.query(api.publicWall.getBrand, {
+      secret: "wall-service-test-credential-32-characters",
       publicSlug: "acme-proof",
     });
     const wallPage = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 20 },
       publicSlug: "acme-proof",
     });
@@ -370,6 +380,7 @@ describe("Testimonial moderation and Public Projection", () => {
       attributionRequired: true,
       brandName: "Acme Studio",
       hasPublishedTestimonials: true,
+      privacyRevision: 0,
       publicSlug: "acme-proof",
       theme: "system",
       testimonials: [
@@ -400,6 +411,7 @@ describe("Testimonial moderation and Public Projection", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
@@ -445,6 +457,7 @@ describe("Testimonial moderation and Public Projection", () => {
     }
 
     const firstPage = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: null, numItems: 1 },
       publicSlug: "acme-proof",
     });
@@ -453,6 +466,7 @@ describe("Testimonial moderation and Public Projection", () => {
       page: [expect.objectContaining({ id: expect.any(String) })],
     });
     const secondPage = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       paginationOpts: { cursor: firstPage.continueCursor, numItems: 1 },
       publicSlug: "acme-proof",
     });
@@ -581,6 +595,11 @@ describe("Testimonial moderation and Public Projection", () => {
       testimonialId: created.testimonialId,
     });
 
+    expect(
+      await t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      }),
+    ).toBe(0);
     await owner.client.mutation(api.testimonialModeration.remove, {
       organizationId: brand.id,
       testimonialId: created.testimonialId,
@@ -594,10 +613,16 @@ describe("Testimonial moderation and Public Projection", () => {
 
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
     ).resolves.toMatchObject({ page: [] });
+    expect(
+      await t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      }),
+    ).toBe(1);
     const remaining = await t.run(async (ctx) => ({
       audits: await ctx.db
         .query("auditEvents")
@@ -816,6 +841,58 @@ describe("Testimonial moderation and Public Projection", () => {
     ).toHaveLength(1);
   });
 
+  it("does not reset the account Spam restoration allowance by deleting a Project", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const project = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "old-project",
+    });
+    for (let index = 0; index < 3; index++) {
+      const item = await createPendingTestimonial(
+        t,
+        "old-project",
+        `spam-credit-${index}`,
+      );
+      await owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: project.id,
+        testimonialId: item.testimonialId,
+      });
+    }
+    const { deletionId } = await owner.client.mutation(
+      internal.workspaceDeletion.prepare,
+      {
+        organizationId: project.id,
+        brandName: "Acme Studio",
+        irreversibleConfirmed: true,
+      },
+    );
+    for (let step = 0; step < 100; step++) {
+      await t.action(internal.workspaceDeletion.processDeletion, {
+        deletionId,
+      });
+      if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "deleted")
+        break;
+    }
+    const next = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "new-project",
+    });
+    const item = await createPendingTestimonial(
+      t,
+      "new-project",
+      "spam-after-delete",
+    );
+    await expect(
+      owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: next.id,
+        testimonialId: item.testimonialId,
+      }),
+    ).resolves.toMatchObject({ creditRestored: false });
+  });
+
   it("allows a new automatic restoration after the rolling window expires", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -836,6 +913,13 @@ describe("Testimonial moderation and Public Projection", () => {
       });
     }
     await t.run(async (ctx) => {
+      for (const restoration of await ctx.db
+        .query("accountSpamRestorations")
+        .collect()) {
+        await ctx.db.patch(restoration._id, {
+          reportedAt: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+      }
       for (const report of await ctx.db.query("spamQuarantines").collect()) {
         await ctx.db.patch(report._id, {
           reportedAt: Date.now() - 31 * 24 * 60 * 60 * 1000,
@@ -927,6 +1011,7 @@ describe("Testimonial moderation and Public Projection", () => {
     });
     await expect(
       t.query(api.publicWall.list, {
+        secret: "wall-service-test-credential-32-characters",
         paginationOpts: { cursor: null, numItems: 20 },
         publicSlug: "acme-proof",
       }),
@@ -1171,7 +1256,10 @@ describe("Testimonial moderation and Public Projection", () => {
   it("returns null for an unknown wall without leaking Brand existence details", async () => {
     const t = createConvexTest();
     await expect(
-      t.query(api.publicWall.getBrand, { publicSlug: "missing-brand" }),
+      t.query(api.publicWall.getBrand, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug: "missing-brand",
+      }),
     ).resolves.toBeNull();
   });
 });

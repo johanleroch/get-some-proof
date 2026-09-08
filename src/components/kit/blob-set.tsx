@@ -118,8 +118,9 @@ export function BlobSet() {
                 is the blob looking around, at 64px, for every indeterminate
                 wait that has no skeleton: route transitions (the root{" "}
                 <code className="font-mono text-[12px]">loading.tsx</code>), a
-                form submitting, a video processing. No spinner anywhere else
-                than inside a button.
+                form submitting, a video processing. Compact mascots also appear
+                in inline waits and above page skeletons. Buttons use a small
+                spinner.
               </p>
             </div>
           </div>

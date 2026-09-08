@@ -166,12 +166,10 @@ describe("OrganizationBilling", () => {
 
     render(<OrganizationBilling slug="acme-1234" />);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Billing is connected",
-    );
+    expect(screen.getByText("Billing is connected")).toBeVisible();
     expect(screen.queryByText("Billing is not connected")).toBeNull();
     expect(
-      screen.getByText("No Stripe subscription is active for this Workspace."),
+      screen.getByText("No Stripe subscription is active for this Account."),
     ).toBeVisible();
   });
 

@@ -393,3 +393,28 @@ export const updateContact = action({
   handler: (ctx, args): Promise<{ email: string }> =>
     updateContactHandler(ctx, args),
 });
+
+export const openAccountPortal = action({
+  args: {},
+  returns: v.object({ url: v.string() }),
+  handler: async (ctx): Promise<{ url: string }> => {
+    const context = await ctx.runQuery(internal.accounts.getBillingContext, {});
+    requireStripeConfiguration();
+    if (!context.customerId)
+      throw new ConvexError({
+        code: "PORTAL_UNAVAILABLE",
+        message: "No subscription to manage yet.",
+      });
+    const result = await createStripeBillingProvider(ctx).createPortalSession({
+      customerId: context.customerId,
+      mode: "manage",
+      returnUrl: new URL("/account/billing", env.SITE_URL).toString(),
+    });
+    if (!result.url)
+      throw new ConvexError({
+        code: "PORTAL_UNAVAILABLE",
+        message: "Stripe did not return a Customer Portal URL.",
+      });
+    return { url: result.url };
+  },
+});

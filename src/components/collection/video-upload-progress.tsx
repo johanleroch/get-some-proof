@@ -1,3 +1,4 @@
+import { AnimatedBlob } from "@/components/brand/animated-blob";
 import { Button } from "@/components/ui/button";
 
 import type { VideoUploadPhase } from "@/hooks/use-video-upload";
@@ -17,6 +18,9 @@ export function VideoUploadProgress({
 
   return (
     <div className="bg-surface-2 space-y-3 rounded-lg border p-4">
+      <div className="flex justify-center">
+        <AnimatedBlob size={48} variant="look" />
+      </div>
       <div className="flex items-center justify-between gap-4 text-sm">
         <p className="font-medium" role={uploading ? undefined : "status"}>
           {uploading

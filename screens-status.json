@@ -1,1 +1,6 @@
-{}
+{
+  "account-deletion": "ok",
+  "account-free-project": "ok",
+  "account-inactive-project": "ok",
+  "account-pro-projects": "ok"
+}

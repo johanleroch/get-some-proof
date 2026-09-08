@@ -77,7 +77,7 @@ describe("OrganizationOnboardingForm", () => {
       target: { value: "privacy@visual.example" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
 
     await waitFor(() => {
       expect(mocks.create).toHaveBeenCalledWith({
@@ -111,11 +111,11 @@ describe("OrganizationOnboardingForm", () => {
       target: { value: "privacy@visual.example" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
 
     expect(
       await screen.findByText(
-        "Your Brand was created, but the logo upload failed. Retry or continue without it.",
+        "Your project was created, but the logo upload failed. Retry or continue without it.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(

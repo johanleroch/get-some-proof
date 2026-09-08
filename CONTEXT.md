@@ -5,12 +5,20 @@ Get Some Proof lets a small brand collect customer testimonials, moderate them p
 ## Ownership
 
 **Owner**:
-The authenticated person who operates a Brand and controls its collection, moderation, publication, and subscription.
+The authenticated person who owns an Account and operates its Projects. The initial multi-project product is managed by this person alone.
 _Avoid_: Operator, Admin, Customer
 
+**Account**:
+The Owner's subscription and shared quota container for their Projects. Creating another Project does not grant additional collection or storage allowances.
+_Avoid_: Project, Brand, Organization
+
+**Project**:
+An independently named business or product area within an Account, with its own Brand, Testimonials, collection destination, public pages, and settings.
+_Avoid_: Organization, Space, Account
+
 **Brand**:
-The identity for which an Owner collects and publishes proof. The MVP gives each Owner one Brand.
-_Avoid_: Project, Space, Client, Organization in product language
+The public identity for which a Project collects and publishes proof.
+_Avoid_: Account, Organization in product language
 
 **Workspace**:
 The Owner's private operating area for one Brand. It is the product-facing view of an underlying tenant boundary, not a container for multiple client accounts.

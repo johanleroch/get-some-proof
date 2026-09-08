@@ -1,3 +1,9 @@
+import { admittedUpload } from "./convex-test-helpers";
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
 import {
@@ -35,7 +41,7 @@ async function setup() {
     const uploadIdentity = { ...identity, ...overrides };
     const reservation = await t.mutation(
       api.testimonialImages.generateUploadUrl,
-      uploadIdentity,
+      await admittedUpload(t, uploadIdentity),
     );
     const storageId = await t.run(async (ctx) => {
       const id = await ctx.storage.store(new Blob(["test image"]));
@@ -100,6 +106,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     expect(
       (
         await t.query(api.publicWall.list, {
+          secret: "wall-service-test-credential-32-characters",
           publicSlug: "acme-proof",
           paginationOpts: { numItems: 10, cursor: null },
         })
@@ -110,6 +117,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
       status: "published",
     });
     let wall = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       publicSlug: "acme-proof",
       paginationOpts: { numItems: 10, cursor: null },
     });
@@ -140,6 +148,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
       richText: richTextFromPlain(text),
     });
     wall = await t.query(api.publicWall.list, {
+      secret: "wall-service-test-credential-32-characters",
       publicSlug: "acme-proof",
       paginationOpts: { numItems: 10, cursor: null },
     });
@@ -203,12 +212,28 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     expect(
       (
         await t.query(api.publicWall.list, {
+          secret: "wall-service-test-credential-32-characters",
           publicSlug: "acme-proof",
           paginationOpts: { numItems: 10, cursor: null },
         })
       ).page,
     ).toHaveLength(0);
+    expect(
+      await t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      }),
+    ).toBe(1);
+    await owner.client.mutation(api.testimonialModeration.setStatus, {
+      organizationId: brand.id,
+      testimonialId: submission.testimonialId,
+      status: "published",
+    });
     await t.mutation(api.submissionManagement.withdrawConsent, { token });
+    expect(
+      await t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      }),
+    ).toBe(2);
     expect(
       await t.run((ctx) => ctx.storage.getUrl(second.storageId)),
     ).toBeNull();
@@ -226,7 +251,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     ).rejects.toThrow("already in use");
     const reservation = await t.mutation(
       api.testimonialImages.generateUploadUrl,
-      identity,
+      await admittedUpload(t, identity),
     );
     const storageId = await t.run((ctx) =>
       ctx.storage.store(new Blob(["<svg/>"], { type: "image/svg+xml" })),
@@ -246,6 +271,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
         storageId,
       }),
     ).rejects.toThrow("Image unavailable");
+    await admittedUpload(t, identity, true);
     const others = await Promise.all([upload(), upload(), upload()]);
     await expect(
       submit([image.id, ...others.map((item) => item.id)]),
@@ -264,10 +290,13 @@ describe("Rich Testimonials and images across their lifecycle", () => {
       }),
     );
     await expect(
-      t.mutation(api.testimonialImages.generateUploadUrl, {
-        ...identity,
-        token,
-      }),
+      t.mutation(
+        api.testimonialImages.generateUploadUrl,
+        await admittedUpload(t, {
+          ...identity,
+          token,
+        }),
+      ),
     ).rejects.toThrow();
     const orphan = await upload();
     await t.run((ctx) =>
@@ -288,12 +317,21 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     for (let index = 0; index < 30; index++) {
       const reservation = await t.mutation(
         api.testimonialImages.generateUploadUrl,
-        identity,
+        await admittedUpload(t, {
+          ...identity,
+          clientSubmissionId: `image-budget-${index}`,
+        }),
       );
       await t.run((ctx) => ctx.db.delete(reservation.imageId));
     }
     await expect(
-      t.mutation(api.testimonialImages.generateUploadUrl, identity),
+      t.mutation(
+        api.testimonialImages.generateUploadUrl,
+        await admittedUpload(t, {
+          ...identity,
+          clientSubmissionId: "image-budget-final",
+        }),
+      ),
     ).rejects.toThrow("temporarily unavailable");
   });
   it("deletes attachments on Owner deletion and Spam expiry", async () => {

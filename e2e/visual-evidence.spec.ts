@@ -70,9 +70,16 @@ for (const screen of config.screens) {
     await page.goto(
       destination.replace(":organizationSlug", organizationSlug ?? ""),
     );
-    await expect(
-      page.getByRole("heading", { name: screen.heading, exact: true }),
-    ).toBeVisible();
+    if (screen.slug === "full-page-loading") {
+      await expect(
+        page.getByRole("status").getByText("Loading…", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByRole("status").locator("svg")).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole("heading", { name: screen.heading, exact: true }),
+      ).toBeVisible();
+    }
     await page.waitForTimeout(250);
     if (fixtureMode && screen.slug.startsWith("template")) {
       // The gallery is tall and its video posters load lazily: walk the page
@@ -155,6 +162,26 @@ for (const screen of config.screens) {
       await expect(
         page.locator('[data-sonner-toast][data-type="success"]'),
       ).toContainText("Testimonial permanently deleted.");
+    }
+
+    if (screen.slug === "account-project-selector") {
+      const switcher = page.getByRole("button", { name: "Switch project" });
+      if (!(await switcher.isVisible()))
+        await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+      await switcher.click();
+      await expect(
+        page.getByRole("menuitem", { name: "Northwind Coffee" }),
+      ).toBeVisible();
+    }
+
+    if (screen.slug === "account-deletion-confirmation") {
+      await page
+        .getByLabel("Type DELETE ACCOUNT to continue")
+        .fill("DELETE ACCOUNT");
+      await page
+        .getByRole("button", { name: "Review account deletion" })
+        .click();
+      await expect(page.getByRole("alertdialog")).toBeVisible();
     }
 
     const outputRoot = path.resolve(

@@ -1,3 +1,4 @@
+import { removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -239,7 +240,7 @@ export const prepareRemoval = internalMutation({
           )
           .unique(),
       ]);
-    if (projection) await ctx.db.delete(projection._id);
+    if (projection) await removePublicProjection(ctx, projection);
     const retryAsset = retryLink
       ? await ctx.db.get(retryLink.videoAssetId)
       : null;

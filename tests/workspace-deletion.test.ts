@@ -1,3 +1,8 @@
+import { beforeEach as beforeWallTest } from "vitest";
+beforeWallTest(() => {
+  process.env.PUBLIC_READ_RATE_LIMIT_SECRET =
+    "wall-service-test-credential-32-characters";
+});
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, components, internal } from "@convex/_generated/api";
@@ -138,7 +143,10 @@ describe("Workspace deletion", () => {
       },
     );
     await expect(
-      t.query(api.publicWall.getBrand, { publicSlug: "delete-me" }),
+      t.query(api.publicWall.getBrand, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug: "delete-me",
+      }),
     ).resolves.toBeNull();
     await expect(
       t.query(api.collectionQuotas.getPublicAvailability, {
@@ -180,8 +188,7 @@ describe("Workspace deletion", () => {
     const replacementRequest = replacementRequestId
       ? await t.run((ctx) => ctx.db.get(replacementRequestId))
       : null;
-    expect(replacementRequest).not.toHaveProperty("organizationId");
-    expect(replacementRequest).not.toHaveProperty("brandName");
+    expect(replacementRequest).toBeNull();
 
     await expect(
       owner.client.action(api.workspaceDeletion.remove, {
@@ -229,7 +236,7 @@ describe("Workspace deletion", () => {
     ).resolves.toMatchObject({ phase: "complete", status: "deleted" });
   });
 
-  it("retains Stripe identifiers across retries and purges synchronized billing traces", async () => {
+  it("retains legacy Workspace Stripe identifiers across retries and purges synchronized billing traces", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t, {
       email: "billing-delete@example.com",
@@ -239,6 +246,7 @@ describe("Workspace deletion", () => {
       publicSlug: "billing-delete",
     });
     await t.run(async (ctx) => {
+      await ctx.db.patch(brand.id, { accountId: undefined });
       const now = Date.now();
       await ctx.db.insert("billingSubscriptionStates", {
         cancelAtPeriodEnd: false,
@@ -483,7 +491,10 @@ describe("Workspace deletion", () => {
       }),
     ).resolves.toMatchObject({ status: "failed" });
     await expect(
-      t.query(api.publicWall.getBrand, { publicSlug: "video-delete" }),
+      t.query(api.publicWall.getBrand, {
+        secret: "wall-service-test-credential-32-characters",
+        publicSlug: "video-delete",
+      }),
     ).resolves.toBeNull();
     const failed = await t.run((ctx) =>
       ctx.db.query("workspaceDeletions").unique(),

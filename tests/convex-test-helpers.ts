@@ -160,3 +160,39 @@ export async function addMemberWithRole(
     );
   });
 }
+
+const uploadAdmissions = new WeakMap<
+  ReturnType<typeof createConvexTest>,
+  Map<string, Promise<string>>
+>();
+
+// Fixture setup at the trusted issuer seam; public verification is tested separately.
+export async function admittedUpload<
+  T extends { publicSlug: string; clientSubmissionId: string; token?: string },
+>(t: ReturnType<typeof createConvexTest>, args: T, fresh = false) {
+  if (args.token !== undefined) return { ...args, admissionToken: undefined };
+  let admissions = uploadAdmissions.get(t);
+  if (!admissions) {
+    admissions = new Map();
+    uploadAdmissions.set(t, admissions);
+  }
+  const key = `${args.publicSlug}:${args.clientSubmissionId}`;
+  if (fresh || !admissions.has(key))
+    admissions.set(
+      key,
+      (async () => {
+        const {
+          hashSubmissionManagementToken,
+          randomSubmissionManagementToken,
+        } = await import("../convex/domain/submission");
+        const token = randomSubmissionManagementToken();
+        await t.mutation(internal.collectionAdmission.issue, {
+          publicSlug: args.publicSlug,
+          clientSubmissionId: args.clientSubmissionId,
+          tokenHash: await hashSubmissionManagementToken(token),
+        });
+        return token;
+      })(),
+    );
+  return { ...args, admissionToken: await admissions.get(key)! };
+}

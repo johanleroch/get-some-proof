@@ -37,6 +37,7 @@ describe("collection quota transitions", () => {
           updatedAt: now,
         });
         await ctx.db.insert("collectionCredits", {
+          accountId: (await ctx.db.get(brand.id))?.accountId,
           consumedAt: now,
           organizationId: brand.id,
           submissionType: "text",
@@ -99,6 +100,7 @@ describe("collection quota transitions", () => {
           updatedAt: now,
         });
         const reservationId = await ctx.db.insert("videoReservations", {
+          accountId: (await ctx.db.get(brand.id))?.accountId,
           clientSubmissionId: `ready-video-${index}`,
           createdAt: now,
           expiresAt: now,
@@ -108,6 +110,7 @@ describe("collection quota transitions", () => {
           updatedAt: now,
         });
         const assetId = await ctx.db.insert("videoAssets", {
+          accountId: (await ctx.db.get(brand.id))?.accountId,
           captionsStatus: "ready",
           createdAt: now,
           fileSizeBytes: 2_048,
@@ -186,6 +189,7 @@ describe("collection quota transitions", () => {
           updatedAt: now,
         });
         const reservationId = await ctx.db.insert("videoReservations", {
+          accountId: (await ctx.db.get(brand.id))?.accountId,
           clientSubmissionId: `plan-race-${suffix}`,
           createdAt: now,
           expiresAt: now + 60_000,
@@ -195,6 +199,7 @@ describe("collection quota transitions", () => {
           updatedAt: now,
         });
         await ctx.db.insert("videoAssets", {
+          accountId: (await ctx.db.get(brand.id))?.accountId,
           captionsStatus: "requested",
           createdAt: now,
           fileSizeBytes: 2_048,
