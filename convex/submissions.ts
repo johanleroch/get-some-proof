@@ -1,3 +1,5 @@
+import { isProjectOpen } from "./projectActivity";
+import { isProjectActive } from "./projectActivity";
 import { consumeAdmission } from "./collectionAdmission";
 import { resolveUploadContext } from "./testimonialImages";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
@@ -311,8 +313,7 @@ export const createTextRecords = internalMutation({
         index.eq("publicSlug", args.publicSlug.trim().toLowerCase()),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined)
-      collectionUnavailable();
+    if (!brand || !(await isProjectActive(ctx, brand))) collectionUnavailable();
 
     const clientSubmissionId = normalizeClientSubmissionId(
       args.clientSubmissionId,
@@ -831,7 +832,7 @@ export const getByManagementToken = query({
         )
         .unique(),
     ]);
-    if (!brand || !consent) return null;
+    if (!brand || !consent || !(await isProjectOpen(ctx, brand))) return null;
     return {
       brandName: brand.name,
       company: testimonial.company,

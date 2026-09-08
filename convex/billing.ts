@@ -6,6 +6,8 @@ import { authzForOrganization } from "./authorization";
 import {
   billingStateValidator,
   getOrganizationBillingEntitlement,
+  getProjectBillingProfile,
+  getProjectBillingSubscriptions,
 } from "./billingEntitlements";
 import { proLookupKeyValidator } from "./billingService";
 import { requireOrganizationPermission } from "./security/organizationAccess";
@@ -38,12 +40,7 @@ export const getOverview = query({
       "billing:read",
     );
     const [profile, originalOwner, canManage, entitlement] = await Promise.all([
-      ctx.db
-        .query("billingProfiles")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .unique(),
+      getProjectBillingProfile(ctx, access.organization._id),
       ctx.db
         .query("memberships")
         .withIndex("by_organization_user", (index) =>
@@ -120,12 +117,7 @@ export const getManagementContext = internalQuery({
       "billing:manage",
     );
     const [profile, entitlement] = await Promise.all([
-      ctx.db
-        .query("billingProfiles")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .unique(),
+      getProjectBillingProfile(ctx, access.organization._id),
       getOrganizationBillingEntitlement(ctx, access.organization._id),
     ]);
     const subscriptionCustomerId =
@@ -191,12 +183,7 @@ export const reserveContactUpdate = internalMutation({
       "billing:manage",
     );
     const [profile, entitlement] = await Promise.all([
-      ctx.db
-        .query("billingProfiles")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .unique(),
+      getProjectBillingProfile(ctx, access.organization._id),
       getOrganizationBillingEntitlement(ctx, access.organization._id),
     ]);
     if (!profile) {
@@ -259,12 +246,7 @@ export const releaseContactUpdate = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", args.organizationId),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(ctx, args.organizationId);
     if (
       profile?.contactUpdateId === args.transitionId &&
       profile.contactUpdateLeaseId === args.leaseId &&
@@ -301,12 +283,10 @@ export const commitContactUpdate = internalMutation({
         message: "Enter a valid Billing Contact email address.",
       });
     }
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
     const entitlement = await getOrganizationBillingEntitlement(
       ctx,
       access.organization._id,
@@ -351,6 +331,7 @@ export const commitContactUpdate = internalMutation({
       });
     } else {
       await ctx.db.insert("billingProfiles", {
+        accountId: access.organization.accountId,
         organizationId: access.organization._id,
         billingEmail: args.email,
         stripeCustomerId: args.expectedCustomerId ?? undefined,
@@ -448,12 +429,7 @@ export const getCheckoutContext = internalQuery({
       "billing:manage",
     );
     const [profile, originalOwner, subscriptions] = await Promise.all([
-      ctx.db
-        .query("billingProfiles")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .unique(),
+      getProjectBillingProfile(ctx, access.organization._id),
       ctx.db
         .query("memberships")
         .withIndex("by_organization_user", (index) =>
@@ -462,12 +438,7 @@ export const getCheckoutContext = internalQuery({
             .eq("userId", access.organization.createdByUserId),
         )
         .unique(),
-      ctx.db
-        .query("billingSubscriptionStates")
-        .withIndex("by_organization", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .collect(),
+      getProjectBillingSubscriptions(ctx, access.organization._id),
     ]);
     const billingEmail = profile?.billingEmail ?? originalOwner?.email;
     if (!billingEmail) {
@@ -516,12 +487,10 @@ export const reserveCheckout = internalMutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
 
     const now = Date.now();
     if (
@@ -603,12 +572,10 @@ export const rotateExpiredCheckout = internalMutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
     if (
       !profile ||
       profile.checkoutReservationId !== args.expectedReservationId ||
@@ -654,12 +621,10 @@ export const saveCheckoutOffer = internalMutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
     if (
       !profile ||
       profile.checkoutReservationId !== args.reservationId ||
@@ -701,12 +666,10 @@ export const saveCheckoutCustomer = internalMutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
     if (
       !profile ||
       profile.checkoutReservationId !== args.reservationId ||
@@ -750,12 +713,10 @@ export const recordCheckoutStarted = internalMutation({
       { organizationId: args.organizationId },
       "billing:manage",
     );
-    const profile = await ctx.db
-      .query("billingProfiles")
-      .withIndex("by_organization", (index) =>
-        index.eq("organizationId", access.organization._id),
-      )
-      .unique();
+    const profile = await getProjectBillingProfile(
+      ctx,
+      access.organization._id,
+    );
     const now = Date.now();
 
     if (

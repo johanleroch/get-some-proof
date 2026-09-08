@@ -45,7 +45,7 @@ describe("WorkspaceDeletionSection", () => {
     ).toBeVisible();
     expect(onDelete).not.toHaveBeenCalled();
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete Workspace permanently" }),
+      screen.getByRole("button", { name: "Delete Project permanently" }),
     );
     expect(onDelete).toHaveBeenCalledWith("Acme Studio");
   });

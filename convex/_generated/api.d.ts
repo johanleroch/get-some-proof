@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as accountDeletion from "../accountDeletion.js";
+import type * as accounts from "../accounts.js";
 import type * as auditEvents from "../auditEvents.js";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
@@ -45,13 +47,14 @@ import type * as muxWebhook from "../muxWebhook.js";
 import type * as organizationAuthorization from "../organizationAuthorization.js";
 import type * as organizations from "../organizations.js";
 import type * as profileImages from "../profileImages.js";
+import type * as projectActivity from "../projectActivity.js";
 import type * as projects from "../projects.js";
 import type * as publicProjection from "../publicProjection.js";
 import type * as publicReadRateLimit from "../publicReadRateLimit.js";
 import type * as publicWall from "../publicWall.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
-import type * as security_publicWallAccess from "../security/publicWallAccess.js";
 import type * as security_principal from "../security/principal.js";
+import type * as security_publicWallAccess from "../security/publicWallAccess.js";
 import type * as seed from "../seed.js";
 import type * as storageCleanup from "../storageCleanup.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
@@ -82,6 +85,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountDeletion: typeof accountDeletion;
+  accounts: typeof accounts;
   auditEvents: typeof auditEvents;
   auth: typeof auth;
   authorization: typeof authorization;
@@ -119,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   organizationAuthorization: typeof organizationAuthorization;
   organizations: typeof organizations;
   profileImages: typeof profileImages;
+  projectActivity: typeof projectActivity;
   projects: typeof projects;
   publicProjection: typeof publicProjection;
   publicReadRateLimit: typeof publicReadRateLimit;

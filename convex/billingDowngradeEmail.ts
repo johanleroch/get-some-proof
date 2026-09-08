@@ -2,7 +2,11 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { env, internalAction, internalMutation } from "./_generated/server";
-import { getOrganizationBillingEntitlement } from "./billingEntitlements";
+import { resolveFreeProject } from "./projectActivity";
+import {
+  getAccountBillingEntitlement,
+  getOrganizationBillingEntitlement,
+} from "./billingEntitlements";
 import { buildBillingLifecycleEmail } from "./email/templates";
 import {
   sendTransactionalEmail,
@@ -49,24 +53,33 @@ export const reserveLifecycleEmail = internalMutation({
     if (email.status === "sending" && (email.leaseExpiresAt ?? 0) > now) {
       return null;
     }
-    const [transition, organization, entitlement] = await Promise.all([
-      ctx.db.get(email.transitionId),
-      ctx.db.get(email.organizationId),
-      getOrganizationBillingEntitlement(ctx, email.organizationId),
-    ]);
+    const transition = await ctx.db.get(email.transitionId);
+    const account = transition?.accountId
+      ? await ctx.db.get(transition.accountId)
+      : null;
+    const originalProject = await ctx.db.get(email.organizationId);
+    const organization =
+      originalProject?.deletionStartedAt === undefined && originalProject
+        ? originalProject
+        : account
+          ? await resolveFreeProject(ctx, account)
+          : null;
+    const entitlement = account
+      ? await getAccountBillingEntitlement(ctx, account._id)
+      : await getOrganizationBillingEntitlement(ctx, email.organizationId);
     const isDowngradeReminder = email.kind.startsWith("downgrade_");
     const activeRetentions = transition
       ? await ctx.db
           .query("videoDowngradeRetentions")
-          .withIndex("by_transition", (index) =>
-            index.eq("transitionId", transition._id),
+          .withIndex("by_transition_status_expiry", (index) =>
+            index.eq("transitionId", transition._id).eq("status", "retained"),
           )
-          .filter((filter) => filter.eq(filter.field("status"), "retained"))
           .take(1)
       : [];
     if (
       !transition ||
       !organization ||
+      account?.deletionStartedAt !== undefined ||
       (isDowngradeReminder &&
         (transition.version !== email.transitionVersion ||
           transition.status !== "scheduled" ||
@@ -85,7 +98,14 @@ export const reserveLifecycleEmail = internalMutation({
           .eq("userId", organization.createdByUserId),
       )
       .unique();
-    if (!owner?.email) {
+    const profile = account
+      ? await ctx.db
+          .query("billingProfiles")
+          .withIndex("by_account", (q) => q.eq("accountId", account._id))
+          .unique()
+      : null;
+    const recipientEmail = profile?.billingEmail ?? owner?.email;
+    if (!recipientEmail) {
       await ctx.db.patch(email._id, { status: "skipped", updatedAt: now });
       return null;
     }
@@ -93,7 +113,7 @@ export const reserveLifecycleEmail = internalMutation({
       attempts: email.attempts + 1,
       leaseExpiresAt: now + LEASE_MS,
       leaseId: args.leaseId,
-      recipientEmail: owner.email,
+      recipientEmail,
       status: "sending",
       updatedAt: now,
     });
@@ -105,7 +125,7 @@ export const reserveLifecycleEmail = internalMutation({
     return {
       brandName: organization.name,
       deliveryKey: email.deliveryKey,
-      email: owner.email,
+      email: recipientEmail,
       kind: email.kind,
       slug: organization.slug,
     };

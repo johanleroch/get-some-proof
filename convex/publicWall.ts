@@ -1,3 +1,5 @@
+import { projectionIsPublic } from "./publicProjection";
+import { isProjectActive } from "./projectActivity";
 import { resolveTestimonialImages } from "./testimonialImages";
 import { ConvexError, v } from "convex/values";
 import {
@@ -42,7 +44,7 @@ export const getBrand = query({
         index.eq("publicSlug", publicSlug),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) return null;
+    if (!brand || !(await isProjectActive(ctx, brand))) return null;
     const [entitlement, firstProjection] = await Promise.all([
       getOrganizationBillingEntitlement(ctx, brand._id),
       ctx.db
@@ -61,7 +63,11 @@ export const getBrand = query({
       brandName: brand.name,
       hasPublishedTestimonials: firstProjection !== null,
       publicSlug: brand.publicSlug,
-      privacyRevision: brand.publicWallPrivacyRevision ?? 0,
+      privacyRevision:
+        (brand.publicWallPrivacyRevision ?? 0) +
+        (brand.accountId
+          ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
+          : 0),
       theme: brand.publicWallTheme ?? "system",
       transparentEmbed: brand.publicWallTransparentEmbed ?? false,
     };
@@ -96,7 +102,7 @@ export const list = query({
         index.eq("publicSlug", publicSlug),
       )
       .unique();
-    if (!brand || brand.deletionStartedAt !== undefined) {
+    if (!brand || !(await isProjectActive(ctx, brand))) {
       return { continueCursor: "", isDone: true, page: [] };
     }
     const page = await ctx.db
@@ -110,46 +116,50 @@ export const list = query({
         maximumRowsRead: 50,
         maximumBytesRead: 512_000,
       });
+    const account = brand.accountId ? await ctx.db.get(brand.accountId) : null;
     const testimonials = await Promise.all(
-      page.page.map(async (projection) => {
-        const defaults = organizationPublicVisibility(brand);
-        const visible = {
-          avatar: projection.visibilityOverrides?.avatar ?? defaults.avatar,
-          company: projection.visibilityOverrides?.company ?? defaults.company,
-          rating: projection.visibilityOverrides?.rating ?? defaults.rating,
-          role: projection.visibilityOverrides?.role ?? defaults.role,
-        };
-        const identity = {
-          avatarUrl: projection.avatarStorageId
-            ? visible.avatar
-              ? await ctx.storage.getUrl(projection.avatarStorageId)
-              : null
-            : null,
-          avatarVisible: visible.avatar,
-          company: visible.company ? projection.company : undefined,
-          id: projection._id,
-          name: projection.name,
-          publishedAt: projection.publishedAt,
-          rating: visible.rating ? projection.rating : undefined,
-          role: visible.role ? projection.role : undefined,
-        };
-        return projection.type === "video"
-          ? testimonialCardValue(identity, {
-              aspectRatio: projection.aspectRatio,
-              captionsAvailable: projection.captionsAvailable,
-              playbackId: projection.playbackId,
-              posterTimeSeconds: projection.posterTimeSeconds,
-              type: "video" as const,
-            })
-          : testimonialCardValue(identity, {
-              text: projection.text,
-              richText: projection.richText,
-              images: projection.imageIds?.length
-                ? await resolveTestimonialImages(ctx, projection.imageIds)
-                : undefined,
-              type: "text" as const,
-            });
-      }),
+      page.page
+        .filter((projection) => projectionIsPublic(account, projection))
+        .map(async (projection) => {
+          const defaults = organizationPublicVisibility(brand);
+          const visible = {
+            avatar: projection.visibilityOverrides?.avatar ?? defaults.avatar,
+            company:
+              projection.visibilityOverrides?.company ?? defaults.company,
+            rating: projection.visibilityOverrides?.rating ?? defaults.rating,
+            role: projection.visibilityOverrides?.role ?? defaults.role,
+          };
+          const identity = {
+            avatarUrl: projection.avatarStorageId
+              ? visible.avatar
+                ? await ctx.storage.getUrl(projection.avatarStorageId)
+                : null
+              : null,
+            avatarVisible: visible.avatar,
+            company: visible.company ? projection.company : undefined,
+            id: projection._id,
+            name: projection.name,
+            publishedAt: projection.publishedAt,
+            rating: visible.rating ? projection.rating : undefined,
+            role: visible.role ? projection.role : undefined,
+          };
+          return projection.type === "video"
+            ? testimonialCardValue(identity, {
+                aspectRatio: projection.aspectRatio,
+                captionsAvailable: projection.captionsAvailable,
+                playbackId: projection.playbackId,
+                posterTimeSeconds: projection.posterTimeSeconds,
+                type: "video" as const,
+              })
+            : testimonialCardValue(identity, {
+                text: projection.text,
+                richText: projection.richText,
+                images: projection.imageIds?.length
+                  ? await resolveTestimonialImages(ctx, projection.imageIds)
+                  : undefined,
+                type: "text" as const,
+              });
+        }),
     );
     return { ...page, page: testimonials };
   },
@@ -166,8 +176,11 @@ export const privacyRevision = query({
       .query("organizations")
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
       .unique();
-    return !brand || brand.deletionStartedAt !== undefined
+    return !brand || !(await isProjectActive(ctx, brand))
       ? null
-      : (brand.publicWallPrivacyRevision ?? 0);
+      : (brand.publicWallPrivacyRevision ?? 0) +
+          (brand.accountId
+            ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
+            : 0);
   },
 });

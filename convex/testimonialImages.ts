@@ -1,3 +1,4 @@
+import { isProjectOpen } from "./projectActivity";
 import { consumeAdmission } from "./collectionAdmission";
 import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import {
@@ -46,7 +47,7 @@ export async function resolveUploadContext(
     .query("organizations")
     .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.publicSlug))
     .unique();
-  if (!brand || brand.deletionStartedAt !== undefined) unavailable();
+  if (!brand || !(await isProjectOpen(ctx, brand))) unavailable();
   let testimonialId: Id<"testimonials"> | undefined;
   if (args.token !== undefined) {
     if (!/^[a-f0-9]{64}$/.test(args.token)) unavailable();

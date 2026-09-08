@@ -38,6 +38,7 @@ export async function enqueueAssetCleanup(
         .first();
   if (existing) return;
   const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
+    accountId: (await ctx.db.get(input.organizationId))?.accountId,
     attempts: 0,
     createdAt: Date.now(),
     organizationId: input.organizationId,

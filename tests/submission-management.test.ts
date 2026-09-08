@@ -78,7 +78,7 @@ async function createManagedText(
     }
     return id;
   });
-  return { brand, consent, testimonialId };
+  return { brand, consent, testimonialId, owner };
 }
 
 function revisedConsent() {
@@ -244,6 +244,31 @@ describe("Submission Management Links", () => {
     ).rejects.toBeDefined();
     await expect(
       t.mutation(api.testimonialImages.generateUploadUrl, args),
+    ).rejects.toBeDefined();
+  });
+
+  it("revokes existing management links as soon as Account closure starts", async () => {
+    const t = createConvexTest();
+    const { owner } = await createManagedText(t);
+    await owner.client.mutation(api.accountDeletion.remove, {
+      confirmation: "DELETE ACCOUNT",
+      irreversibleConfirmed: true,
+    });
+    await expect(
+      t.query(api.submissionManagement.get, { token: originalToken }),
+    ).resolves.toBeNull();
+    await expect(
+      t.mutation(api.submissionManagement.confirmRevision, revisionArgs()),
+    ).rejects.toBeDefined();
+    await expect(
+      t.query(api.submissions.getByManagementToken, { token: originalToken }),
+    ).resolves.toBeNull();
+    await expect(
+      t.mutation(api.testimonialImages.generateUploadUrl, {
+        token: originalToken,
+        publicSlug: "acme-proof",
+        clientSubmissionId: "closed-account-image",
+      }),
     ).rejects.toBeDefined();
   });
 

@@ -126,6 +126,7 @@ async function failAsset(
   if (reservation?.status === "reserved") {
     await ctx.db.patch(reservation._id, {
       status: "released",
+      freeCreditPending: undefined,
       updatedAt: Date.now(),
     });
   }
@@ -223,6 +224,7 @@ export const applyEvent = internalMutation({
         if (reservation && reservation.status !== "released")
           await ctx.db.patch(reservation._id, {
             status: "released",
+            freeCreditPending: undefined,
             updatedAt: Date.now(),
           });
         if (asset.testimonialId)
@@ -335,6 +337,7 @@ export const applyEvent = internalMutation({
             });
             await ctx.db.patch(reservation._id, {
               status: "consumed",
+              freeCreditPending: reservation.plan === "free" ? true : undefined,
               updatedAt: Date.now(),
             });
             if (asset.testimonialId) {
