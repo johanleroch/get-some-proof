@@ -13,6 +13,10 @@ import {
   CollectionFormWriteScreenFixture,
   DashboardBackgroundScreenFixture,
   DashboardPendingScreenFixture,
+  AccountDeletionScreenFixture,
+  AccountFreeProjectScreenFixture,
+  ProProjectsScreenFixture,
+  InactiveProjectScreenFixture,
   EmptyPublicWallScreenFixture,
   ManagedSubmissionScreenFixture,
   ManagedVideoProcessingScreenFixture,
@@ -57,6 +61,10 @@ const screens = {
   "workspace-delete-progress": WorkspaceDeletionProgressScreenFixture,
   dashboard: DashboardBackgroundScreenFixture,
   "dashboard-pending": DashboardPendingScreenFixture,
+  "account-deletion": AccountDeletionScreenFixture,
+  "account-free-project": AccountFreeProjectScreenFixture,
+  "account-pro": ProProjectsScreenFixture,
+  "inactive-project": InactiveProjectScreenFixture,
   onboarding: OnboardingScreenFixture,
   "organization-settings": OrganizationSettingsScreenFixture,
   profile: ProfileScreenFixture,
@@ -82,6 +90,8 @@ export default async function VisualEvidenceFixturePage({
     screen === "onboarding" ||
     screen === "dashboard" ||
     screen === "dashboard-pending" ||
+    screen === "account-pro" ||
+    screen === "inactive-project" ||
     screen.startsWith("collection-form") ||
     screen === "managed-submission" ||
     screen === "video-retry" ||

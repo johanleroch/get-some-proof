@@ -236,7 +236,7 @@ describe("Workspace deletion", () => {
     ).resolves.toMatchObject({ phase: "complete", status: "deleted" });
   });
 
-  it("retains Stripe identifiers across retries and purges synchronized billing traces", async () => {
+  it("retains legacy Workspace Stripe identifiers across retries and purges synchronized billing traces", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t, {
       email: "billing-delete@example.com",
@@ -246,6 +246,7 @@ describe("Workspace deletion", () => {
       publicSlug: "billing-delete",
     });
     await t.run(async (ctx) => {
+      await ctx.db.patch(brand.id, { accountId: undefined });
       const now = Date.now();
       await ctx.db.insert("billingSubscriptionStates", {
         cancelAtPeriodEnd: false,

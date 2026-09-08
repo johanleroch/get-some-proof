@@ -841,6 +841,58 @@ describe("Testimonial moderation and Public Projection", () => {
     ).toHaveLength(1);
   });
 
+  it("does not reset the account Spam restoration allowance by deleting a Project", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const project = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "old-project",
+    });
+    for (let index = 0; index < 3; index++) {
+      const item = await createPendingTestimonial(
+        t,
+        "old-project",
+        `spam-credit-${index}`,
+      );
+      await owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: project.id,
+        testimonialId: item.testimonialId,
+      });
+    }
+    const { deletionId } = await owner.client.mutation(
+      internal.workspaceDeletion.prepare,
+      {
+        organizationId: project.id,
+        brandName: "Acme Studio",
+        irreversibleConfirmed: true,
+      },
+    );
+    for (let step = 0; step < 100; step++) {
+      await t.action(internal.workspaceDeletion.processDeletion, {
+        deletionId,
+      });
+      if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "deleted")
+        break;
+    }
+    const next = await owner.client.mutation(api.organizations.create, {
+      name: "Acme Studio",
+      privacyContact: "privacy@acme.example",
+      publicSlug: "new-project",
+    });
+    const item = await createPendingTestimonial(
+      t,
+      "new-project",
+      "spam-after-delete",
+    );
+    await expect(
+      owner.client.mutation(api.testimonialModeration.markSpam, {
+        organizationId: next.id,
+        testimonialId: item.testimonialId,
+      }),
+    ).resolves.toMatchObject({ creditRestored: false });
+  });
+
   it("allows a new automatic restoration after the rolling window expires", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);
@@ -861,6 +913,13 @@ describe("Testimonial moderation and Public Projection", () => {
       });
     }
     await t.run(async (ctx) => {
+      for (const restoration of await ctx.db
+        .query("accountSpamRestorations")
+        .collect()) {
+        await ctx.db.patch(restoration._id, {
+          reportedAt: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+      }
       for (const report of await ctx.db.query("spamQuarantines").collect()) {
         await ctx.db.patch(report._id, {
           reportedAt: Date.now() - 31 * 24 * 60 * 60 * 1000,

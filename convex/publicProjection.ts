@@ -49,6 +49,7 @@ export async function upsertPublicProjection(
   testimonial: Doc<"testimonials">,
   publishedAt: number,
   publicOrderKey?: string,
+  approvePublication = false,
 ) {
   const [organization, consent, videoAsset, existingProjection] =
     await Promise.all([
@@ -84,8 +85,14 @@ export async function upsertPublicProjection(
       message: "Only a Ready video Testimonial can be Published.",
     });
   }
+  const account = organization.accountId
+    ? await ctx.db.get(organization.accountId)
+    : null;
   const consentFields = new Set(consent.identityFields);
   const identity = {
+    publicationGeneration: approvePublication
+      ? (account?.publicationGeneration ?? 0)
+      : (existingProjection?.publicationGeneration ?? 0),
     avatarStorageId: consentFields.has("avatar")
       ? testimonial.avatarStorageId
       : undefined,
@@ -192,4 +199,16 @@ export async function removePublicProjection(
     await ctx.db.patch(brand._id, {
       publicWallPrivacyRevision: (brand.publicWallPrivacyRevision ?? 0) + 1,
     });
+}
+
+export function projectionIsPublic(
+  account: Doc<"accounts"> | null,
+  projection: Doc<"publicTestimonialProjections">,
+) {
+  return (
+    !account ||
+    (projection.publicationGeneration ?? 0) >=
+      (account.publicationGeneration ?? 0) ||
+    (account.preservedPublicationIds ?? []).includes(projection.testimonialId)
+  );
 }

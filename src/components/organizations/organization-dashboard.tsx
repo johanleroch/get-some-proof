@@ -61,6 +61,8 @@ function ReviewQueue({
 
 export function BrandDashboardView({
   collectionUrl,
+  account,
+  billingHref,
   copyCollectionUrl,
   name,
   pendingCount,
@@ -69,6 +71,16 @@ export function BrandDashboardView({
 }: {
   /** The full address a Submitter opens, which is what Copy puts in hand. */
   collectionUrl: string;
+  account?: {
+    effectivePlan: "free" | "premium";
+    usage: {
+      freeTextUsed: number;
+      freeVideoUsed: number;
+      readyVideos: number;
+      reservedVideos: number;
+    };
+  } | null;
+  billingHref?: string;
   copyCollectionUrl: () => Promise<void>;
   name: string;
   pendingCount: number;
@@ -98,10 +110,50 @@ export function BrandDashboardView({
           address it copies, three lines below. */}
       <PageHeader
         description="Collect customer proof, review it privately, and publish only what you choose."
-        eyebrow="Workspace"
+        eyebrow="Project"
         title={name}
       />
 
+      {account && billingHref ? (
+        <section
+          aria-label="Account plan and usage"
+          className="flex flex-wrap items-center justify-between gap-4 border-y py-4"
+        >
+          <div className="space-y-1">
+            <h2 className="font-semibold">
+              {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
+            </h2>
+            <p className="text-ink-2 text-sm">Shared across all projects</p>
+          </div>
+          <div className="text-sm tabular-nums">
+            {account.effectivePlan === "premium" ? (
+              <>
+                <p>{account.usage.readyVideos} / 25 videos stored</p>
+                <p className="text-ink-2">Unlimited text collection</p>
+              </>
+            ) : (
+              <>
+                <p>{account.usage.freeTextUsed} / 13 text credits used</p>
+                <p>{account.usage.freeVideoUsed} / 2 video credits used</p>
+              </>
+            )}
+            {account.usage.reservedVideos > 0 ? (
+              <p className="text-ink-2">
+                {account.usage.reservedVideos} video
+                {account.usage.reservedVideos === 1 ? " slot" : " slots"}{" "}
+                reserved
+              </p>
+            ) : null}
+          </div>
+          <Button asChild variant="outline">
+            <Link href={billingHref as Route}>
+              {account.effectivePlan === "premium"
+                ? "Manage subscription"
+                : "Upgrade to Pro"}
+            </Link>
+          </Button>
+        </section>
+      ) : null}
       {/* The page reorders itself around the work that is waiting. With an
           empty queue the link is the whole job, so it takes the hero. */}
       <section aria-label="Brand overview" className="space-y-4">
@@ -185,6 +237,7 @@ export function BrandDashboardView({
 }
 
 export function OrganizationDashboard({ slug }: { slug: string }) {
+  const account = useQuery(api.accounts.getMine, {});
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const pendingCount = useQuery(
     api.submissions.pendingCount,
@@ -213,6 +266,8 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
 
   return (
     <BrandDashboardView
+      account={account}
+      billingHref={`/org/${slug}/billing`}
       collectionUrl={collectionUrl}
       copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
       name={organization.name}
