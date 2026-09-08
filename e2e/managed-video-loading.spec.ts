@@ -17,6 +17,13 @@ test("private video waits show the mascot and clear on playback, pause or error"
     "mux-player:not([data-mux-player-react-lazy-placeholder])",
   );
   await expect(player).toBeVisible();
+  // This test drives lifecycle events explicitly. Detach the real media source
+  // so late WebKit loadstart/waiting events cannot race the synthetic events.
+  await player.evaluate((element) => {
+    element.removeAttribute("playback-id");
+    element.removeAttribute("src");
+  });
+  await player.dispatchEvent("waiting");
   const loader = page
     .getByRole("status")
     .filter({ has: page.getByText("Loading video", { exact: true }) });
