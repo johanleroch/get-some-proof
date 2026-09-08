@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoadingText } from "@/components/brand/blob-loader";
+
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,7 +46,7 @@ export function NavUser() {
   const router = useRouter();
   const { isMobile } = useSidebar();
   const name = user?.name || "Your account";
-  const email = user?.email || "Loading profile…";
+  const email = user?.email || "";
 
   async function signOut() {
     const result = await authClient.signOut();
@@ -75,7 +77,14 @@ export function NavUser() {
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {email}
+                  {user === undefined ? (
+                    <BlobLoadingText
+                      label="Loading profile…"
+                      className="text-xs"
+                    />
+                  ) : (
+                    email
+                  )}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -100,7 +109,14 @@ export function NavUser() {
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{name}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {email}
+                    {user === undefined ? (
+                      <BlobLoadingText
+                        label="Loading profile…"
+                        className="text-xs"
+                      />
+                    ) : (
+                      email
+                    )}
                   </span>
                 </div>
               </div>

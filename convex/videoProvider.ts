@@ -26,6 +26,7 @@ function muxAuthorization() {
 export async function createVideoDirectUpload(input: {
   corsOrigin: string;
   passthrough: string;
+  organizationId: string;
   spokenLanguage: "en" | "fr";
 }): Promise<DirectUpload> {
   const provider = configuredProvider();
@@ -55,6 +56,13 @@ export async function createVideoDirectUpload(input: {
           },
         ],
         max_resolution_tier: "1080p",
+        // These fields can be public through the player: use opaque references,
+        // never submitter identity or private management/retry tokens.
+        meta: {
+          title: `Témoignage vidéo · ${input.passthrough}`,
+          creator_id: input.organizationId,
+          external_id: input.passthrough,
+        },
         passthrough: input.passthrough,
         playback_policies: ["public"],
         video_quality: "basic",

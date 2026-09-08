@@ -1,3 +1,4 @@
+import { removePublicProjection } from "./publicProjection";
 import {
   imageIdsValidator,
   imageValueValidator,
@@ -17,7 +18,8 @@ import {
 } from "./testimonialDeletion";
 import { ConvexError, v } from "convex/values";
 
-import { internal } from "./_generated/api";
+import { internal, components } from "./_generated/api";
+import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   action,
@@ -51,6 +53,10 @@ import {
   createVideoDirectUpload,
   type DirectUpload,
 } from "./videoProvider";
+
+const recoveryLimiter = new RateLimiter(components.rateLimiter, {
+  managementRecovery: { kind: "fixed window", rate: 1000, period: HOUR },
+});
 
 const replacementReservationTtlMs = 2 * 60 * 60 * 1_000;
 const maximumVideoFileBytes = 512 * 1024 * 1024;
@@ -435,7 +441,7 @@ export const confirmRevision = mutation({
 
     if (testimonial.submissionType === "text")
       await setTestimonialImages(ctx, testimonial, nextImageIds);
-    if (projection) await ctx.db.delete(projection._id);
+    if (projection) await removePublicProjection(ctx, projection);
     const now = Date.now();
     await ctx.db.patch(consent._id, {
       acceptedAt: now,
@@ -706,7 +712,8 @@ export const cancelVideoReplacement = mutation({
       revision.testimonialId !== testimonial._id ||
       revision.reservationId !== args.reservationId ||
       !reservation ||
-      reservation.status !== "reserved" ||
+      (reservation.status !== "reserved" &&
+        reservation.status !== "consumed") ||
       reservation.organizationId !== testimonial.organizationId
     ) {
       return null;
@@ -714,7 +721,6 @@ export const cancelVideoReplacement = mutation({
     const asset = revision.videoAssetId
       ? await ctx.db.get(revision.videoAssetId)
       : null;
-    if (asset?.status === "ready") return null;
     const now = Date.now();
     if (asset) {
       await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
@@ -804,6 +810,7 @@ export const createVideoReplacementUpload = action({
       directUpload = await createVideoDirectUpload({
         corsOrigin: siteUrl.origin,
         passthrough: String(reserved.reservationId),
+        organizationId: String(reserved.organizationId),
         spokenLanguage: args.spokenLanguage,
       });
       const videoAssetId: Id<"videoAssets"> = await ctx.runMutation(
@@ -960,6 +967,42 @@ export const queueReplacementLinkRequest = internalMutation({
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     const publicSlug = args.publicSlug.trim().toLowerCase();
+    if (
+      args.email.length > 320 ||
+      args.publicSlug.length > 48 ||
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      publicSlug.length < 2 ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(publicSlug)
+    )
+      return null;
+    const admission = await recoveryLimiter.limit(ctx, "managementRecovery", {
+      key: "global",
+    });
+    if (!admission.ok) return null;
+    const expired = await ctx.db
+      .query("publicReadRateLimitBuckets")
+      .withIndex("by_expires_at", (q) => q.lt("expiresAt", Date.now()))
+      .take(20);
+    await Promise.all(expired.map((bucket) => ctx.db.delete(bucket._id)));
+    const brand = await ctx.db
+      .query("organizations")
+      .withIndex("by_public_slug", (index) =>
+        index.eq("publicSlug", publicSlug),
+      )
+      .unique();
+    const availableBrand =
+      brand?.deletionStartedAt === undefined ? brand : null;
+    if (!availableBrand) return null;
+    const matchingTestimonials = () =>
+      ctx.db
+        .query("testimonials")
+        .withIndex("by_organization_submitter_email", (index) =>
+          index
+            .eq("organizationId", availableBrand._id)
+            .eq("submitterEmail", email),
+        );
+    if (!(await matchingTestimonials().first())) return null;
     const requestKey = await hashSubmissionManagementToken(
       `${publicSlug}:${email}`,
     );
@@ -1000,6 +1043,8 @@ export const queueReplacementLinkRequest = internalMutation({
     ) {
       return null;
     }
+    // Preserve the existing grouped-email/atomic-rotation contract, but hydrate only admitted requests.
+    const testimonials = await matchingTestimonials().collect();
     const expiresAt = windowStartedAt + replacementRequestWindowMs * 2;
     if (targetBucket) {
       await ctx.db.patch(targetBucket._id, { count: targetBucket.count + 1 });
@@ -1022,27 +1067,6 @@ export const queueReplacementLinkRequest = internalMutation({
       });
     }
 
-    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const brand = validEmail
-      ? await ctx.db
-          .query("organizations")
-          .withIndex("by_public_slug", (index) =>
-            index.eq("publicSlug", publicSlug),
-          )
-          .unique()
-      : null;
-    const availableBrand =
-      brand?.deletionStartedAt === undefined ? brand : null;
-    const testimonials = availableBrand
-      ? await ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_submitter_email", (index) =>
-            index
-              .eq("organizationId", availableBrand._id)
-              .eq("submitterEmail", email),
-          )
-          .collect()
-      : [];
     const requestId = await ctx.db.insert("managementLinkReplacementRequests", {
       attempts: 0,
       brandName: availableBrand?.name,

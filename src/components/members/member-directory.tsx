@@ -311,11 +311,11 @@ export function MemberDirectory({
               </AlertDialogCancel>
               <AlertDialogAction asChild>
                 <Button
-                  disabled={pending}
+                  loading={pending}
                   onClick={() => void confirmAction()}
                   variant="destructive"
                 >
-                  {pending ? "Working…" : "Confirm"}
+                  Confirm
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>

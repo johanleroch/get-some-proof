@@ -181,3 +181,15 @@ export async function nextPublicOrderKey(
     .first();
   return publicOrderKeyBetween(undefined, first?.publicOrderKey);
 }
+
+export async function removePublicProjection(
+  ctx: MutationCtx,
+  projection: Doc<"publicTestimonialProjections">,
+) {
+  await ctx.db.delete(projection._id);
+  const brand = await ctx.db.get(projection.organizationId);
+  if (brand)
+    await ctx.db.patch(brand._id, {
+      publicWallPrivacyRevision: (brand.publicWallPrivacyRevision ?? 0) + 1,
+    });
+}

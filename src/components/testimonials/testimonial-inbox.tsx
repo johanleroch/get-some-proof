@@ -1,5 +1,7 @@
 "use client";
 
+import { AnimatedBlob } from "@/components/brand/animated-blob";
+
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
@@ -31,7 +33,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AnimatedBlob } from "@/components/brand/animated-blob";
 import { SpeechBubbleStars } from "@/components/doodles";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -143,7 +144,7 @@ function VideoAssetPlaceholder({
     >
       <div className="absolute top-3 right-3">{menu}</div>
       <div className="max-w-64">
-        <AnimatedBlob className="mx-auto" size={56} variant="look" />
+        <AnimatedBlob size={64} variant="look" />
         <p className="mt-4 font-medium">
           {videoStatusLabel(testimonial.videoStatus)}
         </p>

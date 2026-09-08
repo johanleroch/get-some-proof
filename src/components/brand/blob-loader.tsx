@@ -5,17 +5,19 @@ import { cn } from "@/lib/utils";
  * The site's loader: the blob looking around, instead of a spinner. Use it
  * for every indeterminate wait that has no skeleton of its own (route
  * transitions, a form submitting, a video processing). Skeletons stay for
- * page structure; the inline button spinner stays in buttons.
+ * page structure with a mascot; buttons use a small inline spinner.
  */
 export function BlobLoader({
   className,
   label = "Loading",
   size = 64,
+  showLabel = false,
 }: {
   className?: string;
   /** Read by assistive tech and, when `showLabel`, shown under the blob. */
   label?: string;
   size?: number;
+  showLabel?: boolean;
 }) {
   return (
     <div
@@ -27,12 +29,37 @@ export function BlobLoader({
       role="status"
     >
       <AnimatedBlob size={size} variant="look" />
-      <span className="sr-only">{label}</span>
+      <span className={showLabel ? "text-ink-2 text-sm" : "sr-only"}>
+        {label}
+      </span>
     </div>
   );
 }
 
 /** Full-height variant for route transitions and blocking loads. */
 export function BlobLoaderScreen({ label }: { label?: string }) {
-  return <BlobLoader className="min-h-svh w-full" label={label} size={72} />;
+  return (
+    <main className="bg-paper grid min-h-svh place-items-center px-5">
+      <BlobLoader label={label ?? "Loading…"} size={72} showLabel />
+    </main>
+  );
+}
+
+/** Compact wait status for labels, menus, and progress details. */
+export function BlobLoadingText({
+  label,
+  className,
+}: {
+  label: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn("inline-flex items-center gap-2 text-sm", className)}
+      role="status"
+    >
+      <AnimatedBlob size={24} variant="look" />
+      <span>{label}</span>
+    </span>
+  );
 }

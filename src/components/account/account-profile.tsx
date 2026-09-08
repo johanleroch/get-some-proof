@@ -1,5 +1,7 @@
 "use client";
 
+import { BlobLoader } from "@/components/brand/blob-loader";
+
 import { type FormEvent, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
@@ -36,11 +38,7 @@ export function AccountProfile() {
   const user = session.data?.user;
 
   if (!user || currentUser === undefined) {
-    return (
-      <p className="text-muted-foreground text-sm" role="status">
-        Loading profile…
-      </p>
-    );
+    return <BlobLoader label="Loading profile…" showLabel />;
   }
 
   return (

@@ -668,3 +668,31 @@ export function DashboardBackgroundScreenFixture() {
     </div>
   );
 }
+
+export function ManagedVideoProcessingScreenFixture() {
+  return (
+    <ManagedSubmissionView
+      submission={{
+        avatarUrl: null,
+        brandName: "Visual Studio",
+        consentAcceptedAt: Date.UTC(2026, 8, 3),
+        contentVersion: 1,
+        currentVideo: {
+          playbackId: videoTestimonialFixture.card.playbackId,
+          posterTimeSeconds: 34,
+        },
+        moderationStatus: "published",
+        privacyContact: "privacy@example.invalid",
+        publicSlug: "visual-studio",
+        replacement: {
+          revisionId: "fixture-revision" as Id<"submissionVideoRevisions">,
+          status: "processing",
+        },
+        submissionType: "video",
+        submitterEmail: "remy@example.invalid",
+        submitterName: "Remy Jupille",
+        text: "",
+      }}
+    />
+  );
+}

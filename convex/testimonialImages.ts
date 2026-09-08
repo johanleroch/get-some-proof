@@ -1,3 +1,4 @@
+import { consumeAdmission } from "./collectionAdmission";
 import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import {
   imageValueValidator,
@@ -35,9 +36,10 @@ function unavailable(): never {
   });
 }
 
-async function uploadContext(
+export async function resolveUploadContext(
   ctx: MutationCtx,
   args: { clientSubmissionId: string; publicSlug: string; token?: string },
+  kind: "image" | "avatar" = "image",
 ) {
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(args.clientSubmissionId)) unavailable();
   const brand = await ctx.db
@@ -58,7 +60,7 @@ async function uploadContext(
     if (
       !testimonial ||
       testimonial.organizationId !== brand._id ||
-      testimonial.submissionType !== "text" ||
+      (kind === "image" && testimonial.submissionType !== "text") ||
       testimonial.moderationStatus === "spam" ||
       (testimonial.managementTokenExpiresAt !== undefined &&
         testimonial.managementTokenExpiresAt <= Date.now())
@@ -77,13 +79,23 @@ async function uploadContext(
 }
 
 export const generateUploadUrl = mutation({
-  args: uploadIdentity,
+  args: { ...uploadIdentity, admissionToken: v.optional(v.string()) },
   returns: v.object({
     imageId: v.id("testimonialImages"),
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const { brand, testimonialId } = await uploadContext(ctx, args);
+    const { brand, testimonialId } = await resolveUploadContext(ctx, args);
+    if (!testimonialId)
+      await consumeAdmission(
+        ctx,
+        {
+          organizationId: brand._id,
+          clientSubmissionId: args.clientSubmissionId,
+          token: args.admissionToken,
+        },
+        "image",
+      );
     const limit = await rateLimiter.limit(ctx, "testimonialImageUpload", {
       key: String(brand._id),
     });
@@ -116,7 +128,7 @@ export const registerUpload = mutation({
   },
   returns: imageValueValidator,
   handler: async (ctx, args) => {
-    const { brand, testimonialId } = await uploadContext(ctx, args);
+    const { brand, testimonialId } = await resolveUploadContext(ctx, args);
     const image = await ctx.db.get(args.imageId);
     if (
       !image ||
