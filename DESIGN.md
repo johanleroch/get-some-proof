@@ -177,13 +177,13 @@ Sans were retired because that pair is the identity of the direct competitor
   title, empty-state titles. Tracking -0.005em to -0.02em: a slab needs less
   squeeze than a grotesque. Never below 18px. Self-hosted through
   `next/font/local` from `src/app/fonts/gelica/` (Regular, Medium, Semi Bold,
-  Bold, Black as OTF). Gelica is a licensed font from the founder's Monotype
-  Fonts subscription, and this repository is public, so the folder is in
-  `.gitignore`. `scripts/ensure-display-font.mjs` runs before dev, build and
-  typecheck and generates the module that loads the font: with the five files
-  in place the site gets Gelica, without them (CI, a fresh clone) every
-  display style falls back to Figtree and the script prints a warning, so a
-  build never breaks on the license. Confirm web use with the Monotype license before launch.
+  Bold, Black as WOFF2, converted losslessly from the licensed OTFs: same 479
+  glyphs, 704 KB down to 256 KB). The five files are committed, because the
+  site is built from this repository and a font kept out of it does not exist
+  in production: the first deploy fell back to Figtree for that exact reason,
+  and every heading read as body copy. Gelica comes from the founder's
+  Monotype Fonts subscription and the repository is public, so the founder
+  owns that call; confirm web use with the Monotype license before launch.
 - Body and UI: **Figtree** (Erik Kennedy, Google Fonts), variable 300 to 900,
   used at 400, 500, 600. Everything else. A calm geometric with humanist
   warmth: it lets Gelica carry the character and stays crisp at 13 to 15px.
