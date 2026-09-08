@@ -177,7 +177,7 @@ export function TestimonialInboxView({
       <section className="bg-card rounded-lg border">
         <EmptyState
           description="New Submissions appear here as Pending before anything becomes public."
-          illustration={<SpeechBubbleStars className="h-28" draw />}
+          illustration={<SpeechBubbleStars className="h-28" />}
           title="No Testimonials match these filters."
         />
       </section>

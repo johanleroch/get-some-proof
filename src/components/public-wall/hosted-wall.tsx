@@ -71,7 +71,6 @@ export function HostedWall({
               <span>{wall.brandName}</span>
               <Sparkle
                 className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10"
-                draw
               />
             </h1>
           </div>

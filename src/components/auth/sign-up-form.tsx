@@ -47,7 +47,7 @@ export function SignUpForm({
   if (emailSent) {
     return (
       <div className="space-y-5">
-        <EnvelopeStamp className="text-ink h-28 w-auto" draw />
+        <EnvelopeStamp className="text-ink h-28 w-auto" />
         <div className="space-y-1.5">
           <h2 className="type-heading">Check your email</h2>
           <p className="type-body text-ink-2">

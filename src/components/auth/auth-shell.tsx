@@ -30,7 +30,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </section>
       <aside className="bg-surface-2 hidden flex-col justify-center border-l p-12 lg:flex xl:p-20">
         <div className="mx-auto w-full max-w-xl space-y-10">
-          <WallFrames className="text-ink w-full" draw float />
+          <WallFrames className="text-ink w-full" float />
           <div className="max-w-md space-y-3">
             <p className="type-heading text-balance">
               Proof your customers are proud to give.

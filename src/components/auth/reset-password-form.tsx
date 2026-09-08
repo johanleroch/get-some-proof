@@ -44,7 +44,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
   if (complete) {
     return (
       <div className="space-y-5">
-        <Sparkle className="text-brand size-12" draw />
+        <Sparkle className="text-brand size-12" />
         <div className="space-y-1.5">
           <h2 className="type-heading">Password updated</h2>
           <p className="type-body text-ink-2">

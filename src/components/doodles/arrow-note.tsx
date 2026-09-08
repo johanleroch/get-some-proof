@@ -15,13 +15,11 @@ export function ArrowNote({
   children,
   className,
   direction = "right",
-  draw = false,
 }: {
   arrow?: "curve" | "flat";
   children: ReactNode;
   className?: string;
   direction?: "left" | "right";
-  draw?: boolean;
 }) {
   return (
     <span
@@ -42,7 +40,6 @@ export function ArrowNote({
             : "mt-[calc(var(--type-hand-leading)/2-5px)] h-10 w-14",
           direction === "left" && "-scale-x-100",
         )}
-        draw={draw}
         shape={arrow}
       />
     </span>

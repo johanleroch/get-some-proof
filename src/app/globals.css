@@ -569,37 +569,11 @@ select:disabled {
 }
 
 /*
- * Hand-drawn strokes draw themselves in once (DESIGN.md section 4). Each
- * stroke is dashed by its own length, baked into `--draw-length` by the
- * doodle generator, and the offset runs that length down to zero: Chromium
- * ignores `pathLength` on a path with a non-scaling stroke, which showed the
- * whole drawing from the first frame. The generator also gives each object
- * and each stroke its own delay, so a drawing appears object by object. The
- * curve is `--ease-sine`, the pace of a pen: an ease-out would lay most of
- * the ink in the first fifth and then crawl. The last frame drops dashing so
- * a rounding error can never leave a gap.
- */
-.doodle-draw path,
-.doodle-draw circle {
-  stroke-dasharray: var(--draw-length, 1000);
-  stroke-dashoffset: var(--draw-length, 1000);
-  animation: doodle-draw 620ms var(--ease-sine) both;
-}
-
-@keyframes doodle-draw {
-  99% {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dasharray: 0;
-    stroke-dashoffset: 0;
-  }
-}
-
-/*
- * Spot illustrations may keep drifting once drawn: each object floats on its
- * own slow loop, out of phase with its neighbours, so the drawing breathes
- * without ever pulling the eye. Opt in with the `float` prop on the doodle.
+ * Spot illustrations may drift: each object floats on its own slow loop, out
+ * of phase with its neighbours, so the drawing breathes without ever pulling
+ * the eye. Opt in with the `float` prop on the doodle. There is no draw-in:
+ * dashing a stroke that also carries a non-scaling stroke is unreliable
+ * across browsers, and the reveal never read as a hand drawing.
  */
 .doodle-float .doodle-item {
   animation-name: doodle-float;
@@ -618,13 +592,6 @@ select:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .doodle-draw path,
-  .doodle-draw circle {
-    stroke-dasharray: 0;
-    stroke-dashoffset: 0;
-    animation: none;
-  }
-
   .doodle-float .doodle-item {
     animation: none;
   }

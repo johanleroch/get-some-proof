@@ -23,7 +23,7 @@ const allowedFills = new Set([
 
 afterEach(cleanup);
 
-function renderSvg(Doodle: (props: { draw?: boolean }) => React.ReactNode) {
+function renderSvg(Doodle: (props: { float?: boolean }) => React.ReactNode) {
   const { container } = render(<Doodle />);
   const svg = container.querySelector("svg");
   if (!svg) throw new Error("Doodle did not render an svg");
@@ -52,8 +52,6 @@ describe("hand-drawn signature grammar (DESIGN.md section 4)", () => {
       const shapes = renderSvg(Doodle).querySelectorAll("path, circle");
       expect(shapes.length).toBeGreaterThan(0);
       for (const shape of shapes) {
-        // Dashed by its own length, so the draw-in is progressive.
-        expect(shape.getAttribute("style")).toMatch(/--draw-length:\s*\d+/);
         expect(shape.getAttribute("vector-effect")).toBe("non-scaling-stroke");
         const fill = shape.getAttribute("fill");
         if (fill !== null) expect(allowedFills.has(fill)).toBe(true);
@@ -81,11 +79,13 @@ describe("hand-drawn signature grammar (DESIGN.md section 4)", () => {
     },
   );
 
-  it("draws in only when asked", () => {
-    const { container } = render(<WallFrames draw />);
-    expect(container.querySelector("svg")).toHaveClass("doodle-draw");
+  it("drifts only when asked", () => {
+    const { container } = render(<WallFrames float />);
+    expect(container.querySelector("svg")).toHaveClass("doodle-float");
     cleanup();
     const still = render(<WallFrames />);
-    expect(still.container.querySelector("svg")).not.toHaveClass("doodle-draw");
+    expect(still.container.querySelector("svg")).not.toHaveClass(
+      "doodle-float",
+    );
   });
 });

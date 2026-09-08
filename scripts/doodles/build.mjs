@@ -2,6 +2,10 @@
 // the spot illustrations in src/components/doodles/spots.tsx and the marks
 // (star, underline, ring, arrows) in src/components/doodles/marks.tsx.
 //
+// Spots are wrapped object by object so each one can drift on its own loop
+// (`float` on the component). There is no draw-in: dashing a stroke that also
+// carries a non-scaling stroke is unreliable across browsers.
+//
 // Every drawing shares one grammar so the set stays coherent:
 // - a 320 x 220 artboard, subjects tilted 2 to 6 degrees;
 // - closed outlines whose sides bow by at most one unit while corners land on
@@ -41,133 +45,6 @@ function prng(seed) {
 }
 
 const round = (value, digits = 1) => Number(value.toFixed(digits));
-
-/**
- * Length of a path in user units, by flattening its curves.
- *
- * The draw-in animation dashes each stroke by its own length. `pathLength="1"`
- * would be tidier, but Chromium ignores it on a path that also carries
- * `vector-effect: non-scaling-stroke`, and the stroke then appears whole from
- * the first frame. Supports the commands this file emits (M, L, H, V, C, S,
- * Q, T, Z, absolute and relative); arcs are never generated.
- */
-function pathLength(d) {
-  const tokens = d.match(/[a-df-z]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? [];
-  const samples = 24;
-  let index = 0;
-  let command = "";
-  let [x, y] = [0, 0];
-  let [startX, startY] = [0, 0];
-  let [lastControlX, lastControlY] = [0, 0];
-  let total = 0;
-
-  const next = () => Number(tokens[index++]);
-  const line = (toX, toY) => {
-    total += Math.hypot(toX - x, toY - y);
-    [x, y] = [toX, toY];
-  };
-  const curve = (points) => {
-    let [previousX, previousY] = [x, y];
-    for (let step = 1; step <= samples; step += 1) {
-      const t = step / samples;
-      const [pointX, pointY] = bezier(points, t);
-      total += Math.hypot(pointX - previousX, pointY - previousY);
-      [previousX, previousY] = [pointX, pointY];
-    }
-    [x, y] = points[points.length - 1];
-  };
-
-  while (index < tokens.length) {
-    const token = tokens[index];
-    if (/[a-z]/i.test(token)) {
-      command = token;
-      index += 1;
-    } else if (command === "M") {
-      command = "L";
-    } else if (command === "m") {
-      command = "l";
-    }
-    const relative = command === command.toLowerCase();
-    const [originX, originY] = relative ? [x, y] : [0, 0];
-    switch (command.toUpperCase()) {
-      case "M": {
-        [x, y] = [originX + next(), originY + next()];
-        [startX, startY] = [x, y];
-        [lastControlX, lastControlY] = [x, y];
-        break;
-      }
-      case "L": {
-        line(originX + next(), originY + next());
-        [lastControlX, lastControlY] = [x, y];
-        break;
-      }
-      case "H": {
-        line(originX + next(), y);
-        [lastControlX, lastControlY] = [x, y];
-        break;
-      }
-      case "V": {
-        line(x, originY + next());
-        [lastControlX, lastControlY] = [x, y];
-        break;
-      }
-      case "C": {
-        const c1 = [originX + next(), originY + next()];
-        const c2 = [originX + next(), originY + next()];
-        const end = [originX + next(), originY + next()];
-        curve([[x, y], c1, c2, end]);
-        [lastControlX, lastControlY] = c2;
-        break;
-      }
-      case "S": {
-        const c1 = [2 * x - lastControlX, 2 * y - lastControlY];
-        const c2 = [originX + next(), originY + next()];
-        const end = [originX + next(), originY + next()];
-        curve([[x, y], c1, c2, end]);
-        [lastControlX, lastControlY] = c2;
-        break;
-      }
-      case "Q": {
-        const control = [originX + next(), originY + next()];
-        const end = [originX + next(), originY + next()];
-        curve([[x, y], control, end]);
-        [lastControlX, lastControlY] = control;
-        break;
-      }
-      case "T": {
-        const control = [2 * x - lastControlX, 2 * y - lastControlY];
-        const end = [originX + next(), originY + next()];
-        curve([[x, y], control, end]);
-        [lastControlX, lastControlY] = control;
-        break;
-      }
-      case "Z": {
-        line(startX, startY);
-        break;
-      }
-      default: {
-        index += 1;
-      }
-    }
-  }
-  return Math.round(total);
-}
-
-/** De Casteljau on a quadratic or cubic control polygon. */
-function bezier(points, t) {
-  let current = points;
-  while (current.length > 1) {
-    const next = [];
-    for (let i = 0; i < current.length - 1; i += 1) {
-      next.push([
-        current[i][0] + (current[i + 1][0] - current[i][0]) * t,
-        current[i][1] + (current[i + 1][1] - current[i][1]) * t,
-      ]);
-    }
-    current = next;
-  }
-  return current[0];
-}
 
 function pen(seed) {
   const random = prng(seed);
@@ -585,13 +462,11 @@ function fillAttribute(fill, stroke) {
 }
 
 /**
- * Timings for one group. `draw` staggers the ink so a drawing appears object
- * by object, stroke by stroke, instead of every line at once; `float` gives
- * each object its own slow drift, out of phase with its neighbours.
+ * Drift timings for one group: every object floats on its own slow loop, out
+ * of phase with its neighbours, so nothing ever moves in unison.
  */
 function groupMotion(index) {
   return {
-    drawDelay: index * 130,
     floatDelay: -(index * 1.3 + 0.4),
     floatDistance: index % 2 === 0 ? -6 : -4,
     floatDuration: 5.4 + index * 0.9,
@@ -624,17 +499,8 @@ function componentSource(spot) {
         ? `        <g transform="${g.transform}">`
         : "        <g>";
       const paths = g.paths.map(
-        (item, pathIndex) =>
-          `          <path\n` +
-          `            {...strokeAttributes}\n` +
-          `            d="${item.d}"${fillAttribute(item.fill, item.stroke)}\n` +
-          `            style={\n` +
-          `              {\n` +
-          `                animationDelay: "${motion.drawDelay + pathIndex * 45}ms",\n` +
-          `                "--draw-length": ${pathLength(item.d)},\n` +
-          `              } as CSSProperties\n` +
-          `            }\n` +
-          `          />`,
+        (item) =>
+          `          <path {...strokeAttributes} d="${item.d}"${fillAttribute(item.fill, item.stroke)} />`,
       );
       return [wrapper, open, ...paths, "        </g>", "      </g>"].join("\n");
     })
@@ -649,14 +515,7 @@ function componentSource(spot) {
 function arrowSource() {
   const shape = (key) =>
     arrows[key].paths
-      .map(
-        (d) =>
-          `        <path\n` +
-          `          {...strokeAttributes}\n` +
-          `          d="${d}"\n` +
-          `          style={{ "--draw-length": ${pathLength(d)} } as CSSProperties}\n` +
-          `        />`,
-      )
+      .map((d) => `        <path {...strokeAttributes} d="${d}" />`)
       .join("\n");
   return [
     "/**",
@@ -724,7 +583,7 @@ function svgSource(spot) {
       const open = g.transform ? `<g transform="${g.transform}">` : "<g>";
       const paths = g.paths.map(
         (item) =>
-          `<path d="${item.d}"${fillAttribute(item.fill, item.stroke)} vector-effect="non-scaling-stroke" style="--draw-length:${pathLength(item.d)}"/>`,
+          `<path d="${item.d}"${fillAttribute(item.fill, item.stroke)} vector-effect="non-scaling-stroke"/>`,
       );
       return [open, ...paths, "</g>"].join("");
     })

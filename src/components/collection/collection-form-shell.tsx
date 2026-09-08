@@ -424,7 +424,7 @@ function ProofTypeStep({
         <EmptyState
           className="py-6"
           description="This Brand is not accepting new testimonials right now."
-          illustration={<WallFrames className="h-28" draw />}
+          illustration={<WallFrames className="h-28" />}
           headingLevel={2}
           title="Collection is temporarily closed"
         />
@@ -569,7 +569,7 @@ function SuccessStep({
 }) {
   return (
     <section className="space-y-5 py-2">
-      <Sparkle className="size-14 text-(--brand-accent)" draw />
+      <Sparkle className="size-14 text-(--brand-accent)" />
       <div className="space-y-2">
         <h2 className="type-heading" data-step-focus tabIndex={-1}>
           Thank you for your proof

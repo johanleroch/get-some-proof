@@ -31,7 +31,6 @@ export function TemplatesPage() {
               <span className="relative inline-block whitespace-nowrap">
                 <MarkerHighlight
                   className="absolute inset-x-[-0.12em] bottom-[0.02em] h-[0.78em] w-[calc(100%+0.24em)]"
-                  draw
                 />
                 <span className="relative">your way</span>
               </span>
