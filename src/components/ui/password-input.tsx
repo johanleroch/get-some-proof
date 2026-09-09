@@ -5,10 +5,12 @@ import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export function PasswordInput({
   id,
   disabled,
+  className,
   ...props
 }: Omit<ComponentProps<typeof Input>, "type">) {
   const generatedId = useId();
@@ -17,9 +19,10 @@ export function PasswordInput({
   const label = visible ? "Hide password" : "Show password";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="relative">
       <Input
         {...props}
+        className={cn("pr-12", className)}
         disabled={disabled}
         id={inputId}
         type={visible ? "text" : "password"}
@@ -27,6 +30,7 @@ export function PasswordInput({
       <Button
         aria-controls={inputId}
         aria-label={label}
+        className="absolute inset-y-0 right-0 h-full w-11 hover:bg-transparent"
         disabled={disabled}
         onClick={() => setVisible((current) => !current)}
         size="icon-lg"
