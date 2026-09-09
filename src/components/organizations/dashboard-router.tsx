@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 
 export function DashboardRouter() {
   const router = useRouter();
@@ -29,18 +30,10 @@ export function DashboardRouter() {
 }
 
 /**
- * What `/dashboard` shows while it looks for the person's Brand: the first
- * thing a verified account sees, and the wait before onboarding.
+ * What `/dashboard` shows while it looks for the person's Brand: the same
+ * blob as every other wait (DESIGN.md section 7), so the route loader before
+ * it and this screen read as one moment, not two.
  */
 export function FindingProjectScreen() {
-  return (
-    <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
-      <div aria-live="polite" className="text-center">
-        <div className="bg-brand-soft-2 mx-auto size-8 animate-pulse rounded-full" />
-        <p className="text-muted-foreground mt-4 text-sm">
-          Finding your project…
-        </p>
-      </div>
-    </main>
-  );
+  return <BlobLoaderScreen label="Finding your project…" />;
 }
