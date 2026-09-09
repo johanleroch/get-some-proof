@@ -9,9 +9,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   IconBuilding,
   IconCheck,
+  IconChevronDown,
   IconCreditCard,
   IconPlus,
-  IconSelector,
   IconSettings,
   IconShieldCheck,
 } from "@tabler/icons-react";
@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -104,7 +103,6 @@ export function OrganizationSwitcherView({
   canReadBilling,
   canUpdateOrganization,
   currentName,
-  currentLogoUrl,
   currentSlug,
   organizations,
   status,
@@ -127,27 +125,22 @@ export function OrganizationSwitcherView({
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
+            {/* The project's name is the sidebar's title, and the title is the
+                switch: Gelica at `heading`, a thin chevron, no logo and no
+                avatar (DESIGN.md section 6). */}
+            <button
               aria-label="Switch project"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              size="lg"
+              className="hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-ring -mx-1.5 flex max-w-[calc(100%+0.75rem)] cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-left outline-none focus-visible:ring-[3px]"
+              type="button"
             >
-              <Avatar className="size-8 rounded-lg">
-                {currentLogoUrl ? (
-                  <AvatarImage
-                    alt={`${currentName} logo`}
-                    src={currentLogoUrl}
-                  />
-                ) : null}
-                <AvatarFallback className="bg-foreground text-background rounded-lg text-xs font-semibold">
-                  {organizationInitials(currentName) || "OR"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{currentName}</span>
-              </div>
-              <IconSelector className="ml-auto size-4" />
-            </SidebarMenuButton>
+              <span className="type-heading min-w-0 truncate">
+                {currentName}
+              </span>
+              <IconChevronDown
+                aria-hidden="true"
+                className="text-ink-3 mt-1 size-5 shrink-0"
+              />
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"

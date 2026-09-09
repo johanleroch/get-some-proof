@@ -742,6 +742,7 @@ export function DashboardBackgroundScreenFixture({
       organizationSlug={project.slug}
       pathname={`/org/${project.slug}/dashboard`}
       account={account}
+      inboxCount={pendingCount}
       authorization={{
         can: { manageOwnership: true, updateOrganization: true },
       }}

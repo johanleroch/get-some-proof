@@ -549,7 +549,8 @@ body {
   letter-spacing: var(--type-body-tracking);
 }
 
-.dashboard-frame [data-sidebar="group-label"] {
+/* Also inside the mobile sheet, which is portalled out of the frame. */
+[data-sidebar="group-label"] {
   color: var(--muted-foreground);
   font-size: var(--type-micro-size);
   line-height: var(--type-micro-leading);
@@ -566,6 +567,51 @@ body {
   flex: 1;
   flex-direction: column;
   overflow: clip;
+}
+
+/* The shell is one frame on the paper page (DESIGN.md section 6): a white
+   card 12px off the viewport holding the whole app, with the sidebar
+   floating inside it as a paper card, 12px off the frame's edges. Nested
+   corners stay concentric: the inner radius is the outer radius minus the
+   gap, so 24px outside, 12px gap, 12px inside. Below md there is no sidebar
+   column and the app runs full bleed. */
+@media (min-width: 48rem) {
+  .dashboard-frame {
+    width: auto;
+    min-height: 0;
+    height: calc(100svh - 24px);
+    margin: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-3xl);
+    overflow: hidden;
+  }
+
+  .dashboard-frame [data-slot="sidebar-container"] {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: calc(var(--sidebar-width) - 12px);
+    height: auto;
+    padding: 0;
+  }
+
+  .dashboard-frame
+    [data-slot="sidebar"][data-state="collapsed"]
+    [data-slot="sidebar-container"] {
+    left: calc(var(--sidebar-width) * -1);
+  }
+
+  .dashboard-frame [data-slot="sidebar-inner"] {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .dashboard-view {
+    background: transparent;
+  }
 }
 
 button:not(:disabled),
@@ -787,4 +833,75 @@ mark {
 ::selection {
   background: var(--brand-soft-2);
   color: var(--ink);
+}
+
+/*
+ * The sidebar's active indicator (DESIGN.md section 8.3): one pill and its
+ * rail travelling between items. The slide itself is a transition on the
+ * indicator (`--motion-settle`, `--ease-settle`); this is the body language
+ * on top of it: stretched along the travel, squashed on landing, volume kept.
+ */
+.nav-indicator-travel {
+  transform-origin: 50% 50%;
+  animation: nav-indicator-travel var(--motion-settle) var(--ease-out-soft) both;
+}
+
+@keyframes nav-indicator-travel {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: scale(0.94, 1.06);
+  }
+  78% {
+    transform: scale(1.04, 0.96);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-indicator-travel {
+    animation: none;
+  }
+}
+
+/*
+ * The one shine in the interface, the founder's call for the sidebar's
+ * Upgrade button (DESIGN.md section 6): a soft light sweeps across the amber
+ * every few seconds, a light passing, never a fill. Still under reduced
+ * motion.
+ */
+.cta-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    oklch(1 0 0 / 45%) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  animation: cta-shine 4800ms var(--ease-out-soft) infinite;
+}
+
+@keyframes cta-shine {
+  0% {
+    transform: translateX(-120%);
+  }
+  22% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-shine::after {
+    display: none;
+  }
 }

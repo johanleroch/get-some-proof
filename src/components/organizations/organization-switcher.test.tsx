@@ -73,10 +73,10 @@ describe("OrganizationSwitcher", () => {
       name: "Switch project",
     });
     expect(trigger).toHaveClass("cursor-pointer");
-    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toHaveClass(
-      "bg-foreground",
-      "text-background",
-    );
+    // The project's name is the sidebar's title and the switch itself: no
+    // avatar, no initials, the name at `heading`.
+    expect(trigger.querySelector(".type-heading")).toHaveTextContent("Acme");
+    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toBeNull();
 
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     expect(screen.getAllByText("Acme")).not.toHaveLength(0);

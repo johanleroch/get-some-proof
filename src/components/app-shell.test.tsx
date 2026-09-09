@@ -9,12 +9,16 @@ const mocks = vi.hoisted(() => ({
   readAudit: true,
   updateOrganization: true,
   effectivePlan: "free",
+  manageOwnership: true,
+  pending: 0,
 }));
 
 vi.mock("convex/react", () => ({
   useQuery: () => ({
     effectivePlan: mocks.effectivePlan,
+    pending: mocks.pending,
     can: {
+      manageOwnership: mocks.manageOwnership,
       readAudit: mocks.readAudit,
       readBilling: mocks.readBilling,
       updateOrganization: mocks.updateOrganization,
@@ -24,6 +28,18 @@ vi.mock("convex/react", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
+}));
+
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: React.ComponentProps<"a"> & { href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("@/components/account/nav-user", () => ({
@@ -89,9 +105,62 @@ describe("AppShell", () => {
     });
     mocks.pathname = "/org/acme-1234/dashboard";
     mocks.effectivePlan = "free";
+    mocks.manageOwnership = true;
+    mocks.pending = 0;
     mocks.readBilling = true;
     mocks.readAudit = true;
     mocks.updateOrganization = true;
+  });
+
+  it("counts the Inbox queue beside its name, and marks what opens elsewhere", () => {
+    mocks.pending = 3;
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Harbor Studio"
+        organizationPublicSlug="harbor"
+        organizationSlug="harbor-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    expect(
+      screen.getByRole("link", { name: "Inbox, 3 to review" }),
+    ).toHaveAttribute("href", "/org/harbor-1234/inbox");
+    expect(screen.getByRole("link", { name: "Public Wall" })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+  });
+
+  it("sends the active indicator to the clicked item before the page arrives", () => {
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    const indicator = () =>
+      container.querySelector(
+        '[data-slot="sidebar-active-indicator"]',
+      ) as HTMLElement;
+    expect(indicator().style.transform).toBe("translateY(0px)");
+
+    fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
+
+    expect(indicator().style.transform).toBe("translateY(38px)");
+    expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("shows one Brand without multi-Organization or collaboration navigation", () => {
@@ -119,7 +188,6 @@ describe("AppShell", () => {
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Members" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
-    expect(screen.getByText("Project")).toBeInTheDocument();
     expect(screen.queryByText("Collaboration")).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
@@ -143,7 +211,6 @@ describe("AppShell", () => {
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
-    expect(screen.getByText("Project")).toBeInTheDocument();
   });
 
   it.each(["profile", "security", "billing"])(
@@ -186,7 +253,6 @@ describe("AppShell", () => {
         "/account/billing",
       );
       expect(screen.queryByRole("link", { name: "New project" })).toBeNull();
-      expect(screen.getByText("Account")).toBeInTheDocument();
     },
   );
 

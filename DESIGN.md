@@ -334,11 +334,32 @@ an `lg:mx-0` that quietly cancels the centring at the width where it matters
 most. Both collapse to nothing when the content outgrows the column, so long
 pages still start at the top and scroll normally.
 
-- Dashboard: sidebar 260px on `--paper`, content on `--paper` with white
-  panels only where grouping helps. Page header is left-aligned: eyebrow
-  (micro), `display` title, one primary action on the right. Data lives in
-  lists and tables with `--surface-2` row hover, not in stacks of cards.
-  Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+- Dashboard: one frame on the paper page, never a rectangle glued to the
+  edge. The whole app sits in a `--surface` card 12px off the viewport
+  (`--line` hairline, `--radius-3xl`), and the sidebar floats inside it as a
+  `--paper` card 260px wide, 12px off the frame's edges, with a hairline and
+  `--radius-lg`. Nested corners are concentric: the inner radius is the
+  outer radius minus the gap (24px outside, 12px gap, 12px inside), which
+  is the rule for any card inside a card. The header bar lives in the page
+  area beside the sidebar. Below `md` the sidebar becomes a sheet
+  and the app runs full bleed on paper. Panels inside the page keep their
+  hairline, which is what separates them on white, not a tint. The
+  sidebar's footer (the plan card, the user row) sits without a rule above
+  it. Chosen by the founder on 2026-09-09: two panels among six frames
+  (card, two panels, dock, under the bar, ink card, stack), then folded into
+  one frame on his proposal.
+  Page header is left-aligned: eyebrow (micro), `display` title, one primary
+  action on the right. Data lives in lists and tables with `--surface-2` row
+  hover, not in stacks of cards. Three-equal-cards rows are banned; use a
+  2:1 or 1:2 split.
+- Sidebar header: no logo and no avatar. The project's name is the title of
+  the sidebar, at `heading` in Gelica with a thin chevron beside it (20px,
+  `--ink-3`), and the whole title is the button that opens the project menu
+  (switch, create, settings): 16px inset, `--surface-2` on hover and while
+  open. Chosen by the founder on 2026-09-09 from six drafts (brand first,
+  project card, typographic, sectioned, ink panel, rows), the typographic
+  one without its wordmark: the product's name has no business in its own
+  shell. The navigation under it: section 7.
 - Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
   footer above the user row, as a small poster on `--brand-soft`
   (`--radius-lg`, no border, 14px padding): the promise at `subheading`
@@ -351,8 +372,13 @@ pages still start at the top and scroll normally.
   `/templates`, its eyes well inside the card). It never says "Free plan":
   the sale says it. A Pro Account shows nothing there, only the user row: a
   paying customer is not sold to from the sidebar, and the subscription
-  lives on the billing page. Chosen by the founder on 2026-09-09 from six
-  drafts (sticker, speech bubble, meters, poster, ink card, slim row);
+  lives on the billing page. Two things move on it, the founder's call: the
+  blob's eyes change every few seconds (starstruck to happy and back, the
+  `Blob` transition, so the corner of the eye catches it), and a soft light
+  sweeps the button (`.cta-shine`, the one moving gradient in the interface,
+  a light passing, never a fill); both hold still under reduced motion.
+  Chosen by the founder on 2026-09-09 from six drafts (sticker, speech
+  bubble, meters, poster, ink card, slim row);
   `src/components/account/sidebar-plan-card.tsx`.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
@@ -502,10 +528,18 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Cards: `--surface`, `--line` border, `--radius-lg`, padding 20px (24px for
   hero panels). Title at `subheading`. Cards are used only when grouping
   earns it; in lists, rows with dividers replace cards.
-- Sidebar navigation: items 36px tall, `--radius-md`, `ui` weight 500. Hover
-  `--surface-2`. Active is `--brand-soft` fill, `--ink` text at weight 600,
-  and a 3px `--brand` bar on the left edge. The three states must be
-  distinguishable at a glance.
+- Sidebar navigation: no group labels, the project title above says where
+  we are. Items 36px tall, `--radius-md`, 12px inset, `ui` weight 500: an
+  18px Tabler icon at stroke 1.75 in `--ink-2`, the name, and the meaning on
+  the right edge, the Inbox queue as a count (`small` 600, tabular, on
+  `--surface-2`, "500+" past the ceiling) or a small arrow on what opens in
+  a new tab (the Wall). Hover `--surface-2`. Active is not a style on the item but one indicator
+  per list: a `--brand-soft` pill the item's exact size, and a 3px `--brand`
+  rail in the gutter, flush with the panel's edge and rounded on its inner
+  side; the name goes to 600 and the icon to `--ink`. Chosen by the founder
+  on 2026-09-09: the navigation as a mix of two of six drafts, the indicator
+  as the rail among six drawings of the pill-and-bar pair. It travels
+  (section 8.3). The three states must be distinguishable at a glance.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
   (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
   24px padding. The stars open the card at 14px in the Brand accent with
@@ -652,6 +686,12 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
 - Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
+- Sidebar navigation: the active indicator is one element that slides to
+  the clicked item before the page arrives, overshoots and settles
+  (`--motion-settle`, `--ease-settle`), stretched along its travel and
+  squashed as it lands (`.nav-indicator-travel`, 6 and 4 percent, volume
+  kept); the name and icon change with it, and the route confirms the move.
+  Under reduced motion it jumps.
 - Lists and grids mount with a 30ms stagger, 12px upward travel, opacity from 0. Maximum 12 items staggered; the rest appear instantly.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
   tint.
@@ -685,7 +725,9 @@ notes may be playful; the rest of the interface stays clear.
   the direct competitor's pair (Senja). Before adopting any signature element
   (font, accent, illustration style), check it is not already a competitor's.
 - Violet `#6d5dfc` as a default anywhere. White text on the amber accent.
-- A second accent color. Gradients on text or backgrounds. Neon or outer glows.
+- A second accent color. Gradients on text or backgrounds (the one exception:
+  the light that sweeps the sidebar's Upgrade button, section 6, a moving
+  highlight, never a fill). Neon or outer glows.
 - Shadows on resting cards. `shadow-xs` sprinkled on every surface.
 - Three equal cards in a row. Centered card on an empty background as a page.
 - Page titles under 24px. Literal font weights like 510 and 590.
