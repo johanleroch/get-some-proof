@@ -8,7 +8,7 @@ const avatarHosts: Record<WallProvider, ReadonlySet<string>> = {
 };
 
 export class ImportAvatarError extends Error {
-  constructor() {
+  constructor(public readonly diagnostic = "FETCH_FAILED") {
     super("The photo could not be copied. Choose another image and try again.");
     this.name = "ImportAvatarError";
   }
@@ -36,7 +36,7 @@ export async function downloadImportAvatar(
   try {
     url = new URL(input);
   } catch {
-    throw new ImportAvatarError();
+    throw new ImportAvatarError("INVALID_URL");
   }
   if (
     url.protocol !== "https:" ||
@@ -45,7 +45,7 @@ export async function downloadImportAvatar(
     url.port ||
     !avatarHosts[provider].has(url.hostname)
   )
-    throw new ImportAvatarError();
+    throw new ImportAvatarError("URL_NOT_ALLOWED");
 
   try {
     const response = await fetch(url, {
@@ -63,10 +63,17 @@ export async function downloadImportAvatar(
       Number(response.headers.get("content-length")) > maximumImportAvatarBytes
     ) {
       await response.body?.cancel();
-      throw new ImportAvatarError();
+      throw new ImportAvatarError(
+        !response.ok
+          ? `HTTP_${response.status}`
+          : Number(response.headers.get("content-length")) >
+              maximumImportAvatarBytes
+            ? "FILE_TOO_LARGE"
+            : "UNSUPPORTED_CONTENT_TYPE",
+      );
     }
     const reader = response.body?.getReader();
-    if (!reader) throw new ImportAvatarError();
+    if (!reader) throw new ImportAvatarError("EMPTY_RESPONSE");
     const chunks: Uint8Array<ArrayBuffer>[] = [];
     let size = 0;
     try {
@@ -74,7 +81,8 @@ export async function downloadImportAvatar(
         const { done, value } = await reader.read();
         if (done) break;
         size += value.byteLength;
-        if (size > maximumImportAvatarBytes) throw new ImportAvatarError();
+        if (size > maximumImportAvatarBytes)
+          throw new ImportAvatarError("FILE_TOO_LARGE");
         chunks.push(new Uint8Array(value));
       }
     } finally {
@@ -85,9 +93,16 @@ export async function downloadImportAvatar(
     const detected = imageType(
       new Uint8Array(await blob.slice(0, 12).arrayBuffer()),
     );
-    if (detected !== contentType) throw new ImportAvatarError();
-    return blob;
-  } catch {
-    throw new ImportAvatarError();
+    if (!detected) throw new ImportAvatarError("UNRECOGNIZED_IMAGE");
+    // Provider objects can be mislabeled (e.g. Senja JPEG bytes served as PNG).
+    // Store the recognized raster type, never the source filename/header alone.
+    return blob.slice(0, blob.size, detected);
+  } catch (error) {
+    if (error instanceof ImportAvatarError) throw error;
+    throw new ImportAvatarError(
+      error instanceof Error && error.name === "TimeoutError"
+        ? "DOWNLOAD_TIMEOUT"
+        : "FETCH_FAILED",
+    );
   }
 }

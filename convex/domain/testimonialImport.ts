@@ -1,4 +1,5 @@
 import { ConvexError, v, type Infer } from "convex/values";
+import { richTextValidator } from "./testimonialRichText";
 
 export const importAttestationVersion = "2026-09-09";
 export const importAttestationText =
@@ -44,6 +45,7 @@ export const wallCandidate = v.object({
   type: v.union(v.literal("text"), v.literal("video")),
   authorName: v.string(),
   text: v.string(),
+  richText: v.optional(richTextValidator),
   tagline: v.optional(v.string()),
   avatarUrl: v.optional(v.string()),
   videoUrl: v.optional(v.string()),

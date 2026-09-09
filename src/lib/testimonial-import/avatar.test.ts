@@ -56,8 +56,8 @@ describe("import avatar retrieval", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it.each(["text/html", "image/svg+xml", "image/jpeg"])(
-    "rejects a non-raster or mismatched content type: %s",
+  it.each(["text/html", "image/svg+xml"])(
+    "rejects a non-raster content type: %s",
     async (contentType) => {
       vi.stubGlobal(
         "fetch",
@@ -104,4 +104,38 @@ describe("import avatar retrieval", () => {
       "The photo could not be copied. Choose another image and try again.",
     );
   });
+});
+
+it("copies a Senja JPEG advertised as PNG using its actual image type", async () => {
+  const jpeg = new Uint8Array([
+    255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1,
+  ]);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(jpeg, {
+        headers: { "content-type": "image/png", "content-length": "12" },
+      }),
+    ),
+  );
+  const result = await downloadImportAvatar(
+    "senja",
+    "https://senja-io.s3.us-west-1.amazonaws.com/public/media/customer_avatar.png",
+  );
+  expect(result.type).toBe("image/jpeg");
+  expect(new Uint8Array(await result.arrayBuffer())).toEqual(jpeg);
+});
+
+it("rejects unrecognized bytes even when advertised as a supported image", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response("<svg onload='alert(1)'/>", {
+        headers: { "content-type": "image/png" },
+      }),
+    ),
+  );
+  await expect(downloadImportAvatar("testimonial-to", url)).rejects.toThrow(
+    ImportAvatarError,
+  );
 });

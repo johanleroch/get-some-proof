@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 
+export const maximumImportedVideoDurationSeconds = 10 * 60;
+
 export const supportedVideoMimeTypes = [
   "video/mp4",
   "video/quicktime",

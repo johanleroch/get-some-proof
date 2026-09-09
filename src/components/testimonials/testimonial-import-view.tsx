@@ -4,6 +4,7 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
+import { defaultPrimaryColor } from "@convex/domain/brand";
 import { PageHeader } from "@/components/page-header";
 import { BlobLoader, BlobLoadingText } from "@/components/brand/blob-loader";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { ImportIdentityDialog } from "./import-identity-dialog";
+import { DesignQuote } from "./designs/design-parts";
 
 function canSelect(item: Doc<"testimonialImportItems">, videoEnabled = false) {
   return (
@@ -117,9 +119,11 @@ export function ImportPreviewList({
               </div>
             )}
             {item.text && (
-              <blockquote className="type-quote max-w-prose break-words whitespace-pre-wrap">
-                {item.text}
-              </blockquote>
+              <DesignQuote
+                accentColor={defaultPrimaryColor}
+                className="type-quote max-w-prose break-words whitespace-pre-wrap"
+                testimonial={item}
+              />
             )}
             {item.type === "video" && (
               <div className="mt-3 grid gap-3">
@@ -160,7 +164,7 @@ export function ImportPreviewList({
                           ? "Video source unavailable"
                           : !videoEnabled
                             ? "Video import is unavailable. You can still import text testimonials."
-                            : "Video · up to 2 minutes and 512 MB"}
+                            : "Video · up to 10 minutes and 512 MB"}
                 </p>
                 {item.videoStatus === "failed" && onRetry && (
                   <Button

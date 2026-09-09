@@ -350,6 +350,7 @@ export async function confirmOwnedImport(
       moderationStatus: "pending",
       submitterName: item.identityCorrection?.authorName ?? item.authorName,
       text: item.text,
+      richText: item.richText,
       role: item.identityCorrection
         ? item.identityCorrection.tagline || undefined
         : item.tagline,

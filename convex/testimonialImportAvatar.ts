@@ -11,7 +11,10 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { downloadImportAvatar } from "../src/lib/testimonial-import/avatar";
+import {
+  downloadImportAvatar,
+  ImportAvatarError,
+} from "../src/lib/testimonial-import/avatar";
 import { wallProvider } from "./domain/testimonialImport";
 import { upsertPublicProjection } from "./publicProjection";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
@@ -66,6 +69,8 @@ export const progress = query({
   returns: v.array(
     v.object({
       itemId: v.id("testimonialImportItems"),
+      diagnostic: v.optional(v.string()),
+      attempt: v.optional(v.number()),
       authorName: v.string(),
       status: v.union(
         v.literal("processing"),
@@ -93,6 +98,8 @@ export const progress = query({
         ? [
             {
               itemId: item._id,
+              diagnostic: item.avatarDiagnostic,
+              attempt: item.avatarAttempt,
               authorName:
                 item.identityCorrection?.authorName ?? item.authorName,
               status: item.avatarStatus,
@@ -117,6 +124,7 @@ export async function queueImportedAvatar(
   const attempt = (item.avatarAttempt ?? 0) + 1;
   await ctx.db.patch(item._id, {
     avatarStatus: "processing",
+    avatarDiagnostic: undefined,
     avatarAttempt: attempt,
   });
   await scheduleOrphanedStorageCleanup(ctx);
@@ -167,6 +175,7 @@ export const finish = internalMutation({
   args: {
     ...copyArgs,
     sourceUrl: v.string(),
+    diagnostic: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
   },
   returns: v.null(),
@@ -190,11 +199,17 @@ export const finish = internalMutation({
       return null;
     }
     if (!args.storageId) {
-      await ctx.db.patch(item._id, { avatarStatus: "failed" });
+      await ctx.db.patch(item._id, {
+        avatarStatus: "failed",
+        avatarDiagnostic: args.diagnostic ?? "COPY_FAILED",
+      });
       return null;
     }
     await ctx.db.patch(testimonial._id, { avatarStorageId: args.storageId });
-    await ctx.db.patch(item._id, { avatarStatus: "ready" });
+    await ctx.db.patch(item._id, {
+      avatarStatus: "ready",
+      avatarDiagnostic: undefined,
+    });
     const projection = await ctx.db
       .query("publicTestimonialProjections")
       .withIndex("by_testimonial", (q) =>
@@ -221,7 +236,10 @@ export const expireAttempt = internalMutation({
       item.avatarAttempt === args.attempt &&
       item.avatarStatus === "processing"
     )
-      await ctx.db.patch(item._id, { avatarStatus: "failed" });
+      await ctx.db.patch(item._id, {
+        avatarStatus: "failed",
+        avatarDiagnostic: "ATTEMPT_EXPIRED",
+      });
     return null;
   },
 });
@@ -236,14 +254,21 @@ export const copy = internalAction({
     );
     if (!source) return null;
     let storageId: Id<"_storage"> | undefined;
+    let stage = "download";
     try {
-      storageId = await ctx.storage.store(
-        await downloadImportAvatar(source.provider, source.url),
-      );
-    } catch {
+      const image = await downloadImportAvatar(source.provider, source.url);
+      stage = "storage";
+      storageId = await ctx.storage.store(image);
+    } catch (error) {
       await ctx.runMutation(internal.testimonialImportAvatar.finish, {
         ...args,
         sourceUrl: source.url,
+        diagnostic:
+          error instanceof ImportAvatarError
+            ? error.diagnostic
+            : stage === "storage"
+              ? "STORAGE_FAILED"
+              : "FETCH_FAILED",
       });
       return null;
     }

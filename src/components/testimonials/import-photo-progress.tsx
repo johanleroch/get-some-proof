@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function ImportPhotoProgress({
   photos,
@@ -12,6 +19,8 @@ export function ImportPhotoProgress({
     itemId: string;
     authorName: string;
     status: "processing" | "ready" | "failed";
+    diagnostic?: string;
+    attempt?: number;
   }[];
   onRetry: (itemId: string) => Promise<void>;
 }) {
@@ -34,6 +43,25 @@ export function ImportPhotoProgress({
                 : photo.status === "processing"
                   ? "Copying photo…"
                   : "Photo could not be copied. The testimonial was saved without it."}
+              {process.env.NODE_ENV === "development" &&
+                photo.status === "failed" && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="focus-ring ml-2 inline-flex size-6 items-center justify-center rounded-sm align-middle"
+                          aria-label={`Photo error details for ${photo.authorName}`}
+                        >
+                          <Info className="size-4" aria-hidden="true" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm text-left break-words whitespace-pre-line">
+                        {`Photo import · development\n${photo.diagnostic ?? "No diagnostic recorded. Retry the photo to capture one."}\nAttempt: ${photo.attempt ?? "unknown"}\nItem: ${photo.itemId}\nBackend: ${process.env.NEXT_PUBLIC_CONVEX_URL ?? "unknown"}`}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
             </p>
             {photo.status === "failed" && (
               <Button

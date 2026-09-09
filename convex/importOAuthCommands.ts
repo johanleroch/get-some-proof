@@ -182,7 +182,9 @@ function safeImportFailure(reason?: string): string {
     case "The video could not be copied. Check the source and try again.":
       return "The source video could not be copied. Check that it is still available before retrying.";
     case "Video must be no longer than 2 minutes.":
-      return "This video exceeds the 2-minute limit. Shorten it at the source before retrying.";
+      return "This copy failed under the previous 2-minute limit. Retry to apply the current 10-minute import limit.";
+    case "Video must be no longer than 10 minutes.":
+      return "This video exceeds the 10-minute import limit. Shorten it at the source before retrying.";
     case "Video reservation is no longer active.":
     case "Video reservation expired.":
     case "Video reservation expired. Upload the video again.":
