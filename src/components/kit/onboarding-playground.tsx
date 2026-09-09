@@ -204,8 +204,11 @@ export function OnboardingPlayground({
     minHeightRef.current = device.minHeight;
   }, [device.minHeight]);
 
-  // After the frame shrank for a new key, read the content's own height.
+  // After the frame shrank for a new key, read the content's own height:
+  // at once, since reading a scroll height lays the frame out even while no
+  // frame is being painted, and again on the next paint for good measure.
   useEffect(() => {
+    measureRef.current?.();
     const id = requestAnimationFrame(() => measureRef.current?.());
     return () => cancelAnimationFrame(id);
   }, [heightKey]);
