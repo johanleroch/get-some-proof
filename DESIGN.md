@@ -380,9 +380,12 @@ pages still start at the top and scroll normally.
   address will be /c/northwind-bakery") with a "Change" that swaps the line
   for the field; the color is the accent swatches; the Collection Form
   wording and the privacy contact wait behind one disclosure, each with the
-  real default as its placeholder. Never present a field the domain already
-  fills as a required one, and never let the preview show a wording the
-  mutation would not write.
+  real default as its placeholder. The form reads in the order of the
+  preview beside it: the optional logo first, then the name, then the
+  colour. A taken address opens the address field, marks it invalid and
+  says so under it with the focus there, never only in a toast that leaves.
+  Never present a field the domain already fills as a required one, and
+  never let the preview show a wording the mutation would not write.
   The whole first journey (the account form, its Check-your-email state,
   the verification email, the `/dashboard` wait, this form and the first
   Overview) plays at `/kit/onboarding` on sample data at the four device
