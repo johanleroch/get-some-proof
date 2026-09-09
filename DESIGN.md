@@ -558,8 +558,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 - Toasts: the mascot tells them. `blobToast.success|info|warning|error|
 loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   sonner, rendered through `toast.custom`) shows the blob at 48px on the
-  left, appearing neutral and blinking into the message's mood (happy,
-  neutral, worried, sad; the loader for loading), and the message in a
+  left. Errors show the sad face immediately; other notifications appear
+  neutral and blink into their mood (happy, neutral, worried; the loader for
+  loading). The message sits in a
   speech bubble: `--surface`, `--line` border, `--radius-lg`,
   `--shadow-float`, a small tail towards the blob, title at `ui` 600 in the
   status color (`--success`, `--info`, `--warning`, `--danger`; `--ink` while

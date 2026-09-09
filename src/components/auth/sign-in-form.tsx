@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
@@ -76,13 +77,12 @@ export function SignInForm({
             Forgot password?
           </Link>
         </div>
-        <Input
+        <PasswordInput
           autoComplete="current-password"
           id="password"
           minLength={8}
           name="password"
           required
-          type="password"
         />
       </Field>
       {error ? <ErrorToast message={error} /> : null}

@@ -1,3 +1,4 @@
+import { AccountSecurity } from "@/components/account/account-security";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
@@ -40,6 +41,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "account-security": AccountSecurity,
   "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
