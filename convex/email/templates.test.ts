@@ -20,7 +20,11 @@ describe("transactional email templates", () => {
     );
     expect(message.html).toContain("#ffbb16");
     expect(message.html).not.toContain("#4f46e5");
+    expect(message.html).toContain("/brand/email/logo.png");
+    expect(message.html).toContain("/brand/email/envelope-sent.png");
+    expect(message.html).toContain("What happens next");
     expect(message.text).toContain(url);
+    expect(message.text).toContain("2. Name your Brand.");
     expect(message.text).toContain("you can ignore this email");
   });
 
@@ -41,7 +45,8 @@ describe("transactional email templates", () => {
     });
     expect(message.html).toContain("Manage submission 1");
     expect(message.html).toContain("Manage submission 2");
-    expect(message.html).toContain("Getsome</strong>proof");
+    expect(message.html).toContain("/brand/email/logo.png");
+    expect(message.html).not.toContain("envelope-sent.png");
     expect(message.text).toContain("Submission 2: http://localhost:3000/s/two");
   });
 

@@ -583,13 +583,16 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   1.75. Lucide is removed once the last usages are migrated.
 - Transactional emails (`convex/email/templates.ts`, one layout for all of
   them): the light theme only, in hex, because mail clients know no tokens.
-  `--paper` behind, one `--surface` card on a `--line` hairline at
-  `--radius-lg`, the wordmark set in text above it (Gelica cannot travel, so
-  Georgia stands in for the display role), the title at 28px, one sentence
-  in `--ink-2`, one amber button with ink text, the address to paste in
-  small print, and the footnote outside the card. Domain nouns as
-  everywhere: a Brand, never an Organization. Reviewed at `/kit/onboarding`,
-  step 3.
+  Paper behind a 560px column, the lockup above, then one `--surface` panel
+  on a `--line` hairline at `--radius-lg` holding the spot illustration when
+  the moment has one (the envelope on its way for the verification email),
+  the title at 30px in Georgia (Gelica cannot travel), one sentence in
+  `--ink-2`, the amber button with ink text, and, at the start of a journey,
+  a "What happens next" list numbered in `--brand-text`; the footnote sits
+  under the panel with the product line. Images are PNGs under
+  `public/brand/email`, rendered at 2x by `pnpm email:assets` from the same
+  sources as the site, never a second drawing. Domain nouns as everywhere:
+  a Brand, never an Organization. Reviewed at `/kit/onboarding`, step 3.
 
 ## 8. Motion
 
