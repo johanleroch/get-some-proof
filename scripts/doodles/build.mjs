@@ -677,16 +677,8 @@ svg{width:100%;height:auto}.small svg{width:160px}p{margin:8px 0 0;font-size:13p
 </style>${markPanels}${panels}`;
 }
 
-const svgIndex = process.argv.indexOf("--svg");
 const previewIndex = process.argv.indexOf("--preview");
-if (svgIndex !== -1) {
-  // One spot as plain SVG on stdout, for the email assets that cannot use
-  // a React component (scripts/email/build-assets.mjs).
-  const name = process.argv[svgIndex + 1];
-  const spot = spots.find((candidate) => candidate.name === name);
-  if (!spot) throw new Error(`Unknown spot: ${name}`);
-  process.stdout.write(svgSource(spot));
-} else if (previewIndex !== -1) {
+if (previewIndex !== -1) {
   const target = process.argv[previewIndex + 1];
   if (!target) throw new Error("--preview needs a file path");
   await writeFile(target, previewSource());

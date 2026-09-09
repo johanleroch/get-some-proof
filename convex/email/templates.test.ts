@@ -7,24 +7,22 @@ import {
 } from "./templates";
 
 describe("transactional email templates", () => {
-  it("speaks the domain and carries the link in html and text", () => {
+  it("welcomes the new account and hands over the link", () => {
     const url = "http://localhost:3000/api/auth/verify-email?token=a&b=c";
     const message = buildVerificationEmail("mina@fernhill.studio", url);
 
-    expect(message.subject).toBe("Verify your email address");
-    expect(message.html).toContain("Verify your email</h1>");
+    expect(message.subject).toBe("Welcome to Get Some Proof");
+    expect(message.html).toContain("Welcome to Get Some Proof</h1>");
+    expect(message.html).toContain("Thanks for signing up.");
     expect(message.html).toContain("create your Brand");
     expect(message.html).not.toMatch(/Organization/);
     expect(message.html).toContain(
       'href="http://localhost:3000/api/auth/verify-email?token=a&amp;b=c"',
     );
-    expect(message.html).toContain("#ffbb16");
-    expect(message.html).not.toContain("#4f46e5");
+    expect(message.html).toContain(">Verify my email</a>");
     expect(message.html).toContain("/brand/email/logo.png");
-    expect(message.html).toContain("/brand/email/envelope-sent.png");
-    expect(message.html).toContain("What happens next");
+    expect(message.html).toContain("#ffbb16");
     expect(message.text).toContain(url);
-    expect(message.text).toContain("2. Name your Brand.");
     expect(message.text).toContain("you can ignore this email");
   });
 
@@ -46,7 +44,6 @@ describe("transactional email templates", () => {
     expect(message.html).toContain("Manage submission 1");
     expect(message.html).toContain("Manage submission 2");
     expect(message.html).toContain("/brand/email/logo.png");
-    expect(message.html).not.toContain("envelope-sent.png");
     expect(message.text).toContain("Submission 2: http://localhost:3000/s/two");
   });
 

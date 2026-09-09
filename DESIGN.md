@@ -582,17 +582,16 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
   1.75. Lucide is removed once the last usages are migrated.
 - Transactional emails (`convex/email/templates.ts`, one layout for all of
-  them): the light theme only, in hex, because mail clients know no tokens.
-  Paper behind a 560px column, the lockup above, then one `--surface` panel
-  on a `--line` hairline at `--radius-lg` holding the spot illustration when
-  the moment has one (the envelope on its way for the verification email),
-  the title at 30px in Georgia (Gelica cannot travel), one sentence in
-  `--ink-2`, the amber button with ink text, and, at the start of a journey,
-  a "What happens next" list numbered in `--brand-text`; the footnote sits
-  under the panel with the product line. Images are PNGs under
-  `public/brand/email`, rendered at 2x by `pnpm email:assets` from the same
-  sources as the site, never a second drawing. Domain nouns as everywhere:
-  a Brand, never an Organization. Reviewed at `/kit/onboarding`, step 3.
+  them): simple and minimal, the light theme in hex because mail clients
+  know no tokens. `--paper` behind a 480px column; the lockup at 28px at the
+  top (a PNG under `public/brand/email`, rendered from the site's logo by
+  `pnpm email:assets`), 40px of air, the title at `heading` in Georgia
+  standing in for Gelica, the message at `body` in `--ink`, the one amber
+  button with ink text (44px, `--radius-md`), and a `small` footnote in
+  `--ink-2` 40px below. No panel, no illustration, no list: a mail is read
+  once. The welcome email thanks the person for signing up and hands them
+  their link. Domain nouns as everywhere: a Brand, never an Organization.
+  Reviewed at `/kit/onboarding`, step 3.
 
 ## 8. Motion
 
