@@ -107,6 +107,7 @@ it("keeps preview capabilities outside model context and uses the same snapshot 
   const token = "b".repeat(64);
   let selectedPositions: number[] = [];
   const gateway: ImportGateway = {
+    photo: vi.fn(async () => null),
     correctIdentity: vi.fn(async () => null),
     preview: vi.fn(async () => ({ token })),
     read: vi.fn<ImportGateway["read"]>(async () => ({
@@ -153,6 +154,7 @@ it("keeps preview capabilities outside model context and uses the same snapshot 
       "preview_testimonial_wall",
       "read_testimonial_preview",
       "select_testimonial_preview",
+      "set_testimonial_photo",
       "correct_testimonial_identity",
     ]);
     expect(
@@ -200,6 +202,46 @@ it("keeps preview capabilities outside model context and uses the same snapshot 
     expect(
       JSON.stringify([corrected.content, corrected.structuredContent]),
     ).not.toContain(token);
+    expect(
+      tools.find((tool) => tool.name === "set_testimonial_photo")?._meta?.ui,
+    ).toEqual({ visibility: ["app"] });
+    const imageBase64 = "iVBORw0KGgo=";
+    const photo = await client.callTool({
+      name: "set_testimonial_photo",
+      arguments: { previewCapability: token, position: 0, imageBase64 },
+    });
+    expect(photo.isError).not.toBe(true);
+    expect(gateway.photo).toHaveBeenCalledWith({
+      token,
+      position: 0,
+      imageBase64,
+    });
+    expect(
+      JSON.stringify([photo.content, photo.structuredContent]),
+    ).not.toContain(imageBase64);
+    expect(
+      JSON.stringify([photo.content, photo.structuredContent]),
+    ).not.toContain(token);
+    const invalidPhoto = await client.callTool({
+      name: "set_testimonial_photo",
+      arguments: {
+        previewCapability: token,
+        position: 0,
+        imageBase64: "not a base64 image",
+      },
+    });
+    expect(invalidPhoto.isError).toBe(true);
+    expect(gateway.photo).toHaveBeenCalledTimes(1);
+    const removed = await client.callTool({
+      name: "set_testimonial_photo",
+      arguments: { previewCapability: token, position: 0, imageBase64: null },
+    });
+    expect(removed.isError).not.toBe(true);
+    expect(gateway.photo).toHaveBeenLastCalledWith({
+      token,
+      position: 0,
+      imageBase64: null,
+    });
     const invalidIdentity = await client.callTool({
       name: "correct_testimonial_identity",
       arguments: {

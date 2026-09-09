@@ -1,4 +1,5 @@
 "use client";
+import { ImportPhotoProgress } from "./import-photo-progress";
 import { useRef, useState } from "react";
 import type { FunctionReturnType } from "convex/server";
 import { useRouter } from "next/navigation";
@@ -36,7 +37,10 @@ export function TestimonialImport({
   const readSource = useAction(api.testimonialImportSource.preview);
   const confirm = useMutation(api.testimonialImports.confirm);
   const persistSelection = useMutation(api.testimonialImports.setSelection);
+  const retryPhoto = useMutation(api.testimonialImportAvatar.retry);
   const retryVideo = useMutation(api.testimonialImportVideo.retry);
+  const uploadPhoto = useAction(api.importAvatarUpload.upload);
+  const removePhoto = useMutation(api.importAvatarUpload.remove);
   const correctIdentity = useMutation(api.testimonialImports.correctIdentity);
   const [retryingItemId, setRetryingItemId] =
     useState<Id<"testimonialImportItems"> | null>(null);
@@ -77,6 +81,10 @@ export function TestimonialImport({
   const result = reviewingRemaining
     ? null
     : (preview?.result ?? savedResult ?? null);
+  const photos = useQuery(
+    api.testimonialImportAvatar.progress,
+    jobId && organization && result ? { jobId } : "skip",
+  );
   const selected = localSelected ?? new Set(preview?.selectedItemIds ?? []);
   const selectionReview = useQuery(
     api.importEligibility.selection,
@@ -160,6 +168,16 @@ export function TestimonialImport({
   if (!organization) return <p role="alert">Project unavailable.</p>;
   return (
     <TestimonialImportView
+      resultDetails={
+        <ImportPhotoProgress
+          photos={photos ?? []}
+          onRetry={async (itemId) => {
+            await retryPhoto({
+              itemId: itemId as Id<"testimonialImportItems">,
+            });
+          }}
+        />
+      }
       selectionReview={selectionReview}
       checkingSelection={
         !!jobId && !!preview && !result && selectionReview === undefined
@@ -168,6 +186,12 @@ export function TestimonialImport({
       onTypeFilterChange={(type) => {
         setTypeFilter(type);
         setCursors([null]);
+      }}
+      onPhoto={async (itemId, photo) => {
+        const target = { itemId };
+        if (photo)
+          await uploadPhoto({ target, bytes: await photo.arrayBuffer() });
+        else await removePhoto({ target });
       }}
       onCorrectIdentity={async (itemId, identity) => {
         await correctIdentity({ itemId, ...identity });

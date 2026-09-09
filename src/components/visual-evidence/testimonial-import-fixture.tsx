@@ -150,6 +150,21 @@ export function TestimonialImportFixture({
         read={async () => setStep("preview")}
         save={async () => setStep("result")}
         onRetry={async () => setStep("video-processing")}
+        onPhoto={async (itemId, photo) => {
+          const avatarUrl = photo
+            ? await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result));
+                reader.onerror = () => reject(new Error("Image unavailable"));
+                reader.readAsDataURL(photo);
+              })
+            : undefined;
+          setPreviewItems((previous) =>
+            previous.map((item) =>
+              item._id === itemId ? { ...item, avatarUrl } : item,
+            ),
+          );
+        }}
         onCorrectIdentity={
           publicPreview
             ? undefined

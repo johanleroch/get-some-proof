@@ -554,6 +554,42 @@ export function ImportWidget() {
             readPage(typeof next === "function" ? next(cursors) : next, type)
           }
           selected={new Set((preview?.selectedPositions ?? []).map(rowId))}
+          onPhoto={async (id, photo) => {
+            if (!bridge.current || !capability.current || !connected)
+              throw new Error("The preview session is unavailable.");
+            const version = ++requestVersion.current;
+            const photoCapability = capability.current;
+            const imageBase64 = photo
+              ? await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () =>
+                    resolve(String(reader.result).split(",")[1]!);
+                  reader.onerror = () =>
+                    reject(new Error("The photo could not be read."));
+                  reader.readAsDataURL(photo);
+                })
+              : null;
+            if (
+              version !== requestVersion.current ||
+              photoCapability !== capability.current
+            )
+              throw new Error("The preview changed. Choose the photo again.");
+            const response = await bridge.current.callServerTool({
+              name: "set_testimonial_photo",
+              arguments: {
+                previewCapability: photoCapability,
+                position: Number(id.slice(8)),
+                imageBase64,
+                offset: Number(cursors.at(-1) ?? 0),
+                type: type === "all" ? undefined : type,
+              },
+            });
+            if (version !== requestVersion.current || response.isError)
+              throw new Error(
+                "The photo could not be saved. Check the preview and try again.",
+              );
+            receive(response);
+          }}
           onCorrectIdentity={async (id, identity) => {
             if (!bridge.current || !capability.current || !connected)
               throw new Error("The preview session is unavailable.");

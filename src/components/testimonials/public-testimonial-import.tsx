@@ -107,6 +107,8 @@ export function PublicTestimonialImport({
   } | null>(null);
   const request = useRef(0);
   const previewSource = useAction(api.testimonialImportSource.previewAnonymous);
+  const uploadPhoto = useAction(api.importAvatarUpload.upload);
+  const removePhoto = useMutation(api.importAvatarUpload.remove);
   const correctIdentity = useMutation(api.anonymousWallImports.correctIdentity);
   const select = useMutation(api.anonymousWallImports.select);
   const claim = useMutation(api.anonymousWallImports.claim);
@@ -370,6 +372,15 @@ export function PublicTestimonialImport({
       cursors={cursors}
       setCursors={setCursors}
       selected={new Set((preview?.selectedPositions ?? []).map(rowId))}
+      onPhoto={async (itemId, photo) => {
+        const target = {
+          token: session!.token,
+          position: Number(itemId.slice("preview-".length)),
+        };
+        if (photo)
+          await uploadPhoto({ target, bytes: await photo.arrayBuffer() });
+        else await removePhoto({ target });
+      }}
       onCorrectIdentity={async (itemId, identity) => {
         if (!session) throw new Error("The preview is unavailable.");
         await correctIdentity({

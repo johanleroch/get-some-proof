@@ -152,6 +152,7 @@ test("MCP Apps component keeps server selection across filters and follows the h
         {
           position: 0,
           sourceId: "camille",
+          avatarUrl: undefined as string | undefined,
           type: "text",
           authorName: "Camille Laurent",
           text: "Our customers can find the right proof before getting in touch.",
@@ -159,6 +160,7 @@ test("MCP Apps component keeps server selection across filters and follows the h
         {
           position: 1,
           sourceId: "daniel",
+          avatarUrl: undefined as string | undefined,
           type: "text",
           authorName: "Daniel Reed",
           text: "Our clients' original words stayed intact throughout the move.",
@@ -288,6 +290,14 @@ test("MCP Apps component keeps server selection across filters and follows the h
           });
           return;
         }
+        if (message.params.name === "set_testimonial_photo") {
+          if (args.previewCapability !== "a".repeat(64))
+            throw new Error("Wrong preview capability");
+          snapshot.items[args.position].avatarUrl =
+            args.imageBase64 === null
+              ? undefined
+              : `data:image/jpeg;base64,${args.imageBase64}`;
+        }
         if (message.params.name === "correct_testimonial_identity") {
           if (args.previewCapability !== "a".repeat(64))
             throw new Error("Wrong preview capability");
@@ -343,6 +353,47 @@ test("MCP Apps component keeps server selection across filters and follows the h
     .click();
   const dialog = app.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  const imageBase64 = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#d3a45b";
+    ctx.fillRect(0, 0, 128, 128);
+    return canvas.toDataURL("image/png").split(",")[1]!;
+  });
+  await dialog.locator("input[type=file]").setInputFiles({
+    name: "customer-photo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(imageBase64, "base64"),
+  });
+  await app.getByRole("button", { name: "Set new picture" }).click();
+  await expect(
+    app.getByRole("dialog", { name: "Edit customer photo" }),
+  ).toBeHidden();
+  await expect(
+    dialog.getByRole("button", { name: "Replace image" }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Save details", exact: true })
+    .click();
+  await expect(dialog).toBeHidden();
+  await app
+    .getByRole("button", {
+      name: "Correct details for Camille Laurent",
+      exact: true,
+    })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Replace image" }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("img", { name: "Customer photo", exact: true }),
+  ).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
+  await dialog.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect(
+    dialog.getByRole("button", { name: "Upload image" }),
+  ).toBeVisible();
   await dialog.getByLabel("Customer name").fill("Camille Moreau");
   await dialog.getByLabel("Role or company").fill("Founder, Atelier June");
   const identityAccessibility = await new AxeBuilder({ page })

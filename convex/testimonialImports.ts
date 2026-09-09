@@ -30,6 +30,7 @@ import {
 } from "./security/organizationAccess";
 import schema from "./schema";
 import { queueImportedVideo } from "./testimonialImportVideo";
+import { queueImportedAvatar } from "./testimonialImportAvatar";
 import { isProjectActive } from "./projectActivity";
 
 const previewLimiter = new RateLimiter(components.rateLimiter, {
@@ -149,6 +150,7 @@ export const correctIdentity = mutation({
     const { authorName, tagline } = normalizeImportIdentity(args);
     await ctx.db.patch(item._id, {
       identityCorrection: {
+        avatarStorageId: item.identityCorrection?.avatarStorageId,
         authorName,
         tagline,
         editedBy: principal.actorId,
@@ -344,6 +346,7 @@ export async function confirmOwnedImport(
       organizationId: job.organizationId,
       clientSubmissionId: `import:${id}`,
       submissionType: "text",
+      avatarStorageId: item.identityCorrection?.avatarStorageId ?? undefined,
       moderationStatus: "pending",
       submitterName: item.identityCorrection?.authorName ?? item.authorName,
       text: item.text,
@@ -360,6 +363,7 @@ export async function confirmOwnedImport(
         originalAuthorName: item.authorName,
         originalTagline: item.tagline,
         originalType: item.type,
+        originalAvatarUrl: item.avatarUrl,
         importedBy: principal.actorId,
         importedAt: now,
       },
@@ -367,6 +371,7 @@ export async function confirmOwnedImport(
       updatedAt: now,
     });
     await ctx.db.patch(item._id, { outcome: "imported", testimonialId });
+    await queueImportedAvatar(ctx, item, testimonialId);
     result.imported++;
   }
   if (result.imported > 0 || (result.processing ?? 0) > 0)
@@ -560,7 +565,22 @@ export const getPreview = query({
         ...(await getVideoStorageAvailability(ctx, job.organizationId)),
         configured: env.MUX_PROVIDER === "mux" || env.MUX_PROVIDER === "fake",
       },
-      items,
+      items: {
+        ...items,
+        page: await Promise.all(
+          items.page.map(async (item): Promise<typeof item> => ({
+            ...item,
+            avatarUrl:
+              item.identityCorrection?.avatarStorageId === undefined
+                ? item.avatarUrl
+                : item.identityCorrection.avatarStorageId
+                  ? ((await ctx.storage.getUrl(
+                      item.identityCorrection.avatarStorageId,
+                    )) ?? undefined)
+                  : undefined,
+          })),
+        ),
+      },
     };
   },
 });

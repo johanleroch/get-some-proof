@@ -8,6 +8,26 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
+it("keeps the smaller budget for other tools and caps photo requests", async () => {
+  for (const [name, imageBase64] of [
+    ["correct_testimonial_identity", "A".repeat(17_000)],
+    ["set_testimonial_photo", "A".repeat(1_004_097)],
+  ]) {
+    const response = await POST(
+      new Request("http://127.0.0.1:3897/mcp", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: { name, arguments: { imageBase64 } },
+        }),
+      }),
+    );
+    expect(response.status).toBe(413);
+  }
+});
+
 it("is disabled unless deliberately enabled", async () => {
   vi.stubEnv("CHATGPT_IMPORT_ENABLED", "false");
   expect(

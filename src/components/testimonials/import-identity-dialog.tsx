@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ProfileImageControl } from "@/components/profile-image/profile-image-control";
 import type { Doc } from "@convex/_generated/dataModel";
 import { convexErrorMessage } from "@/lib/convex-error-message";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,11 @@ export function ImportIdentityDialog({
   item,
   onClose,
   onSave,
+  onPhoto,
 }: {
   item: Doc<"testimonialImportItems">;
   onClose: () => void;
+  onPhoto?: (photo: Blob | null) => Promise<void>;
   onSave: (identity: { authorName: string; tagline: string }) => Promise<void>;
 }) {
   const [authorName, setAuthorName] = useState(
@@ -31,12 +34,24 @@ export function ImportIdentityDialog({
   const [tagline, setTagline] = useState(
     item.identityCorrection?.tagline ?? item.tagline ?? "",
   );
+  const [photoUrl, setPhotoUrl] = useState<string | null>(
+    item.avatarUrl ?? null,
+  );
+  const photoDraft = useRef<Blob | null | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (photoUrl?.startsWith("blob:")) URL.revokeObjectURL(photoUrl);
+    },
+    [photoUrl],
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function save() {
     setPending(true);
     setError(null);
     try {
+      if (onPhoto && photoDraft.current !== undefined)
+        await onPhoto(photoDraft.current);
       await onSave({ authorName, tagline });
       onClose();
     } catch (cause) {
@@ -69,6 +84,25 @@ export function ImportIdentityDialog({
             void save();
           }}
         >
+          {onPhoto && (
+            <ProfileImageControl
+              alt="Customer photo"
+              cropShape="round"
+              fallback={authorName.slice(0, 1)}
+              imageUrl={photoUrl}
+              label="Customer photo"
+              size="sm"
+              readOnly={pending}
+              onUpload={async (blob) => {
+                photoDraft.current = blob;
+                setPhotoUrl(URL.createObjectURL(blob));
+              }}
+              onRemove={async () => {
+                photoDraft.current = null;
+                setPhotoUrl(null);
+              }}
+            />
+          )}
           <Field>
             <Label htmlFor="import-author-name">Customer name</Label>
             <Input

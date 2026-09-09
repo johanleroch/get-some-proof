@@ -27,6 +27,7 @@ export const importOrigin = v.object({
   originalTagline: v.optional(v.string()),
   originalType: v.optional(v.union(v.literal("text"), v.literal("video"))),
   originalVideoUrl: v.optional(v.string()),
+  originalAvatarUrl: v.optional(v.string()),
   importedBy: v.string(),
   importedAt: v.number(),
   publicationAttestation: v.optional(

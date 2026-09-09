@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
+import { ImportPhotoProgress } from "@/components/testimonials/import-photo-progress";
 
 type Status = z.infer<typeof importStatusSchema>;
 
@@ -29,14 +30,18 @@ export function ImportVideoProgress({
   const [retrying, setRetrying] = useState<string | null>(null);
   const [error, setError] = useState("");
   const refresh = useCallback(
-    async (itemId?: string) => {
+    async (itemId?: string, photo = false) => {
       const request = ++version.current;
       setBusy(true);
       setRetrying(itemId ?? null);
       setError("");
       try {
         const response = await callTool({
-          name: itemId ? "retry_import_video" : "read_testimonial_import",
+          name: itemId
+            ? photo
+              ? "retry_import_photo"
+              : "retry_import_video"
+            : "read_testimonial_import",
           arguments: { jobId, ...(itemId ? { itemId } : {}) },
         });
         if (request !== version.current) return;
@@ -84,7 +89,13 @@ export function ImportVideoProgress({
   }, [refresh, invalidate]);
 
   useEffect(() => {
-    if (busy || error || !status?.result.processing) return;
+    if (
+      busy ||
+      error ||
+      (!status?.result.processing &&
+        !status?.photos?.some((photo) => photo.status === "processing"))
+    )
+      return;
     const timer = window.setTimeout(() => void refresh(), 5000);
     return () => window.clearTimeout(timer);
   }, [busy, error, status, refresh]);
@@ -92,6 +103,10 @@ export function ImportVideoProgress({
   return (
     <section aria-label="Video import progress" className="grid gap-4">
       <FieldError>{error}</FieldError>
+      <ImportPhotoProgress
+        photos={status?.photos ?? []}
+        onRetry={(itemId) => refresh(itemId, true)}
+      />
       {!!status?.videos.length && (
         <ul className="bg-surface border-line divide-line divide-y rounded-lg border">
           {status.videos.map((video) => (

@@ -206,7 +206,25 @@ export const read = query({
       itemCount: preview.items.length,
       expiresAt: preview.expiresAt,
       selectedPositions: preview.selectedPositions,
-      items: candidates.slice(args.offset, args.offset + 100),
+      items: await Promise.all(
+        candidates
+          .slice(args.offset, args.offset + 100)
+          .map(async (item): Promise<typeof item> => {
+            const correction = preview.identityCorrections?.find(
+              (c) => c.position === item.position,
+            );
+            return {
+              ...item,
+              avatarUrl:
+                correction?.avatarStorageId === undefined
+                  ? item.avatarUrl
+                  : correction.avatarStorageId
+                    ? ((await ctx.storage.getUrl(correction.avatarStorageId)) ??
+                      undefined)
+                    : undefined,
+            };
+          }),
+      ),
       nextOffset:
         args.offset + 100 < candidates.length ? args.offset + 100 : null,
     };
@@ -269,10 +287,14 @@ export const correctIdentity = mutation({
     )
       unavailable();
     const identity = normalizeImportIdentity(args);
+    const avatarStorageId = preview.identityCorrections?.find(
+      (value) => value.position === args.position,
+    )?.avatarStorageId;
     const corrections = (preview.identityCorrections ?? []).filter(
       (value) => value.position !== args.position,
     );
     corrections.push({
+      avatarStorageId,
       position: args.position,
       ...identity,
       editedAt: Date.now(),
@@ -379,8 +401,20 @@ export async function claimOwnedPreview(
       (value) => value.position === item.position,
     );
     if (correction && item.sourceState === "new" && !item.unavailableReason) {
+      if (correction.avatarStorageId) {
+        const upload = await ctx.db
+          .query("importAvatarUploads")
+          .withIndex("by_storage_id", (q) =>
+            q.eq("storageId", correction.avatarStorageId!),
+          )
+          .unique();
+        const job = await ctx.db.get(result.jobId);
+        if (upload && job)
+          await ctx.db.patch(upload._id, { expiresAt: job.expiresAt });
+      }
       await ctx.db.patch(item._id, {
         identityCorrection: {
+          avatarStorageId: correction.avatarStorageId,
           authorName: correction.authorName,
           tagline: correction.tagline,
           editedAt: correction.editedAt,

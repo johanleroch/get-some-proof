@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const { value, done } = await reader.read();
     if (done) break;
     length += value.byteLength;
-    if (length > 16_384) {
+    if (length > 1_004_096) {
       await reader.cancel();
       return new Response("Request too large", { status: 413 });
     }
@@ -43,11 +43,27 @@ export async function POST(request: Request) {
   try {
     parsedBody = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch {
-    return new Response("Invalid JSON", { status: 400 });
+    return new Response(
+      length > 16_384 ? "Request too large" : "Invalid JSON",
+      { status: length > 16_384 ? 413 : 400 },
+    );
   }
+  // Only the app-only cropped-image command needs more than the normal budget.
+  const photoCall =
+    parsedBody &&
+    typeof parsedBody === "object" &&
+    "method" in parsedBody &&
+    parsedBody.method === "tools/call" &&
+    "params" in parsedBody &&
+    parsedBody.params &&
+    typeof parsedBody.params === "object" &&
+    "name" in parsedBody.params &&
+    parsedBody.params.name === "set_testimonial_photo";
+  if (length > 16_384 && !photoCall)
+    return new Response("Request too large", { status: 413 });
   const client = new ConvexHttpClient(backend);
   async function importProgress(
-    command: "status" | "retry",
+    command: "status" | "retry" | "retry-photo",
     args: { jobId: string; itemId?: string },
   ) {
     const authorization = request.headers.get("authorization");
@@ -96,6 +112,15 @@ export async function POST(request: Request) {
       read: (args) => client.query(api.anonymousWallImports.read, args),
       correctIdentity: (args) =>
         client.mutation(api.anonymousWallImports.correctIdentity, args),
+      photo: ({ token, position, imageBase64 }) =>
+        imageBase64 === null
+          ? client.mutation(api.importAvatarUpload.remove, {
+              target: { token, position },
+            })
+          : client.action(api.importAvatarUpload.upload, {
+              target: { token, position },
+              bytes: Uint8Array.from(Buffer.from(imageBase64, "base64")).buffer,
+            }),
       select: (args) => client.mutation(api.anonymousWallImports.select, args),
     },
     () =>
@@ -106,6 +131,7 @@ export async function POST(request: Request) {
     {
       challenge: `Bearer resource_metadata="${new URL(origin).origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import", error="insufficient_scope", error_description="Connect your account to choose a Project"`,
       status: (args) => importProgress("status", args),
+      retryPhoto: (args) => importProgress("retry-photo", args),
       retryVideo: (args) => importProgress("retry", args),
       eligibility: async (args) => {
         const authorization = request.headers.get("authorization");
@@ -185,6 +211,7 @@ export async function POST(request: Request) {
       },
     },
     origin,
+    backend,
   );
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

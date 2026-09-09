@@ -28,6 +28,7 @@ import {
 } from "./testimonialDeletion";
 import { createVideoAssetFromUrl } from "./videoProvider";
 import { resolveImportCleanup } from "./videoImportCleanup";
+import { queueImportedAvatar } from "./testimonialImportAvatar";
 import { requireOrganizationPermissionForPrincipal } from "./security/organizationAccess";
 import { requireVerifiedPrincipal, type Principal } from "./security/principal";
 
@@ -62,6 +63,7 @@ export async function queueImportedVideo(
       organizationId: job.organizationId,
       clientSubmissionId: `import:${item._id}`,
       submissionType: "video",
+      avatarStorageId: item.identityCorrection?.avatarStorageId ?? undefined,
       moderationStatus: "pending",
       submitterName: item.identityCorrection?.authorName ?? item.authorName,
       text: item.text,
@@ -83,6 +85,7 @@ export async function queueImportedVideo(
         originalTagline: item.tagline,
         originalType: item.type,
         originalVideoUrl: item.videoUrl,
+        originalAvatarUrl: item.avatarUrl,
         importedBy: actorId,
         importedAt: now,
       },
@@ -136,6 +139,7 @@ export async function queueImportedVideo(
     videoStatus: "processing",
     failureReason: undefined,
   });
+  await queueImportedAvatar(ctx, item, testimonialId);
   await ctx.scheduler.runAfter(
     copyLifetimeMs,
     internal.video.expireReservation,

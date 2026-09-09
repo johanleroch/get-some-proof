@@ -21,11 +21,16 @@ export default defineSchema({
     stage: importStage,
     count: v.number(),
   }).index("by_day_channel_stage", ["day", "channel", "stage"]),
+  importAvatarUploads: defineTable({
+    storageId: v.id("_storage"),
+    expiresAt: v.number(),
+  }).index("by_storage_id", ["storageId"]),
   anonymousWallPreviews: defineTable({
     identityCorrections: v.optional(
       v.array(
         v.object({
           position: v.number(),
+          avatarStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
           authorName: v.string(),
           tagline: v.string(),
           editedAt: v.number(),
@@ -59,8 +64,13 @@ export default defineSchema({
     .index("by_organizationId", ["organizationId"])
     .index("by_expiresAt", ["expiresAt"]),
   testimonialImportItems: defineTable({
+    avatarAttempt: v.optional(v.number()),
+    avatarStatus: v.optional(
+      v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
+    ),
     identityCorrection: v.optional(
       v.object({
+        avatarStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
         authorName: v.string(),
         tagline: v.string(),
         editedBy: v.string(),

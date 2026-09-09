@@ -12,6 +12,7 @@ import {
   importSaveHttp,
   importStatusHttp,
   importRetryHttp,
+  importPhotoRetryHttp,
   importEligibilityHttp,
 } from "./importOAuth";
 
@@ -86,6 +87,11 @@ http.route({
   path: "/api/import-mcp/status",
   method: "POST",
   handler: importStatusHttp,
+});
+http.route({
+  path: "/api/import-mcp/retry-photo",
+  method: "POST",
+  handler: importPhotoRetryHttp,
 });
 http.route({
   path: "/api/import-mcp/retry",

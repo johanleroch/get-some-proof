@@ -69,6 +69,16 @@ export const savedImportSchema = z.object({
 });
 
 export const importStatusSchema = savedImportSchema.extend({
+  photos: z
+    .array(
+      z.object({
+        itemId: z.string(),
+        authorName: z.string(),
+        status: z.enum(["processing", "ready", "failed"]),
+      }),
+    )
+    .max(500)
+    .optional(),
   videos: z
     .array(
       z.object({

@@ -220,6 +220,7 @@ export function TestimonialImportView({
   onRetry,
   retryingItemId,
   onCorrectIdentity,
+  onPhoto,
   typeFilter = "all",
   onTypeFilterChange,
   publicPreview = false,
@@ -252,6 +253,10 @@ export function TestimonialImportView({
   reviewRemaining?: () => void;
   onRetry?: (id: Id<"testimonialImportItems">) => Promise<void>;
   retryingItemId?: Id<"testimonialImportItems"> | null;
+  onPhoto?: (
+    itemId: Id<"testimonialImportItems">,
+    photo: Blob | null,
+  ) => Promise<void>;
   onCorrectIdentity?: (
     itemId: Id<"testimonialImportItems">,
     identity: { authorName: string; tagline: string },
@@ -643,6 +648,9 @@ export function TestimonialImportView({
         <ImportIdentityDialog
           item={editingItem}
           onClose={() => setEditingItem(null)}
+          onPhoto={
+            onPhoto ? (photo) => onPhoto(editingItem._id, photo) : undefined
+          }
           onSave={(identity) => onCorrectIdentity(editingItem._id, identity)}
         />
       )}

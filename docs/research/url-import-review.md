@@ -85,3 +85,27 @@ not files available to a fresh clone. Public evidence is linked above.
 No production deployment, merge or public ChatGPT availability is implied.
 The current checkpoint in `url-import-delivery.json` supersedes its historical
 working-state entries.
+
+## Avatar supplement after 4bf612c
+
+This supplement preserves provider avatars in independent storage and adds a
+cropped photo override to the website, anonymous continuation and app-only MCP
+flow. Cancelling the identity dialog discards its photo draft. Failed copies can
+be retried by the owner. A five-minute attempt deadline prevents permanent
+processing; generation checks fence late responses. Hourly orphan cleanup covers
+interrupted storage writes.
+
+Local validation: `pnpm check` passed (835 tests, 146 files, formatting, lint,
+types and production build). After replacing the handler-only photo draft state
+with a ref, all 13 dialog/avatar tests passed again. The four desktop/mobile MCP
+browser tests pass, including saving and reopening the cropped photo. An actual
+local MCP upload larger than 16 KiB was downloaded from Convex and byte-verified,
+then removed. This is not a test inside the actual ChatGPT host.
+
+Both independent review axes found no remaining issue in the interruption fix;
+the focused avatar regression suite has 10 passing cases. React Doctor reports
+73/100 versus 74/100 on the same-tool baseline: the sole additional remaining
+warning is a false positive for object URL cleanup. The photoUrl effect revokes
+each previous blob URL on replacement and the current URL on unmount. No rule
+was suppressed. Remote checks and fresh screenshot publication for this
+supplement remain pending until its commit is pushed.

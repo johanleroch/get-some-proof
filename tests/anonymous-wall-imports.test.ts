@@ -32,6 +32,59 @@ function sourceFixture(count = 101) {
   );
 }
 
+it("keeps an uploaded visitor photo through edits, claim and confirmation", async () => {
+  const t = createConvexTest();
+  sourceFixture(1);
+  const { token } = await t.action(
+    api.testimonialImportSource.previewAnonymous,
+    { url: "https://testimonial.to/atelier-june/all" },
+  );
+  await t.action(api.importAvatarUpload.upload, {
+    target: { token, position: 0 },
+    bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
+  });
+  await t.mutation(api.anonymousWallImports.correctIdentity, {
+    token,
+    position: 0,
+    authorName: "Camille Laurent",
+    tagline: "Potter",
+  });
+  const preview = await t.query(api.anonymousWallImports.read, {
+    token,
+    offset: 0,
+  });
+  expect(preview!.items[0]!.avatarUrl).toContain("/api/storage/");
+  const owner = await authenticatedUser(t);
+  const project = await owner.client.mutation(api.organizations.create, {
+    name: "Atelier June",
+  });
+  const { jobId } = await owner.client.mutation(
+    api.anonymousWallImports.claim,
+    { token, organizationId: project.id },
+  );
+  const owned = await owner.client.query(api.testimonialImports.getPreview, {
+    jobId,
+    paginationOpts: { cursor: null, numItems: 100 },
+  });
+  const item = owned!.items.page[0]!;
+  expect(item.avatarUrl).toBe(preview!.items[0]!.avatarUrl);
+  await owner.client.mutation(api.testimonialImports.confirm, {
+    jobId,
+    itemIds: [item._id],
+  });
+  const savedItem = (await t.run((ctx) => ctx.db.get(item._id)))!;
+  expect(
+    (await t.run((ctx) => ctx.db.get(savedItem.testimonialId!)))
+      ?.avatarStorageId,
+  ).toBe(item.identityCorrection!.avatarStorageId);
+  await expect(
+    t.action(api.importAvatarUpload.upload, {
+      target: { token, position: 0 },
+      bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
+    }),
+  ).rejects.toThrow();
+});
+
 it("previews before signup, resumes selection and claims once into an owned Project", async () => {
   const t = createConvexTest();
   sourceFixture();
@@ -398,6 +451,7 @@ it("saves an OAuth selection once, preserves Pending and rejects revoked consent
     await t.query(internal.importOAuthCommands.status, statusArgs),
   ).toEqual({
     ...saved,
+    photos: [],
     videos: [],
   });
   const { itemId, otherJobId } = await t.run(async (ctx) => {

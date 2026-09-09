@@ -193,7 +193,7 @@ export const importDestinationsHttp = httpAction(async (ctx, request) => {
 });
 
 function importCommandHttp(
-  command: "save" | "status" | "retry" | "eligibility",
+  command: "save" | "status" | "retry" | "retry-photo" | "eligibility",
 ) {
   return httpAction(async (ctx, request) => {
     if (env.CHATGPT_IMPORT_ENABLED !== "true")
@@ -257,15 +257,20 @@ function importCommandHttp(
           return new Response(null, { status: 400, headers });
         const jobId =
           args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">;
-        if (command === "retry") {
+        if (command === "retry" || command === "retry-photo") {
           if (!("itemId" in args) || typeof args.itemId !== "string")
             return new Response(null, { status: 400, headers });
-          await ctx.runMutation(internal.importOAuthCommands.retryVideo, {
-            grant,
-            jobId,
-            itemId:
-              args.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
-          });
+          await ctx.runMutation(
+            command === "retry-photo"
+              ? internal.importOAuthCommands.retryPhoto
+              : internal.importOAuthCommands.retryVideo,
+            {
+              grant,
+              jobId,
+              itemId:
+                args.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
+            },
+          );
         }
         result = await ctx.runQuery(internal.importOAuthCommands.status, {
           grant,
@@ -299,5 +304,6 @@ function importCommandHttp(
 
 export const importSaveHttp = importCommandHttp("save");
 export const importStatusHttp = importCommandHttp("status");
+export const importPhotoRetryHttp = importCommandHttp("retry-photo");
 export const importRetryHttp = importCommandHttp("retry");
 export const importEligibilityHttp = importCommandHttp("eligibility");

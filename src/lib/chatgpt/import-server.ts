@@ -15,6 +15,11 @@ type Preview = NonNullable<
   FunctionReturnType<typeof api.anonymousWallImports.read>
 >;
 export type ImportGateway = {
+  photo?(args: {
+    token: string;
+    position: number;
+    imageBase64: string | null;
+  }): Promise<unknown>;
   preview(url: string): Promise<{ token: string }>;
   read(args: {
     token: string;
@@ -44,6 +49,10 @@ export type PrivateImportGateway = {
     organizationId: string;
   }): Promise<z.infer<typeof importEligibilitySchema>>;
   status?(args: { jobId: string }): Promise<z.infer<typeof importStatusSchema>>;
+  retryPhoto?(args: {
+    jobId: string;
+    itemId: string;
+  }): Promise<z.infer<typeof importStatusSchema>>;
   retryVideo?(args: {
     jobId: string;
     itemId: string;
@@ -104,6 +113,7 @@ export function createImportServer(
   widgetHtml?: string | (() => Promise<string>),
   privateGateway?: PrivateImportGateway,
   websiteOrigin?: string,
+  avatarStorageOrigin?: string,
 ) {
   const server = new McpServer(
     { name: "get-some-proof-import", version: "0.1.0" },
@@ -136,6 +146,11 @@ export function createImportServer(
                     "https://image.mux.com",
                     "https://*.senja.io",
                     "https://*.testimonial.to",
+                    "https://senja-io.s3.us-west-1.amazonaws.com",
+                    "https://ik.imagekit.io",
+                    ...(avatarStorageOrigin
+                      ? [new URL(avatarStorageOrigin).origin]
+                      : []),
                   ],
                 },
               },
@@ -235,6 +250,43 @@ export function createImportServer(
         return snapshot(await gateway.read({ token, offset, type }), token);
       }),
   );
+  if (gateway.photo)
+    server.registerTool(
+      "set_testimonial_photo",
+      {
+        title: "Change customer photo",
+        description:
+          "Upload a user-selected cropped photo or remove it from this temporary preview. Does not import or publish.",
+        inputSchema: {
+          ...pageArgs,
+          position: z.number().int().min(0).max(499),
+          imageBase64: z
+            .string()
+            .min(4)
+            .max(1_000_000)
+            .regex(
+              /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
+            )
+            .nullable(),
+        },
+        outputSchema: snapshotSchema,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: false,
+          idempotentHint: false,
+        },
+        _meta: {
+          securitySchemes: [{ type: "noauth" }],
+          ui: { visibility: ["app"] },
+        },
+      },
+      ({ previewCapability: token, position, imageBase64, offset, type }) =>
+        guarded(async () => {
+          await gateway.photo!({ token, position, imageBase64 });
+          return snapshot(await gateway.read({ token, offset, type }), token);
+        }),
+    );
   if (gateway.correctIdentity)
     server.registerTool(
       "correct_testimonial_identity",
@@ -446,15 +498,18 @@ export function createImportServer(
         }
       },
     );
-  for (const operation of ["status", "retryVideo"] as const) {
+  for (const operation of ["status", "retryVideo", "retryPhoto"] as const) {
     if (!privateGateway?.[operation]) continue;
-    const retry = operation === "retryVideo";
+    const retry = operation !== "status";
+    const medium = operation === "retryPhoto" ? "photo" : "video";
     server.registerTool(
-      retry ? "retry_import_video" : "read_testimonial_import",
+      retry ? `retry_import_${medium}` : "read_testimonial_import",
       {
-        title: retry ? "Retry a failed video import" : "Read import progress",
+        title: retry
+          ? `Retry a failed ${medium} import`
+          : "Read import progress",
         description: retry
-          ? "Retry one failed video copy in this owned import after the person requests it. Does not publish."
+          ? `Retry one failed ${medium} copy in this owned import after the person requests it. Does not publish.`
           : "Read the current result and video states for an import in a Project you own.",
         inputSchema: {
           jobId: z.string().min(1).max(128),
@@ -478,7 +533,7 @@ export function createImportServer(
         try {
           const status = importStatusSchema.parse(
             retry
-              ? await privateGateway.retryVideo!({ jobId, itemId: itemId! })
+              ? await privateGateway[operation]!({ jobId, itemId: itemId! })
               : await privateGateway.status!({ jobId }),
           );
           return {

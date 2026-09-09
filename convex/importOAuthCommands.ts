@@ -1,3 +1,4 @@
+import { retryOwnedImportAvatar } from "./testimonialImportAvatar";
 import { isProjectActive } from "./projectActivity";
 import { getVideoStorageAvailability } from "./collectionQuotas";
 import { confirmOwnedImport } from "./testimonialImports";
@@ -103,6 +104,17 @@ export const status = internalQuery({
     jobId: v.id("testimonialImportJobs"),
     organizationSlug: v.string(),
     result: importResult,
+    photos: v.array(
+      v.object({
+        itemId: v.id("testimonialImportItems"),
+        authorName: v.string(),
+        status: v.union(
+          v.literal("processing"),
+          v.literal("ready"),
+          v.literal("failed"),
+        ),
+      }),
+    ),
     videos: v.array(
       v.object({
         itemId: v.id("testimonialImportItems"),
@@ -128,14 +140,24 @@ export const status = internalQuery({
     );
     const items = await ctx.db
       .query("testimonialImportItems")
-      .withIndex("by_jobId_type_position", (q) =>
-        q.eq("jobId", job._id).eq("type", "video"),
-      )
+      .withIndex("by_jobId_and_position", (q) => q.eq("jobId", job._id))
       .take(500);
     return {
       jobId: job._id,
       organizationSlug: organization.slug,
       result: job.result,
+      photos: items.flatMap((item) =>
+        item.avatarStatus
+          ? [
+              {
+                itemId: item._id,
+                authorName:
+                  item.identityCorrection?.authorName ?? item.authorName,
+                status: item.avatarStatus,
+              },
+            ]
+          : [],
+      ),
       videos: items.flatMap((item) =>
         item.videoStatus
           ? [
@@ -172,6 +194,22 @@ function safeImportFailure(reason?: string): string {
       return "Video processing failed. Check the source video and try again.";
   }
 }
+
+export const retryPhoto = internalMutation({
+  args: {
+    grant: importGrant,
+    jobId: v.id("testimonialImportJobs"),
+    itemId: v.id("testimonialImportItems"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) =>
+    retryOwnedImportAvatar(
+      ctx,
+      args.itemId,
+      await requireImportPrincipal(ctx, args.grant),
+      args.jobId,
+    ),
+});
 
 export const retryVideo = internalMutation({
   args: {
