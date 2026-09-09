@@ -78,9 +78,9 @@ const accountNavigation: NavigationItem[] = [
 
 /** Mirrors `inboxCountCeiling` in convex/testimonialModeration.ts. */
 const inboxCountCeiling = 500;
-/** Item height and gap in px, mirrored by `h-9` and `gap-0.5` in the list. */
+/** Item height and gap in px, mirrored by `h-9` and `gap-1` in the list. */
 const navigationItemHeight = 36;
-const navigationItemGap = 2;
+const navigationItemGap = 4;
 
 function isActiveHref(pathname: string, href: string) {
   return pathname === href || (pathname.startsWith(`${href}/`) && href !== "/");
@@ -165,7 +165,7 @@ function NavigationList({
   }
 
   return (
-    <SidebarMenu className="relative gap-0.5">
+    <SidebarMenu className="relative gap-1">
       {activeIndex >= 0 ? (
         <li
           aria-hidden="true"
@@ -180,6 +180,7 @@ function NavigationList({
               "absolute inset-0",
               travelling && "nav-indicator-travel",
             )}
+            key={activeIndex}
             onAnimationEnd={() => setTravelling(false)}
           >
             <span className="bg-brand-soft absolute inset-0 rounded-md" />
@@ -190,20 +191,37 @@ function NavigationList({
       {items.map(({ href, icon: IconComponent, label, newTab }, index) => {
         const active = index === activeIndex;
         const count = label === "Inbox" && inboxCount ? inboxCount : null;
+        const shownCount = count
+          ? count > inboxCountCeiling
+            ? `${inboxCountCeiling}+`
+            : String(count)
+          : null;
         return (
           <SidebarMenuItem key={href}>
             <SidebarMenuButton
               asChild
-              className="h-9 gap-2.5 px-3 data-[active=true]:bg-transparent data-[active=true]:hover:bg-transparent [&>svg]:size-[18px]"
+              className="h-9 gap-3 px-3 data-[active=true]:bg-transparent data-[active=true]:hover:bg-transparent [&>svg]:size-[18px]"
               isActive={active}
               tooltip={label}
             >
               <Link
                 aria-current={index === routeIndex ? "page" : undefined}
-                aria-label={count ? `${label}, ${count} to review` : undefined}
+                aria-label={
+                  shownCount ? `${label}, ${shownCount} to review` : undefined
+                }
                 href={href}
-                onClick={() => {
+                onClick={(event) => {
                   if (newTab) return;
+                  // A modified click opens elsewhere: this route stays.
+                  if (
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey ||
+                    event.button !== 0
+                  ) {
+                    return;
+                  }
                   onNavigate(href);
                   setOpenMobile(false);
                 }}
@@ -216,18 +234,16 @@ function NavigationList({
                   stroke={1.75}
                 />
                 <span className="min-w-0 flex-1 truncate">{label}</span>
-                {count ? (
+                {shownCount ? (
                   <span
                     className={cn(
-                      "type-small grid h-5 min-w-5 shrink-0 place-items-center rounded-md px-1.5 font-semibold tabular-nums",
+                      "type-small grid h-5 min-w-5 shrink-0 place-items-center rounded-md px-2 font-semibold tabular-nums",
                       active
                         ? "bg-surface text-ink"
                         : "bg-surface-2 text-ink-2",
                     )}
                   >
-                    {count > inboxCountCeiling
-                      ? `${inboxCountCeiling}+`
-                      : count}
+                    {shownCount}
                   </span>
                 ) : newTab ? (
                   <span
@@ -237,7 +253,7 @@ function NavigationList({
                       active ? "text-ink-2" : "text-ink-3",
                     )}
                   >
-                    <IconArrowUpRight className="size-3.5" />
+                    <IconArrowUpRight className="size-4" />
                   </span>
                 ) : null}
               </Link>
@@ -297,7 +313,6 @@ export function AppShell(props: AppShellProps) {
           canUpdateOrganization={authorization?.can.updateOrganization ?? false}
           canCreateProject={account?.effectivePlan === "premium"}
           currentName={props.organizationName}
-          currentLogoUrl={props.organizationLogoUrl}
           currentSlug={props.organizationSlug}
         />
       }
@@ -379,26 +394,6 @@ export function AppShellView({
   const navigation = navigationSections.flatMap(({ items }) => items);
   const title = pageTitle(pathname, navigation);
 
-  const topBar = (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          className="mx-2 data-[orientation=vertical]:h-4"
-          orientation="vertical"
-        />
-        <div className="min-w-0">
-          <p className="text-ink-2 truncate text-sm font-medium tracking-[-0.008em]">
-            {title}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
-        </div>
-      </div>
-    </header>
-  );
-
   return (
     <SidebarProvider
       className="dashboard-frame h-svh overflow-hidden"
@@ -431,7 +426,23 @@ export function AppShellView({
       </Sidebar>
       <SidebarInset className="dashboard-view min-h-0 overflow-clip">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
-          {topBar}
+          <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
+            <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                className="mx-2 data-[orientation=vertical]:h-4"
+                orientation="vertical"
+              />
+              <div className="min-w-0">
+                <p className="text-ink-2 truncate text-sm font-medium tracking-[-0.008em]">
+                  {title}
+                </p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <ThemeToggle />
+              </div>
+            </div>
+          </header>
           <div
             role="region"
             aria-label="Page content"

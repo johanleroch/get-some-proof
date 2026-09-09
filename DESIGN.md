@@ -261,7 +261,7 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   `public/brand/blob.svg`, with eleven expressions in `public/brand/blob/`
   (reviewed at `/kit/blob`, defined in `src/lib/blob-expressions.ts`). The
   one element of the signature that is not a line drawing. Same places as
-  the spot illustrations, at most one per screen, 96 to 200px tall, the
+  the spot illustrations, at most one per screen region, 96 to 200px tall, the
   expression chosen from the moment (happy on success, sad on errors,
   curious on empty states) and always said with the eyes alone, the blob has
   no mouth; never in the embed and never next to the logo mark. One
@@ -307,8 +307,10 @@ Rules:
 Radius scale: `--radius-sm: 6px` (badges inside buttons, checkboxes),
 `--radius-md: 8px` (buttons, inputs, menu items), `--radius-lg: 12px` (cards,
 dialogs, dropdowns, testimonial cards), `--radius-xl: 16px` (hero panels, the
-Collection Form card), `--radius-full` (pills, avatars, status dots). Nothing
-else. `rounded-xl` on every surface is retired.
+Collection Form card), `--radius-3xl: 24px` (the app frame alone, section 6;
+`--radius-2xl` exists as a token and has no use yet), `--radius-full` (pills,
+avatars, status dots). Nothing else. `rounded-xl` on every surface is
+retired.
 
 Depth comes from borders and tone, not shadows. Cards sit on `--paper` with a
 1px `--line` border and no shadow. Only floating layers get a shadow, and it is
@@ -362,7 +364,7 @@ pages still start at the top and scroll normally.
   shell. The navigation under it: section 7.
 - Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
   footer above the user row, as a small poster on `--brand-soft`
-  (`--radius-lg`, no border, 14px padding): the promise at `subheading`
+  (`--radius-lg`, no border, 12px padding): the promise at `subheading`
   ("Collect without limits", a benefit, never the plan name or the button
   repeated), one line at `small` in `--ink-2` on what Pro changes (unlimited
   projects, 25
@@ -502,7 +504,8 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 
 ## 7. Components
 
-- Buttons: `--radius-md`, height 40px (44px on public surfaces), `ui` type at
+- Buttons: `--radius-md`, height 40px (44px on public surfaces; 36px, the
+  `sm` size, inside the sidebar's plan card, the one compact place), `ui` type at
   weight 600. Primary is `--brand` fill with `--brand-ink` text, hover
   `--brand-strong`, active translates down 1px, focus shows a 3px
   `--brand-ring`. Secondary is `--surface` with a `--line-2` border. Ghost has
@@ -625,8 +628,9 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   processing. Use the mascot for every visible wait, including compact labels,
   upload progress, video buffering, and page skeletons. Loading buttons use
   a small 16px spinner instead.
-- Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
-  1.75. Lucide is removed once the last usages are migrated.
+- Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
+  and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
+  once the last usages are migrated.
 
 ## 8. Motion
 
@@ -698,7 +702,10 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
-  (`AnimatedBlob`), one per screen. The preview-only marquee is a narrow
+  (`AnimatedBlob`), one per screen. The sidebar's plan card is the founder's
+  exception (section 6): its blob changes face every few seconds and a light
+  sweeps its button, both still under reduced motion. The preview-only
+  marquee is a narrow
   exception: it may scroll continuously, with a visible Pause animation /
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides

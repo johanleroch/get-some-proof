@@ -576,23 +576,30 @@ body {
    gap, so 24px outside, 12px gap, 12px inside. Below md there is no sidebar
    column and the app runs full bleed. */
 @media (min-width: 48rem) {
+  /* Fixed to the viewport, not in the document flow: an anchor jump inside
+     the page can then never scroll the document by the frame's margin, and
+     `clip` keeps the frame itself unscrollable. */
   .dashboard-frame {
+    position: fixed;
+    inset: 12px;
     width: auto;
+    height: auto;
     min-height: 0;
-    height: calc(100svh - 24px);
-    margin: 12px;
+    margin: 0;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-3xl);
-    overflow: hidden;
+    overflow: clip;
   }
 
+  /* 11px inside the frame's 1px border is 12px from its edge, which keeps
+     the corners concentric: 24px outside, 12px gap, 12px inside. */
   .dashboard-frame [data-slot="sidebar-container"] {
     position: absolute;
-    top: 12px;
-    bottom: 12px;
-    left: 12px;
-    width: calc(var(--sidebar-width) - 12px);
+    top: 11px;
+    bottom: 11px;
+    left: 11px;
+    width: calc(var(--sidebar-width) - 11px);
     height: auto;
     padding: 0;
   }
@@ -843,7 +850,7 @@ mark {
  */
 .nav-indicator-travel {
   transform-origin: 50% 50%;
-  animation: nav-indicator-travel var(--motion-settle) var(--ease-out-soft) both;
+  animation: nav-indicator-travel var(--motion-settle) var(--ease-settle) both;
 }
 
 @keyframes nav-indicator-travel {
@@ -885,7 +892,7 @@ mark {
     transparent 62%
   );
   transform: translateX(-120%);
-  animation: cta-shine 4800ms var(--ease-out-soft) infinite;
+  animation: cta-shine 4800ms var(--ease-sine) infinite;
 }
 
 @keyframes cta-shine {

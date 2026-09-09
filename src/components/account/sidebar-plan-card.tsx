@@ -56,7 +56,7 @@ export function SidebarPlanCard() {
   const expression = useCyclingFace();
   return (
     <div
-      className="bg-brand-soft relative overflow-hidden rounded-lg p-3.5"
+      className="bg-brand-soft relative overflow-hidden rounded-lg p-3"
       data-slot="sidebar-plan-card"
     >
       <p className="type-subheading">Collect without limits</p>
@@ -67,7 +67,7 @@ export function SidebarPlanCard() {
         <Link href={BILLING_HREF}>Upgrade to Pro</Link>
       </Button>
       <Blob
-        className="absolute -right-5 -bottom-6 -rotate-[8deg]"
+        className="pointer-events-none absolute -right-5 -bottom-6 -rotate-[8deg]"
         expression={expression}
         size={128}
       />

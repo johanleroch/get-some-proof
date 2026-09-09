@@ -50,7 +50,6 @@ type OrganizationSwitcherProps = {
   canReadBilling: boolean;
   canUpdateOrganization: boolean;
   currentName: string;
-  currentLogoUrl?: string | null;
   currentSlug: string;
 };
 
@@ -129,7 +128,7 @@ export function OrganizationSwitcherView({
                 switch: Gelica at `heading`, a thin chevron, no logo and no
                 avatar (DESIGN.md section 6). */}
             <button
-              aria-label="Switch project"
+              aria-label={`${currentName}, switch project`}
               className="hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-ring -mx-1.5 flex max-w-[calc(100%+0.75rem)] cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-left outline-none focus-visible:ring-[3px]"
               type="button"
             >
@@ -139,6 +138,7 @@ export function OrganizationSwitcherView({
               <IconChevronDown
                 aria-hidden="true"
                 className="text-ink-3 mt-1 size-5 shrink-0"
+                stroke={1.75}
               />
             </button>
           </DropdownMenuTrigger>

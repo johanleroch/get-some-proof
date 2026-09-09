@@ -133,8 +133,8 @@ describe("AppShell", () => {
     );
   });
 
-  it("sends the active indicator to the clicked item before the page arrives", () => {
-    const { container } = render(
+  it("sends the active indicator to the clicked item before the page arrives, and the route settles it", () => {
+    const { container, rerender } = render(
       <AppShell
         organizationId={"organization-1" as never}
         organizationName="Acme"
@@ -152,7 +152,7 @@ describe("AppShell", () => {
 
     fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
 
-    expect(indicator().style.transform).toBe("translateY(38px)");
+    expect(indicator().style.transform).toBe("translateY(40px)");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "data-active",
       "true",
@@ -161,6 +161,59 @@ describe("AppShell", () => {
       "aria-current",
       "page",
     );
+
+    mocks.pathname = "/org/acme-1234/inbox";
+    rerender(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+      >
+        Inbox
+      </AppShell>,
+    );
+    expect(indicator().style.transform).toBe("translateY(40px)");
+    expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
+  it("caps the Inbox count at 500+ and says so to assistive tech", () => {
+    mocks.pending = 501;
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    expect(
+      screen.getByRole("link", { name: "Inbox, 500+ to review" }),
+    ).toHaveTextContent("500+");
+  });
+
+  it("keeps the Inbox out of the navigation for accounts that cannot manage ownership", () => {
+    mocks.manageOwnership = false;
+    mocks.pending = 3;
+    render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    expect(screen.queryByRole("link", { name: /inbox/i })).toBeNull();
   });
 
   it("shows one Brand without multi-Organization or collaboration navigation", () => {
