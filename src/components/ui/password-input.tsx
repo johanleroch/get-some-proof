@@ -22,7 +22,7 @@ export function PasswordInput({
     <div className="relative">
       <Input
         {...props}
-        className={cn("pr-12", className)}
+        className={cn("h-11 pr-12", className)}
         disabled={disabled}
         id={inputId}
         type={visible ? "text" : "password"}
@@ -30,7 +30,7 @@ export function PasswordInput({
       <Button
         aria-controls={inputId}
         aria-label={label}
-        className="absolute inset-y-0 right-0 h-full w-11 hover:bg-transparent"
+        className="absolute inset-y-0 right-0"
         disabled={disabled}
         onClick={() => setVisible((current) => !current)}
         size="icon-lg"
