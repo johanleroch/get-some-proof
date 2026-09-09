@@ -78,7 +78,7 @@ describe("OnboardingStage", () => {
     fireEvent.change(screen.getByLabelText("Brand name"), {
       target: { value: "Fernhill Studio" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(
       () =>

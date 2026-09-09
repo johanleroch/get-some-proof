@@ -68,7 +68,7 @@ describe("OrganizationOnboardingForm", () => {
     expect(
       screen.getByText(/Your public address will be \/c\/northwind-bakery\./),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() =>
       expect(mocks.create).toHaveBeenCalledWith({
@@ -100,7 +100,7 @@ describe("OrganizationOnboardingForm", () => {
     fireEvent.click(disclosure);
     expect(privacyContact).not.toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() => expect(privacyContact).toHaveFocus());
     expect(privacyContact).toBeVisible();
@@ -114,7 +114,7 @@ describe("OrganizationOnboardingForm", () => {
     fireEvent.change(privacyContact, {
       target: { value: "privacy@northwind.example" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
     await waitFor(() =>
       expect(mocks.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -149,7 +149,7 @@ describe("OrganizationOnboardingForm", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Coral" }));
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() => {
       expect(mocks.create).toHaveBeenCalledWith({
@@ -180,11 +180,11 @@ describe("OrganizationOnboardingForm", () => {
       target: { value: "Visual Studio" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     expect(
       await screen.findByText(
-        "Your project was created, but the logo upload failed. Retry or continue without it.",
+        "Your Brand was created, but the logo upload failed. Retry or continue without it.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(

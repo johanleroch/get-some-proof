@@ -23,6 +23,7 @@ import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { accentPresets } from "@/lib/templates-catalog";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,18 @@ function chosen(value: string) {
   return value.trim() || undefined;
 }
 
-export function OrganizationOnboardingForm() {
+/**
+ * What the screen calls the thing being created: the first one is the Brand
+ * (onboarding), the next ones are Projects (Pro), so the button and the
+ * error sentences follow the page title.
+ */
+export type OrganizationNoun = "Brand" | "project";
+
+export function OrganizationOnboardingForm({
+  noun = "Brand",
+}: {
+  noun?: OrganizationNoun;
+}) {
   const router = useRouter();
   const createOrganization = useMutation(api.organizations.create);
   const generateUploadUrl = useMutation(
@@ -53,6 +65,7 @@ export function OrganizationOnboardingForm() {
       createOrganization={createOrganization}
       generateUploadUrl={generateUploadUrl}
       navigate={(path) => router.push(path as Route)}
+      noun={noun}
       setLogo={setLogo}
       uploadImage={uploadProfileImage}
     />
@@ -72,6 +85,7 @@ export function OrganizationOnboardingFormView({
   createOrganization,
   generateUploadUrl,
   navigate,
+  noun = "Brand",
   setLogo,
   uploadImage,
 }: {
@@ -84,6 +98,7 @@ export function OrganizationOnboardingFormView({
     organizationId: Id<"organizations">;
   }) => Promise<string>;
   navigate: (path: string) => void;
+  noun?: OrganizationNoun;
   setLogo: (args: {
     organizationId: Id<"organizations">;
     storageId: Id<"_storage">;
@@ -183,10 +198,8 @@ export function OrganizationOnboardingFormView({
     } catch (caught) {
       setError(
         organizationCreated
-          ? "Your project was created, but the logo upload failed. Retry or continue without it."
-          : caught instanceof Error
-            ? caught.message
-            : "Unable to create the project.",
+          ? `Your ${noun} was created, but the logo upload failed. Retry or continue without it.`
+          : convexErrorMessage(caught, `Unable to create your ${noun}.`),
       );
       setPending(false);
     }
@@ -365,7 +378,7 @@ export function OrganizationOnboardingFormView({
         {error ? <ErrorToast message={error} /> : null}
         <div className="space-y-2">
           <Button className="w-full" loading={pending} type="submit">
-            {createdOrganization ? "Retry logo and continue" : "Create project"}
+            {createdOrganization ? "Retry logo and continue" : `Create ${noun}`}
           </Button>
           {createdOrganization ? (
             <Button
