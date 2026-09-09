@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
-import { Info } from "lucide-react";
+import { IconInfoCircle } from "@tabler/icons-react";
 import {
   Tooltip,
   TooltipContent,
@@ -53,7 +53,11 @@ export function ImportPhotoProgress({
                           className="focus-ring ml-2 inline-flex size-6 items-center justify-center rounded-sm align-middle"
                           aria-label={`Photo error details for ${photo.authorName}`}
                         >
-                          <Info className="size-4" aria-hidden="true" />
+                          <IconInfoCircle
+                            className="size-4"
+                            stroke={1.75}
+                            aria-hidden="true"
+                          />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-sm text-left break-words whitespace-pre-line">
