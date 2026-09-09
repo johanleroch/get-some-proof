@@ -64,6 +64,23 @@ function ReviewQueue({
 
 type Account = NonNullable<BrandDashboardViewProps["account"]>;
 
+/**
+ * The Wall lives on the same origin as the Collection Form, one folder over.
+ * Built from the origin when the address parses, and by swapping the folder
+ * when it does not (tests hand in bare hosts), so a trailing slash or query
+ * can never leave the Collection address standing in for the Wall's.
+ */
+function wallUrlFrom(collectionUrl: string, publicSlug: string) {
+  try {
+    return `${new URL(collectionUrl).origin}/w/${publicSlug}`;
+  } catch {
+    return collectionUrl.replace(
+      /\/c\/[^/?#]+(?=[/?#]|$).*$/,
+      `/w/${publicSlug}`,
+    );
+  }
+}
+
 /** The allowances the plans promise (docs/product-scope.md). */
 const freeTextCredits = 13;
 const freeVideoCredits = 2;
@@ -87,7 +104,7 @@ function UsageMeter({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <span className="type-small text-ink-2">{label}</span>
-        <span className="type-small font-semibold tabular-nums">
+        <span className="font-mono text-[length:var(--type-small-size)] leading-[var(--type-small-leading)] font-semibold">
           {used} / {total}
         </span>
       </div>
@@ -96,7 +113,7 @@ function UsageMeter({
         aria-valuemax={total}
         aria-valuemin={0}
         aria-valuenow={used}
-        className="bg-surface-2 mt-1.5 h-1.5 overflow-hidden rounded-full"
+        className="bg-surface-2 mt-2 h-1.5 overflow-hidden rounded-full"
         role="meter"
       >
         <div
@@ -126,14 +143,14 @@ function AccountPlanPanel({
   return (
     <section
       aria-label="Account plan and usage"
-      className="border-line bg-surface rounded-xl border p-5 lg:sticky lg:top-6"
+      className="border-line bg-surface rounded-lg border p-5 lg:sticky lg:top-6"
     >
       <p className="type-micro text-ink-2">Your plan</p>
       <h2 className="type-subheading mt-1">{pro ? "Pro plan" : "Free plan"}</h2>
-      <p className="type-small text-ink-2 mt-0.5">
+      <p className="type-small text-ink-2 mt-1">
         {pro
-          ? "Unlimited projects, usage shared across them"
-          : "1 of 1 active project"}
+          ? "Unlimited Projects, usage shared across them"
+          : "1 of 1 active Project"}
       </p>
       <div className="mt-4 space-y-3">
         {pro ? (
@@ -170,7 +187,7 @@ function AccountPlanPanel({
         <>
           <UpgradeToProButton className="mt-5 w-full" href={billingHref} />
           <p className="type-small text-ink-2 mt-3 text-center">
-            Unlimited projects and text, 25 videos.
+            Pro adds unlimited Projects and text, and 25 stored videos.
           </p>
         </>
       )}
@@ -214,8 +231,7 @@ export function BrandDashboardView({
   const inboxPath = `/org/${slug}/inbox` as Route;
   const wallPath = `/w/${publicSlug}` as Route;
   const embedPath = `/org/${slug}/settings#embed` as Route;
-  // The Wall lives on the same origin as the Collection Form, one folder over.
-  const wallUrl = collectionUrl.replace(/\/c\/[^/]+$/, `/w/${publicSlug}`);
+  const wallUrl = wallUrlFrom(collectionUrl, publicSlug);
   const waiting = pendingCount > 0;
   const plan = account && billingHref ? account : null;
 
@@ -242,7 +258,7 @@ export function BrandDashboardView({
       <PageHeader
         description={
           waiting ? (
-            "Share the form, read what comes in, publish what you choose."
+            "Share your Collection Form, read what comes in, publish what you choose."
           ) : (
             <>
               Nothing waiting for review. New Submissions land in your{" "}
@@ -323,7 +339,7 @@ export function BrandDashboardView({
               caption, the pair DESIGN.md section 4 allows a state like this. */}
           <section
             aria-label="Public Wall"
-            className="border-line bg-surface grid gap-6 rounded-xl border p-6 sm:p-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-10"
+            className="border-line bg-surface grid gap-6 rounded-lg border p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-8"
           >
             <WallFrames
               aria-hidden="true"
@@ -334,7 +350,7 @@ export function BrandDashboardView({
               <h2 className="type-heading mt-1">
                 Only what you publish reaches it
               </h2>
-              <p className="type-ui mt-2 font-mono font-semibold [overflow-wrap:anywhere]">
+              <p className="mt-2 font-mono text-[length:var(--type-ui-size)] leading-[var(--type-ui-leading)] font-semibold [overflow-wrap:anywhere]">
                 {wallUrl}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">

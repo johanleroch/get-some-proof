@@ -13,13 +13,15 @@ test("Free exposes shared credits and an upgrade path from project creation", as
   await page.goto("/visual-evidence/dashboard");
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Free plan");
-  await expect(usage).toContainText("1 of 1 active project");
+  await expect(usage).toContainText("1 of 1 active Project");
   await expect(usage.getByLabel("Text credits")).toHaveAttribute(
     "aria-valuenow",
     "4",
   );
   await expect(usage).toContainText("4 / 13");
-  await expect(usage).toContainText("Unlimited projects and text, 25 videos.");
+  await expect(usage).toContainText(
+    "Pro adds unlimited Projects and text, and 25 stored videos.",
+  );
   await expect(
     usage.getByRole("link", { name: "Upgrade to Pro" }),
   ).toBeVisible();
@@ -46,7 +48,7 @@ test("Pro switches independent projects while keeping the Account plan and share
   ).toBeVisible();
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Pro plan");
-  await expect(usage).toContainText("Unlimited projects");
+  await expect(usage).toContainText("Unlimited Projects");
   await expect(usage.getByLabel("Videos stored")).toHaveAttribute(
     "aria-valuenow",
     "8",

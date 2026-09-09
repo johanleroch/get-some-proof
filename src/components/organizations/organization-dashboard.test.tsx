@@ -36,7 +36,7 @@ describe("BrandDashboardView", () => {
     );
     expect(screen.getByText("Pro plan")).toBeVisible();
     expect(
-      screen.getByText("Unlimited projects, usage shared across them"),
+      screen.getByText("Unlimited Projects, usage shared across them"),
     ).toBeVisible();
     expect(screen.getByLabelText("Videos stored")).toHaveAttribute(
       "aria-valuenow",
@@ -167,7 +167,7 @@ describe("BrandDashboardView", () => {
     expect(screen.queryByText(/Nothing waiting for review/)).toBeNull();
     // The queue block says it, so the title's sentence does not say it twice.
     expect(screen.getByRole("banner")).toHaveTextContent(
-      "Share the form, read what comes in, publish what you choose.",
+      "Share your Collection Form, read what comes in, publish what you choose.",
     );
 
     // The queue comes before the Collection Form once there is work in it.

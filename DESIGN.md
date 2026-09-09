@@ -238,7 +238,8 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
 
 - `Sparkle`: a big four-point sparkle with a small one, the same accent that
   lights every illustration. Marks the Wall header (in the Brand accent), the
-  success step and the dev quick access.
+  success step and the dev quick access, and sits in ink on the Upgrade to
+  Pro button as its icon.
 - `Marker highlight`: a highlighter stroke behind one key word in a display
   title, soft amber by default, the text painted on top.
 - `Circle around`: a ring drawn once and a bit around a number or a short
@@ -283,7 +284,10 @@ Rules:
   fill of overlapping shapes. No other color, ever.
 - Maximum one hand-drawn element per screen region (header, main, sidebar,
   dialog). Empty states and success steps may combine one illustration and
-  one arrow note.
+  one arrow note. The Brand overview keeps that pair as well (the arrow note
+  on the Collection Form panel, the Wall drawing on the Public Wall panel),
+  decided by the founder on 2026-09-09; the sparkle inside its Upgrade button
+  is the button's icon, not a third element.
 - Motion: `float` keeps each object of a drawing drifting 4 to 6px on its own
   slow loop, out of phase with its neighbours, for an illustration that
   carries a screen (the authentication panel). It stops under reduced motion.
@@ -291,7 +295,9 @@ Rules:
   non-scaling stroke is unreliable across browsers, and the reveal never read
   as a hand drawing.
 - Doodles are decorative: `aria-hidden="true"`, never the only carrier of
-  meaning, never overlapping interactive elements, never inside form fields.
+  meaning, never overlapping interactive elements (the sparkle drawn as the
+  icon of the Upgrade to Pro button is the one exception), never inside form
+  fields.
 - No emoji anywhere in the interface, ever. The doodle vocabulary replaces
   them.
 - On public surfaces the signature stays (section 6), but the star is drawn in
@@ -360,10 +366,10 @@ pages still start at the top and scroll normally.
   fraction in figures beside its name, a `--brand` fill on a `--surface-2`
   track under them) and the one button on the page that sells,
   `UpgradeToProButton`: the primary amber fill with the sparkle drawn in
-  ink, a transform-only hover, full width in its column. On Pro that place
+  ink as its icon, no motion on hover, full width in its column. On Pro that place
   holds an outline "Manage subscription", a door rather than a sale. The
-  drawing and the arrow note are the region's pair; nothing else is drawn
-  there. An empty queue is a sentence, never a large zero. Chosen by the
+  drawing and the arrow note are the region's pair (section 4); the button's
+  sparkle is an icon, not a third element. An empty queue is a sentence, never a large zero. Chosen by the
   founder on 2026-09-09 among four prototypes.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
@@ -511,7 +517,9 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   `popover` to `src/components/ui`); native controls styled inline are
   retired.
 - Cards: `--surface`, `--line` border, `--radius-lg`, padding 20px (24px for
-  hero panels). Title at `subheading`. Cards are used only when grouping
+  hero panels). Title at `subheading`, except the Brand overview's Public Wall
+  panel, which opens with a `heading` as a statement (decided 2026-09-09).
+  Cards are used only when grouping
   earns it; in lists, rows with dividers replace cards.
 - Sidebar navigation: items 36px tall, `--radius-md`, `ui` weight 500. Hover
   `--surface-2`. Active is `--brand-soft` fill, `--ink` text at weight 600,
