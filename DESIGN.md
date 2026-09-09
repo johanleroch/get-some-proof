@@ -331,10 +331,40 @@ most. Both collapse to nothing when the content outgrows the column, so long
 pages still start at the top and scroll normally.
 
 - Dashboard: sidebar 260px on `--paper`, content on `--paper` with white
-  panels only where grouping helps. Page header is left-aligned: eyebrow
-  (micro), `display` title, one primary action on the right. Data lives in
-  lists and tables with `--surface-2` row hover, not in stacks of cards.
-  Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+  panels only where grouping helps. No bar above the page on desktop: the
+  page header is the top of the page (a bar naming the page again above
+  its own title said nothing and cost 48px), and ⌘B folds the sidebar for
+  who wants it. Below 768px, where the sidebar is a sheet, one 48px bar
+  holds the menu button and the brand mark, nothing else. Page header is
+  left-aligned: eyebrow (micro), `display` title, one primary action on the
+  right. Data lives in lists and tables with `--surface-2` row hover, not in
+  stacks of cards. Three-equal-cards rows are banned; use a 2:1 or 1:2
+  split. The product ships in the light theme with no theme control for now
+  (decided 2026-09-09); the dark tokens stay in `globals.css` and the
+  development pages (`/kit`, `/screens`, the quick access) keep the switch
+  so both themes stay reviewed.
+- Brand overview: the header names the Brand under an "Overview" eyebrow
+  and no action. Its sentence is the state of the queue: with nothing
+  waiting it says so and links the Inbox, so the title carries news rather
+  than a slogan; once something is waiting the queue block says it and the
+  sentence goes back to the neutral one. Below, a 2:1 split, one column
+  under 1024px. Left, the work: the review queue whenever anything is
+  waiting, then the Collection Form panel (the address in mono at
+  `subheading` so it never competes with the title, Copy link as the
+  panel's one primary button, Open Collection Form beside it, the arrow
+  note "share this to start collecting" when the row has room), then the
+  Public Wall panel (`WallFrames` beside the eyebrow, a `heading`, the Wall
+  address, Open Wall and Embed on your site), with nothing floating between
+  the two panels. Right, sticky, the
+  Account: the plan named at `subheading`, each allowance as a meter (the
+  fraction in figures beside its name, a `--brand` fill on a `--surface-2`
+  track under them) and the one button on the page that sells,
+  `UpgradeToProButton`: the primary amber fill with the sparkle drawn in
+  ink, a transform-only hover, full width in its column. On Pro that place
+  holds an outline "Manage subscription", a door rather than a sale. The
+  drawing and the arrow note are the region's pair; nothing else is drawn
+  there. An empty queue is a sentence, never a large zero. Chosen by the
+  founder on 2026-09-09 among four prototypes.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
   controls, newest first. Under the tabs, one list panel (`--surface`,
