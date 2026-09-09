@@ -5,6 +5,15 @@ const SAFE_SEGMENT = /^[a-z0-9][a-z0-9._-]{0,99}$/;
 const SAFE_TITLE = /^[A-Za-z0-9][A-Za-z0-9 .:()/_-]{0,119}$/;
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_SCREENSHOT_BYTES = 10 * 1024 * 1024;
+// The folders Playwright writes, one per project: desktop-chromium,
+// mobile-webkit and so on. Anything else under the evidence directory, such
+// as the hand-made comparisons kept in visual-evidence/manual, is not a
+// capture of the commit and never enters a manifest.
+const CAPTURE_VIEWPORT = /^(desktop|mobile)-[a-z0-9]+$/;
+
+export function isCaptureViewport(viewport) {
+  return typeof viewport === "string" && CAPTURE_VIEWPORT.test(viewport);
+}
 
 export function assertSafeSegment(value, label) {
   if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
