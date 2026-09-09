@@ -11,7 +11,7 @@ import {
   GoogleSignInButton,
   type SocialSignIn,
 } from "@/components/auth/google-sign-in-button";
-import { EnvelopeStamp } from "@/components/doodles";
+import { EnvelopeSent } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Field, FieldDescription } from "@/components/ui/field";
@@ -163,7 +163,7 @@ export function VerificationSentNotice({
 }) {
   return (
     <div className="space-y-5">
-      <EnvelopeStamp className="text-ink h-28 w-auto" />
+      <EnvelopeSent className="text-ink h-28 w-auto" />
       <div className="space-y-1.5">
         <h1 className="type-heading">Check your email</h1>
         <p className="type-body text-ink-2">

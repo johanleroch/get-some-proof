@@ -20,6 +20,7 @@ import {
   ArrowNote,
   CameraTripod,
   CircleAround,
+  EnvelopeSent,
   EnvelopeStamp,
   Sparkle,
   SpeechBubbleStars,
@@ -1405,6 +1406,7 @@ function DoodleShowcase() {
           ["SpeechBubbleStars", <SpeechBubbleStars key="bubble" />],
           ["CameraTripod", <CameraTripod key="camera" />],
           ["EnvelopeStamp", <EnvelopeStamp key="envelope" />],
+          ["EnvelopeSent", <EnvelopeSent key="envelope-sent" />],
           ["WallFrames", <WallFrames key="wall" />],
         ].map(([name, element]) => (
           <div

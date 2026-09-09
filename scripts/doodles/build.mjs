@@ -345,6 +345,38 @@ const spots = [
   },
   {
     doc: [
+      "The same envelope on its way: leaning into the move, speed lines",
+      "trailing on the left. For the moment an email has just gone out.",
+    ],
+    draw(p) {
+      return [
+        group("", [
+          stroke(p.line(30, 92, 84)),
+          stroke(p.line(16, 112, 86)),
+          stroke(p.line(34, 134, 82)),
+        ]),
+        group("rotate(-5 198 111)", [
+          filled(p.rect(100, 54, 196, 114, 11), SURFACE),
+          stroke("M102 60C139 85,171 109,198 134C225 114,257 90,294 60"),
+          stroke("M102 160C126 141,146 126,163 113"),
+          stroke("M294 160C270 141,250 126,233 113"),
+          stroke(p.line(205, 78, 237)),
+          stroke(p.line(211, 86, 237)),
+          filled(p.rect(244, 64, 39, 34, 3), SURFACE),
+          stroke(p.rect(248, 68, 30, 25, 2)),
+          filled(p.star(263, 81, 9.5), BRAND),
+        ]),
+        group("", [
+          filled(p.sparkle(298, 34, 6), BRAND),
+          filled(p.sparkle(52, 172, 5), BRAND),
+        ]),
+      ];
+    },
+    name: "EnvelopeSent",
+    seed: 53,
+  },
+  {
+    doc: [
       "A wall of customer proof: a text Testimonial with its five stars, a",
       "video Testimonial and a short quote, pinned at slight angles.",
     ],
