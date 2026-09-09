@@ -8,7 +8,7 @@
 
 ## Colors and themes
 
-The semantic light and dark tokens live in `src/app/globals.css`. Change `--primary`, `--background`, `--card`, `--muted`, `--border`, and the matching `.dark` values instead of adding one-off colors to components. The `ThemeToggle` supports light, dark, and system preferences and stores the choice under `get-some-proof-theme`.
+The semantic light and dark tokens live in `src/app/globals.css`. Change `--primary`, `--background`, `--card`, `--muted`, `--border`, and the matching `.dark` values instead of adding one-off colors to components. The product ships in the light theme with no theme control for now (decided 2026-09-09); the `ThemeToggle` component still supports light, dark and system, stores the choice under `get-some-proof-theme`, and stays on the development pages (`/kit`, `/screens`) so both themes keep being reviewed.
 
 ## Charts
 
