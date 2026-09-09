@@ -20,6 +20,7 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
+import { SidebarPlanCard } from "@/components/account/sidebar-plan-card";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
@@ -275,21 +276,7 @@ export function AppShellView({
           <Navigation pathname={pathname} sections={navigationSections} />
         </SidebarContent>
         <SidebarFooter className="border-line gap-3 border-t pt-3">
-          {account ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 px-2">
-              <span className="bg-brand-soft text-brand-text inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold">
-                {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
-              </span>
-              <Link
-                className="text-brand-text text-xs font-semibold hover:underline"
-                href="/account/billing"
-              >
-                {account.effectivePlan === "premium"
-                  ? "Manage subscription"
-                  : "Upgrade to Pro"}
-              </Link>
-            </div>
-          ) : null}
+          {account?.effectivePlan === "free" ? <SidebarPlanCard /> : null}
           {userMenu}
         </SidebarFooter>
       </Sidebar>

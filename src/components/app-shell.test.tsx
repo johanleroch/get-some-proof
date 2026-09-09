@@ -41,7 +41,7 @@ vi.mock("@/components/theme-toggle", () => ({
 }));
 
 describe("AppShell", () => {
-  it("shows the Account plan and an English upgrade action beside the user menu", () => {
+  it("sells Pro above the user menu on a Free Account, without naming Free", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
@@ -52,11 +52,34 @@ describe("AppShell", () => {
         Dashboard
       </AppShell>,
     );
-    expect(screen.getByText("Free plan")).toBeInTheDocument();
+    expect(screen.getByText("Collect without limits")).toBeInTheDocument();
+    expect(screen.queryByText("Free plan")).toBeNull();
     expect(
       screen.getByRole("link", { name: "Upgrade to Pro" }),
     ).toHaveAttribute("href", "/account/billing");
   });
+
+  it("shows no plan card at all on a Pro Account", () => {
+    mocks.effectivePlan = "premium";
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Harbor Studio"
+        organizationPublicSlug="harbor"
+        organizationSlug="harbor-1234"
+      >
+        Dashboard
+      </AppShell>,
+    );
+    expect(
+      container.querySelector('[data-slot="sidebar-plan-card"]'),
+    ).toBeNull();
+    expect(screen.queryByText("Collect without limits")).toBeNull();
+    expect(screen.queryByText("Pro plan")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Upgrade to Pro" })).toBeNull();
+    expect(screen.getAllByText("User menu")).not.toHaveLength(0);
+  });
+
   beforeEach(() => {
     cleanup();
     Object.defineProperty(window, "innerWidth", {
@@ -65,6 +88,7 @@ describe("AppShell", () => {
       writable: true,
     });
     mocks.pathname = "/org/acme-1234/dashboard";
+    mocks.effectivePlan = "free";
     mocks.readBilling = true;
     mocks.readAudit = true;
     mocks.updateOrganization = true;

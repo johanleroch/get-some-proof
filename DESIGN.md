@@ -267,7 +267,11 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   no mouth; never in the embed and never next to the logo mark. One
   exception, decided by the founder: the closing panel of `/templates`
   shows it at 420px, cropped by the panel on three sides and tilted 8
-  degrees to the left, as a poster would. In motion
+  degrees to the left, as a poster would. A second one (2026-09-09): the
+  sidebar plan card (section 6) carries it at 128px on every dashboard
+  screen of a Free Account, cropped and tilted the same way; it is the
+  sidebar's signature element, and loaders or toasts in the main region keep
+  theirs. In motion
   (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
   amplitudes, volume kept in every squash, pivot on its base, frozen by
   reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or
@@ -335,6 +339,21 @@ pages still start at the top and scroll normally.
   (micro), `display` title, one primary action on the right. Data lives in
   lists and tables with `--surface-2` row hover, not in stacks of cards.
   Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+- Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
+  footer above the user row, as a small poster on `--brand-soft`
+  (`--radius-lg`, no border, 14px padding): the promise at `subheading`
+  ("Collect without limits", a benefit, never the plan name or the button
+  repeated), one line at `small` in `--ink-2` on what Pro changes (unlimited
+  projects, 25
+  videos, no promo card), the primary amber "Upgrade to Pro" at the `sm`
+  size, and the blob peeking over the bottom right corner, big (128px,
+  starstruck, tilted 8 degrees left, cropped by the panel as on
+  `/templates`, its eyes well inside the card). It never says "Free plan":
+  the sale says it. A Pro Account shows nothing there, only the user row: a
+  paying customer is not sold to from the sidebar, and the subscription
+  lives on the billing page. Chosen by the founder on 2026-09-09 from six
+  drafts (sticker, speech bubble, meters, poster, ink card, slim row);
+  `src/components/account/sidebar-plan-card.tsx`.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
   controls, newest first. Under the tabs, one list panel (`--surface`,
