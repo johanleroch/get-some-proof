@@ -246,14 +246,14 @@ export function ColorPicker({
           <button
             aria-label={preset.label}
             aria-pressed={active}
-            className="focus-visible:ring-ring grid size-11 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-[3px]"
+            className="focus-visible:ring-ring grid size-11 cursor-pointer place-items-center rounded-md outline-none focus-visible:ring-[3px]"
             key={preset.value}
             onClick={() => onChange(preset.value)}
             type="button"
           >
             <span
               className={cn(
-                "border-line-2 ring-offset-background grid size-7 place-items-center rounded-full border ring-2 ring-offset-2 transition-transform duration-150",
+                "border-line-2 ring-offset-background grid size-7 place-items-center rounded-sm border ring-2 ring-offset-2 transition-transform duration-150",
                 active ? "ring-ink" : "ring-transparent hover:scale-110",
               )}
               style={{ background: preset.value }}
@@ -273,12 +273,12 @@ export function ColorPicker({
         <PopoverTrigger
           aria-label="Custom color"
           aria-pressed={custom}
-          className="focus-visible:ring-ring grid size-11 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-[3px]"
+          className="focus-visible:ring-ring grid size-11 cursor-pointer place-items-center rounded-md outline-none focus-visible:ring-[3px]"
         >
           <span
             aria-hidden="true"
             className={cn(
-              "border-line-2 ring-offset-background grid size-7 place-items-center rounded-full border-2 transition-transform duration-150",
+              "border-line-2 ring-offset-background grid size-7 place-items-center rounded-sm border-2 transition-transform duration-150",
               custom ? "ring-ink ring-2 ring-offset-2" : "hover:scale-110",
             )}
             style={

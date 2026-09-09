@@ -322,7 +322,8 @@ function CreateBrandStep({
           if (scenario === "slug-taken") {
             throw new ConvexError({
               code: "PUBLIC_SLUG_UNAVAILABLE",
-              message: "That Public Slug is already taken. Choose another one.",
+              message:
+                "That public address is already taken. Choose another one.",
             });
           }
           created.current = brand;

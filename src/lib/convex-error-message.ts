@@ -14,3 +14,10 @@ export function convexErrorMessage(error: unknown, fallback: string): string {
   }
   return error instanceof Error && error.message ? error.message : fallback;
 }
+
+/** The code a Convex function attached to its error, when it attached one. */
+export function convexErrorCode(error: unknown): string | null {
+  if (!(error instanceof ConvexError)) return null;
+  const code = (error.data as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : null;
+}

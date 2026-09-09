@@ -82,10 +82,12 @@ describe("OnboardingStage", () => {
 
     await waitFor(
       () =>
-        expect(screen.getByTestId("error-toast-message")).toHaveTextContent(
-          "already taken",
-        ),
+        expect(screen.getByRole("alert")).toHaveTextContent("already taken"),
       { timeout: 3000 },
+    );
+    expect(screen.getByLabelText("Public address")).toHaveAttribute(
+      "aria-invalid",
+      "true",
     );
   });
 

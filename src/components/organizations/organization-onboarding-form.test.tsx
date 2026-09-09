@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { ConvexError } from "convex/values";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationOnboardingForm } from "./organization-onboarding-form";
@@ -193,5 +194,33 @@ describe("OrganizationOnboardingForm", () => {
 
     await waitFor(() => expect(mocks.push).toHaveBeenCalledOnce());
     expect(mocks.create).toHaveBeenCalledOnce();
+  });
+
+  it("says a taken address under its field, opened and focused", async () => {
+    mocks.create.mockRejectedValueOnce(
+      new ConvexError({
+        code: "PUBLIC_SLUG_UNAVAILABLE",
+        message: "That public address is already taken. Choose another one.",
+      }),
+    );
+    render(<OrganizationOnboardingForm />);
+
+    fireEvent.change(screen.getByLabelText("Brand name"), {
+      target: { value: "Northwind Bakery" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "That public address is already taken. Choose another one.",
+    );
+    const slug = screen.getByLabelText("Public address");
+    expect(slug).toHaveAttribute("aria-invalid", "true");
+    expect(slug).toHaveValue("northwind-bakery");
+    expect(screen.queryByTestId("error-toast-message")).toBeNull();
+
+    fireEvent.change(slug, { target: { value: "northwind-bakery-paris" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(slug).not.toHaveAttribute("aria-invalid");
   });
 });

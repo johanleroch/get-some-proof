@@ -19,11 +19,14 @@ import { ProfileImageControl } from "@/components/profile-image/profile-image-co
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { ErrorToast } from "@/components/ui/error-toast";
-import { Field, FieldDescription } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { convexErrorMessage } from "@/lib/convex-error-message";
+import {
+  convexErrorCode,
+  convexErrorMessage,
+} from "@/lib/convex-error-message";
 import { accentPresets } from "@/lib/templates-catalog";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { cn } from "@/lib/utils";
@@ -109,6 +112,7 @@ export function OrganizationOnboardingFormView({
   const [publicSlug, setPublicSlug] = useState("");
   const [slugWasEdited, setSlugWasEdited] = useState(false);
   const [slugIsOpen, setSlugIsOpen] = useState(false);
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [collectionFormTitle, setCollectionFormTitle] = useState("");
   const [collectionFormDescription, setCollectionFormDescription] =
     useState("");
@@ -142,7 +146,10 @@ export function OrganizationOnboardingFormView({
 
   function updateName(nextName: string) {
     setName(nextName);
-    if (!slugWasEdited) setPublicSlug(publicSlugFromBrandName(nextName));
+    if (!slugWasEdited) {
+      setPublicSlug(publicSlugFromBrandName(nextName));
+      setSlugError(null);
+    }
   }
 
   function openSlug() {
@@ -196,18 +203,45 @@ export function OrganizationOnboardingFormView({
       }
       navigate(`/org/${organization.slug}/dashboard`);
     } catch (caught) {
-      setError(
-        organizationCreated
-          ? `Your ${noun} was created, but the logo upload failed. Retry or continue without it.`
-          : convexErrorMessage(caught, `Unable to create your ${noun}.`),
-      );
       setPending(false);
+      if (organizationCreated) {
+        setError(
+          `Your ${noun} was created, but the logo upload failed. Retry or continue without it.`,
+        );
+        return;
+      }
+      // A taken address is said under its field, where the fix happens
+      // (DESIGN.md section 6), not only in a toast that leaves.
+      if (convexErrorCode(caught) === "PUBLIC_SLUG_UNAVAILABLE") {
+        setSlugError(
+          convexErrorMessage(
+            caught,
+            "That public address is already taken. Choose another one.",
+          ),
+        );
+        openSlug();
+        return;
+      }
+      setError(convexErrorMessage(caught, `Unable to create your ${noun}.`));
     }
   }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start">
       <form className="max-w-xl space-y-8" onSubmit={submit}>
+        {/* The form reads in the order of the preview beside it: the logo,
+            then the name, then the colour. The name stays the one question;
+            the logo says it is optional. */}
+        <ProfileImageControl
+          alt={`${trimmedName || "New Brand"} logo`}
+          cropShape="rect"
+          fallback={(trimmedName.slice(0, 2) || "GP").toUpperCase()}
+          imageUrl={logoPreview}
+          label="Brand logo (optional)"
+          onRemove={removeStagedLogo}
+          onUpload={stageLogo}
+          size="sm"
+        />
         <div className="space-y-4">
           <Field>
             <Label htmlFor="brand-name">Brand name</Label>
@@ -242,13 +276,19 @@ export function OrganizationOnboardingFormView({
               <div className="flex items-center gap-2">
                 <span className="text-ink-2 type-ui shrink-0">/c/</span>
                 <Input
-                  aria-describedby="public-slug-help"
+                  aria-describedby={
+                    slugError
+                      ? "public-slug-error public-slug-help"
+                      : "public-slug-help"
+                  }
+                  aria-invalid={slugError ? true : undefined}
                   id="public-slug"
                   maxLength={48}
                   minLength={2}
                   name="publicSlug"
                   onChange={(event) => {
                     setSlugWasEdited(true);
+                    setSlugError(null);
                     setPublicSlug(publicSlugFromBrandName(event.target.value));
                   }}
                   placeholder="northwind-bakery"
@@ -261,6 +301,7 @@ export function OrganizationOnboardingFormView({
                 Letters, numbers and dashes. Your Collection Form and your Wall
                 both live here.
               </FieldDescription>
+              <FieldError id="public-slug-error">{slugError}</FieldError>
             </Field>
           ) : null}
         </div>
@@ -279,17 +320,6 @@ export function OrganizationOnboardingFormView({
             It colors your Collection Form, your Wall and every embed.
           </FieldDescription>
         </Field>
-
-        <ProfileImageControl
-          alt={`${trimmedName || "New Brand"} logo`}
-          cropShape="rect"
-          fallback={(trimmedName.slice(0, 2) || "GP").toUpperCase()}
-          imageUrl={logoPreview}
-          label="Brand logo (optional)"
-          onRemove={removeStagedLogo}
-          onUpload={stageLogo}
-          size="sm"
-        />
 
         <div className="border-t pt-5">
           <button

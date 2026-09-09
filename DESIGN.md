@@ -549,8 +549,8 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   check placement on any screen.
 - Color picker: our own panel, never the operating system's. `ColorPicker`
   (`src/components/ui/color-picker.tsx`) is the one way to choose a colour
-  anywhere in the product: the accent presets as 28px dots inside 44px touch
-  targets, Proof Amber first because it is the product's own colour and what a
+  anywhere in the product: the accent presets as 28px rounded squares
+  (`--radius-sm`, swatches rather than radio dots) inside 44px touch targets, Proof Amber first because it is the product's own colour and what a
   new Brand is seeded with, then a custom well that opens a `Popover` on
   `--surface`. Inside, a square for saturation and brightness, a hue slider,
   and the hex itself, in our type and our radii. The native `input[type=color]`
