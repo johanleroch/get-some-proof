@@ -581,6 +581,15 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   a small 16px spinner instead.
 - Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
   1.75. Lucide is removed once the last usages are migrated.
+- Transactional emails (`convex/email/templates.ts`, one layout for all of
+  them): the light theme only, in hex, because mail clients know no tokens.
+  `--paper` behind, one `--surface` card on a `--line` hairline at
+  `--radius-lg`, the wordmark set in text above it (Gelica cannot travel, so
+  Georgia stands in for the display role), the title at 28px, one sentence
+  in `--ink-2`, one amber button with ink text, the address to paste in
+  small print, and the footnote outside the card. Domain nouns as
+  everywhere: a Brand, never an Organization. Reviewed at `/kit/onboarding`,
+  step 3.
 
 ## 8. Motion
 

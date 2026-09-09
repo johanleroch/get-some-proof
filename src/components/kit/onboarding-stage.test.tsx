@@ -60,7 +60,7 @@ describe("OnboardingStage", () => {
     render(<OnboardingStage initialStep="verification-email" />);
 
     expect(
-      screen.getByRole("heading", { name: "Verify your email address" }),
+      screen.getByRole("heading", { name: "Verify your email" }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("link", { name: "Verify email" }));
 

@@ -251,16 +251,15 @@ function VerificationEmailStep({
         <p className="type-micro text-ink-2">Inbox · sample mail client</p>
         <article
           aria-label={message.subject}
-          className="border-line overflow-hidden rounded-lg border bg-white text-[#171717]"
+          className="overflow-hidden rounded-lg border border-[#e2ddd5] bg-white text-[#26201c]"
         >
-          <header className="space-y-1 border-b border-[#e5e5e5] px-6 py-4">
+          <header className="space-y-1 border-b border-[#ebe7e0] px-6 py-4">
             <p className="text-base font-semibold">{message.subject}</p>
-            <p className="text-sm text-[#737373]">
+            <p className="text-sm text-[#645c55]">
               Get Some Proof &lt;no-reply@getsomeproof.com&gt; · to {email}
             </p>
           </header>
           <div
-            className="px-6 py-6"
             dangerouslySetInnerHTML={{ __html: message.html }}
             data-follow-links=""
 
