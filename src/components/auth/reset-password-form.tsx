@@ -7,7 +7,7 @@ import { Sparkle } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
@@ -66,13 +66,12 @@ export function ResetPasswordForm({ token }: { token?: string }) {
     <form className="space-y-5" onSubmit={resetPassword}>
       <Field>
         <Label htmlFor="password">New password</Label>
-        <Input
+        <PasswordInput
           autoComplete="new-password"
           id="password"
           minLength={8}
           name="password"
           required
-          type="password"
         />
       </Field>
       {error ? <ErrorToast message={error} /> : null}

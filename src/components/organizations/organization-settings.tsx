@@ -425,6 +425,8 @@ export function OrganizationSettingsView({
                 <Label htmlFor="public-slug">Public slug</Label>
                 <Input
                   aria-describedby="public-slug-help"
+                  autoComplete="off"
+                  data-form-type="other"
                   disabled={!publicSlugCanChange}
                   id="public-slug"
                   maxLength={48}

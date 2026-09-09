@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
@@ -336,11 +337,10 @@ export function AccountSecurity() {
           >
             <Field className="flex-1">
               <Label htmlFor="enable-2fa-password">Current password</Label>
-              <Input
+              <PasswordInput
                 id="enable-2fa-password"
                 name="password"
                 required
-                type="password"
               />
             </Field>
             <Button loading={pending} type="submit">
@@ -351,12 +351,7 @@ export function AccountSecurity() {
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <form className="space-y-3" onSubmit={regenerateCodes}>
               <Label htmlFor="codes-password">Regenerate recovery codes</Label>
-              <Input
-                id="codes-password"
-                name="password"
-                required
-                type="password"
-              />
+              <PasswordInput id="codes-password" name="password" required />
               <Button loading={pending} type="submit" variant="outline">
                 <IconKey aria-hidden="true" className="size-4" />
                 Generate new codes
@@ -366,11 +361,10 @@ export function AccountSecurity() {
               <Label htmlFor="disable-2fa-password">
                 Disable with password
               </Label>
-              <Input
+              <PasswordInput
                 id="disable-2fa-password"
                 name="password"
                 required
-                type="password"
               />
               <Button loading={pending} type="submit" variant="outline">
                 Disable 2FA
