@@ -27,6 +27,15 @@ export async function validateExclusiveStoredImage(
     });
   }
 
+  const importAvatar = await ctx.db
+    .query("importAvatarUploads")
+    .withIndex("by_storage_id", (q) => q.eq("storageId", storageId))
+    .first();
+  if (importAvatar)
+    throw new ConvexError({
+      code: "STORED_IMAGE_UNAVAILABLE",
+      message: "That image is already in use.",
+    });
   const attachment = await ctx.db
     .query("testimonialImages")
     .withIndex("by_storage_id", (q) => q.eq("storageId", storageId))

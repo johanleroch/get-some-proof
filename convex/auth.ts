@@ -1,10 +1,12 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth/minimal";
+import type { BetterAuthOptions } from "better-auth";
 import { magicLink, twoFactor } from "better-auth/plugins";
 import { v } from "convex/values";
 
 import authConfig from "./auth.config";
+import authSchema from "./betterAuth/schema";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
@@ -18,7 +20,10 @@ import {
 
 const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
-export const authComponent = createClient<DataModel>(components.betterAuth);
+export const authComponent = createClient<DataModel, typeof authSchema>(
+  components.betterAuth,
+  { local: { schema: authSchema } },
+);
 
 function invitationMagicLinkMetadata(
   metadata: Record<string, unknown> | undefined,
@@ -37,11 +42,11 @@ function invitationMagicLinkMetadata(
   return { deliveryIdempotencyKey, invitationToken };
 }
 
-export function createAuth(ctx: GenericCtx<DataModel>) {
+export function createAuthOptions(ctx: GenericCtx<DataModel>) {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  return betterAuth({
+  return {
     appName: "Get Some Proof",
     baseURL: siteUrl,
     database: authComponent.adapter(ctx),
@@ -130,7 +135,11 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
       }),
       convex({ authConfig }),
     ],
-  });
+  } satisfies BetterAuthOptions;
+}
+
+export function createAuth(ctx: GenericCtx<DataModel>) {
+  return betterAuth(createAuthOptions(ctx));
 }
 
 export const getCurrentUser = query({

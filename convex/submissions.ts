@@ -1,4 +1,5 @@
 import { isProjectOpen } from "./projectActivity";
+import { importOrigin } from "./domain/testimonialImport";
 import { isProjectActive } from "./projectActivity";
 import { consumeAdmission } from "./collectionAdmission";
 import { resolveUploadContext } from "./testimonialImages";
@@ -724,8 +725,9 @@ export const getPrivate = query({
   },
   returns: v.object({
     company: v.optional(v.string()),
-    consentAcceptedAt: v.number(),
-    consentText: v.string(),
+    consentAcceptedAt: v.optional(v.number()),
+    consentText: v.optional(v.string()),
+    importOrigin: v.optional(importOrigin),
     moderationStatus: v.union(
       v.literal("pending"),
       v.literal("published"),
@@ -735,7 +737,7 @@ export const getPrivate = query({
     rating: v.optional(v.number()),
     role: v.optional(v.string()),
     submissionType: v.union(v.literal("text"), v.literal("video")),
-    submitterEmail: v.string(),
+    submitterEmail: v.optional(v.string()),
     submitterName: v.string(),
     testimonialId: v.id("testimonials"),
     text: v.string(),
@@ -763,7 +765,10 @@ export const getPrivate = query({
         index.eq("testimonialId", testimonial._id),
       )
       .unique();
-    if (!consent) {
+    if (
+      !testimonial.importOrigin &&
+      (!consent || !testimonial.submitterEmail)
+    ) {
       throw new ConvexError({
         code: "TESTIMONIAL_UNAVAILABLE",
         message: "Testimonial unavailable.",
@@ -771,8 +776,9 @@ export const getPrivate = query({
     }
     return {
       company: testimonial.company,
-      consentAcceptedAt: consent.acceptedAt,
-      consentText: consent.consentText,
+      consentAcceptedAt: consent?.acceptedAt,
+      consentText: consent?.consentText,
+      importOrigin: testimonial.importOrigin,
       moderationStatus: testimonial.moderationStatus,
       rating: testimonial.rating,
       role: testimonial.role,
@@ -832,7 +838,13 @@ export const getByManagementToken = query({
         )
         .unique(),
     ]);
-    if (!brand || !consent || !(await isProjectOpen(ctx, brand))) return null;
+    if (
+      !brand ||
+      !consent ||
+      !testimonial.submitterEmail ||
+      !(await isProjectOpen(ctx, brand))
+    )
+      return null;
     return {
       brandName: brand.name,
       company: testimonial.company,
