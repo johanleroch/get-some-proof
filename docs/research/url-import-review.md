@@ -1,6 +1,6 @@
 # URL import delivery review
 
-Reviewed implementation: `b35bf9bc7ea8b10afebe20b90f81e084ddd3ffdf`.
+Historical reviewed implementation: `b35bf9bc7ea8b10afebe20b90f81e084ddd3ffdf`.
 Base: `f11193a21b92e36690f27a8bfc9e038ecb8a2e60`. Date: 2026-09-09.
 [Draft PR #105](https://github.com/johanleroch/get-some-proof/pull/105).
 The implementation is published as a first draft. Full delivery remains open.
@@ -125,3 +125,23 @@ public wall: 51 text, 6 video, 57 avatars and 57 distinct source IDs. This was a
 read-only extraction, not an import or a video-copy test. The 29 source/import
 regressions pass; both independent reviews report no issue and separately reran
 19 source tests. No UI layout changed, so this correction needs no new screenshots.
+
+## Latest delivery checkpoint
+
+Implementation head: `695bdf972557f15e21b02527d2860e5305ad1495`.
+Remote quality, capture and browser checks succeed. The browser job in run
+34351687496 completed successfully in 15m21s. The earlier avatar browser run was
+cancelled when superseded.
+
+Four avatar screenshots belong to b179e1b and are published at
+https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5601760660.
+Four public selection screenshots belong to 695bdf9 and are published at
+https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5601959389.
+All eight attachments were downloaded and byte-verified. The public gallery
+entry is now reviewed in both themes at desktop/mobile sizes.
+
+The local ChatGPT submission draft and actual 12-tool runtime inventory include
+the avatar operations. Neither is submitted or a hosted ChatGPT proof. A test
+HTTPS endpoint has been requested. The Mux development System Read request
+remains pending. Automatic screenshot publication still requires its separate
+authentication fix; the inspected publisher failed with HTTP 404.

@@ -330,6 +330,46 @@
   },
   "current_checkpoint": {
     "date": "2026-09-09",
+    "implementation_head": "695bdf972557f15e21b02527d2860e5305ad1495",
+    "base": "f11193a21b92e36690f27a8bfc9e038ecb8a2e60",
+    "pr": "https://github.com/johanleroch/get-some-proof/pull/105",
+    "local": "Avatar supplement: pnpm check passed 835 tests in 146 files, formatting, lint, types and build. Final handler-only draft ref passed 13 focused tests. Custom Senja slug fix passed 29 source/import tests and targeted lint.",
+    "remote": {
+      "run": "34351687496",
+      "quality": "success",
+      "browser": "success",
+      "capture_run": "34351687291",
+      "capture": "success",
+      "limitations": "Current browser job succeeded. Earlier b179e1b browser run was cancelled when superseded; earlier macOS-only failures are not certified fixed."
+    },
+    "review": "Both review axes found no new issue in the avatar supplement or custom Senja slug correction. Avatar tests include interrupted attempts, late responses, owner retry, draft cancellation and storage cleanup.",
+    "website": "Desktop/mobile real provider selection: 4 text + 2 video eligible, excess capacity blocks confirmation, keeping eligible items enables it. No import confirmed in this check.",
+    "signup": "Actual local MCP to clean browser, signup, local email verification, new Project and claimed preview pass desktop/mobile. Selection and identity correction preserved; no capability in request URLs/referrers; zero automatic axe violations. Synthetic preview; no import confirmation or publication.",
+    "mux": "Repository helper copied a supported real source in verified Mux development environment Get Some Proof (5hrogn): ready, 112.234278 seconds, playback available. Test asset deleted (204 then 404). This does not verify application queue or real webhook delivery; listener permission denied with current Video Read/Write token. System Read requested.",
+    "visuals": {
+      "historical_import_comment": "https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5600872350",
+      "avatar_comment": "https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5601760660",
+      "public_comment": "https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5601959389",
+      "scope": "Avatar captures belong to b179e1b. Public captures belong to 695bdf9; desktop/mobile light/dark inspected and byte-verified. Historical captures keep their original commit provenance. Public gallery review is now OK locally.",
+      "automatic_publisher": "Latest inspected avatar publisher 34350849836 failed HTTP 404, no runner session fallback. Local attachment publication succeeds. No personal browser session exported."
+    },
+    "external": "Actual ChatGPT host/CSP and listing remain unverified. Submission draft and 12 actual local MCP tool definitions refreshed to 695bdf9. HTTPS preproduction URL requested; no production deployment or merge authorized/performed.",
+    "avatars": {
+      "implementation": "b179e1b1e3f2ac2ce2d464d025f0f5059da23bde",
+      "live": "Local MCP upload larger than 16 KiB downloaded from Convex and byte-verified, then removed. Not actual ChatGPT-host evidence.",
+      "browser": "Four desktop/mobile MCP simulator checks pass, including save and reopen of cropped photo.",
+      "comment": "https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5601760660"
+    },
+    "senja_custom_slug": {
+      "source": "https://senja.io/p/markpcolgan/testimonials",
+      "verified": "Corrected parser returns 57 candidates: 51 text, 6 video, 57 avatars, 57 distinct source IDs. Before correction this public wall failed UNSUPPORTED_WALL_URL.",
+      "tests": "29 source/import tests pass; both reviewers independently reran 19 source tests."
+    },
+    "senja_reference": "Authenticated live Senja preview DOM observed with Filters, select-all/individual checkboxes, selection counter and Add a tag. Tab detached before screenshot/filter inspection; no final import confirmed."
+  },
+  "history_note": "All other working-state entries are historical checkpoints. Their running-session IDs and then-pending statements are not current runtime or delivery claims; use current_checkpoint and current PR state.",
+  "checkpoint_before_avatar": {
+    "date": "2026-09-09",
     "implementation_head": "b35bf9bc7ea8b10afebe20b90f81e084ddd3ffdf",
     "base": "f11193a21b92e36690f27a8bfc9e038ecb8a2e60",
     "pr": "https://github.com/johanleroch/get-some-proof/pull/105",
@@ -353,6 +393,5 @@
       "automatic_publisher": "Failed HTTP 404; local publication succeeded. No personal session exported to Actions."
     },
     "external": "Actual ChatGPT host/CSP and public listing are unverified. A local submission draft exists; it has not been submitted. No production deployment or merge authorized/performed."
-  },
-  "history_note": "All other working-state entries are historical checkpoints. Their running-session IDs and then-pending statements are not current runtime or delivery claims; use current_checkpoint and current PR state."
+  }
 }
