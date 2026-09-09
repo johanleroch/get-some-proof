@@ -49,8 +49,11 @@ describe("OnboardingStage", () => {
       { timeout: 3000 },
     );
     expect(
-      screen.getByRole("heading", { name: "Create your account" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Create your account" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Return to sign in" }),
+    ).toHaveAttribute("href", "/sign-in?callbackURL=%2Fdashboard");
   });
 
   it("shows the real verification email and follows its button back in", () => {

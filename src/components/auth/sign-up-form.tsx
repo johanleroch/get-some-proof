@@ -1,9 +1,11 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import { IconArrowLeft } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { AuthHeading } from "@/components/auth/auth-heading";
 import {
   type AuthAttempt,
   GoogleSignInButton,
@@ -17,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
-/** The sign-up page's title and lead, shared with the onboarding playground. */
-export const signUpCopy = {
+/** The title and lead above the account form. They leave with the form. */
+const signUpCopy = {
   description: "Verify your email before creating your Brand.",
   title: "Create your account",
 } as const;
@@ -45,9 +47,10 @@ export function SignUpForm({
 
 /**
  * The account form with its auth calls handed in, so the same screen can be
- * played without a backend. After a successful sign-up it becomes the
- * "Check your email" notice, which is where a new Owner leaves the product
- * for their inbox.
+ * played without a backend. The heading belongs to the form: after a
+ * successful sign-up both give way to the "Check your email" notice, which
+ * is where a new Owner leaves the product for their inbox, and that notice
+ * carries the page's one title.
  */
 export function SignUpFormView({
   callbackURL = "/dashboard",
@@ -95,54 +98,60 @@ export function SignUpFormView({
   }
 
   return (
-    <form className="space-y-5" onSubmit={submit}>
-      <Field>
-        <Label htmlFor="name">Full name</Label>
-        <Input autoComplete="name" id="name" name="name" required />
-      </Field>
-      <Field>
-        <Label htmlFor="email">Email address</Label>
-        <Input
-          autoComplete="email"
-          id="email"
-          name="email"
-          required
-          type="email"
-        />
-      </Field>
-      <Field>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          autoComplete="new-password"
-          id="password"
-          minLength={8}
-          name="password"
-          required
-          type="password"
-        />
-        <FieldDescription>Use at least 8 characters.</FieldDescription>
-      </Field>
-      {error ? <ErrorToast message={error} /> : null}
-      <Button className="w-full" loading={pending} type="submit">
-        Create account
-      </Button>
-      <GoogleSignInButton
-        callbackURL={callbackURL}
-        pending={pending}
-        setPending={setPending}
-        setError={setError}
-        signIn={signInWithGoogle}
+    <>
+      <AuthHeading
+        description={signUpCopy.description}
+        title={signUpCopy.title}
       />
-      <p className="text-ink-2 text-center text-sm">
-        Already have an account?{" "}
-        <Link
-          className="text-brand-text font-medium hover:underline"
-          href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
-        >
-          Sign in
-        </Link>
-      </p>
-    </form>
+      <form className="space-y-5" onSubmit={submit}>
+        <Field>
+          <Label htmlFor="name">Full name</Label>
+          <Input autoComplete="name" id="name" name="name" required />
+        </Field>
+        <Field>
+          <Label htmlFor="email">Email address</Label>
+          <Input
+            autoComplete="email"
+            id="email"
+            name="email"
+            required
+            type="email"
+          />
+        </Field>
+        <Field>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            autoComplete="new-password"
+            id="password"
+            minLength={8}
+            name="password"
+            required
+            type="password"
+          />
+          <FieldDescription>Use at least 8 characters.</FieldDescription>
+        </Field>
+        {error ? <ErrorToast message={error} /> : null}
+        <Button className="w-full" loading={pending} type="submit">
+          Create account
+        </Button>
+        <GoogleSignInButton
+          callbackURL={callbackURL}
+          pending={pending}
+          setPending={setPending}
+          setError={setError}
+          signIn={signInWithGoogle}
+        />
+        <p className="text-ink-2 text-center text-sm">
+          Already have an account?{" "}
+          <Link
+            className="text-brand-text font-medium hover:underline"
+            href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
+          >
+            Sign in
+          </Link>
+        </p>
+      </form>
+    </>
   );
 }
 
@@ -156,16 +165,17 @@ export function VerificationSentNotice({
     <div className="space-y-5">
       <EnvelopeStamp className="text-ink h-28 w-auto" />
       <div className="space-y-1.5">
-        <h2 className="type-heading">Check your email</h2>
+        <h1 className="type-heading">Check your email</h1>
         <p className="type-body text-ink-2">
           We sent a verification link. Verify your address before creating your
           Brand.
         </p>
       </div>
       <Link
-        className="text-brand-text text-sm font-medium hover:underline"
+        className="text-brand-text inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
         href={`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`}
       >
+        <IconArrowLeft aria-hidden="true" className="size-4" stroke={1.75} />
         Return to sign in
       </Link>
     </div>

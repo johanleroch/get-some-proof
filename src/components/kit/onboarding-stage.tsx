@@ -20,11 +20,9 @@ import { buildOrganizationSlug } from "@convex/domain/organizationSlug";
 import { buildVerificationEmail } from "@convex/email/templates";
 import { NavUserView } from "@/components/account/nav-user";
 import { AppShellView } from "@/components/app-shell";
-import { AuthHeading } from "@/components/auth/auth-heading";
 import { AuthShell } from "@/components/auth/auth-shell";
 import {
   SignUpFormView,
-  signUpCopy,
   VerificationSentNotice,
 } from "@/components/auth/sign-up-form";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
@@ -166,10 +164,6 @@ function StepScreen({
     case "check-email":
       return (
         <AuthShell>
-          <AuthHeading
-            description={signUpCopy.description}
-            title={signUpCopy.title}
-          />
           <VerificationSentNotice callbackURL="/dashboard" />
         </AuthShell>
       );
@@ -205,10 +199,6 @@ function SignUpStep({
 }) {
   return (
     <AuthShell>
-      <AuthHeading
-        description={signUpCopy.description}
-        title={signUpCopy.title}
-      />
       <SignUpFormView
         callbackURL="/dashboard"
         onEmailSent={(account) =>
