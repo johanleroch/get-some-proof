@@ -27,6 +27,7 @@ import {
   convexErrorCode,
   convexErrorMessage,
 } from "@/lib/convex-error-message";
+import { type CreatedNoun, markJustCreated } from "@/lib/just-created";
 import { accentPresets } from "@/lib/templates-catalog";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,7 @@ function chosen(value: string) {
  * (onboarding), the next ones are Projects (Pro), so the button and the
  * error sentences follow the page title.
  */
-export type OrganizationNoun = "Brand" | "project";
+export type OrganizationNoun = CreatedNoun;
 
 export function OrganizationOnboardingForm({
   noun = "Brand",
@@ -67,7 +68,10 @@ export function OrganizationOnboardingForm({
     <OrganizationOnboardingFormView
       createOrganization={createOrganization}
       generateUploadUrl={generateUploadUrl}
-      navigate={(path) => router.push(path as Route)}
+      navigate={(path) => {
+        markJustCreated(noun);
+        router.push(path as Route);
+      }}
       noun={noun}
       setLogo={setLogo}
       uploadImage={uploadProfileImage}

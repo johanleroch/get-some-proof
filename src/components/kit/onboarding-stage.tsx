@@ -186,7 +186,13 @@ function StepScreen({
     case "opening-workspace":
       return <BlobLoaderScreen />;
     case "first-overview":
-      return <FirstOverviewStep account={account} brand={brand} />;
+      return (
+        <FirstOverviewStep
+          account={account}
+          brand={brand}
+          justCreated={state.brand ? "Brand" : null}
+        />
+      );
   }
 }
 
@@ -355,9 +361,11 @@ function CreateBrandStep({
 function FirstOverviewStep({
   account,
   brand,
+  justCreated,
 }: {
   account: OnboardingAccount;
   brand: OnboardingBrand;
+  justCreated: "Brand" | null;
 }) {
   const accountView = {
     effectivePlan: "free" as const,
@@ -414,6 +422,7 @@ function FirstOverviewStep({
         billingHref={`/org/${brand.slug}/billing`}
         collectionUrl={collectionUrl}
         copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
+        justCreated={justCreated}
         name={brand.name}
         pendingCount={0}
         publicSlug={brand.publicSlug}

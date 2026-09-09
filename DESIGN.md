@@ -371,7 +371,11 @@ pages still start at the top and scroll normally.
   holds an outline "Manage subscription", a door rather than a sale. The
   drawing and the arrow note are the region's pair (section 4); the button's
   sparkle is an icon, not a third element. An empty queue is a sentence, never a large zero. Chosen by the
-  founder on 2026-09-09 among four prototypes.
+  founder on 2026-09-09 among four prototypes. The first arrival after
+  onboarding gets one greeting from the mascot, "Your Brand is ready." over
+  "Share your Collection Form to start collecting.", handed over through
+  session storage so a reload never repeats it. Addresses wrap only after a
+  slash (`PublicAddress`), never inside the slug.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
   controls, newest first. Under the tabs, one list panel (`--surface`,

@@ -85,6 +85,7 @@ describe("OrganizationOnboardingForm", () => {
     expect(mocks.push).toHaveBeenCalledWith(
       "/org/visual-studio-ab12/dashboard",
     );
+    expect(sessionStorage.getItem("get-some-proof-just-created")).toBe("Brand");
   });
 
   it("reveals an invalid privacy email after its disclosure was collapsed", async () => {
