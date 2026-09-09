@@ -256,6 +256,33 @@ describe("TestimonialInboxView", () => {
     expect(screen.getByText(/link to replace the video/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
 
+    // Imported proof has no Submitter email or replacement-link delivery.
+    // The distinction remains after publication permission was recorded.
+    for (const requiresImportAttestation of [true, false]) {
+      rerender(
+        <TestimonialInboxView
+          category="pending"
+          onAction={onAction}
+          pendingId={null}
+          testimonials={[
+            {
+              ...video,
+              consentAcceptedAt: undefined,
+              submitterEmail: undefined,
+              requiresImportAttestation,
+              captionsStatus: "failed",
+              videoStatus: "failed",
+            },
+          ]}
+        />,
+      );
+      expect(
+        screen.getByText("The imported video could not be copied."),
+      ).toBeVisible();
+      expect(screen.queryByText(/link to replace the video/)).toBeNull();
+      expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
+    }
+
     const ready = {
       ...video,
       card: {

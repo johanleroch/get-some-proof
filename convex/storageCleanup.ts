@@ -5,6 +5,15 @@ import { randomSubmissionManagementToken } from "./domain/submission";
 const orphanedStorageMinimumAgeMs = 2 * 60 * 60 * 1_000;
 const storageCleanupLeaseMs = 60 * 60 * 1_000;
 
+export const requestOrphanedStorageCleanup = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await scheduleOrphanedStorageCleanup(ctx);
+    return null;
+  },
+});
+
 export async function scheduleOrphanedStorageCleanup(ctx: MutationCtx) {
   const now = Date.now();
   const cleanupKey = "submission-avatar-orphans" as const;
@@ -65,6 +74,7 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
         poster,
         uploadReservation,
         attachment,
+        importAvatar,
       ] = await Promise.all([
         ctx.db
           .query("userProfiles")
@@ -100,6 +110,10 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
           .query("testimonialImages")
           .withIndex("by_storage_id", (q) => q.eq("storageId", storedFile._id))
           .first(),
+        ctx.db
+          .query("importAvatarUploads")
+          .withIndex("by_storage_id", (q) => q.eq("storageId", storedFile._id))
+          .first(),
       ]);
       if (
         !profile &&
@@ -107,7 +121,8 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
         !testimonial &&
         !poster &&
         !uploadReservation &&
-        !attachment
+        !attachment &&
+        !importAvatar
       ) {
         await ctx.storage.delete(storedFile._id);
       }

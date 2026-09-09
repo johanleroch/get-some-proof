@@ -299,7 +299,7 @@ export const prepareRemoval = internalMutation({
       )
       .map((candidate) => ({
         provider: candidate!.provider,
-        providerUploadId: candidate!.providerUploadId,
+        providerUploadId: candidate!.providerUploadId!,
       }))
       .filter(
         (candidate, index, all) =>

@@ -409,9 +409,11 @@ describe("CollectionFormShellView", () => {
     fireEvent.click(screen.getByLabelText(/I give Publication Consent/i));
     fireEvent.click(screen.getByRole("button", { name: "Submit testimonial" }));
 
-    expect(await screen.findByRole("progressbar")).toHaveAttribute(
-      "aria-valuenow",
-      "46",
+    await waitFor(() =>
+      expect(screen.getByRole("progressbar")).toHaveAttribute(
+        "aria-valuenow",
+        "46",
+      ),
     );
     expect(screen.getByText("Uploading video — 46%")).toBeVisible();
     const guardedNavigation = new Event("beforeunload", { cancelable: true });
@@ -428,11 +430,13 @@ describe("CollectionFormShellView", () => {
     expect(
       screen.getByRole("button", { name: "Submit testimonial" }),
     ).toBeEnabled();
-    const navigationAfterCancel = new Event("beforeunload", {
-      cancelable: true,
+    await waitFor(() => {
+      const navigationAfterCancel = new Event("beforeunload", {
+        cancelable: true,
+      });
+      window.dispatchEvent(navigationAfterCancel);
+      expect(navigationAfterCancel.defaultPrevented).toBe(false);
     });
-    window.dispatchEvent(navigationAfterCancel);
-    expect(navigationAfterCancel.defaultPrevented).toBe(false);
   });
 
   it("resets failed bot verification and submits a retry with a fresh token", async () => {

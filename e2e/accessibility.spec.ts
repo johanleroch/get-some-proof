@@ -31,6 +31,13 @@ async function expectNoWcagViolations(page: Page) {
 }
 
 const canonicalScreens = [
+  "/visual-evidence/testimonial-import",
+  "/visual-evidence/testimonial-import-url",
+  "/visual-evidence/testimonial-import-public",
+  "/visual-evidence/testimonial-import-publication",
+  "/visual-evidence/testimonial-import-expired",
+  "/visual-evidence/testimonial-import-video-failed",
+  "/visual-evidence/testimonial-import-video-processing",
   "/visual-evidence/collection-form",
   "/visual-evidence/collection-form-write",
   "/visual-evidence/rich-testimonial",
@@ -49,6 +56,25 @@ for (const path of canonicalScreens) {
   test(`${path} has no automatic WCAG 2.2 A/AA violation`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(path);
+    await expect(page.locator("h1, h2").first()).toBeVisible();
+    await expectNoWcagViolations(page);
+  });
+}
+
+for (const path of [
+  "/visual-evidence/testimonial-import",
+  "/visual-evidence/testimonial-import-public",
+  "/visual-evidence/testimonial-import-publication",
+]) {
+  test(`${path} retains automatic WCAG contrast in dark mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addInitScript(() =>
+      localStorage.setItem("get-some-proof-theme", "dark"),
+    );
+    await page.goto(path);
+    await expect(page.locator("html")).toHaveClass(/dark/);
     await expect(page.locator("h1, h2").first()).toBeVisible();
     await expectNoWcagViolations(page);
   });

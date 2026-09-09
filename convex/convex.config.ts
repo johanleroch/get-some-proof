@@ -1,12 +1,16 @@
 import rateLimiter from "@convex-dev/rate-limiter/convex.config.js";
-import betterAuth from "@convex-dev/better-auth/convex.config";
+import betterAuth from "./betterAuth/convex.config";
 import stripe from "@convex-dev/stripe/convex.config.js";
 import authz from "@djpanda/convex-authz/convex.config";
 import { defineApp } from "convex/server";
 import { v } from "convex/values";
+import workflow from "@convex-dev/workflow/convex.config";
 
 const app = defineApp({
   env: {
+    CHATGPT_IMPORT_ENABLED: v.optional(
+      v.union(v.literal("true"), v.literal("false")),
+    ),
     EMAIL_FROM: v.optional(v.string()),
     EMAIL_PROVIDER: v.union(
       v.literal("console"),
@@ -30,5 +34,6 @@ app.use(betterAuth);
 app.use(authz);
 app.use(stripe);
 app.use(rateLimiter);
+app.use(workflow);
 
 export default app;
