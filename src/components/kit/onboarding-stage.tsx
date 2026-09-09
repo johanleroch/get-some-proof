@@ -245,6 +245,12 @@ function VerificationEmailStep({
     email,
     "https://getsomeproof.com/api/auth/verify-email?token=sample&callbackURL=%2Fdashboard",
   );
+  // The template addresses its images at the site the backend knows; in the
+  // browser that is not this dev server, so the preview reads them from here.
+  const html = message.html.replaceAll(
+    /https?:\/\/[^"]+\/brand\/email\//g,
+    "/brand/email/",
+  );
   return (
     <main className="bg-surface-2 min-h-svh px-5 py-8 md:px-8 md:py-12">
       <div className="mx-auto max-w-2xl space-y-4">
@@ -260,7 +266,7 @@ function VerificationEmailStep({
             </p>
           </header>
           <div
-            dangerouslySetInnerHTML={{ __html: message.html }}
+            dangerouslySetInnerHTML={{ __html: html }}
             data-follow-links=""
 
             onClick={(event) => {
