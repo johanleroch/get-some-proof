@@ -156,7 +156,7 @@ export async function listIssueComments(
   throw new Error("Too many comments to synchronize safely");
 }
 
-export function renderComment(manifest, publishedScreenshots) {
+export function renderComment(manifest, publishedScreenshots, hosting = {}) {
   const marker = `<!-- visual-evidence:${manifest.project} -->`;
   const headSha = manifest.headSha;
   const images = publishedScreenshots
@@ -167,5 +167,9 @@ export function renderComment(manifest, publishedScreenshots) {
     .join("\n\n");
 
   const targetLabel = manifest.target.kind === "pull" ? "la PR" : "l’issue";
-  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${headSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.\n\n${images}`;
+  const served =
+    hosting.ref && hosting.commit
+      ? ` Images servies depuis \`${hosting.ref}\` (commit \`${hosting.commit}\`).`
+      : "";
+  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${headSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.${served}\n\n${images}`;
 }

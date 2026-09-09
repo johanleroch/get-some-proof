@@ -22,8 +22,8 @@ Make screenshots part of delivery, not an optional afterthought.
 
 ## Publish
 
-- Use `gh-image` for GitHub attachments. Follow [the publication guide](../../../docs/agents/visual-evidence.md) for local PR/issue publication, CI authentication and default-branch bootstrap.
-- Pull requests: push the reviewed commit. `Visual evidence capture` creates an untrusted artifact; `Visual evidence publish` validates it with trusted code, uploads and byte-verifies attachments, and replaces the marked PR comment.
+- The publisher commits the PNGs under a ref of their own (`refs/visual-evidence/<kind>-<number>`) with the job's token, links them by commit-pinned raw URLs and verifies every byte before touching the comment. Follow [the publication guide](../../../docs/agents/visual-evidence.md) for local publication and manual CI runs.
+- Pull requests: push the reviewed commit. `Visual evidence capture` creates an untrusted artifact; `Visual evidence publish` validates it with trusted code, publishes and byte-verifies the images, and replaces the marked PR comment.
 - Local publication: build the exact-commit manifest for `pull` or `issue`, then run `pnpm visual:publish` from a clean reviewed checkout. Re-check the remote PR head before reporting success.
 - Verify every desktop/mobile image is embedded in the marked comment with the current full SHA. A GitHub artifact alone is not published evidence.
-- Report local publication and automatic workflow success separately. Changing a default-branch publisher requires an authorized merge before its new workflow can run automatically.
+- Report local publication and automatic workflow success separately. A change to the publisher runs automatically only once merged; prove it before that by dispatching `Visual evidence publish` on its branch with the capture run id.
