@@ -109,3 +109,19 @@ warning is a false positive for object URL cleanup. The photoUrl effect revokes
 each previous blob URL on replacement and the current URL on unmount. No rule
 was suppressed. Remote checks and fresh screenshot publication for this
 supplement remain pending until its commit is pushed.
+
+## Senja custom wall paths
+
+A live probe of https://senja.io/p/markpcolgan/testimonials reproduced
+`UNSUPPORTED_WALL_URL` before retrieval: the allowlist required the literal
+`wall-of-love` slug. Senja supports customized wall slugs, documented at
+https://support.senja.io/how-do-i-make-a-custom-url-to-my-wall-of-love-dgny1.
+The corrected matcher accepts one safe final slug under the exact Senja host;
+HTTPS, credentials/port checks, bounded reads and redirect rejection remain.
+Nested form and individual-testimonial URLs stay unsupported.
+
+On 2026-09-09 the actual corrected parser returned 57 candidates from that
+public wall: 51 text, 6 video, 57 avatars and 57 distinct source IDs. This was a
+read-only extraction, not an import or a video-copy test. The 29 source/import
+regressions pass; both independent reviews report no issue and separately reran
+19 source tests. No UI layout changed, so this correction needs no new screenshots.

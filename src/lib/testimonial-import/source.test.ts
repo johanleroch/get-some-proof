@@ -14,6 +14,9 @@ describe("public testimonial wall retrieval", () => {
     "https://127.0.0.1/wall",
     "https://testimonial.to:8443/atelier/all",
     "https://testimonial.to/dashboard",
+    "https://senja.io.evil.example/p/atelier/testimonials",
+    "https://senja.io/p/atelier/r/form-id",
+    "https://senja.io/p/atelier/t/testimonial-id",
   ])(
     "refuses unsupported sources before sending a request: %s",
     async (url) => {
@@ -139,33 +142,38 @@ describe("public testimonial wall retrieval", () => {
     ).rejects.toMatchObject({ code: "SOURCE_FORMAT_CHANGED" });
   });
 
-  it("reads Senja's serialized review data and excludes private source fields", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          `<script>
+  it.each([
+    "https://senja.io/p/atelier/wall-of-love",
+    "https://senja.io/p/atelier/testimonials",
+    "https://senja.io/p/atelier/6jdm3C",
+  ])(
+    "reads public Senja wall %s and excludes private source fields",
+    async (url) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          new Response(
+            `<script>
       start({data:{reviews:[{id:"review-123",text:"Merci [encore] !",type:"text",
       customer:{name:"Camille Robert",tagline:"Fondatrice",email_md5:"private"},
       media_asset:{metadata:{confidence:.99787}},private_note:"never expose"}]}});
     </script>`,
-          { headers: { "content-type": "text/html" } },
+            { headers: { "content-type": "text/html" } },
+          ),
         ),
-      ),
-    );
-    const preview = await previewWall(
-      "https://senja.io/p/atelier/wall-of-love",
-    );
-    expect(preview.items).toEqual([
-      {
-        sourceId: "review-123",
-        type: "text",
-        text: "Merci [encore] !",
-        authorName: "Camille Robert",
-        tagline: "Fondatrice",
-      },
-    ]);
-  });
+      );
+      const preview = await previewWall(url);
+      expect(preview.items).toEqual([
+        {
+          sourceId: "review-123",
+          type: "text",
+          text: "Merci [encore] !",
+          authorName: "Camille Robert",
+          tagline: "Fondatrice",
+        },
+      ]);
+    },
+  );
 
   it("includes Senja video candidates and a declared public static rendition", async () => {
     vi.stubGlobal(

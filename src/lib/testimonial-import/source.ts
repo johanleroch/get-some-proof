@@ -43,7 +43,7 @@ function supportedSource(input: string) {
     provider = "testimonial-to";
   } else if (
     (url.hostname === "senja.io" &&
-      /^\/p\/[a-zA-Z0-9_-]+\/wall-of-love\/?$/.test(url.pathname)) ||
+      /^\/p\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)) ||
     (url.hostname === "love.senja.io" && url.pathname === "/")
   ) {
     provider = "senja";
