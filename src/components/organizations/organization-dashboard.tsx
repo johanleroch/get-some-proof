@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   IconArrowRight,
+  IconCode,
   IconCopy,
   IconExternalLink,
 } from "@tabler/icons-react";
@@ -11,12 +12,14 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
-import { ArrowNote, EnvelopeStamp, WallFrames } from "@/components/doodles";
+import { UpgradeToProButton } from "@/components/account/upgrade-to-pro-button";
+import { ArrowNote, WallFrames } from "@/components/doodles";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import { cn } from "@/lib/utils";
 
 /**
  * Submissions waiting for a decision. A count exists to be acted on, so this
@@ -59,21 +62,123 @@ function ReviewQueue({
   );
 }
 
-const projectPlanDescriptions = {
-  free: "Unlimited projects with Pro",
-  premium: "Shared across all projects",
-};
+type Account = NonNullable<BrandDashboardViewProps["account"]>;
 
-export function BrandDashboardView({
-  collectionUrl,
+/** The allowances the plans promise (docs/product-scope.md). */
+const freeTextCredits = 13;
+const freeVideoCredits = 2;
+const proVideosStored = 25;
+
+/**
+ * One allowance: the fraction in figures beside its name and, under them,
+ * how full the tank is. A meter, not a progress bar: nothing is loading.
+ */
+function UsageMeter({
+  label,
+  total,
+  used,
+}: {
+  label: string;
+  total: number;
+  used: number;
+}) {
+  const ratio = Math.min(1, Math.max(0, used / total));
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="type-small text-ink-2">{label}</span>
+        <span className="type-small font-semibold tabular-nums">
+          {used} / {total}
+        </span>
+      </div>
+      <div
+        aria-label={label}
+        aria-valuemax={total}
+        aria-valuemin={0}
+        aria-valuenow={used}
+        className="bg-surface-2 mt-1.5 h-1.5 overflow-hidden rounded-full"
+        role="meter"
+      >
+        <div
+          className="bg-brand h-full rounded-full"
+          style={{ width: `${ratio * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Account-wide, so it stands apart from this Project's proof in its own
+ * column: the plan named, the allowances as meters, and the one button on
+ * the page that sells. On Pro that place holds a door, not a sale, so it
+ * stays an outline.
+ */
+function AccountPlanPanel({
   account,
   billingHref,
-  copyCollectionUrl,
-  name,
-  pendingCount,
-  publicSlug,
-  slug,
 }: {
+  account: Account;
+  billingHref: Route;
+}) {
+  const pro = account.effectivePlan === "premium";
+  const reserved = account.usage.reservedVideos;
+  return (
+    <section
+      aria-label="Account plan and usage"
+      className="border-line bg-surface rounded-xl border p-5 lg:sticky lg:top-6"
+    >
+      <p className="type-micro text-ink-2">Your plan</p>
+      <h2 className="type-subheading mt-1">{pro ? "Pro plan" : "Free plan"}</h2>
+      <p className="type-small text-ink-2 mt-0.5">
+        {pro
+          ? "Unlimited projects, usage shared across them"
+          : "1 of 1 active project"}
+      </p>
+      <div className="mt-4 space-y-3">
+        {pro ? (
+          <UsageMeter
+            label="Videos stored"
+            total={proVideosStored}
+            used={account.usage.readyVideos}
+          />
+        ) : (
+          <>
+            <UsageMeter
+              label="Text credits"
+              total={freeTextCredits}
+              used={account.usage.freeTextUsed}
+            />
+            <UsageMeter
+              label="Video credits"
+              total={freeVideoCredits}
+              used={account.usage.freeVideoUsed}
+            />
+          </>
+        )}
+        {reserved > 0 ? (
+          <p className="type-small text-ink-2">
+            {reserved} video {reserved === 1 ? "slot" : "slots"} reserved
+          </p>
+        ) : null}
+      </div>
+      {pro ? (
+        <Button asChild className="mt-5 w-full" variant="outline">
+          <Link href={billingHref}>Manage subscription</Link>
+        </Button>
+      ) : (
+        <>
+          <UpgradeToProButton className="mt-5 w-full" href={billingHref} />
+          <p className="type-small text-ink-2 mt-3 text-center">
+            Unlimited projects and text, 25 videos.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+export type BrandDashboardViewProps = {
   /** The full address a Submitter opens, which is what Copy puts in hand. */
   collectionUrl: string;
   account?: {
@@ -91,12 +196,28 @@ export function BrandDashboardView({
   pendingCount: number;
   publicSlug: string;
   slug: string;
-}) {
+};
+
+export function BrandDashboardView({
+  collectionUrl,
+  account,
+  billingHref,
+  copyCollectionUrl,
+  name,
+  pendingCount,
+  publicSlug,
+  slug,
+}: BrandDashboardViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const collectionPath = `/c/${publicSlug}` as Route;
   const inboxPath = `/org/${slug}/inbox` as Route;
+  const wallPath = `/w/${publicSlug}` as Route;
+  const embedPath = `/org/${slug}/settings#embed` as Route;
+  // The Wall lives on the same origin as the Collection Form, one folder over.
+  const wallUrl = collectionUrl.replace(/\/c\/[^/]+$/, `/w/${publicSlug}`);
   const waiting = pendingCount > 0;
+  const plan = account && billingHref ? account : null;
 
   async function copyLink() {
     setError(null);
@@ -112,138 +233,132 @@ export function BrandDashboardView({
   return (
     <div className="space-y-8">
       {/* No action in the header: the only one worth having belongs beside the
-          address it copies, three lines below. */}
+          address it copies, and the sale has its own column. The sentence
+          under the title is the state of the queue, so the title has news to
+          carry: with nothing waiting it says so and points at the Inbox (an
+          empty queue is a sentence, never a large zero); once something is
+          waiting the queue block below says it, and the sentence goes back
+          to the neutral one rather than say it twice. */}
       <PageHeader
-        description="Collect customer proof, review it privately, and publish only what you choose."
-        eyebrow="Project"
+        description={
+          waiting ? (
+            "Share the form, read what comes in, publish what you choose."
+          ) : (
+            <>
+              Nothing waiting for review. New Submissions land in your{" "}
+              <Link
+                className="text-ink font-semibold underline underline-offset-4"
+                href={inboxPath}
+              >
+                Inbox
+              </Link>{" "}
+              first, where you decide what reaches your Wall.
+            </>
+          )
+        }
+        eyebrow="Overview"
         title={name}
       />
 
-      {/* Account-wide, so it stands apart from this Project's proof: one quiet
-          strip between the title and the work, the plan named at UI weight
-          rather than as a heading, so the queue and the Collection Form below
-          keep the page. Figures are tabular so the two lines align. */}
-      {account && billingHref ? (
-        <section
-          aria-label="Account plan and usage"
-          className="border-line flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-y py-4"
-        >
-          <div className="min-w-0">
-            <h2 className="type-ui font-semibold">
-              {account.effectivePlan === "premium" ? "Pro plan" : "Free plan"}
-            </h2>
-            <p className="text-ink-2 type-small mt-0.5">
-              {projectPlanDescriptions[account.effectivePlan]}
+      {/* DESIGN.md section 6, Brand overview: the work on the left, the
+          Account on the right, 2:1, one column below 1024px and whenever
+          there is no plan to show. */}
+      <div
+        className={cn(
+          "grid gap-6",
+          plan &&
+            "lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)] lg:items-start",
+        )}
+      >
+        {/* The column reorders itself around the work that is waiting. With
+            an empty queue the link is the whole job, so it comes first. */}
+        <section aria-label="Brand overview" className="space-y-6">
+          {waiting ? (
+            <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
+          ) : null}
+
+          {/* A container, so the note can ask whether the buttons' row has
+              room for it rather than guess from the viewport. */}
+          <div className="border-line bg-surface @container rounded-xl border p-6 sm:p-8">
+            <p className="type-micro text-ink-2">Your Collection Form</p>
+            {/* A label and its value are one pair: 8px, the smallest step
+                DESIGN.md section 5 allows inside a component. Mono, the
+                family DESIGN.md gives public slugs, at `subheading` size so
+                it never competes with the title; it borrows the size through
+                the tokens rather than a `type-*` utility, because those carry
+                the display family with them and would quietly put Gelica
+                here. */}
+            <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere]">
+              {collectionUrl}
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button onClick={copyLink} type="button">
+                <IconCopy aria-hidden="true" />
+                Copy link
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={collectionPath} target="_blank">
+                  Open Collection Form
+                  <IconExternalLink aria-hidden="true" />
+                </Link>
+              </Button>
+              {/* On the buttons' row, 24px to their right, its arrow climbing
+                  back to the address. The stroke is out of flow, so the note
+                  adds no height and opens no gap; shown in both states so the
+                  panel keeps one geometry, and only once the row is wide
+                  enough to hold it beside the buttons rather than wrap it
+                  under them. */}
+              <ArrowNote
+                arrow="rise"
+                className="ms-4 hidden @xl:inline-flex"
+                direction="left"
+              >
+                share this to start collecting
+              </ArrowNote>
+            </div>
           </div>
-          <div className="type-small tabular-nums">
-            {account.effectivePlan === "premium" ? (
-              <>
-                <p className="font-semibold">Unlimited projects</p>
-                <p>{account.usage.readyVideos} / 25 videos stored</p>
-                <p className="text-ink-2">Unlimited text collection</p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold">1 / 1 active project</p>
-                <p>{account.usage.freeTextUsed} / 13 text credits used</p>
-                <p>{account.usage.freeVideoUsed} / 2 video credits used</p>
-              </>
-            )}
-            {account.usage.reservedVideos > 0 ? (
-              <p className="text-ink-2">
-                {account.usage.reservedVideos} video
-                {account.usage.reservedVideos === 1 ? " slot" : " slots"}{" "}
-                reserved
-              </p>
-            ) : null}
-          </div>
-          <Button asChild variant="outline">
-            <Link href={billingHref as Route}>
-              {account.effectivePlan === "premium"
-                ? "Manage subscription"
-                : "Upgrade to Pro"}
-            </Link>
-          </Button>
-        </section>
-      ) : null}
 
-      {/* The page reorders itself around the work that is waiting. With an
-          empty queue the link is the whole job, so it takes the hero. */}
-      <section aria-label="Brand overview" className="space-y-4">
-        {waiting ? (
-          <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
-        ) : null}
-
-        <div className="border-line bg-surface rounded-xl border p-6 sm:p-8">
-          {/* The eyebrow belongs to the column, not above it: outside, its
-              height sat on top of a centred row and the panel ended up with
-              33px of padding above and 46 below. */}
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            {/* A container, so the note below can ask whether the buttons'
-                row has room for it rather than guess from the viewport. */}
-            <div className="@container min-w-0 flex-1">
-              <p className="type-micro text-ink-2">Your Collection Form</p>
-              {/* A label and its value are one pair: 8px, the smallest step
-                  DESIGN.md section 5 allows inside a component. Mono, the
-                  family DESIGN.md gives public slugs; it borrows the scale's
-                  size through the tokens rather than a `type-*` utility,
-                  because those carry the display family with them and would
-                  quietly put Gelica here. */}
-              <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere] sm:text-[length:var(--type-heading-size)] sm:leading-[var(--type-heading-leading)]">
-                {collectionUrl}
+          {/* Where the proof ends up, and the two ways out to it. The drawing
+              is the region's illustration; the arrow note above is its one
+              caption, the pair DESIGN.md section 4 allows a state like this. */}
+          <section
+            aria-label="Public Wall"
+            className="border-line bg-surface grid gap-6 rounded-xl border p-6 sm:p-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-10"
+          >
+            <WallFrames
+              aria-hidden="true"
+              className="text-ink mx-auto h-28 lg:h-32"
+            />
+            <div className="min-w-0">
+              <p className="type-micro text-ink-2">Your Public Wall</p>
+              <h2 className="type-heading mt-1">
+                Only what you publish reaches it
+              </h2>
+              <p className="type-ui mt-2 font-mono font-semibold [overflow-wrap:anywhere]">
+                {wallUrl}
               </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button onClick={copyLink} type="button">
-                  <IconCopy aria-hidden="true" />
-                  Copy link
-                </Button>
+              <div className="mt-5 flex flex-wrap gap-2">
                 <Button asChild variant="outline">
-                  <Link href={collectionPath} target="_blank">
-                    Open Collection Form
+                  <Link href={wallPath} target="_blank">
+                    Open Wall
                     <IconExternalLink aria-hidden="true" />
                   </Link>
                 </Button>
-                {/* On the buttons' row, 24px to their right, its arrow
-                    climbing back to the address. The stroke is out of flow,
-                    so the note adds no height and opens no gap; shown in both
-                    states so the panel keeps one geometry, and only once the
-                    row is wide enough to hold it beside the buttons rather
-                    than wrap it under them. */}
-                <ArrowNote
-                  arrow="rise"
-                  className="ms-4 hidden @xl:inline-flex"
-                  direction="left"
-                >
-                  share this to start collecting
-                </ArrowNote>
+                <Button asChild variant="ghost">
+                  <Link href={embedPath}>
+                    Embed on your site
+                    <IconCode aria-hidden="true" />
+                  </Link>
+                </Button>
               </div>
             </div>
-            {/* Shorter than the column beside it, so the row's height comes
-                from the words and the panel keeps equal padding; decoration
-                also waits for the width to carry it. */}
-            <EnvelopeStamp
-              aria-hidden="true"
-              className="text-ink hidden h-24 shrink-0 lg:block"
-            />
-          </div>
-        </div>
+          </section>
+        </section>
 
-        {/* An empty queue is a sentence, not a figure: a large zero would be a
-            number dressed up as news. */}
-        {waiting ? null : (
-          <p className="text-ink-2 type-small px-1">
-            Nothing waiting for review. New Submissions land in your{" "}
-            <Link
-              className="text-ink font-semibold underline underline-offset-4"
-              href={inboxPath}
-            >
-              Inbox
-            </Link>
-            , where you read them privately and decide what reaches your Wall.
-          </p>
-        )}
-      </section>
+        {plan ? (
+          <AccountPlanPanel account={plan} billingHref={billingHref as Route} />
+        ) : null}
+      </div>
       {error ? <ErrorToast message={error} /> : null}
       {success ? <SuccessToast message={success} /> : null}
     </div>
