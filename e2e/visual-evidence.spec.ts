@@ -50,7 +50,7 @@ for (const screen of config.screens) {
 
       await page.goto("/sign-in");
       await page.getByLabel("Email address").fill(email!);
-      await page.getByLabel("Password").fill(password!);
+      await page.getByLabel("Password", { exact: true }).fill(password!);
       await page.getByRole("button", { name: "Sign in" }).click();
       await page.waitForURL((url) => !url.pathname.endsWith("/sign-in"));
 
@@ -64,6 +64,25 @@ for (const screen of config.screens) {
       await page.addInitScript((theme) => {
         localStorage.setItem("get-some-proof-theme", theme);
       }, screen.theme);
+    }
+    if (fixtureMode && screen.slug === "account-security-error") {
+      await page.route("**/api/auth/**", async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname.endsWith("/two-factor/enable")) {
+          await route.fulfill({
+            status: 403,
+            json: { code: "SESSION_NOT_FRESH" },
+          });
+          return;
+        }
+        await route.fulfill({
+          json: pathname.endsWith("/list-accounts")
+            ? [{ providerId: "credential" }]
+            : pathname.endsWith("/list-sessions")
+              ? []
+              : null,
+        });
+      });
     }
     const destination =
       fixtureMode && screen.fixturePath ? screen.fixturePath : screen.path;
@@ -79,6 +98,13 @@ for (const screen of config.screens) {
       await expect(
         page.getByRole("heading", { name: screen.heading, exact: true }),
       ).toBeVisible();
+    }
+    if (fixtureMode && screen.slug === "account-security-error") {
+      await page.getByLabel("Current password").fill("synthetic-password");
+      await page.getByRole("button", { name: "Enable 2FA" }).click();
+      await expect(page.locator("[data-sonner-toast]")).toContainText(
+        "This security action needs a recent sign-in.",
+      );
     }
     await page.waitForTimeout(250);
     if (screen.slug.startsWith("testimonial-import-identity")) {
@@ -213,6 +239,19 @@ for (const screen of config.screens) {
       await expect(
         page.getByRole("link", { name: "Back to project" }),
       ).toBeVisible();
+    }
+    if (fixtureMode && screen.slug === "workspace-billing") {
+      await page
+        .getByRole("button", { name: "Annual · 2 months free" })
+        .click();
+      await page
+        .getByRole("heading", { name: "Upgrade to Pro", exact: true })
+        .scrollIntoViewIfNeeded();
+    }
+    if (fixtureMode && screen.slug === "account-invoices") {
+      await page
+        .getByRole("heading", { name: "Invoices", exact: true })
+        .scrollIntoViewIfNeeded();
     }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",

@@ -1,5 +1,8 @@
 "use client";
 
+import { blobToast } from "@/components/brand/blob-toast";
+import { securityErrorMessage } from "@/lib/security-error-message";
+
 import { BlobLoadingText } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
@@ -17,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { SuccessToast } from "@/components/ui/error-toast";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
@@ -52,7 +56,6 @@ export function AccountSecurity() {
     backupCodes: string[];
   } | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -112,11 +115,30 @@ export function AccountSecurity() {
   const twoFactorEnabled = Boolean(session.data?.user.twoFactorEnabled);
   const currentToken = session.data?.session.token;
 
+  function reportError(
+    error: Parameters<typeof securityErrorMessage>[0],
+    fallback: string,
+  ) {
+    const { message, needsSignIn } = securityErrorMessage(error, fallback);
+    blobToast.error(message, {
+      id: "account-security-error",
+      duration: 8000,
+      ...(needsSignIn
+        ? {
+            action: {
+              label: "Sign in again",
+              onClick: () =>
+                router.push("/sign-in?callbackURL=%2Faccount%2Fsecurity"),
+            },
+          }
+        : {}),
+    });
+  }
+
   async function enableTwoFactor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
@@ -126,7 +148,10 @@ export function AccountSecurity() {
       });
       form.reset();
       if (result.error) {
-        setError(result.error.message ?? "Two-factor setup failed.");
+        reportError(
+          result.error,
+          "We couldn’t start two-factor setup. Please try again in a moment.",
+        );
         return;
       }
       if (result.data) {
@@ -135,12 +160,14 @@ export function AccountSecurity() {
           backupCodes: result.data.backupCodes,
         });
         setBackupCodes(result.data.backupCodes);
+        blobToast.dismiss("account-security-error");
         setSuccess(
           "Add the authenticator, then enter its code to finish setup.",
         );
       }
     } catch {
-      setError(
+      reportError(
+        null,
         "Unable to complete this action. Check your connection and try again.",
       );
     } finally {
@@ -152,20 +179,26 @@ export function AccountSecurity() {
     event.preventDefault();
     const code = String(new FormData(event.currentTarget).get("code"));
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const result = await authClient.twoFactor.verifyTotp({ code });
       if (result.error) {
-        setError(result.error.message ?? "Invalid authenticator code.");
+        reportError(
+          result.error,
+          "We couldn’t verify your authenticator code. Please try again.",
+        );
         return;
       }
       setSetup(null);
       await session.refetch();
       await refreshSessions();
+      blobToast.dismiss("account-security-error");
       setSuccess("Two-factor authentication enabled.");
     } catch {
-      setError("Unable to verify the code. Please try again.");
+      reportError(
+        null,
+        "Unable to verify the code. Check your connection and try again.",
+      );
     } finally {
       setPending(false);
     }
@@ -175,23 +208,27 @@ export function AccountSecurity() {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
       const result = await authClient.twoFactor.disable({ password });
       form.reset();
       if (result.error) {
-        setError(result.error.message ?? "Two-factor disable failed.");
+        reportError(
+          result.error,
+          "We couldn’t disable two-factor authentication. Please try again.",
+        );
         return;
       }
       setSetup(null);
       setBackupCodes(null);
       await session.refetch();
       await refreshSessions();
+      blobToast.dismiss("account-security-error");
       setSuccess("Two-factor authentication disabled.");
     } catch {
-      setError(
+      reportError(
+        null,
         "Unable to complete this action. Check your connection and try again.",
       );
     } finally {
@@ -203,7 +240,6 @@ export function AccountSecurity() {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
@@ -212,13 +248,18 @@ export function AccountSecurity() {
       });
       form.reset();
       if (result.error) {
-        setError(result.error.message ?? "Recovery-code generation failed.");
+        reportError(
+          result.error,
+          "We couldn’t generate new recovery codes. Please try again.",
+        );
         return;
       }
       setBackupCodes(result.data?.backupCodes ?? []);
+      blobToast.dismiss("account-security-error");
       setSuccess("Previous recovery codes were invalidated.");
     } catch {
-      setError(
+      reportError(
+        null,
         "Unable to complete this action. Check your connection and try again.",
       );
     } finally {
@@ -228,14 +269,17 @@ export function AccountSecurity() {
 
   async function revokeSession(token: string) {
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const result = await authClient.revokeSession({ token });
       if (result.error) {
-        setError(result.error.message ?? "Session revocation failed.");
+        reportError(
+          result.error,
+          "We couldn’t revoke access. Please try again.",
+        );
         return;
       }
+      blobToast.dismiss("account-security-error");
       if (token === currentToken) {
         router.replace("/sign-in");
         router.refresh();
@@ -244,7 +288,8 @@ export function AccountSecurity() {
       setSuccess("Session revoked.");
       await refreshSessions();
     } catch {
-      setError(
+      reportError(
+        null,
         "Unable to complete this action. Check your connection and try again.",
       );
     } finally {
@@ -254,18 +299,22 @@ export function AccountSecurity() {
 
   async function revokeOtherSessions() {
     setPending(true);
-    setError(null);
     setSuccess(null);
     try {
       const result = await authClient.revokeOtherSessions();
       if (result.error) {
-        setError(result.error.message ?? "Session revocation failed.");
+        reportError(
+          result.error,
+          "We couldn’t revoke access. Please try again.",
+        );
         return;
       }
+      blobToast.dismiss("account-security-error");
       setSuccess("Every other Session was revoked.");
       await refreshSessions();
     } catch {
-      setError(
+      reportError(
+        null,
         "Unable to complete this action. Check your connection and try again.",
       );
     } finally {
@@ -283,11 +332,6 @@ export function AccountSecurity() {
         title="Security"
       />
 
-      {error ? (
-        <div role="alert" className="text-danger text-sm">
-          {error}
-        </div>
-      ) : null}
       {success ? <SuccessToast message={success} /> : null}
 
       <section className="bg-card rounded-lg border p-5">
@@ -336,11 +380,10 @@ export function AccountSecurity() {
           >
             <Field className="flex-1">
               <Label htmlFor="enable-2fa-password">Current password</Label>
-              <Input
+              <PasswordInput
                 id="enable-2fa-password"
                 name="password"
                 required
-                type="password"
               />
             </Field>
             <Button loading={pending} type="submit">
@@ -351,12 +394,7 @@ export function AccountSecurity() {
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <form className="space-y-3" onSubmit={regenerateCodes}>
               <Label htmlFor="codes-password">Regenerate recovery codes</Label>
-              <Input
-                id="codes-password"
-                name="password"
-                required
-                type="password"
-              />
+              <PasswordInput id="codes-password" name="password" required />
               <Button loading={pending} type="submit" variant="outline">
                 <IconKey aria-hidden="true" className="size-4" />
                 Generate new codes
@@ -366,11 +404,10 @@ export function AccountSecurity() {
               <Label htmlFor="disable-2fa-password">
                 Disable with password
               </Label>
-              <Input
+              <PasswordInput
                 id="disable-2fa-password"
                 name="password"
                 required
-                type="password"
               />
               <Button loading={pending} type="submit" variant="outline">
                 Disable 2FA

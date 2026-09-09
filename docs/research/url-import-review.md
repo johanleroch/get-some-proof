@@ -127,3 +127,14 @@ Delivery remains incomplete: the full browser gate, real Mux copy, actual
 ChatGPT host, final review and remote CI remain unverified. The latest OAuth
 request-time fix passes 8 targeted tests across 3 files; independent review
 confirmed the resolution with 4 passing tests. Earlier full-check evidence predates this last fix.
+
+### Integration with current main
+
+PR #105 was opened as a draft on first snapshot `0b47082`. GitHub reported
+conflicts with `main` at `f11193a`. The account, security and billing resolutions
+retain main exactly; the visual route, capture procedure and registry retain
+both upstream account screens and import screens. No new UI behavior was added
+by the resolution. `pnpm check` passes after integration: 806 tests in 143 files,
+formatting, lint, types and production build. The isolated desktop Chromium
+password-recovery test also passed before this merge; intermittent behavior and
+the broader browser gate are not certified resolved.

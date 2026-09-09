@@ -495,7 +495,8 @@ export const reserveCheckout = internalMutation({
     const now = Date.now();
     if (
       profile?.checkoutReservationId &&
-      profile.checkoutLookupKey === args.lookupKey
+      (profile.checkoutLookupKey === "pro_monthly" ||
+        profile.checkoutLookupKey === "pro_annual")
     ) {
       if (
         profile.checkoutLeaseId &&
@@ -535,6 +536,7 @@ export const reserveCheckout = internalMutation({
       });
     } else {
       await ctx.db.insert("billingProfiles", {
+        accountId: access.organization.accountId,
         billingEmail: args.billingEmail,
         checkoutLeaseExpiresAt: now + 120_000,
         checkoutLeaseId: args.requestedReservationId,

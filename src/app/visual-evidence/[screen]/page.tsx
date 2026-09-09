@@ -1,3 +1,4 @@
+import { AccountSecurity } from "@/components/account/account-security";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import {
   TestimonialImportFixture,
@@ -57,6 +58,7 @@ const screens = {
   "testimonial-import-video-failed": TestimonialImportVideoFailedFixture,
   "testimonial-import-video-processing":
     TestimonialImportVideoProcessingFixture,
+  "account-security": AccountSecurity,
   "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,

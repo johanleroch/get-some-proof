@@ -84,19 +84,21 @@ export function portalSessionParams(input: {
 export function subscriptionPriceDetails(input: {
   currency: string;
   interval: string | null;
+  intervalCount?: number;
   unitAmount: number | null;
 }): {
   amount: number;
   currency: string;
-  interval: "month";
+  interval: "month" | "year";
 } {
   const interval = input.interval;
   if (
+    (input.intervalCount ?? 1) !== 1 ||
     input.unitAmount === null ||
     !Number.isSafeInteger(input.unitAmount) ||
     input.unitAmount < 0 ||
     input.currency !== proMonthlyCurrency ||
-    interval !== "month"
+    (interval !== "month" && interval !== "year")
   ) {
     subscriptionPriceUnavailable();
   }
@@ -110,6 +112,7 @@ export function subscriptionPriceDetails(input: {
 export function catalogOfferDetails(input: {
   currency: string;
   interval: string | null;
+  intervalCount?: number;
   lookupKey: ProLookupKey;
   priceActive: boolean;
   product: {
@@ -124,6 +127,8 @@ export function catalogOfferDetails(input: {
     offerUnavailable(input.lookupKey);
   }
   const price = subscriptionPriceDetails(input);
+  const expectedInterval = input.lookupKey === "pro_annual" ? "year" : "month";
+  if (price.interval !== expectedInterval) offerUnavailable(input.lookupKey);
   if (!input.product.name.trim()) {
     offerUnavailable(input.lookupKey);
   }
@@ -204,6 +209,7 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       const offer = catalogOfferDetails({
         currency: price.currency,
         interval: price.recurring?.interval ?? null,
+        intervalCount: price.recurring?.interval_count,
         lookupKey,
         priceActive: price.active,
         product: {
@@ -271,6 +277,7 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
       return subscriptionPriceDetails({
         currency: price.currency,
         interval: price.recurring?.interval ?? null,
+        intervalCount: price.recurring?.interval_count,
         unitAmount: price.unit_amount,
       });
     },

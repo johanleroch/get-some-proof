@@ -214,6 +214,7 @@ export default defineSchema({
     checkoutLookupKey: v.optional(
       v.union(
         v.literal("pro_monthly"),
+        v.literal("pro_annual"),
         // Retained only so deployments with an abandoned starter Checkout
         // reservation can load and rotate it to the single Pro plan.
         v.literal("premium_monthly"),

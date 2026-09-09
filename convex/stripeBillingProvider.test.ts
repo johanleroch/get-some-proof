@@ -55,7 +55,7 @@ describe("Stripe Billing provider port", () => {
 
   it.each([
     [{ currency: "usd", interval: "month", unitAmount: 2_900 }],
-    [{ currency: "eur", interval: "year", unitAmount: 2_900 }],
+    [{ currency: "eur", interval: "week", unitAmount: 2_900 }],
     [{ currency: "eur", interval: "month", unitAmount: null }],
     [{ currency: "eur", interval: null, unitAmount: 2_900 }],
   ])("refuses a mismatched synchronized Pro Price", (price) => {
@@ -110,4 +110,40 @@ describe("Stripe Billing provider port", () => {
       ).toThrow();
     },
   );
+});
+
+it("accepts the annual subscription amount without multiplying quotas", () => {
+  expect(
+    subscriptionPriceDetails({
+      currency: "eur",
+      interval: "year",
+      unitAmount: 29000,
+    }),
+  ).toEqual({ amount: 29000, currency: "eur", interval: "year" });
+});
+
+it("rejects a yearly catalog entry behind the monthly key and multi-year periods", () => {
+  expect(() =>
+    catalogOfferDetails({
+      currency: "eur",
+      interval: "year",
+      lookupKey: "pro_monthly",
+      priceActive: true,
+      product: {
+        active: true,
+        description: null,
+        marketingFeatures: [],
+        name: "Pro",
+      },
+      unitAmount: 29000,
+    }),
+  ).toThrow();
+  expect(() =>
+    subscriptionPriceDetails({
+      currency: "eur",
+      interval: "year",
+      intervalCount: 2,
+      unitAmount: 29000,
+    }),
+  ).toThrow();
 });

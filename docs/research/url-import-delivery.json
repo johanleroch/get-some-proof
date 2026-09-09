@@ -1,12 +1,6 @@
 {
   "spec": 97,
-  "tickets": [
-    98,
-    99,
-    100,
-    101,
-    102
-  ],
+  "tickets": [98, 99, 100, 101, 102],
   "status": "first draft authorized for commit and push; delivery gates remain open",
   "worktree": "codex/url-testimonial-import",
   "verified": [
@@ -329,5 +323,11 @@
     "status": "implemented and independently reviewed locally",
     "verification": "8 targeted tests across 3 files pass on 2026-09-09",
     "scope": "JWT request boundary captures verifiedAt; component query uses explicit verified time"
+  },
+  "pull_request": "https://github.com/johanleroch/get-some-proof/pull/105",
+  "main_integration": {
+    "main": "f11193a",
+    "validation": "pnpm check passes: 806 tests / 143 files, formatting, lint, types and build",
+    "scope": "conflict resolution preserves upstream account/security/billing and import screens; full delivery remains open"
   }
 }
