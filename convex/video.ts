@@ -1,4 +1,5 @@
 import { retainAccountVideo } from "./billingDowngrade";
+import { settleImportedVideo } from "./testimonialImportVideo";
 import { isProjectActive } from "./projectActivity";
 import { ConvexError, v } from "convex/values";
 
@@ -535,6 +536,10 @@ export const expireReservationState = internalMutation({
       .unique();
     if (asset?.status === "ready" && asset.testimonialId) return null;
     await retireReservation(ctx, reservation, asset, "Upload timed out.");
+    if (asset?.importItemId) {
+      const currentAsset = await ctx.db.get(asset._id);
+      if (currentAsset) await settleImportedVideo(ctx, currentAsset);
+    }
     if (asset && args.retryTokenHash && args.retryTokenSeed) {
       await createVideoRetryLink(ctx, asset, {
         hash: args.retryTokenHash,
@@ -1293,6 +1298,7 @@ export const getRetryContext = query({
     if (
       !brand ||
       !asset ||
+      !asset.spokenLanguage ||
       asset.status !== "failed" ||
       !testimonial ||
       testimonial.moderationStatus === "spam"

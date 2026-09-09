@@ -1,0 +1,333 @@
+{
+  "spec": 97,
+  "tickets": [
+    98,
+    99,
+    100,
+    101,
+    102
+  ],
+  "status": "first draft authorized for commit and push; delivery gates remain open",
+  "worktree": "codex/url-testimonial-import",
+  "verified": [
+    "Provider source tests: 12 pass",
+    "Public preview/confirm/Inbox integration: owner isolation, expiration, Pending import and duplicate confirmation pass",
+    "Inbox and moderation regression group: 58 tests pass including source/import tests",
+    "Submission and video regression group: 62 tests pass",
+    "Screen registry: 5 tests pass",
+    "tsc --noEmit passes after optional imported identity fields",
+    "Targeted ESLint passes",
+    "Server selection and cumulative item results persist, repeat confirmation is idempotent",
+    "8 URL/selection screenshots captured and inspected on desktop/mobile in light/dark",
+    "2 browser interaction tests pass: keyboard selection, clear, select page, result and no horizontal overflow",
+    "Official Convex codegen and local push with typecheck passed; all 5 components installed and functions ready on local-johan_roch-get_some_proof-1 at 3290/3291",
+    "Trailing-slash URL normalization prevents /all and /all/ from producing separate source keys (red then green source regression)",
+    "Publication attestation is server-recorded and required before imported public projection; no invented submitter consent",
+    "Preview rate limiting, scheduled payload expiry and deletion of linked preview items verified in tests",
+    "Senja repeat preview identifies already-imported and source-changed rows; source comparison includes author, text and tagline",
+    "Full suite: 722 tests across 126 files pass with 4 workers after these service changes",
+    "TypeScript and targeted ESLint pass",
+    "4 browser fixture interaction tests pass on desktop/mobile: selection, confirmation requirement and restored dialog focus",
+    "Local connected Testimonial.to URL -> select -> reload -> Pending import -> reload result -> remaining items -> Inbox passed with actual provider retrieval",
+    "Local connected Senja on Pixel 7: 2 selected items across 2 pages, selection/result survive reload; invalid job URL recovers to a fresh URL form",
+    "Malformed/missing/expired unsaved preview returns recoverable null; scheduled expiry invalidates subscribed preview state",
+    "Browser query binds preview to route Project, preventing a different Project job from showing in this destination",
+    "6 Playwright fixture interaction checks pass; 8 focused service/catalog tests pass; TypeScript passes",
+    "Expired preview desktop/mobile captures inspected",
+    "Authoritative local Inbox query confirms all 3 real imported records are text/Pending, require import attestation and have no fabricated collection consent.",
+    "Video foundation: provider helper tests and workflow integration cover Pending video creation, reservations, partial results, ready/error webhooks, idempotent confirm and retry, and late events from an old attempt. Mux responses simulated; no real Mux account copy verified.",
+    "Full suite after video foundation: 732/732 tests across 126 files passed with 4 workers.",
+    "Latest design pass: 8 desktop/mobile Playwright interactions passed; TypeScript and targeted ESLint passed.",
+    "22 refreshed import screenshots inspected: URL, selection, publication, expired preview, video failure and processing, desktop/mobile; all except expiry include light and dark.",
+    "Late imported video cleanup: opaque intent survives deleting testimonial/reservation/Project, transfers its held capacity to one cleanup job on webhook, and preserves Account scope after Project deletion.",
+    "Copy start is transactional and at most once; expired reservations cannot begin copying. Provider is pinned to the reserved asset. Definite rejection releases any pending intent.",
+    "Workspace deletion preserves cleanup created after its media snapshot; its later private-data purge no longer discards provider cleanup work.",
+    "Actual public Senja source HEAD probe: stream.mux.com, HTTP 200, video/mp4, Content-Length 15278198, no redirect. No real Mux creation performed.",
+    "Full regression suite 736/736 tests across 127 files passed after deletion-race fixes; subsequently added provider-pinning test passed in its 17-test provider suite.",
+    "TypeScript and targeted ESLint passed. Local Convex watch pushed successfully, functions ready at 10:48:11 on 2026-09-09.",
+    "Owner-only getPrivate now supports imported proof without invented email or collection consent, returns original provenance and the actual publication attestation. Regression reproduced TESTIMONIAL_UNAVAILABLE before the fix; owner/outsider and published provenance checks added.",
+    "Private read regression group: 45/45 tests passed across import, submissions, video submissions and MVP happy path; targeted lint passed.",
+    "Free publication counting now reads at most the format quota through an organization/type/generation index and merges the bounded preserved-publication set from the Account downgrade state. Hidden older projections no longer consume capacity.",
+    "Only the active Free Project can create a publication, preserving the one-public-Project Account model. Regression covers hidden older publication, preserved proof, concurrency limit and inactive Project rejection.",
+    "46 import/moderation/downgrade tests passed; then 6 import tests passed with the additional inactive-Project assertion. TypeScript and targeted ESLint passed.",
+    "Local Convex functions ready at 11:05:28 with the new publication-generation index.",
+    "737/737 tests across 127 files pass after private-read and active-publication capacity changes (28.23s, 4 workers).",
+    "Owner identity correction before import: bounded name/tagline values, owner access, expiry and processed-state guards; separate correction object preserves source identity and quotes. Text and video creation use corrected display fields.",
+    "Identity regression confirms denied outsider/empty name, persisted correction, original source fidelity, refusal after import and unchanged duplicate matching. 7 import service tests pass.",
+    "10 browser interactions pass on desktop/mobile including identity correction, preserved selection/quote and restored opener focus. TypeScript and targeted ESLint pass.",
+    "8 updated selection/identity captures inspected on desktop/mobile, light/dark; modal evidence uses viewport capture to match the fixed overlay. Local functions ready at 11:07:43.",
+    "Preview format filters All/Text/Video use a job/type/position index before pagination; cursor resets on filter changes while global item selection persists.",
+    "7 service tests pass including mixed-source filtering, paginated video traversal and selection preservation; 12 browser interactions pass including empty video filter and restored text selection.",
+    "TypeScript and targeted ESLint pass. Four current selection captures inspected on desktop/mobile in light/dark. Local Convex functions ready at 11:10:09 with the format index.",
+    "Anonymous service implemented: random 256-bit token stored only as SHA256, 24h snapshot expiry, 500-item/500KB UTF8 payload limit, shared anonymous global admission limit, 100-item read pages and persistent selections.",
+    "Authenticated claim checks active destination and ownership, atomically copies the same source into the shared owned preview, preserves eligible selections, clears anonymous content and is idempotent for the same Owner/Project. No automatic import/publication.",
+    "Claim recovery query returns a lost successful claim only to its verified Owner with current Project permission.",
+    "Anonymous/owned import service tests: 9 pass, including 101-item pagination, cross-page selection, no plaintext token in storage, unauthenticated/other-owner rejection, same-claim retry, private resume, expired claim, invalid selection, snapshot removal and explicit Pending import.",
+    "Owned snapshot writer is shared with anonymous claims; its payload limit now uses UTF8 bytes rather than JavaScript string length.",
+    "Public /import route shares the DESIGN.md import list; no Workspace eyebrow, square checkbox primitives inside >=44px touch targets. Public fixture and /screens entry added.",
+    "14 desktop/mobile browser interactions pass; public selection captures inspected on both viewports. TypeScript and targeted ESLint pass.",
+    "Connected new-user path: anonymous preview -> selection -> signup -> actual local email-verification link -> /import -> new Project -> claimed owned preview -> reload with same selection. No import confirmation or publication triggered.",
+    "20 targeted automatic WCAG 2.2 A/AA checks pass on desktop/mobile for import URL, selection, public preview, publication dialog, expiry and video states; dark contrast covers selection, public preview and publication dialog. This is automated coverage, not full accessibility certification.",
+    "Destination UI loading is attached to the chosen action. A failed claim after Project creation retries the existing Project; regression test verifies one creation and two claims, retaining preview until success.",
+    "Full regression suite after anonymous UI, destination retry and signup work: 741/741 tests across 129 files pass (31.29s, 4 workers); TypeScript passes.",
+    "Acquisition measurement records started/previewed/claimed/saved/published once per flow, aggregated by UTC day/channel. Flow records contain no customer/source/token/conversation fields and expire after 90 days; internal report bounded to 31 days.",
+    "Service integration verifies repeated claim and two publications count once, aggregate privacy, flow expiry and retained counts. Live local preview increments only started and previewed by one; claim/save/publication deltas remain zero.",
+    "741/741 tests across 129 files pass after acquisition instrumentation (28.74s, 4 workers); TypeScript and targeted ESLint pass.",
+    "MCP foundation uses SDK 1.29.0: guarded stateless /mcp endpoint, preview/read/select tools over the shared Convex service, UI-only temporary preview capability, no account-write tools. Four protocol/boundary tests pass.",
+    "Actual local MCP HTTP client initializes, lists three tools, previews 9 real Testimonial.to items and persists selection. HTTP probes verify 403 foreign origin, 413 oversized body, 400 malformed JSON and 405 GET.",
+    "MCP Apps component bundles the same TestimonialImportView and DESIGN.md primitives/fonts as the site. URL entry, preview, selection, format pagination and host theme use the official App bridge.",
+    "16 browser interactions pass across existing import screens and the MCP Apps host simulator. The simulator mobile viewport was corrected and verified against the device width; fresh desktop/mobile widget captures inspected.",
+    "Actual HTTP resources/read returns text/html;profile=mcp-app, 1463434 bytes, SHA256 029c4bf57054eabb13bbefcd334c3b2a377b114ed6920a07c136c018c1a72a6a, identical to the generated widget. Five focused MCP/UI tests, TypeScript and ESLint pass.",
+    "Imported video failure in Inbox no longer claims a replacement link was emailed to a Submitter. Regression covers imported proof before and after publication attestation; 25 Inbox view/container tests pass, targeted ESLint and Prettier pass.",
+    "Separate OAuth options implemented for /api/import-auth. Six real Better Auth memory-adapter protocol tests pass: consent/code exchange, RSA signature/JWKS, issuer/resource/scope/15-minute expiry, code replay rejection, missing/plain PKCE and wrong verifier/resource/redirect rejection. TypeScript and targeted ESLint/Prettier passed. Existing local watcher 18230 confirmed functions ready at 12:00:25; a separate dev --once refused because that backend was already running, no restart performed.",
+    "Local Better Auth component mounted under the preserved betterAuth name with all legacy tables plus four separately named import OAuth tables. Generator uses the pinned adapter and preserves legacy definitions. Two existing local sessions and website Convex JWTs resolve to unchanged user IDs. Full suite: 751 tests/132 files pass in 31.56s, plus a new passing adapter regression for unique client IDs and legacy/import consent separation. Local watcher confirms functions ready at 12:05:23.",
+    "Separate OAuth HTTP instance, issuer discovery and Next proxy enabled on verified local backend only. Actual existing cookie -> consent -> resource-bound signed JWT -> refresh rotation -> revocation rejection succeeds; authorization code replay and public client-registration route rejected. Atomic refresh consumption added to local component after real refresh failure exposed missing adapter incrementOne support. Eight OAuth configuration/adapter tests pass, including concurrency and expiry. Local functions ready at 12:18:34.",
+    "Consent/login screens implemented with shared DESIGN AuthShell and 44px actions. Actual browser desktop Allow and mobile Cancel reach the expected callback; signed-out login resumes the complete signed request and returns a code after consent. Both viewports have no overflow and zero automatic WCAG violations. Added unit coverage for invalid permissions, explicit refusal/expired requests, forced login and HTML proxy redirects. Backend had stopped: listener and PID confirmed absent, old watcher stopped and same local deployment restarted as session 46662. Added clientId/userId refresh-family index after runtime warning."
+  ],
+  "implemented_unverified_ui": [
+    "Project import route and Inbox entry",
+    "Provider URL entry, paginated selectable list, confirmation and result",
+    "Shared DESIGN.md primitives and screen registry entry"
+  ],
+  "remaining": [
+    "Connected desktop/mobile evidence, video preview and full accessibility audit",
+    "ChatGPT connection and rendered adapter interaction; anonymous signup/resume and per-flow acquisition measurement are implemented.",
+    "ChatGPT adapter, developer interaction and listing submission",
+    "Full check, e2e, review, clean clone, PR and remote CI",
+    "Shared Account capacity display and remaining downgrade/takedown verification",
+    "Expand deletion/export coverage and connected expiry scheduling verification; selected-result Inbox filtering is now implemented and locally verified",
+    "Validate actual Mux copy/webhook delivery with an explicitly verified target; no real Mux credentials configured locally.",
+    "Complete video preview poster/player polish and precise selection capacity feedback.",
+    "Video hardening: retry completion and remaining downgrade/race coverage; reconcile uncertain copies when the provider never sends a webhook, rather than releasing unresolved storage automatically."
+  ],
+  "local_backend_discovery": {
+    "team": "johan-roch",
+    "project": "get-some-proof",
+    "authenticated_management_api": "verified read-only",
+    "note": "Local backend updated successfully at 10:22:28 on 2026-09-09; subsequent watch updates active. Synthetic local Owner/Project used for actual provider imports. NEXT_PUBLIC_SITE_URL configured to local app 3897. Test auth state remains ignored under .scratch.",
+    "deployment": "local-johan_roch-get_some_proof-1"
+  },
+  "full_gate": {
+    "format": "Targeted import component formatted; full format check must be rerun before delivery.",
+    "lint": "Targeted ESLint passed for changed Convex implementation and cleanup tests.",
+    "typecheck": "tsc --noEmit passed after public signup/resume UI and retry regression.",
+    "tests": "773 tests / 137 files pass after website handoff; subsequent small UI refinements checked by TypeScript/lint/browser.",
+    "build": "passed (new /org/[organizationSlug]/import route compiled) before final URL trailing-slash normalization; targeted source/service tests rerun afterward"
+  },
+  "design_review": {
+    "source": "DESIGN.md",
+    "implemented": [
+      "Gelica/Figtree and warm shared tokens",
+      "Rows with dividers and shared checkbox/avatar/badge primitives",
+      "Visible provider selection with brand-soft",
+      "Mascot loading states",
+      "Mobile action bar follows list to avoid covering quotes; desktop retains sticky action bar",
+      "Publication dialog capped at 480px, shared focus restoration and stable loading button",
+      "Semantic Failed/Processing/Ready badges for video rows",
+      "Single-page pagination hidden; singular testimonial count corrected",
+      "Video failure and processing entries added to screen catalog",
+      "Identity correction dialog uses shared 480px Dialog, labeled inputs, stable loading button and focus restoration.",
+      "Format filter buttons use shared primitives and brand-soft selected state; empty filtered results are explicit."
+    ],
+    "status": "Public selection desktop/mobile captures inspected; 14 browser interactions and 20 automatic WCAG checks pass. Signup and sign-in resume verified with local backend. Real video player and remaining manual accessibility review still pending."
+  },
+  "local_connected_evidence": {
+    "testimonial_to": ".scratch/url-import-live/connected-evidence.json",
+    "senja": ".scratch/url-import-live/senja-connected-evidence.json",
+    "scope": "Actual local backend plus live providers, not routine CI. No production records or publication.",
+    "inbox": ".scratch/url-import-live/inbox-evidence.json",
+    "anonymous_signin": ".scratch/url-import-live/public-resume-evidence.json",
+    "anonymous_signup": ".scratch/url-import-live/public-signup-evidence.json",
+    "acquisition": ".scratch/url-import-live/acquisition-evidence.json",
+    "mcp": ".scratch/url-import-live/mcp-evidence.json",
+    "mcp_widget": ".scratch/url-import-live/mcp-widget-evidence.json",
+    "auth_component_migration": ".scratch/url-import-live/auth-component-migration-evidence.json",
+    "oauth_protocol": ".scratch/url-import-live/oauth-protocol-evidence.json",
+    "oauth_ui": ".scratch/url-import-live/oauth-ui-evidence.json"
+  },
+  "running_local_sessions": {
+    "convex_dev": 46662,
+    "next_dev": 82643,
+    "note": "Previous listener PID 38380 and port 3290 confirmed absent before restarting; same local deployment ready again at 12:38:43. Next process reused."
+  },
+  "video_status": {
+    "implemented": "Workflow copy, reservation, webhook settlement, retry and late-deletion cleanup correlation",
+    "verification": "736 regression tests plus 17 provider tests; real source HEAD verified; actual Mux copy still unverified",
+    "known_gap": "An uncertain request without any subsequent response/webhook retains its minimal cleanup intent and capacity. Provider reconciliation is still needed for that case."
+  },
+  "anonymous_status": {
+    "backend": "implemented and service-tested",
+    "ui": "Implemented at /import: public preview, persistent selection, sign-in callback and eligible Project choice; same-browser token stored outside URLs.",
+    "signup_browser_proof": "Passed using actual signup and local console email verification: callback returns to /import, creates Atelier Juniper, claims preview, selection persists through reload. Provider restored to test; no outbound email sent.",
+    "chatgpt_adapter": "MCP preview/read/select and shared MCP Apps component implemented. Local HTTP protocol/resource and host simulator verified. OAuth, authenticated save/destination/result, website handoff, actual ChatGPT developer-mode and listing remain pending.",
+    "signin_browser_proof": "Passed with live Testimonial.to source and isolated local backend: preview, select, reload, sign in, choose Project, owned preview with selection preserved. No confirm or publication triggered.",
+    "acquisition": "Implemented, service-tested and verified locally; per-preview conversions rather than page views, unique visitors or signup counts. Operator report documented in docs/research/url-import-acquisition.md.",
+    "oauth": "HTTP/discovery, local grants/refresh/revocation and consent/login-resume UI implemented and verified. Resource metadata, scoped private MCP dispatch, actual ChatGPT host, dark/manual accessibility and consent gallery review remain."
+  },
+  "design_followup": {
+    "changes": [
+      "Quote typography for imported proof",
+      "Mobile secondary copy at least 14px",
+      "44px selection and mobile/public button targets",
+      "Full-width mobile quote rows"
+    ],
+    "verification": "8 desktop/mobile light/dark URL and selection captures passed; targeted ESLint, TypeScript and formatting passed. Captures inspected locally. Not published to GitHub.",
+    "captures": ".scratch/import-design-final"
+  },
+  "scoped_project_discovery": {
+    "implemented": [
+      "Protected resource metadata and root alias",
+      "Database-backed JWT verification with import resource audience",
+      "Current consent/client/verified account policy",
+      "Internal query reusing active owned Project listing",
+      "App-only MCP Project tool and OAuth challenge"
+    ],
+    "verified": "Actual local consent/code exchange -> MCP tool finds synthetic owned Project; missing and forged tokens challenged; refresh/revoke/replay checks remain passing. TypeScript and targeted ESLint passed.",
+    "evidence": ".scratch/url-import-live/oauth-protocol-evidence.json",
+    "remaining": "Private save and chooser implemented in scoped_import_save; actual ChatGPT host and release gates remain."
+  },
+  "scoped_import_save": {
+    "implemented": [
+      "Explicit widget Project choice and import confirmation",
+      "OAuth-verified narrow save endpoint",
+      "Atomic claim and shared Pending import with fresh ownership/consent checks",
+      "Idempotent response recovery",
+      "Shared result screen and host Inbox link"
+    ],
+    "live_evidence": ".scratch/url-import-live/oauth-protocol-evidence.json",
+    "live_scope": "Actual local OAuth and MCP calls with a synthetic source row; not actual ChatGPT host or real Mux copy",
+    "full_suite": "763 tests / 136 files passed in 22.15s; subsequent widget stale-state reset checked with tsc/lint/browser",
+    "visuals": ".scratch/mcp-save-design",
+    "remaining": [
+      "Actual ChatGPT host/CSP/listing",
+      "Combined fresh-signup handoff audit; implemented handoff passes local sign-in flow",
+      "Video reconciliation and real Mux proof",
+      "Gallery/manual review and delivery/CI gates"
+    ]
+  },
+  "widget_identity": {
+    "implemented": "Shared correction dialog; app-only capability-scoped mutation; original source retained through claim and Pending import",
+    "live_evidence": ".scratch/url-import-live/mcp-identity-evidence.json",
+    "tests": "768 tests / 136 files passed (29.41s). TypeScript and targeted lint passed; later 44px action targets covered by browser checks.",
+    "captures": ".scratch/mcp-identity-design",
+    "scope": "Local MCP backend and host simulator; actual ChatGPT remains unverified",
+    "browser": "Desktop/mobile simulator passed correction, retained quote/selection, focus return and save; light/dark dialog automatic WCAG scans pass and 44px action height verified. Captures inspected locally."
+  },
+  "filtered_inbox": {
+    "implemented": "Project-and-batch indexed lists/counts, durable text/video association, Published order, scoped empty state and clear link; website/MCP result URLs",
+    "verification": "771 tests / 136 files pass. Actual local OAuth save URL and desktop/mobile light/dark Inbox checks pass; zero automatic WCAG violations.",
+    "evidence": ".scratch/url-import-live/import-inbox-evidence.json",
+    "captures": ".scratch/import-inbox-design",
+    "limitations": "Historical local development imports predating batch metadata are not backfilled. No production deployment."
+  },
+  "website_handoff": {
+    "implemented": "App-only explicit continuation tool, isolated no-store fragment transfer, same anonymous snapshot/session, website signup/Project resume and correction UI",
+    "verification": "773 tests / 137 files pass; six browser transfer boundary cases plus two host-simulator flows; actual local MCP -> browser -> sign-in -> Project claim on desktop/mobile",
+    "evidence": ".scratch/url-import-live/import-handoff-evidence.json",
+    "captures": [
+      ".scratch/import-handoff-design",
+      ".scratch/mcp-handoff-design"
+    ],
+    "remaining": "Actual ChatGPT host; combined fresh-signup handoff audit (signup/new Project separately verified earlier).",
+    "final_ui_evidence": ".scratch/url-import-live/import-handoff-ui-evidence.json",
+    "final_ui_scope": "Synthetic preview on actual local backend; refreshed expiry copy and 44px link targets. Earlier live-provider flow passed; subsequent provider fetch failed."
+  },
+  "url_form_alignment": {
+    "change": "URL form left aligned with page heading following DESIGN.md; shared website/widget component.",
+    "verification": "Widget rebuilt. Four URL screen capture checks pass on desktop/mobile, light/dark; all four inspected locally.",
+    "captures": ".scratch/import-url-alignment",
+    "status": "Local verification only; complete feature delivery and remote CI remain pending."
+  },
+  "project_video_capacity": {
+    "implemented": "OAuth Project list includes actual account video storage usage, reservations, limit, availability and provider configuration; selection shows capacity before confirming and supports reload.",
+    "verification": "Service assertions cover empty storage, two pending reservations, and configured/unconfigured provider. Desktop/mobile MCP host simulator passes capacity display and save flow. Local Convex watch loaded change at 13:47:20.",
+    "limitations": "Actual ChatGPT host and real Mux copy remain unverified; displayed capacity is advisory, save rechecks transactionally."
+  },
+  "latest_local_gate": {
+    "command": "pnpm check",
+    "result": "pass after selection assessment and transactional capacity/activity guards",
+    "tests": "782 tests across 138 files",
+    "includes": [
+      "Prettier",
+      "ESLint",
+      "Next route type generation and TypeScript",
+      "Vitest",
+      "Next production build"
+    ],
+    "fixes": [
+      "Exclude generated Better Auth runtime types from ESLint consistent with root generated directory.",
+      "Upload progress test waits for expected asynchronous progress, not first appearance of progressbar."
+    ],
+    "scope": "Local worktree; no deployment, clean-clone or remote CI proof."
+  },
+  "interim_review": {
+    "base": "f45921a27d2a8bef8f5a3522be09b9d2dc6ca7fd",
+    "head": "first implementation snapshot; final head review pending",
+    "report": "docs/research/url-import-review.md",
+    "standards_findings": 2,
+    "spec_findings": 3,
+    "status": "Open; not a completed Matt review gate",
+    "spec_open_findings": 0,
+    "spec_resolved_locally": 3,
+    "standards_open_findings": 0,
+    "standards_resolved_locally": 2
+  },
+  "browser_delivery_audit": {
+    "command": "PLAYWRIGHT_PORT=3897 pnpm test:e2e --grep-invert 'captures ' --workers=4",
+    "initial_result": {
+      "passed": 565,
+      "failed": 31,
+      "skipped": 4
+    },
+    "resolved": "Import identity focus opener fixed; correction/publication targeted checks pass on five browsers. MCP simulator passes desktop Safari. Stale Free-plan assertion corrected and passes five browsers.",
+    "remaining": "Desktop Chromium password recovery; Safari Inbox keyboard, focus, drag and interaction failures. Full browser gate remains open."
+  },
+  "isolated_installation": {
+    "snapshot": "/tmp/get-some-proof-url-import-clean-install-20260909",
+    "base": "f45921a27d2a8bef8f5a3522be09b9d2dc6ca7fd",
+    "patch_sha256": "ec31ba521bbf5077ecde0c94fafafd9fa64c46b1681b6538aab92ac2147f5cfa",
+    "untracked_files": 80,
+    "secrets_or_node_modules_copied": false,
+    "install": "pnpm install --frozen-lockfile passes, pnpm 11.24.0",
+    "checks": "Formatting/lint/types pass. First full test run timed out on account pagination during simultaneous 600-browser run; rerun with --maxWorkers=4 passes all 773 tests / 137 files in 36.91s.",
+    "build": "pnpm build passes without .env.local; 38 static pages generated. Nested snapshot emits harmless parent workspace warning.",
+    "scope": "Working snapshot before latest focus fixes, not a published feature commit.",
+    "location_note": "Moved outside repository after discovering nested snapshot tests were eligible for Vitest collection; subsequent full suite ran exactly 137 files."
+  },
+  "source_media_change_detection": {
+    "implemented": "Original format and video URL preserved; shared preview/confirm comparator identifies stable Mux playback separately from rendition quality. Legacy videos without a reference require review.",
+    "regression": "Reproduced replacement video incorrectly classified already_imported; new public-operation test now covers replacement, format change, quality-only change, legacy source absence and unchanged imported record.",
+    "verification": "19 targeted service tests, TypeScript and lint pass. Local Convex watch loaded at 14:03:02. Full 774-test suite passes. Spec reviewer independently confirmed finding resolved. pnpm check including production build exits 0.",
+    "remaining": "Testimonial.to text stable source identity and other review findings remain open."
+  },
+  "testimonial_text_identity": {
+    "implemented": "Stable provider IDs correlated through keyed RSC records and visible DOM controls; no mutable-content hash fallback. Missing/conflicting identity fails as provider-format change. Repeated record traversal is cached.",
+    "compatibility": "Exact old content-hash records adopt the stable private lookup key while original provenance stays unchanged. Unmatched legacy imports prevent uncertain new additions; old unsaved hash previews require refresh.",
+    "tests": "27 focused source/service tests pass; regression extends owner corrections through exact legacy migration, changed source detection, uncertain legacy refusal and old preview refusal.",
+    "live_evidence": ".scratch/url-import-live/text-source-identity-evidence.json",
+    "live_result": "Two public page reads retain identical IDs for 5 text and 4 video testimonials.",
+    "gate": "pnpm check passes 776 tests and build; final legacy refusal checked with targeted regression and compiled by build.",
+    "review": "Independent Standards reviewer confirmed resolution; 23 tests re-run independently and real source evidence inspected. No material regression found in this scope."
+  },
+  "chatgpt_video_progress": {
+    "status": "implemented and independently reviewed locally",
+    "browser": "failed -> retry -> processing -> ready passes five desktop/mobile browser projects; light/dark axe passes",
+    "screenshots": ".scratch/import-progress-design/ (four final images inspected)",
+    "oauth_evidence": ".scratch/url-import-live/import-progress-evidence.json",
+    "scope": "Real local OAuth/HTTP/MCP status read of existing synthetic import; simulated video states in browser; no real Mux copy or actual ChatGPT host"
+  },
+  "selection_eligibility": {
+    "status": "implemented on website and ChatGPT, independently reviewed locally",
+    "scope": "complete selection up to100; duplicates, changed sources, unavailable items, active Project and Account video capacity",
+    "atomic_confirmation": "capacity loss rolls back the entire batch; Project activity rechecked before text or video writes",
+    "browser": "ChatGPT Project selection desktop/mobile Chromium light/dark passes; website selection-review dedicated browser check still pending",
+    "oauth_evidence": ".scratch/url-import-live/import-eligibility-evidence.json",
+    "screenshots": ".scratch/import-eligibility-design/*-project-{light,dark}.png (four inspected)",
+    "review": "Spec P2 and follow-up activity race resolved; Standards Project-button loading fixed"
+  },
+  "oauth_request_time": {
+    "status": "implemented and independently reviewed locally",
+    "verification": "8 targeted tests across 3 files pass on 2026-09-09",
+    "scope": "JWT request boundary captures verifiedAt; component query uses explicit verified time"
+  }
+}

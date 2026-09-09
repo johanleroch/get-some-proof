@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     "convex/_generated/**",
+    "convex/betterAuth/_generated/**",
     "coverage/**",
     "playwright-report/**",
     "public/embed/mux-player.js",

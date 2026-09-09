@@ -2,10 +2,24 @@
   "project": "get-some-proof",
   "screens": [
     {
+      "slug": "testimonial-import-identity",
+      "title": "Wall import identity correction",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-identity-dark",
+      "title": "Wall import identity correction dark",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
       "slug": "full-page-loading",
       "title": "Full-page loading",
       "path": "/visual-evidence/full-page-loading",
-      "heading": "Loading\u2026",
+      "heading": "Loading…",
       "theme": "light"
     },
     {
@@ -441,6 +455,90 @@
       "heading": "Choose your Free project",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-import",
+      "title": "Wall import selection",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-url",
+      "title": "Wall import URL",
+      "path": "/visual-evidence/testimonial-import-url",
+      "heading": "Import testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-dark",
+      "title": "Wall import selection - dark",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-url-dark",
+      "title": "Wall import URL - dark",
+      "path": "/visual-evidence/testimonial-import-url",
+      "heading": "Import testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-publication",
+      "title": "Wall import publication",
+      "path": "/visual-evidence/testimonial-import-publication",
+      "heading": "Publish Camille Laurent's testimonial?",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-publication-dark",
+      "title": "Wall import publication - dark",
+      "path": "/visual-evidence/testimonial-import-publication",
+      "heading": "Publish Camille Laurent's testimonial?",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-expired",
+      "title": "Wall import expired preview",
+      "path": "/visual-evidence/testimonial-import-expired",
+      "heading": "This preview is no longer available",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-failed",
+      "title": "Wall import video failed",
+      "path": "/visual-evidence/testimonial-import-video-failed",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-processing",
+      "title": "Wall import video processing",
+      "path": "/visual-evidence/testimonial-import-video-processing",
+      "heading": "Importing your videos",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-failed-dark",
+      "title": "Wall import video failed dark",
+      "path": "/visual-evidence/testimonial-import-video-failed",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-video-processing-dark",
+      "title": "Wall import video processing dark",
+      "path": "/visual-evidence/testimonial-import-video-processing",
+      "heading": "Importing your videos",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-public",
+      "title": "Public wall import selection",
+      "path": "/visual-evidence/testimonial-import-public",
+      "heading": "Select testimonials",
+      "theme": "light"
     }
   ]
 }

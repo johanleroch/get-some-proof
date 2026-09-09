@@ -1,4 +1,13 @@
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
+import {
+  TestimonialImportFixture,
+  PublicTestimonialImportFixture,
+  TestimonialImportUrlFixture,
+  ImportPublicationFixture,
+  TestimonialImportExpiredFixture,
+  TestimonialImportVideoFailedFixture,
+  TestimonialImportVideoProcessingFixture,
+} from "@/components/visual-evidence/testimonial-import-fixture";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { VideoThumbnailScreenFixture } from "@/components/visual-evidence/video-thumbnail-fixture";
@@ -40,6 +49,14 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "testimonial-import": TestimonialImportFixture,
+  "testimonial-import-public": PublicTestimonialImportFixture,
+  "testimonial-import-url": TestimonialImportUrlFixture,
+  "testimonial-import-publication": ImportPublicationFixture,
+  "testimonial-import-expired": TestimonialImportExpiredFixture,
+  "testimonial-import-video-failed": TestimonialImportVideoFailedFixture,
+  "testimonial-import-video-processing":
+    TestimonialImportVideoProcessingFixture,
   "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
@@ -95,6 +112,7 @@ export default async function VisualEvidenceFixturePage({
   if (!Screen) notFound();
 
   return screen === "profile" ||
+    screen.startsWith("testimonial-import") ||
     screen === "project-settings-shell" ||
     screen === "full-page-loading" ||
     screen === "onboarding" ||

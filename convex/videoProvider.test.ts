@@ -4,9 +4,126 @@ import {
   cancelVideoDirectUpload,
   createVideoDirectUpload,
   deleteVideoAsset,
+  createVideoAssetFromUrl,
+  listMuxImportCandidates,
 } from "./videoProvider";
 
 describe("video upload provider", () => {
+  it("keeps the provider reserved for the copy if configuration changes", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      createVideoAssetFromUrl({
+        provider: "fake",
+        url: "https://stream.mux.com/source123/high.mp4",
+        passthrough: "reservation",
+        organizationId: "project",
+      }),
+    ).resolves.toMatchObject({ provider: "fake", status: "accepted" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("requests a hosted copy of an allowed source and never labels it ready", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "test-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          headers: { "content-length": "4096", "content-type": "video/mp4" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: "copied-asset" } }), {
+          status: 201,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await createVideoAssetFromUrl({
+      url: "https://stream.mux.com/source123/high.mp4",
+      passthrough: "opaque-reservation",
+      organizationId: "opaque-project",
+    });
+    expect(result).toEqual({
+      provider: "mux",
+      status: "accepted",
+      providerAssetId: "copied-asset",
+      fileSizeBytes: 4096,
+    });
+    const body = JSON.parse(fetchMock.mock.calls[1]![1].body);
+    expect(body.inputs[0].url).toBe(
+      "https://stream.mux.com/source123/high.mp4",
+    );
+    expect(body.passthrough).toBe("opaque-reservation");
+    expect(body.playback_policies).toEqual(["public"]);
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({
+      method: "HEAD",
+      redirect: "error",
+    });
+  });
+
+  it("does not retry an uncertain Mux creation response", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "test-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          headers: { "content-length": "4096", "content-type": "video/mp4" },
+        }),
+      )
+      .mockRejectedValueOnce(new Error("connection lost after sending"));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      createVideoAssetFromUrl({
+        url: "https://stream.mux.com/source123/high.mp4",
+        passthrough: "reservation",
+        organizationId: "project",
+      }),
+    ).resolves.toMatchObject({ provider: "mux", status: "uncertain" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    "http://127.0.0.1/video.mp4",
+    "https://stream.mux.com.evil.test/id/high.mp4",
+    "https://stream.mux.com/id/high.mp4?token=private",
+  ])("rejects an unsupported copy source: %s", async (url) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      createVideoAssetFromUrl({
+        url,
+        passthrough: "reservation",
+        organizationId: "project",
+      }),
+    ).rejects.toThrow("Video source unavailable");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "536870913", "0"])(
+    "refuses an unbounded or oversized source before creating an asset: %s",
+    async (size) => {
+      vi.stubEnv("MUX_PROVIDER", "mux");
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(null, {
+          headers: size ? { "content-length": size } : {},
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(
+        createVideoAssetFromUrl({
+          url: "https://stream.mux.com/source123/high.mp4",
+          passthrough: "reservation",
+          organizationId: "project",
+        }),
+      ).rejects.toThrow();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
@@ -201,4 +318,51 @@ describe("video upload provider", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
   });
+});
+
+it("reads a bounded cursor page and preserves only correlation metadata", async () => {
+  vi.stubEnv("MUX_TOKEN_ID", "test-id");
+  vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        next_cursor: "next-page",
+        data: [
+          {
+            id: "asset-a",
+            passthrough: "reservation-a",
+            meta: { title: "Private title" },
+          },
+          { id: "asset-b" },
+        ],
+      }),
+    ),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  expect(await listMuxImportCandidates("opaque+cursor/value")).toEqual({
+    assets: [
+      { id: "asset-a", passthrough: "reservation-a" },
+      { id: "asset-b" },
+    ],
+    nextCursor: "next-page",
+  });
+  const [url, options] = fetchMock.mock.calls[0];
+  expect(url.origin).toBe("https://api.mux.com");
+  expect(url.searchParams.get("cursor")).toBe("opaque+cursor/value");
+  expect(url.searchParams.get("limit")).toBe("100");
+  expect(options.redirect).toBe("error");
+});
+
+it("rejects unavailable, malformed and oversized inventory pages without treating them as empty", async () => {
+  vi.stubEnv("MUX_TOKEN_ID", "test-id");
+  vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ id: 42 }] })))
+    .mockResolvedValueOnce(new Response("x".repeat(1000001)));
+  vi.stubGlobal("fetch", fetchMock);
+  await expect(listMuxImportCandidates()).rejects.toThrow();
+  await expect(listMuxImportCandidates()).rejects.toThrow();
+  await expect(listMuxImportCandidates()).rejects.toThrow();
 });

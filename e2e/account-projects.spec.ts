@@ -13,7 +13,7 @@ test("Free exposes shared credits and an upgrade path from project creation", as
   await page.goto("/visual-evidence/dashboard");
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Free plan");
-  await expect(usage).toContainText("Shared across all projects");
+  await expect(usage).toContainText("1 / 1 active project");
   await expect(usage).toContainText("4 / 13 text credits used");
   await expect(
     usage.getByRole("link", { name: "Upgrade to Pro" }),

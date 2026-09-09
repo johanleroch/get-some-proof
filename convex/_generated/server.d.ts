@@ -30,6 +30,7 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
+  readonly CHATGPT_IMPORT_ENABLED: "true" | "false" | undefined;
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
   readonly MANAGEMENT_LINK_TOKEN_SECRET: string | undefined;

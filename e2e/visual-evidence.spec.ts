@@ -81,6 +81,15 @@ for (const screen of config.screens) {
       ).toBeVisible();
     }
     await page.waitForTimeout(250);
+    if (screen.slug.startsWith("testimonial-import-identity")) {
+      await page
+        .getByRole("button", {
+          name: "Correct details for Camille Laurent",
+          exact: true,
+        })
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+    }
     if (fixtureMode && screen.slug.startsWith("template")) {
       // The gallery is tall and its video posters load lazily: walk the page
       // once so every poster below the fold requests its image.
@@ -213,7 +222,9 @@ for (const screen of config.screens) {
 
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
-      fullPage: screen.slug !== "rich-testimonial-highlight",
+      fullPage:
+        screen.slug !== "rich-testimonial-highlight" &&
+        !screen.slug.startsWith("testimonial-import-identity"),
       animations: "disabled",
       caret: "initial",
       scale: "css",

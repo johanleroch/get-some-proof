@@ -1,7 +1,8 @@
 import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import authzTest from "@djpanda/convex-authz/test";
-import betterAuthTest from "@convex-dev/better-auth/test";
+import betterAuthSchema from "../convex/betterAuth/schema";
 import { convexTest } from "convex-test";
+import workflowTest from "@convex-dev/workflow/test";
 
 import { components, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -14,12 +15,14 @@ import stripeTestSchema from "./stripe-test-component/schema";
 
 const modules = import.meta.glob("../convex/**/*.*s");
 const stripeTestModules = import.meta.glob("./stripe-test-component/**/*.*s");
+const betterAuthModules = import.meta.glob("../convex/betterAuth/**/*.*s");
 
 export function createConvexTest() {
   const t = convexTest(schema, modules);
-  betterAuthTest.register(t);
+  t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
   authzTest.register(t);
   rateLimiterTest.register(t);
+  workflowTest.register(t);
   t.registerComponent("stripe", stripeTestSchema, stripeTestModules);
   return t;
 }

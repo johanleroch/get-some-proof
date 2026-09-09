@@ -53,7 +53,8 @@ async function liveReservationCount(
   const accountId = (await ctx.db.get(organizationId))?.accountId;
   const reservationsQuery = ctx.db.query("videoReservations");
   const cleanupQuery = ctx.db.query("videoProviderCleanupJobs");
-  const [reservations, cleanup] = await Promise.all([
+  const uncertainQuery = ctx.db.query("videoImportCleanupIntents");
+  const [reservations, cleanup, uncertain] = await Promise.all([
     (accountId
       ? reservationsQuery.withIndex("by_account_status", (q) =>
           q.eq("accountId", accountId).eq("status", "reserved"),
@@ -70,8 +71,16 @@ async function liveReservationCount(
           q.eq("organizationId", organizationId),
         )
     ).take(premiumReadyVideoLimit),
+    (accountId
+      ? uncertainQuery.withIndex("by_account", (q) =>
+          q.eq("accountId", accountId),
+        )
+      : uncertainQuery.withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+    ).take(premiumReadyVideoLimit),
   ]);
-  return reservations.length + cleanup.length;
+  return reservations.length + cleanup.length + uncertain.length;
 }
 
 async function unledgeredConsumedFreeVideoCount(
@@ -126,14 +135,16 @@ export async function getCollectionAvailability(
   );
   const reservations = await liveReservationCount(ctx, organizationId);
   if (entitlement.effectivePlan === "free") {
-    const [textUsed, videoUsed, unledgeredVideo] = await Promise.all([
+    const [textUsed, videoUsed, unledgeredVideo, storage] = await Promise.all([
       activeCreditCount(ctx, organizationId, "text"),
       activeCreditCount(ctx, organizationId, "video"),
       unledgeredConsumedFreeVideoCount(ctx, organizationId),
+      getVideoStorageAvailability(ctx, organizationId),
     ]);
     return {
       textAvailable: textUsed < freeTextCreditLimit,
       videoAvailable:
+        storage.available &&
         videoUsed + unledgeredVideo + reservations < freeVideoCreditLimit,
     };
   }
@@ -151,6 +162,41 @@ export async function getCollectionAvailability(
   return {
     textAvailable: true,
     videoAvailable: readyVideos.length + reservations < premiumReadyVideoLimit,
+  };
+}
+
+/** Shared storage capacity for collected and imported videos, including cleanup. */
+export async function getVideoStorageAvailability(
+  ctx: DatabaseCtx,
+  organizationId: Id<"organizations">,
+) {
+  const entitlement = await getOrganizationBillingEntitlement(
+    ctx,
+    organizationId,
+  );
+  const accountId = (await ctx.db.get(organizationId))?.accountId;
+  const ready = await (
+    accountId
+      ? ctx.db
+          .query("videoAssets")
+          .withIndex("by_account_status", (q) =>
+            q.eq("accountId", accountId).eq("status", "ready"),
+          )
+      : ctx.db
+          .query("videoAssets")
+          .withIndex("by_organization_status", (q) =>
+            q.eq("organizationId", organizationId).eq("status", "ready"),
+          )
+  ).take(premiumReadyVideoLimit);
+  const used = ready.length + (await liveReservationCount(ctx, organizationId));
+  const limit =
+    entitlement.effectivePlan === "free"
+      ? freeVideoCreditLimit
+      : premiumReadyVideoLimit;
+  return {
+    used,
+    limit,
+    available: entitlement.state !== "past_due" && used < limit,
   };
 }
 

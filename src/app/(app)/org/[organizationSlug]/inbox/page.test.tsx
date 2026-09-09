@@ -12,3 +12,20 @@ describe("Brand inbox route", () => {
     expect(element.props).toEqual({ slug: "acme-1234" });
   });
 });
+
+it("keeps the requested import scope and does not treat repeated parameters as all Inbox", async () => {
+  const params = Promise.resolve({ organizationSlug: "atelier-june" });
+  const scoped = await OrganizationInboxPage({
+    params,
+    searchParams: Promise.resolve({ import: "job-june" }),
+  });
+  expect(scoped.props).toMatchObject({
+    slug: "atelier-june",
+    importJobId: "job-june",
+  });
+  const invalid = await OrganizationInboxPage({
+    params,
+    searchParams: Promise.resolve({ import: ["job-june", "job-other"] }),
+  });
+  expect(invalid.props.importJobId).toBe("");
+});
