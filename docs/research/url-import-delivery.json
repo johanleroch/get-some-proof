@@ -1,7 +1,7 @@
 {
   "spec": 97,
   "tickets": [98, 99, 100, 101, 102],
-  "status": "first draft authorized for commit and push; delivery gates remain open",
+  "status": "Draft PR #105 published; current verified checkpoint below supersedes historical working-state entries. Full delivery remains open.",
   "worktree": "codex/url-testimonial-import",
   "verified": [
     "Provider source tests: 12 pass",
@@ -84,15 +84,13 @@
     "Shared DESIGN.md primitives and screen registry entry"
   ],
   "remaining": [
-    "Connected desktop/mobile evidence, video preview and full accessibility audit",
-    "ChatGPT connection and rendered adapter interaction; anonymous signup/resume and per-flow acquisition measurement are implemented.",
-    "ChatGPT adapter, developer interaction and listing submission",
-    "Full check, e2e, review, clean clone, PR and remote CI",
-    "Shared Account capacity display and remaining downgrade/takedown verification",
-    "Expand deletion/export coverage and connected expiry scheduling verification; selected-result Inbox filtering is now implemented and locally verified",
-    "Validate actual Mux copy/webhook delivery with an explicitly verified target; no real Mux credentials configured locally.",
-    "Complete video preview poster/player polish and precise selection capacity feedback.",
-    "Video hardening: retry completion and remaining downgrade/race coverage; reconcile uncertain copies when the provider never sends a webhook, rather than releasing unresolved storage automatically."
+    "Complete manual accessibility, connected video/player and any remaining source-reference screen verification.",
+    "Verify application video queue through actual Mux webhook delivery; current development token needs System Read for mux webhooks listen.",
+    "Actual ChatGPT developer-mode connection, rendered host/CSP interaction, and production-ready listing submission/publication within explicit external release gates.",
+    "Reconcile source issue #97 and all acceptance criteria in #98-#102, including remaining downgrade/takedown, deletion/export and connected expiry coverage; do not infer completion from this checkpoint.",
+    "Reconcile the earlier open video-hardening gate against tests: retry completion, downgrade/races and uncertain copies without webhooks. Do not release unresolved storage on an absence assumption.",
+    "Keep /screens statuses accurate; public acquisition dark-theme evidence remains unrecorded.",
+    "Reconcile final documentation commit and its applicable remote checks; automatic screenshot publisher remains unresolved despite verified local publication."
   ],
   "local_backend_discovery": {
     "team": "johan-roch",
@@ -329,5 +327,32 @@
     "main": "f11193a",
     "validation": "pnpm check passes: 806 tests / 143 files, formatting, lint, types and build",
     "scope": "conflict resolution preserves upstream account/security/billing and import screens; full delivery remains open"
-  }
+  },
+  "current_checkpoint": {
+    "date": "2026-09-09",
+    "implementation_head": "b35bf9bc7ea8b10afebe20b90f81e084ddd3ffdf",
+    "base": "f11193a21b92e36690f27a8bfc9e038ecb8a2e60",
+    "pr": "https://github.com/johanleroch/get-some-proof/pull/105",
+    "local": "pnpm check: 806 tests / 143 files, formatting, lint, types and build pass. Clean clone frozen install and full check pass with Node 24.19.0 and pnpm 11.24.0.",
+    "remote": {
+      "run": "34343542734",
+      "quality": "success",
+      "browser": "success: 760 passed, 4 flaky passing on retry, 4 skipped",
+      "capture_run": "34343542720",
+      "capture": "success",
+      "limitations": "Earlier macOS-only browser failures are not certified fixed."
+    },
+    "review": "Independent Standards and Spec reviews against the stated base report no open code finding; Spec reran 26 passing tests.",
+    "website": "Desktop/mobile real provider selection: 4 text + 2 video eligible, excess capacity blocks confirmation, keeping eligible items enables it. No import confirmed in this check.",
+    "signup": "Actual local MCP to clean browser, signup, local email verification, new Project and claimed preview pass desktop/mobile. Selection and identity correction preserved; no capability in request URLs/referrers; zero automatic axe violations. Synthetic preview; no import confirmation or publication.",
+    "mux": "Repository helper copied a supported real source in verified Mux development environment Get Some Proof (5hrogn): ready, 112.234278 seconds, playback available. Test asset deleted (204 then 404). This does not verify application queue or real webhook delivery; listener permission denied with current Video Read/Write token. System Read requested.",
+    "visuals": {
+      "count": 28,
+      "comment": "https://github.com/johanleroch/get-some-proof/pull/105#issuecomment-5600872350",
+      "scope": "All import captures inspected; desktop/mobile and light/dark where provided. Every GitHub attachment downloaded and SHA-256 verified against exact implementation-head CI capture.",
+      "automatic_publisher": "Failed HTTP 404; local publication succeeded. No personal session exported to Actions."
+    },
+    "external": "Actual ChatGPT host/CSP and public listing are unverified. A local submission draft exists; it has not been submitted. No production deployment or merge authorized/performed."
+  },
+  "history_note": "All other working-state entries are historical checkpoints. Their running-session IDs and then-pending statements are not current runtime or delivery claims; use current_checkpoint and current PR state."
 }
