@@ -261,8 +261,9 @@ export function EnvelopeStamp(props: DoodleProps) {
 }
 
 /**
- * The same envelope on its way: leaning into the move, speed lines
- * trailing on the left. For the moment an email has just gone out.
+ * The same envelope on its way, climbing to the right: the speed lines
+ * trail from its lower-left corner, along the line of flight, the middle
+ * one longest. For the moment an email has just gone out.
  */
 export function EnvelopeSent(props: DoodleProps) {
   return (
@@ -280,15 +281,15 @@ export function EnvelopeSent(props: DoodleProps) {
         <g>
           <path
             {...strokeAttributes}
-            d="M30 92Q39 91.2,48 92Q57 92.8,66 92Q75 91.2,84 92"
+            d="M50 141C53.2 140.6,62.7 139.4,69 138.4C75.3 137.4,84.8 135.6,88 135"
           />
           <path
             {...strokeAttributes}
-            d="M16 112Q27.7 111.2,39.3 112Q51 112.8,62.7 112Q74.3 111.2,86 112"
+            d="M20 163C26.2 162.4,44.7 160.9,57 159.6C69.3 158.3,87.8 155.8,94 155"
           />
           <path
             {...strokeAttributes}
-            d="M34 134Q46 133.2,58 134Q70 134.8,82 134"
+            d="M48 185C52.3 184.5,65.3 183.4,74 182.2C82.7 181,95.7 178.7,100 178"
           />
         </g>
       </g>
@@ -356,7 +357,7 @@ export function EnvelopeSent(props: DoodleProps) {
           />
           <path
             {...strokeAttributes}
-            d="M52 167c0 3.6 1.4 5 5 5c-3.6 0-5 1.4-5 5c0-3.6-1.4-5-5-5c3.6 0 5-1.4 5-5z"
+            d="M44 75c0 3.6 1.4 5 5 5c-3.6 0-5 1.4-5 5c0-3.6-1.4-5-5-5c3.6 0 5-1.4 5-5z"
             fill="var(--brand)"
           />
         </g>

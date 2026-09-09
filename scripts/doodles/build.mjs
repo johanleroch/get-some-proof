@@ -345,15 +345,34 @@ const spots = [
   },
   {
     doc: [
-      "The same envelope on its way: leaning into the move, speed lines",
-      "trailing on the left. For the moment an email has just gone out.",
+      "The same envelope on its way, climbing to the right: the speed lines",
+      "trail from its lower-left corner, along the line of flight, the middle",
+      "one longest. For the moment an email has just gone out.",
     ],
     draw(p) {
       return [
         group("", [
-          stroke(p.line(30, 92, 84)),
-          stroke(p.line(16, 112, 86)),
-          stroke(p.line(34, 134, 82)),
+          stroke(
+            p.through([
+              [50, 141],
+              [69, 138.4],
+              [88, 135],
+            ]),
+          ),
+          stroke(
+            p.through([
+              [20, 163],
+              [57, 159.6],
+              [94, 155],
+            ]),
+          ),
+          stroke(
+            p.through([
+              [48, 185],
+              [74, 182.2],
+              [100, 178],
+            ]),
+          ),
         ]),
         group("rotate(-5 198 111)", [
           filled(p.rect(100, 54, 196, 114, 11), SURFACE),
@@ -368,7 +387,7 @@ const spots = [
         ]),
         group("", [
           filled(p.sparkle(298, 34, 6), BRAND),
-          filled(p.sparkle(52, 172, 5), BRAND),
+          filled(p.sparkle(44, 80, 5), BRAND),
         ]),
       ];
     },
