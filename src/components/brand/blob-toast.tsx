@@ -53,8 +53,8 @@ export type BlobToastProps = {
  * A notification told by the mascot: the blob on the left, its message in a
  * speech bubble. The bubble arrives first and squashes as it lands, the blob
  * hops in a beat later (`.toast-bubble` and `.toast-mascot` in globals.css),
- * then blinks from neutral into the expression of the message, so every toast
- * starts with a small sign of life. The status colors the title and the
+ * with errors showing their sad face immediately. Other notifications blink
+ * from neutral into their expression. The status colors the title and the
  * action; the bubble stays `--surface`.
  */
 export function BlobToast({
@@ -90,7 +90,7 @@ export function BlobToast({
       ) : (
         <Blob
           className="toast-mascot mb-0.5"
-          expression={expression}
+          expression={type === "error" ? faces.error : expression}
           size={48}
         />
       )}

@@ -450,6 +450,15 @@
       "heading": "Choose your Free project",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "account-security-error",
+      "title": "Account security error toast",
+      "path": "/account/security",
+      "fixturePath": "/visual-evidence/account-security",
+      "heading": "Security",
+      "requiresAuth": true,
+      "theme": "light"
     }
   ]
 }

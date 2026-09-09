@@ -65,6 +65,25 @@ for (const screen of config.screens) {
         localStorage.setItem("get-some-proof-theme", theme);
       }, screen.theme);
     }
+    if (fixtureMode && screen.slug === "account-security-error") {
+      await page.route("**/api/auth/**", async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname.endsWith("/two-factor/enable")) {
+          await route.fulfill({
+            status: 403,
+            json: { code: "SESSION_NOT_FRESH" },
+          });
+          return;
+        }
+        await route.fulfill({
+          json: pathname.endsWith("/list-accounts")
+            ? [{ providerId: "credential" }]
+            : pathname.endsWith("/list-sessions")
+              ? []
+              : null,
+        });
+      });
+    }
     const destination =
       fixtureMode && screen.fixturePath ? screen.fixturePath : screen.path;
     await page.goto(
@@ -79,6 +98,13 @@ for (const screen of config.screens) {
       await expect(
         page.getByRole("heading", { name: screen.heading, exact: true }),
       ).toBeVisible();
+    }
+    if (fixtureMode && screen.slug === "account-security-error") {
+      await page.getByLabel("Current password").fill("synthetic-password");
+      await page.getByRole("button", { name: "Enable 2FA" }).click();
+      await expect(page.locator("[data-sonner-toast]")).toContainText(
+        "This security action needs a recent sign-in.",
+      );
     }
     await page.waitForTimeout(250);
     if (fixtureMode && screen.slug.startsWith("template")) {

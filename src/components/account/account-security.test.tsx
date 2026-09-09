@@ -10,6 +10,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountSecurity } from "./account-security";
 
 const mocks = vi.hoisted(() => ({
+  toastError: vi.fn(),
+  toastDismiss: vi.fn(),
+  push: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
   generateBackupCodes: vi.fn(),
@@ -24,7 +27,19 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
+  useRouter: () => ({
+    push: mocks.push,
+    replace: mocks.replace,
+    refresh: mocks.refresh,
+  }),
+}));
+
+vi.mock("@/components/brand/blob-toast", () => ({
+  blobToast: {
+    error: mocks.toastError,
+    success: vi.fn(),
+    dismiss: mocks.toastDismiss,
+  },
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -52,6 +67,9 @@ vi.mock("@/lib/auth-client", () => ({
 describe("AccountSecurity", () => {
   beforeEach(() => {
     cleanup();
+    mocks.toastError.mockClear();
+    mocks.toastDismiss.mockClear();
+    mocks.push.mockClear();
     mocks.twoFactorEnabled = false;
     mocks.listAccounts.mockResolvedValue({
       data: [{ providerId: "credential" }],
@@ -88,6 +106,66 @@ describe("AccountSecurity", () => {
     mocks.revokeOtherSessions.mockResolvedValue({ data: null, error: null });
   });
 
+  it.each([
+    [
+      { code: "INVALID_PASSWORD" },
+      "That password is incorrect. Enter your current account password and try again.",
+    ],
+    [
+      { code: "SESSION_NOT_FRESH" },
+      "Sign in again to continue. This security action needs a recent sign-in.",
+    ],
+    [
+      { status: 401 },
+      "Sign in again to continue. This security action needs a recent sign-in.",
+    ],
+    [
+      { status: 429 },
+      "Too many attempts. Wait a few minutes before trying again.",
+    ],
+    [
+      { status: 500, message: "Internal database failure" },
+      "We couldn’t start two-factor setup. Please try again in a moment.",
+    ],
+    [{}, "We couldn’t start two-factor setup. Please try again in a moment."],
+  ])(
+    "shows a helpful setup error in the branded toast (%j)",
+    async (error, message) => {
+      mocks.enable.mockResolvedValue({ data: null, error });
+      render(<AccountSecurity />);
+      fireEvent.change(await screen.findByLabelText("Current password"), {
+        target: { value: "account-password" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
+      await waitFor(() =>
+        expect(mocks.toastError).toHaveBeenCalledWith(
+          message,
+          expect.any(Object),
+        ),
+      );
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(mocks.toastDismiss).not.toHaveBeenCalled();
+      expect(screen.queryByLabelText("Authenticator code")).toBeNull();
+      if (
+        ("status" in error && error.status === 401) ||
+        ("code" in error && error.code === "SESSION_NOT_FRESH")
+      ) {
+        const options = mocks.toastError.mock.calls.at(-1)![1];
+        expect(options.action.label).toBe("Sign in again");
+        options.action.onClick();
+        expect(mocks.push).toHaveBeenCalledWith(
+          "/sign-in?callbackURL=%2Faccount%2Fsecurity",
+        );
+      }
+      // Identical failures on a second attempt must notify again.
+      fireEvent.change(screen.getByLabelText("Current password"), {
+        target: { value: "account-password" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
+      await waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(2));
+    },
+  );
+
   it("shows recovery codes once after password-reauthenticated 2FA setup", async () => {
     mocks.enable.mockResolvedValue({
       data: {
@@ -104,6 +182,7 @@ describe("AccountSecurity", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
 
     expect(await screen.findByText("code-one")).toBeInTheDocument();
+    expect(mocks.toastDismiss).toHaveBeenCalledWith("account-security-error");
     expect(screen.getByText("code-two")).toBeInTheDocument();
     expect(mocks.enable).toHaveBeenCalledWith({
       password: "correct horse battery staple",
@@ -113,6 +192,14 @@ describe("AccountSecurity", () => {
       screen.getByRole("button", { name: "I saved these codes" }),
     );
     expect(screen.queryByText("code-one")).not.toBeInTheDocument();
+  });
+
+  it("clears a previous security error before leaving a revoked current session", async () => {
+    mocks.revokeSession.mockResolvedValue({ data: null, error: null });
+    render(<AccountSecurity />);
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke Mac" }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/sign-in"));
+    expect(mocks.toastDismiss).toHaveBeenCalledWith("account-security-error");
   });
 
   it("lists device context and revokes every other Session", async () => {
@@ -168,7 +255,7 @@ describe("AccountSecurity", () => {
     expect(screen.getByLabelText("Authenticator code")).toBeInTheDocument();
     mocks.verifyTotp.mockResolvedValueOnce({
       data: null,
-      error: { message: "Invalid code" },
+      error: { code: "INVALID_CODE", message: "Invalid code" },
     });
     fireEvent.change(screen.getByLabelText("Authenticator code"), {
       target: { value: "000000" },
@@ -176,7 +263,12 @@ describe("AccountSecurity", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Verify and enable 2FA" }),
     );
-    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid code");
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "That code is incorrect or has expired. Enter the latest code from your authenticator app.",
+        expect.any(Object),
+      ),
+    );
     expect(screen.getByLabelText("Authenticator code")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Authenticator code"), {
       target: { value: "123456" },
@@ -208,8 +300,11 @@ describe("AccountSecurity", () => {
       target: { value: "account-password" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Unable to complete this action",
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        expect.stringContaining("Check your connection"),
+        expect.any(Object),
+      ),
     );
     expect(
       screen.getByRole("button", { name: "Enable 2FA" }),
