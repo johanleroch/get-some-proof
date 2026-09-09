@@ -382,6 +382,12 @@ pages still start at the top and scroll normally.
   real default as its placeholder. Never present a field the domain already
   fills as a required one, and never let the preview show a wording the
   mutation would not write.
+  The whole first journey (the account form, its Check-your-email state,
+  the verification email, the `/dashboard` wait, this form and the first
+  Overview) plays at `/kit/onboarding` on sample data at the four device
+  widths, with the failures beside it (address taken, logo upload failed,
+  slow network): review the onboarding there, as a sequence, before touching
+  any one of its screens.
 - Collection Form (public): split from 1024px. Brand panel on the left
   (logo, title in `display-xl`, one sentence, the step list) tinted with the
   customer accent at 8%; form steps on the right at max 520px. Progress is a

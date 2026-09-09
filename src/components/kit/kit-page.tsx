@@ -6,6 +6,7 @@ import {
   IconCopy,
   IconLayoutGrid,
   IconRefresh,
+  IconRoute,
   IconStar,
   IconTemplate,
 } from "@tabler/icons-react";
@@ -332,6 +333,12 @@ export function KitPage() {
               only.
             </p>
           </div>
+          <Button asChild size="sm" variant="outline">
+            <a href="/kit/onboarding">
+              <IconRoute aria-hidden="true" />
+              Onboarding
+            </a>
+          </Button>
           <Button asChild size="sm" variant="outline">
             <a href="/kit/templates">
               <IconTemplate aria-hidden="true" />

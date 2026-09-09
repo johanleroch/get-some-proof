@@ -22,6 +22,11 @@ import {
 import { useConvexAuth, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
+import {
+  applyThemeToFrame,
+  SegmentedControl,
+  storedChoice,
+} from "@/components/dev/dev-controls";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,11 +47,7 @@ import {
   type ScreenStatus,
   type ScreenStatuses,
 } from "@/lib/screens-catalog";
-import {
-  applyThemePreference,
-  readThemePreference,
-  themeChangeEvent,
-} from "@/lib/theme";
+import { themeChangeEvent } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useScreenStatuses } from "./use-screen-statuses";
 
@@ -58,45 +59,6 @@ type ScreenSource = "fixture" | "live";
 type SessionState =
   "loading" | "no-brand" | "ready" | "signed-out" | "unavailable";
 
-/**
- * A choice remembered in localStorage and shared across the page through a
- * custom event, so `useSyncExternalStore` can read it without effects.
- */
-function storedChoice<T extends string>(
-  storageKey: string,
-  values: readonly T[],
-  fallback: T,
-) {
-  const changeEvent = `${storageKey}-change`;
-  return {
-    fallback,
-    read(): T {
-      try {
-        const stored = localStorage.getItem(storageKey);
-        return values.includes(stored as T) ? (stored as T) : fallback;
-      } catch {
-        return fallback;
-      }
-    },
-    subscribe(onStoreChange: () => void) {
-      window.addEventListener("storage", onStoreChange);
-      window.addEventListener(changeEvent, onStoreChange);
-      return () => {
-        window.removeEventListener("storage", onStoreChange);
-        window.removeEventListener(changeEvent, onStoreChange);
-      };
-    },
-    write(next: T) {
-      try {
-        localStorage.setItem(storageKey, next);
-      } catch {
-        // Storage can be unavailable; the event still updates this visit.
-      }
-      window.dispatchEvent(new Event(changeEvent));
-    },
-  };
-}
-
 const zoomStore = storedChoice<ZoomLevel>(
   "get-some-proof-screens-zoom",
   zoomLevels,
@@ -107,20 +69,6 @@ const deviceStore = storedChoice<DeviceKey>(
   deviceKeys,
   "desktop",
 );
-
-function applyThemeToFrame(frame: HTMLIFrameElement) {
-  try {
-    const root = frame.contentDocument?.documentElement;
-    if (!root) return;
-    applyThemePreference(
-      root,
-      readThemePreference(),
-      window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
-    );
-  } catch {
-    // Cross-origin frames cannot be themed; every gallery frame is same-origin.
-  }
-}
 
 const statusDotClass: Record<ScreenStatus, string> = {
   ok: "bg-emerald-500",
@@ -501,45 +449,6 @@ function SessionStatus({
       {state === "loading" ? <AnimatedBlob size={24} variant="look" /> : null}
       {label}
     </span>
-  );
-}
-
-function SegmentedControl<T extends string>({
-  ariaLabel,
-  onChange,
-  options,
-  value,
-}: {
-  ariaLabel: string;
-  onChange: (value: T) => void;
-  options: Array<{ disabled?: boolean; label: string; value: T }>;
-  value: T;
-}) {
-  return (
-    <div
-      aria-label={ariaLabel}
-      className="bg-muted inline-flex items-center gap-0.5 rounded-md p-0.5"
-      role="radiogroup"
-    >
-      {options.map((option) => (
-        <button
-          aria-checked={option.value === value}
-          className={cn(
-            "focus-visible:ring-ring/50 h-7 rounded-[5px] px-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-40",
-            option.value === value
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-          disabled={option.disabled}
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          role="radio"
-          type="button"
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }
 

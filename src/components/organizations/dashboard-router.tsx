@@ -25,6 +25,14 @@ export function DashboardRouter() {
     router.replace(`/org/${organizations[0].slug}/dashboard` as Route);
   }, [account, organizations, router]);
 
+  return <FindingProjectScreen />;
+}
+
+/**
+ * What `/dashboard` shows while it looks for the person's Brand: the first
+ * thing a verified account sees, and the wait before onboarding.
+ */
+export function FindingProjectScreen() {
   return (
     <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
       <div aria-live="polite" className="text-center">

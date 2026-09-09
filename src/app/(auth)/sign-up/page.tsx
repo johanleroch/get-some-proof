@@ -1,4 +1,4 @@
-import { SignUpForm } from "@/components/auth/sign-up-form";
+import { SignUpForm, signUpCopy } from "@/components/auth/sign-up-form";
 import { AuthHeading } from "@/components/auth/auth-heading";
 import { safeInternalRoute } from "@/lib/safe-route";
 
@@ -13,8 +13,8 @@ export default async function SignUpPage({
   return (
     <>
       <AuthHeading
-        description="Verify your email before creating your Brand."
-        title="Create your account"
+        description={signUpCopy.description}
+        title={signUpCopy.title}
       />
       <SignUpForm callbackURL={destination} />
     </>
