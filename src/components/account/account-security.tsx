@@ -138,7 +138,6 @@ export function AccountSecurity() {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
@@ -160,6 +159,7 @@ export function AccountSecurity() {
           backupCodes: result.data.backupCodes,
         });
         setBackupCodes(result.data.backupCodes);
+        blobToast.dismiss("account-security-error");
         setSuccess(
           "Add the authenticator, then enter its code to finish setup.",
         );
@@ -178,7 +178,6 @@ export function AccountSecurity() {
     event.preventDefault();
     const code = String(new FormData(event.currentTarget).get("code"));
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const result = await authClient.twoFactor.verifyTotp({ code });
@@ -192,6 +191,7 @@ export function AccountSecurity() {
       setSetup(null);
       await session.refetch();
       await refreshSessions();
+      blobToast.dismiss("account-security-error");
       setSuccess("Two-factor authentication enabled.");
     } catch {
       reportError(
@@ -207,7 +207,6 @@ export function AccountSecurity() {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
@@ -224,6 +223,7 @@ export function AccountSecurity() {
       setBackupCodes(null);
       await session.refetch();
       await refreshSessions();
+      blobToast.dismiss("account-security-error");
       setSuccess("Two-factor authentication disabled.");
     } catch {
       reportError(
@@ -239,7 +239,6 @@ export function AccountSecurity() {
     event.preventDefault();
     const form = event.currentTarget;
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const password = String(new FormData(form).get("password"));
@@ -255,6 +254,7 @@ export function AccountSecurity() {
         return;
       }
       setBackupCodes(result.data?.backupCodes ?? []);
+      blobToast.dismiss("account-security-error");
       setSuccess("Previous recovery codes were invalidated.");
     } catch {
       reportError(
@@ -268,7 +268,6 @@ export function AccountSecurity() {
 
   async function revokeSession(token: string) {
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const result = await authClient.revokeSession({ token });
@@ -279,6 +278,7 @@ export function AccountSecurity() {
         );
         return;
       }
+      blobToast.dismiss("account-security-error");
       if (token === currentToken) {
         router.replace("/sign-in");
         router.refresh();
@@ -298,7 +298,6 @@ export function AccountSecurity() {
 
   async function revokeOtherSessions() {
     setPending(true);
-    blobToast.dismiss("account-security-error");
     setSuccess(null);
     try {
       const result = await authClient.revokeOtherSessions();
@@ -309,6 +308,7 @@ export function AccountSecurity() {
         );
         return;
       }
+      blobToast.dismiss("account-security-error");
       setSuccess("Every other Session was revoked.");
       await refreshSessions();
     } catch {

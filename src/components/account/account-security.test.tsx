@@ -11,6 +11,7 @@ import { AccountSecurity } from "./account-security";
 
 const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
+  toastDismiss: vi.fn(),
   push: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
@@ -34,7 +35,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/brand/blob-toast", () => ({
-  blobToast: { error: mocks.toastError, success: vi.fn(), dismiss: vi.fn() },
+  blobToast: {
+    error: mocks.toastError,
+    success: vi.fn(),
+    dismiss: mocks.toastDismiss,
+  },
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -63,6 +68,7 @@ describe("AccountSecurity", () => {
   beforeEach(() => {
     cleanup();
     mocks.toastError.mockClear();
+    mocks.toastDismiss.mockClear();
     mocks.push.mockClear();
     mocks.twoFactorEnabled = false;
     mocks.listAccounts.mockResolvedValue({
@@ -138,6 +144,7 @@ describe("AccountSecurity", () => {
         ),
       );
       expect(screen.queryByRole("alert")).toBeNull();
+      expect(mocks.toastDismiss).not.toHaveBeenCalled();
       expect(screen.queryByLabelText("Authenticator code")).toBeNull();
       if (
         ("status" in error && error.status === 401) ||
@@ -175,6 +182,7 @@ describe("AccountSecurity", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
 
     expect(await screen.findByText("code-one")).toBeInTheDocument();
+    expect(mocks.toastDismiss).toHaveBeenCalledWith("account-security-error");
     expect(screen.getByText("code-two")).toBeInTheDocument();
     expect(mocks.enable).toHaveBeenCalledWith({
       password: "correct horse battery staple",
@@ -184,6 +192,14 @@ describe("AccountSecurity", () => {
       screen.getByRole("button", { name: "I saved these codes" }),
     );
     expect(screen.queryByText("code-one")).not.toBeInTheDocument();
+  });
+
+  it("clears a previous security error before leaving a revoked current session", async () => {
+    mocks.revokeSession.mockResolvedValue({ data: null, error: null });
+    render(<AccountSecurity />);
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke Mac" }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/sign-in"));
+    expect(mocks.toastDismiss).toHaveBeenCalledWith("account-security-error");
   });
 
   it("lists device context and revokes every other Session", async () => {
