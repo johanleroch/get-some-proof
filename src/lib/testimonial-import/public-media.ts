@@ -29,7 +29,10 @@ blocked.addSubnet("2002::", 16, "ipv6");
 blocked.addSubnet("3fff::", 20, "ipv6");
 
 export class MediaCopyError extends Error {
-  constructor(readonly transient = false) {
+  constructor(
+    readonly transient = false,
+    readonly diagnostic?: string,
+  ) {
     super(
       "The media could not be copied. Check the source or choose a replacement file.",
     );

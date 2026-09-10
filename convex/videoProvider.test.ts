@@ -64,6 +64,41 @@ describe("video upload provider", () => {
       uploadId: "upload-retry",
     });
   });
+
+  it("reports Mux asset capacity without exposing the provider response", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "test-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              type: "invalid_parameters",
+              messages: [
+                "Free plan is limited to 10 assets, you cannot create direct uploads while exceeding this limit",
+              ],
+            },
+          }),
+          { status: 400 },
+        ),
+      ),
+    );
+
+    await expect(
+      createVideoDirectUpload({
+        corsOrigin: "https://app.example",
+        passthrough: "reserved-item",
+        organizationId: "project",
+        spokenLanguage: "en",
+      }),
+    ).rejects.toMatchObject({
+      transient: false,
+      diagnostic: "direct-upload-capacity-exceeded",
+    });
+  });
+
   it("keeps the provider reserved for the copy if configuration changes", async () => {
     vi.stubEnv("MUX_PROVIDER", "mux");
     const fetchMock = vi.fn();

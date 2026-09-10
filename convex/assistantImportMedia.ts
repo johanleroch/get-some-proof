@@ -102,6 +102,19 @@ export const copyVideo = internalAction({
       );
     } catch (error) {
       if (error instanceof VideoUploadUncertain) return true;
+      console.error("Assistant video copy failed.", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage:
+          error instanceof Error ? error.message : "Non-error rejection",
+        transient:
+          error instanceof MediaCopyError || error instanceof VideoProviderError
+            ? error.transient
+            : undefined,
+        diagnostic:
+          error instanceof MediaCopyError || error instanceof VideoProviderError
+            ? error.diagnostic
+            : undefined,
+      });
       const attempt = args.copyAttempt ?? 1;
       if (
         (error instanceof MediaCopyError ||
@@ -123,7 +136,10 @@ export const copyVideo = internalAction({
       await ctx.runMutation(internal.testimonialImportVideo.rejectCopy, {
         assetId: args.assetId,
         reason:
-          "The video could not be copied. Check the public file URL or choose a replacement file.",
+          error instanceof VideoProviderError &&
+          error.diagnostic === "direct-upload-capacity-exceeded"
+            ? "The connected Mux account is at its video asset limit. Free capacity or upgrade Mux, then retry."
+            : "The video could not be copied. Check the public file URL or choose a replacement file.",
       });
     }
     return true;

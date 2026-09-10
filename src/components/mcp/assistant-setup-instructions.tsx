@@ -144,10 +144,11 @@ export function AssistantSetupInstructions({
           disabled={!enabled}
         />
         <p className="type-small text-ink-2">
-          Videos: a public file URL or a local file, up to 10 minutes and 512 MB
-          each. Photos and videos copy in the background. If your assistant
-          cannot transfer a file, choose it in the Inbox. Optional yt-dlp use
-          depends on your environment and source access.
+          Videos: a public file URL, a public Mux HLS playback URL or a local
+          file, up to 10 minutes and 512 MB each. Photos and videos copy in the
+          background. If your assistant cannot transfer a file, choose it in the
+          Inbox. Optional yt-dlp use depends on your environment and source
+          access.
         </p>
       </div>
     </section>

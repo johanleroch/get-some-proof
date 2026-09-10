@@ -1,7 +1,10 @@
 import { env } from "./_generated/server";
 
 export class VideoProviderError extends Error {
-  constructor(readonly transient: boolean) {
+  constructor(
+    readonly transient: boolean,
+    readonly diagnostic?: string,
+  ) {
     super(
       "The video provider is temporarily unavailable or rejected the upload.",
     );
@@ -193,8 +196,15 @@ export async function createVideoDirectUpload(input: {
     throw new VideoProviderError(true);
   });
   if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    const diagnostic = /limited to \d+ assets|exceeding this limit/i.test(
+      detail,
+    )
+      ? "direct-upload-capacity-exceeded"
+      : `direct-upload-status-${response.status}`;
     throw new VideoProviderError(
       response.status === 429 || response.status >= 500,
+      diagnostic,
     );
   }
   const body = (await response.json().catch((error: unknown) => {
