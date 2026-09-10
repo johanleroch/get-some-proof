@@ -53,9 +53,7 @@ beforeEach(() => {
 });
 it("shows full plan controls in the personal account", () => {
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for bumpr"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "View plan details" })).toBeNull();
 });
 it("preserves billing access without a project", () => {
@@ -97,8 +95,6 @@ it("does not diagnose a migration failure for an existing Account with no owned 
 it("does not select another account's project for personal billing", () => {
   mocks.projects.unshift({ id: "foreign-project", slug: "aaa-other-account" });
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for bumpr"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByText("Plan controls for aaa-other-account")).toBeNull();
 });
