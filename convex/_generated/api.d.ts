@@ -9,6 +9,7 @@
  */
 
 import type * as accountDeletion from "../accountDeletion.js";
+import type * as accountModelMigrations from "../accountModelMigrations.js";
 import type * as accounts from "../accounts.js";
 import type * as anonymousWallImports from "../anonymousWallImports.js";
 import type * as assistantImportMedia from "../assistantImportMedia.js";
@@ -105,6 +106,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accountDeletion: typeof accountDeletion;
+  accountModelMigrations: typeof accountModelMigrations;
   accounts: typeof accounts;
   anonymousWallImports: typeof anonymousWallImports;
   assistantImportMedia: typeof assistantImportMedia;
