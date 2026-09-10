@@ -11,6 +11,7 @@ import {
   IconCreditCard,
   IconDashboard,
   IconInbox,
+  IconLayoutGrid,
   IconLock,
   IconSettings,
   IconUserCircle,
@@ -365,6 +366,12 @@ export function AppShellView({
       label: "Inbox",
       icon: IconInbox,
       href: `/org/${organizationSlug}/inbox` as Route,
+      visible: authorization?.can.manageOwnership ?? false,
+    },
+    {
+      label: "Studio",
+      icon: IconLayoutGrid,
+      href: `/org/${organizationSlug}/studio` as Route,
       visible: authorization?.can.manageOwnership ?? false,
     },
     {

@@ -48,6 +48,7 @@ const purgePhases = [
   "testimonials",
   "videoReservations",
   "publicProjections",
+  "widgets",
   "projects",
   "invitations",
   "billingEmails",
@@ -592,6 +593,14 @@ async function deletePhaseBatch(
       records = await ctx.db
         .query("publicTestimonialProjections")
         .withIndex("by_organization", (i) =>
+          i.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      break;
+    case "widgets":
+      records = await ctx.db
+        .query("widgets")
+        .withIndex("by_organizationId", (i) =>
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);

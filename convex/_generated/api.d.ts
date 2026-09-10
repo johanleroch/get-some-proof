@@ -45,6 +45,7 @@ import type * as domain_testimonialImage from "../domain/testimonialImage.js";
 import type * as domain_testimonialImport from "../domain/testimonialImport.js";
 import type * as domain_testimonialRichText from "../domain/testimonialRichText.js";
 import type * as domain_video from "../domain/video.js";
+import type * as domain_widgets from "../domain/widgets.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
 import type * as http from "../http.js";
@@ -65,6 +66,7 @@ import type * as profileImages from "../profileImages.js";
 import type * as projectActivity from "../projectActivity.js";
 import type * as projects from "../projects.js";
 import type * as publicProjection from "../publicProjection.js";
+import type * as publicProjectionHydration from "../publicProjectionHydration.js";
 import type * as publicReadRateLimit from "../publicReadRateLimit.js";
 import type * as publicWall from "../publicWall.js";
 import type * as security_organizationAccess from "../security/organizationAccess.js";
@@ -96,6 +98,7 @@ import type * as videoRetryDelivery from "../videoRetryDelivery.js";
 import type * as videoRetryLinks from "../videoRetryLinks.js";
 import type * as videoWebhooks from "../videoWebhooks.js";
 import type * as wallCustomization from "../wallCustomization.js";
+import type * as widgets from "../widgets.js";
 import type * as workspaceDeletion from "../workspaceDeletion.js";
 
 import type {
@@ -142,6 +145,7 @@ declare const fullApi: ApiFromModules<{
   "domain/testimonialImport": typeof domain_testimonialImport;
   "domain/testimonialRichText": typeof domain_testimonialRichText;
   "domain/video": typeof domain_video;
+  "domain/widgets": typeof domain_widgets;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
   http: typeof http;
@@ -162,6 +166,7 @@ declare const fullApi: ApiFromModules<{
   projectActivity: typeof projectActivity;
   projects: typeof projects;
   publicProjection: typeof publicProjection;
+  publicProjectionHydration: typeof publicProjectionHydration;
   publicReadRateLimit: typeof publicReadRateLimit;
   publicWall: typeof publicWall;
   "security/organizationAccess": typeof security_organizationAccess;
@@ -193,6 +198,7 @@ declare const fullApi: ApiFromModules<{
   videoRetryLinks: typeof videoRetryLinks;
   videoWebhooks: typeof videoWebhooks;
   wallCustomization: typeof wallCustomization;
+  widgets: typeof widgets;
   workspaceDeletion: typeof workspaceDeletion;
 }>;
 

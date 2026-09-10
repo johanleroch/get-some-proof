@@ -187,3 +187,19 @@ _Avoid_: Downgrade, Archive, Account closure
 **Workspace Deletion Tombstone**:
 The minimal content-free workflow record retained after Workspace Deletion so the initiating Owner can see completion and retries can remain idempotent. It contains no exported content, media, Brand profile, membership, or public data.
 _Avoid_: Backup, Recoverable Workspace, Trash
+
+**Studio**:
+The Owner’s workspace for creating, customizing and publishing reusable Widgets for a Project.
+_Avoid_: Video editor, Collection Form builder
+
+**Widget**:
+A named selection of Published Testimonials with its own template, appearance and Curated Order. Each Widget belongs to one Project and has a private draft and an independently published version. Changing a Widget never changes the default Public Wall selection or order. Proof Block is the earlier specification name for this concept.
+_Avoid_: Embedded Wall when referring to an independent selection
+
+**Widget Template**:
+The layout used to present a Widget’s selected Testimonials. Changing it preserves the Widget’s Public Widget ID.
+_Avoid_: Collection template, Testimonial
+
+**Public Widget ID**:
+The permanent public identifier used in a Widget’s link and installation code. It reveals only the published Widget and never grants editing access.
+_Avoid_: Secret, Project ID, Public Slug

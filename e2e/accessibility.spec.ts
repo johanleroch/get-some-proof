@@ -31,6 +31,10 @@ async function expectNoWcagViolations(page: Page) {
 }
 
 const canonicalScreens = [
+  "/visual-evidence/studio",
+  "/visual-evidence/studio-templates",
+  "/visual-evidence/studio-editor",
+  "/visual-evidence/studio-preview",
   "/visual-evidence/testimonial-import",
   "/visual-evidence/testimonial-import-url",
   "/visual-evidence/testimonial-import-public",

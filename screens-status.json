@@ -40,5 +40,9 @@
   "workspace-delete-progress": "ok",
   "mcp-setup-connected": "ok",
   "assistant-import-consent": "ok",
-  "assistant-import-consent-free": "ok"
+  "assistant-import-consent-free": "ok",
+  "studio": "ok",
+  "studio-templates": "ok",
+  "studio-editor": "ok",
+  "studio-preview": "ok"
 }

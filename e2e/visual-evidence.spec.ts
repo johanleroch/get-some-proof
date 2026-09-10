@@ -253,6 +253,15 @@ for (const screen of config.screens) {
         .getByRole("heading", { name: "Invoices", exact: true })
         .scrollIntoViewIfNeeded();
     }
+    if (
+      screen.slug === "studio-preview" ||
+      (screen.slug === "studio-editor" &&
+        !testInfo.project.name.startsWith("mobile"))
+    ) {
+      await expect(
+        page.locator("[data-widget-preview] .card").first(),
+      ).toBeVisible();
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
