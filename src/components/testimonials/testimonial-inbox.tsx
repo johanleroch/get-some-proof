@@ -1443,7 +1443,7 @@ export function TestimonialInbox({
   );
 }
 
-function InboxImportActions({
+export function InboxImportActions({
   slug,
   publicSlug,
   paid,
