@@ -5,12 +5,37 @@ import { components, internal } from "./_generated/api";
 import { env } from "./_generated/server";
 import { authComponent, createAuth } from "./auth";
 import { muxWebhook } from "./muxWebhook";
+import {
+  importOAuthHttp,
+  importOAuthMetadata,
+  importDestinationsHttp,
+  importSaveHttp,
+  importStatusHttp,
+  importRetryHttp,
+  importPhotoRetryHttp,
+  importEligibilityHttp,
+} from "./importOAuth";
 
 const http = httpRouter();
 
 http.route({ method: "POST", path: "/mux/webhook", handler: muxWebhook });
 
 authComponent.registerRoutes(http, createAuth);
+http.route({
+  method: "GET",
+  pathPrefix: "/api/import-auth/",
+  handler: importOAuthHttp,
+});
+http.route({
+  method: "POST",
+  pathPrefix: "/api/import-auth/",
+  handler: importOAuthHttp,
+});
+http.route({
+  method: "GET",
+  path: "/.well-known/oauth-authorization-server/api/import-auth",
+  handler: importOAuthMetadata,
+});
 registerRoutes(http, components.stripe, {
   STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET,
@@ -44,6 +69,40 @@ registerRoutes(http, components.stripe, {
     });
   },
   webhookPath: "/stripe/webhook",
+});
+
+http.route({
+  path: "/api/import-mcp/destinations",
+  method: "GET",
+  handler: importDestinationsHttp,
+});
+
+http.route({
+  path: "/api/import-mcp/save",
+  method: "POST",
+  handler: importSaveHttp,
+});
+
+http.route({
+  path: "/api/import-mcp/status",
+  method: "POST",
+  handler: importStatusHttp,
+});
+http.route({
+  path: "/api/import-mcp/retry-photo",
+  method: "POST",
+  handler: importPhotoRetryHttp,
+});
+http.route({
+  path: "/api/import-mcp/retry",
+  method: "POST",
+  handler: importRetryHttp,
+});
+
+http.route({
+  path: "/api/import-mcp/eligibility",
+  method: "POST",
+  handler: importEligibilityHttp,
 });
 
 export default http;

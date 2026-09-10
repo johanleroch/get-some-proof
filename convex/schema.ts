@@ -1,8 +1,113 @@
 import { richTextValidator } from "./domain/testimonialRichText";
+import {
+  importResult,
+  importOrigin,
+  wallCandidate,
+  wallProvider,
+} from "./domain/testimonialImport";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  importAcquisitionFlows: defineTable({
+    channel: importChannel,
+    stages: v.array(importStage),
+    expiresAt: v.number(),
+  }),
+  importAcquisitionDaily: defineTable({
+    day: v.string(),
+    channel: importChannel,
+    stage: importStage,
+    count: v.number(),
+  }).index("by_day_channel_stage", ["day", "channel", "stage"]),
+  importAvatarUploads: defineTable({
+    storageId: v.id("_storage"),
+    expiresAt: v.number(),
+  }).index("by_storage_id", ["storageId"]),
+  anonymousWallPreviews: defineTable({
+    identityCorrections: v.optional(
+      v.array(
+        v.object({
+          position: v.number(),
+          avatarStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
+          authorName: v.string(),
+          tagline: v.string(),
+          editedAt: v.number(),
+        }),
+      ),
+    ),
+    acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
+    tokenHash: v.string(),
+    provider: wallProvider,
+    sourceUrl: v.string(),
+    items: v.array(wallCandidate),
+    selectedPositions: v.array(v.number()),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    claimedBy: v.optional(v.string()),
+    claimedJobId: v.optional(v.id("testimonialImportJobs")),
+    claimedOrganizationId: v.optional(v.id("organizations")),
+  }).index("by_tokenHash", ["tokenHash"]),
+  testimonialImportJobs: defineTable({
+    acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
+    selectedItemIds: v.optional(v.array(v.id("testimonialImportItems"))),
+    result: v.optional(importResult),
+    organizationId: v.id("organizations"),
+    createdBy: v.string(),
+    provider: wallProvider,
+    sourceUrl: v.string(),
+    itemCount: v.number(),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_expiresAt", ["expiresAt"]),
+  testimonialImportItems: defineTable({
+    avatarAttempt: v.optional(v.number()),
+    avatarStatus: v.optional(
+      v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
+    ),
+    identityCorrection: v.optional(
+      v.object({
+        avatarStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
+        authorName: v.string(),
+        tagline: v.string(),
+        editedBy: v.string(),
+        editedAt: v.number(),
+      }),
+    ),
+    workflowId: v.optional(v.string()),
+    videoAssetId: v.optional(v.id("videoAssets")),
+    videoStatus: v.optional(
+      v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
+    ),
+    failureReason: v.optional(v.string()),
+    sourceState: v.optional(
+      v.union(
+        v.literal("new"),
+        v.literal("already_imported"),
+        v.literal("changed"),
+      ),
+    ),
+    outcome: v.optional(
+      v.union(
+        v.literal("imported"),
+        v.literal("skipped"),
+        v.literal("changed"),
+        v.literal("unavailable"),
+      ),
+    ),
+    testimonialId: v.optional(v.id("testimonials")),
+    ...wallCandidate.fields,
+    organizationId: v.id("organizations"),
+    jobId: v.id("testimonialImportJobs"),
+    position: v.number(),
+  })
+    .index("by_testimonialId", ["testimonialId"])
+    .index("by_jobId_and_position", ["jobId", "position"])
+    .index("by_jobId_type_position", ["jobId", "type", "position"])
+    .index("by_organizationId", ["organizationId"]),
   accounts: defineTable({
     publicationGeneration: v.optional(v.number()),
     publicationTransitionKey: v.optional(v.string()),
@@ -420,6 +525,9 @@ export default defineSchema({
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization", ["organizationId"]),
   testimonials: defineTable({
+    importJobId: v.optional(v.id("testimonialImportJobs")),
+    importSourceKey: v.optional(v.string()),
+    importOrigin: v.optional(importOrigin),
     organizationId: v.id("organizations"),
     clientSubmissionId: v.string(),
     submissionType: v.union(v.literal("text"), v.literal("video")),
@@ -437,12 +545,12 @@ export default defineSchema({
     posterTimeSeconds: v.optional(v.number()),
     posterStorageId: v.optional(v.id("_storage")),
     submitterName: v.string(),
-    submitterEmail: v.string(),
+    submitterEmail: v.optional(v.string()),
     avatarStorageId: v.optional(v.id("_storage")),
     role: v.optional(v.string()),
     company: v.optional(v.string()),
     rating: v.optional(v.number()),
-    managementTokenHash: v.string(),
+    managementTokenHash: v.optional(v.string()),
     managementTokenExpiresAt: v.optional(v.number()),
     contentVersion: v.optional(v.number()),
     publicVisibilityOverrides: v.optional(
@@ -461,6 +569,16 @@ export default defineSchema({
       "organizationId",
       "clientSubmissionId",
     ])
+    .index("by_organizationId_and_importSourceKey", [
+      "organizationId",
+      "importSourceKey",
+    ])
+    .index("by_organization_import_status", [
+      "organizationId",
+      "importJobId",
+      "moderationStatus",
+    ])
+    .index("by_organization_import", ["organizationId", "importJobId"])
     .index("by_organization_status", ["organizationId", "moderationStatus"])
     .index("by_organization_created_at", ["organizationId", "createdAt"])
     .index("by_organization_submitter_email", [
@@ -525,6 +643,7 @@ export default defineSchema({
   publicTestimonialProjections: defineTable(
     v.union(
       v.object({
+        importJobId: v.optional(v.id("testimonialImportJobs")),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
@@ -552,6 +671,7 @@ export default defineSchema({
         ),
       }),
       v.object({
+        importJobId: v.optional(v.id("testimonialImportJobs")),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
@@ -588,6 +708,16 @@ export default defineSchema({
       "organizationId",
       "type",
       "publishedAt",
+    ])
+    .index("by_organization_type_generation", [
+      "organizationId",
+      "type",
+      "publicationGeneration",
+    ])
+    .index("by_organization_import_order", [
+      "organizationId",
+      "importJobId",
+      "publicOrderKey",
     ])
     .index("by_organization_order_key", ["organizationId", "publicOrderKey"])
     .index("by_testimonial", ["testimonialId"]),
@@ -687,6 +817,7 @@ export default defineSchema({
     .index("by_storage_id", ["storageId"])
     .index("by_expiry", ["expiresAt"]),
   videoReservations: defineTable({
+    importItemId: v.optional(v.id("testimonialImportItems")),
     freeCreditPending: v.optional(v.boolean()),
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
@@ -713,12 +844,14 @@ export default defineSchema({
     .index("by_provider_upload_id", ["providerUploadId"])
     .index("by_expiry", ["expiresAt"]),
   videoAssets: defineTable({
+    importCopyStartedAt: v.optional(v.number()),
+    importItemId: v.optional(v.id("testimonialImportItems")),
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     reservationId: v.id("videoReservations"),
     testimonialId: v.optional(v.id("testimonials")),
     provider: v.union(v.literal("fake"), v.literal("mux")),
-    providerUploadId: v.string(),
+    providerUploadId: v.optional(v.string()),
     cleanupScheduled: v.optional(v.boolean()),
     providerAssetId: v.optional(v.string()),
     playbackId: v.optional(v.string()),
@@ -726,9 +859,9 @@ export default defineSchema({
     // was removed. No active function writes these fields.
     downloadProviderAssetId: v.optional(v.string()),
     downloadPlaybackId: v.optional(v.string()),
-    spokenLanguage: v.union(v.literal("en"), v.literal("fr")),
+    spokenLanguage: v.optional(v.union(v.literal("en"), v.literal("fr"))),
     mimeType: v.string(),
-    fileSizeBytes: v.number(),
+    fileSizeBytes: v.optional(v.number()),
     durationSeconds: v.optional(v.number()),
     aspectRatio: v.optional(v.string()),
     sourceHeight: v.optional(v.number()),
@@ -829,6 +962,29 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_testimonial", ["testimonialId"])
+    .index("by_organization", ["organizationId"]),
+  // No source URL, author or testimonial content: only late-copy correlation.
+  videoImportCleanupIntents: defineTable({
+    accountId: v.optional(v.id("accounts")),
+    organizationId: v.id("organizations"),
+    assetId: v.id("videoAssets"),
+    reservationId: v.id("videoReservations"),
+    provider: v.union(v.literal("fake"), v.literal("mux")),
+    createdAt: v.number(),
+    nextAttemptAt: v.optional(v.number()),
+    probe: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+    completedScans: v.optional(v.number()),
+    failures: v.optional(v.number()),
+    lastCheckedAt: v.optional(v.number()),
+    lastScanCompletedAt: v.optional(v.number()),
+    reviewRequiredAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+  })
+    .index("by_nextAttemptAt", ["nextAttemptAt"])
+    .index("by_asset", ["assetId"])
+    .index("by_reservation", ["reservationId"])
+    .index("by_account", ["accountId"])
     .index("by_organization", ["organizationId"]),
   videoProviderCleanupJobs: defineTable({
     accountId: v.optional(v.id("accounts")),
