@@ -74,35 +74,14 @@ import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -142,6 +121,7 @@ const sections = [
   { id: "overlays", title: "Overlays" },
   { id: "feedback", title: "Feedback" },
   { id: "product", title: "Product pieces" },
+  { id: "css", title: "CSS snippet" },
 ];
 
 type TypeValues = Record<
@@ -701,6 +681,14 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
+            description="Every curve of DESIGN.md section 8, plotted and replayed on the same travel. Mass decides the overshoot: a switch thumb may bounce, a dialog may not."
+            id="motion"
+            title="Motion"
+          >
+            <MotionShowcase />
+          </KitSection>
+
+          <KitSection
             description="40px tall, weight 600, --radius-md, a 1px press, and a loading state that keeps the label width."
             id="buttons"
             title="Buttons"
@@ -894,49 +882,7 @@ export function KitPage() {
                 <TabsTrigger value="published">Published</TabsTrigger>
               </TabsList>
               <TabsContent value="all">
-                <div className="bg-card rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Author</TableHead>
-                        <TableHead>Format</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Received</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        ["Alice Martin", "Text", "Published", "3 Sep"],
-                        ["Jordan Lee", "Video", "Pending", "2 Sep"],
-                        ["Morgan Reed", "Text", "Draft", "1 Sep"],
-                      ].map(([author, format, status, received]) => (
-                        <TableRow key={author}>
-                          <TableCell className="font-medium">
-                            {author}
-                          </TableCell>
-                          <TableCell>{format}</TableCell>
-                          <TableCell>
-                            <Badge
-                              dot
-                              variant={
-                                status === "Published"
-                                  ? "success"
-                                  : status === "Pending"
-                                    ? "warning"
-                                    : "neutral"
-                              }
-                            >
-                              {status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-ink-2 text-right font-mono text-xs">
-                            {received}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <p className="text-ink-2 type-body">Three testimonials.</p>
               </TabsContent>
               <TabsContent value="pending">
                 <p className="text-ink-2 type-body">One pending testimonial.</p>
@@ -996,7 +942,6 @@ export function KitPage() {
             <div className="flex flex-wrap items-center gap-3">
               <DialogDemo />
               <AlertDialogDemo />
-              <SheetDemo />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline">Dropdown menu</Button>
@@ -1017,30 +962,11 @@ export function KitPage() {
                 </TooltipTrigger>
                 <TooltipContent>Copied to clipboard</TooltipContent>
               </Tooltip>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">Popover</Button>
-                </PopoverTrigger>
-                <PopoverContent align="start">
-                  <p className="type-subheading">Embed on your site</p>
-                  <p className="text-ink-2 type-small mt-1">
-                    Paste one script tag. The Wall inherits your font.
-                  </p>
-                </PopoverContent>
-              </Popover>
             </div>
           </KitSection>
 
           <KitSection
-            description="Every curve of DESIGN.md section 8, plotted and replayed on the same travel. Mass decides the overshoot: a switch thumb may bounce, a dialog may not."
-            id="motion"
-            title="Motion"
-          >
-            <MotionShowcase />
-          </KitSection>
-
-          <KitSection
-            description="Toasts, skeletons and separators."
+            description="Toasts and skeletons."
             id="feedback"
             title="Feedback"
           >
@@ -1074,11 +1000,6 @@ export function KitPage() {
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
                 <Skeleton className="h-24 w-full" />
-              </div>
-              <div className="space-y-3">
-                <p className="type-ui">Above the separator</p>
-                <Separator />
-                <p className="type-ui">Below the separator</p>
               </div>
             </div>
           </KitSection>
@@ -1334,27 +1255,6 @@ function AlertDialogDemo() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
-}
-
-function SheetDemo() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button onClick={() => setOpen(true)} variant="outline">
-        Sheet
-      </Button>
-      <Sheet onOpenChange={setOpen} open={open}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Navigation</SheetTitle>
-            <SheetDescription>
-              The desktop sidebar becomes this sheet on mobile.
-            </SheetDescription>
-          </SheetHeader>
-        </SheetContent>
-      </Sheet>
     </>
   );
 }

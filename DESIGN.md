@@ -506,8 +506,8 @@ pages still start at the top and scroll normally.
   with the full sentence at both widths, so the control the Submitter hears
   does not change with their screen. The accent arrives on hover and on focus,
   never as a fill. The onboarding preview is as narrow as a phone, so it shows
-  the band — a preview that flatters is a preview that lies. Reviewed at
-  `/kit/collection`.
+  the band — a preview that flatters is a preview that lies. Reviewed in
+  `/screens`, Collection Form.
 - Public Wall: header left-aligned with the Brand logo, `display-xl` name,
   a scribble star in the Brand accent, and the count of proofs. Masonry of
   1, 2 or 3 columns (below 640px, 640 to 1024px, above), gap 20px. The
