@@ -324,12 +324,18 @@ export const applyEvent = internalMutation({
           !Number.isFinite(data.duration) ||
           data.duration <= 0 ||
           data.duration >
-            (asset.importItemId ? maximumImportedVideoDurationSeconds : 120)
+            (asset.importItemId ? maximumImportedVideoDurationSeconds : 120) ||
+          (asset.assistantImport &&
+            (!asset.importedFileVerified ||
+              !asset.fileSizeBytes ||
+              asset.fileSizeBytes > 512 * 1024 * 1024))
         ) {
           const failedNow = await failAsset(
             ctx,
             asset,
-            `Video must be no longer than ${asset.importItemId ? maximumImportedVideoDurationSeconds / 60 : 2} minutes.`,
+            asset.assistantImport
+              ? "Imported video must be a verified file no larger than 512 MB and no longer than 10 minutes."
+              : `Video must be no longer than ${asset.importItemId ? maximumImportedVideoDurationSeconds / 60 : 2} minutes.`,
           );
           if (failedNow && asset.testimonialId) {
             await createVideoRetryLink(ctx, asset, {

@@ -65,10 +65,28 @@ export const importProjectsSchema = z.object({
   continueCursor: z.string(),
 });
 export const savedImportSchema = z.object({
+  outcomes: z
+    .array(
+      z.object({
+        sourceId: z.string(),
+        itemId: z.string(),
+        status: z.enum([
+          "created",
+          "duplicate",
+          "conflict",
+          "processing",
+          "failed",
+          "blocked",
+        ]),
+      }),
+    )
+    .max(50)
+    .optional(),
   jobId: z.string(),
   organizationSlug: z.string(),
-  inboxUrl: z.string().url(),
+  inboxUrl: z.url(),
   result: z.object({
+    blocked: z.number().int().nonnegative().optional(),
     imported: z.number().int().nonnegative(),
     skipped: z.number().int().nonnegative(),
     changed: z.number().int().nonnegative(),
@@ -79,6 +97,7 @@ export const savedImportSchema = z.object({
 });
 
 export const importStatusSchema = savedImportSchema.extend({
+  availableVideoSlots: z.number().int().nonnegative().optional(),
   photos: z
     .array(
       z.object({
@@ -95,6 +114,7 @@ export const importStatusSchema = savedImportSchema.extend({
         itemId: z.string(),
         authorName: z.string(),
         failureMessage: z.string().optional(),
+        blocked: z.boolean().optional(),
         status: z.enum(["processing", "ready", "failed"]),
       }),
     )
@@ -114,3 +134,32 @@ export const importOperationErrorMessages = {
   IMPORT_UNAVAILABLE:
     "This import is no longer available. Open the Inbox to review your testimonials.",
 };
+
+export const assistantMigrationStatusSchema = z.object({
+  migrationId: z.string(),
+  discoveredCount: z.number(),
+  processedCount: z.number(),
+  remainingCount: z.number(),
+  batchCount: z.number(),
+  result: savedImportSchema.shape.result,
+  page: z
+    .array(
+      z.object({
+        jobId: z.string(),
+        result: savedImportSchema.shape.result.optional(),
+      }),
+    )
+    .max(20),
+  isDone: z.boolean(),
+  continueCursor: z.string(),
+});
+
+export const assistantUploadCapabilitySchema = z.object({
+  status: z.enum(["uploading", "finalizing", "complete"]),
+  uploadUrl: z.url(),
+  uploadToken: z.string().regex(/^[a-f0-9]{64}$/),
+  expiresAt: z.number(),
+  offset: z.number().int().nonnegative(),
+  totalBytes: z.number().int().positive(),
+  chunkSize: z.number().int().positive(),
+});

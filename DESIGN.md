@@ -238,7 +238,8 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
 
 - `Sparkle`: a big four-point sparkle with a small one, the same accent that
   lights every illustration. Marks the Wall header (in the Brand accent), the
-  success step and the dev quick access.
+  success step and the dev quick access, and sits in ink on the Upgrade to
+  Pro button as its icon.
 - `Marker highlight`: a highlighter stroke behind one key word in a display
   title, soft amber by default, the text painted on top.
 - `Circle around`: a ring drawn once and a bit around a number or a short
@@ -261,13 +262,17 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   `public/brand/blob.svg`, with eleven expressions in `public/brand/blob/`
   (reviewed at `/kit/blob`, defined in `src/lib/blob-expressions.ts`). The
   one element of the signature that is not a line drawing. Same places as
-  the spot illustrations, at most one per screen, 96 to 200px tall, the
+  the spot illustrations, at most one per screen region, 96 to 200px tall, the
   expression chosen from the moment (happy on success, sad on errors,
   curious on empty states) and always said with the eyes alone, the blob has
   no mouth; never in the embed and never next to the logo mark. One
   exception, decided by the founder: the closing panel of `/templates`
   shows it at 420px, cropped by the panel on three sides and tilted 8
-  degrees to the left, as a poster would. In motion
+  degrees to the left, as a poster would. A second one (2026-09-09): the
+  sidebar plan card (section 6) carries it at 128px on every dashboard
+  screen of a Free Account, cropped and tilted the same way; it is the
+  sidebar's signature element, and loaders or toasts in the main region keep
+  theirs. In motion
   (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
   amplitudes, volume kept in every squash, pivot on its base, frozen by
   reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or
@@ -283,7 +288,10 @@ Rules:
   fill of overlapping shapes. No other color, ever.
 - Maximum one hand-drawn element per screen region (header, main, sidebar,
   dialog). Empty states and success steps may combine one illustration and
-  one arrow note.
+  one arrow note. The Brand overview keeps that pair as well (the arrow note
+  on the Collection Form panel, the Wall drawing on the Public Wall panel),
+  decided by the founder on 2026-09-09; the sparkle inside its Upgrade button
+  is the button's icon, not a third element.
 - Motion: `float` keeps each object of a drawing drifting 4 to 6px on its own
   slow loop, out of phase with its neighbours, for an illustration that
   carries a screen (the authentication panel). It stops under reduced motion.
@@ -291,7 +299,9 @@ Rules:
   non-scaling stroke is unreliable across browsers, and the reveal never read
   as a hand drawing.
 - Doodles are decorative: `aria-hidden="true"`, never the only carrier of
-  meaning, never overlapping interactive elements, never inside form fields.
+  meaning, never overlapping interactive elements (the sparkle drawn as the
+  icon of the Upgrade to Pro button is the one exception), never inside form
+  fields.
 - No emoji anywhere in the interface, ever. The doodle vocabulary replaces
   them.
 - On public surfaces the signature stays (section 6), but the star is drawn in
@@ -303,8 +313,10 @@ Rules:
 Radius scale: `--radius-sm: 6px` (badges inside buttons, checkboxes),
 `--radius-md: 8px` (buttons, inputs, menu items), `--radius-lg: 12px` (cards,
 dialogs, dropdowns, testimonial cards), `--radius-xl: 16px` (hero panels, the
-Collection Form card), `--radius-full` (pills, avatars, status dots). Nothing
-else. `rounded-xl` on every surface is retired.
+Collection Form card), `--radius-3xl: 24px` (the app frame alone, section 6;
+`--radius-2xl` exists as a token and has no use yet), `--radius-full` (pills,
+avatars, status dots). Nothing else. `rounded-xl` on every surface is
+retired.
 
 Depth comes from borders and tone, not shadows. Cards sit on `--paper` with a
 1px `--line` border and no shadow. Only floating layers get a shadow, and it is
@@ -330,11 +342,79 @@ an `lg:mx-0` that quietly cancels the centring at the width where it matters
 most. Both collapse to nothing when the content outgrows the column, so long
 pages still start at the top and scroll normally.
 
-- Dashboard: sidebar 260px on `--paper`, content on `--paper` with white
-  panels only where grouping helps. Page header is left-aligned: eyebrow
-  (micro), `display` title, one primary action on the right. Data lives in
-  lists and tables with `--surface-2` row hover, not in stacks of cards.
-  Three-equal-cards rows are banned; use a 2:1 or 1:2 split.
+- Dashboard: one frame on the paper page, never a rectangle glued to the
+  edge. The whole app sits in a `--surface` card 12px off the viewport
+  (`--line` hairline, `--radius-3xl`), and the sidebar floats inside it as a
+  `--paper` card 260px wide, 12px off the frame's edges, with a hairline and
+  `--radius-lg`. Nested corners are concentric: the inner radius is the
+  outer radius minus the gap (24px outside, 12px gap, 12px inside), which
+  is the rule for any card inside a card. No bar sits above the page on
+  desktop: the page header is the top of the page, and ⌘B folds the sidebar.
+  Below `md`, where the sidebar becomes a sheet, one 48px bar holds the menu
+  button and the brand mark; the app runs full bleed on paper. Panels inside
+  the page keep their
+  hairline, which is what separates them on white, not a tint. The
+  sidebar's footer (the plan card, the user row) sits without a rule above
+  it. Chosen by the founder on 2026-09-09: two panels among six frames
+  (card, two panels, dock, under the bar, ink card, stack), then folded into
+  one frame on his proposal.
+  Page header is left-aligned: eyebrow (micro), `display` title, one primary
+  action on the right. Data lives in lists and tables with `--surface-2` row
+  hover, not in stacks of cards. Three-equal-cards rows are banned; use a
+  2:1 or 1:2 split. The product ships in the light theme with no theme control
+  for now (decided 2026-09-09); the dark tokens stay in `globals.css` and the
+  development pages (`/kit`, `/screens`, the quick access) keep the switch so
+  both themes stay reviewed.
+- Sidebar header: no logo and no avatar. The project's name is the title of
+  the sidebar, at `heading` in Gelica with a thin chevron beside it (20px,
+  `--ink-3`), and the whole title is the button that opens the project menu
+  (switch, create, settings): 16px inset, `--surface-2` on hover and while
+  open. Chosen by the founder on 2026-09-09 from six drafts (brand first,
+  project card, typographic, sectioned, ink panel, rows), the typographic
+  one without its wordmark: the product's name has no business in its own
+  shell. The navigation under it: section 7.
+- Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
+  footer above the user row, as a small poster on `--brand-soft`
+  (`--radius-lg`, no border, 12px padding): the promise at `subheading`
+  ("Collect without limits", a benefit, never the plan name or the button
+  repeated), one line at `small` in `--ink-2` on what Pro changes (unlimited
+  projects, 25
+  videos, no promo card), the primary amber "Upgrade to Pro" at the `sm`
+  size, and the blob peeking over the bottom right corner, big (128px,
+  starstruck, tilted 8 degrees left, cropped by the panel as on
+  `/templates`, its eyes well inside the card). It never says "Free plan":
+  the sale says it. A Pro Account shows nothing there, only the user row: a
+  paying customer is not sold to from the sidebar, and the subscription
+  lives on the billing page. Two things move on it, the founder's call: the
+  blob's eyes change every few seconds (starstruck to happy and back, the
+  `Blob` transition, so the corner of the eye catches it), and a soft light
+  sweeps the button (`.cta-shine`, the one moving gradient in the interface,
+  a light passing, never a fill); both hold still under reduced motion.
+  Chosen by the founder on 2026-09-09 from six drafts (sticker, speech
+  bubble, meters, poster, ink card, slim row);
+  `src/components/account/sidebar-plan-card.tsx`.
+- Brand overview: the header names the Brand under an "Overview" eyebrow
+  and no action. Its sentence is the state of the queue: with nothing
+  waiting it says so and links the Inbox, so the title carries news rather
+  than a slogan; once something is waiting the queue block says it and the
+  sentence goes back to the neutral one. Below, a 2:1 split, one column
+  under 1024px. Left, the work: the review queue whenever anything is
+  waiting, then the Collection Form panel (the address in mono at
+  `subheading` so it never competes with the title, Copy link as the
+  panel's one primary button, Open Collection Form beside it, the arrow
+  note "share this to start collecting" when the row has room), then the
+  Public Wall panel (`WallFrames` beside the eyebrow, a `heading`, the Wall
+  address, Open Wall and Embed on your site), with nothing floating between
+  the two panels. Right, sticky, the
+  Account: the plan named at `subheading`, each allowance as a meter (the
+  fraction in figures beside its name, a `--brand` fill on a `--surface-2`
+  track under them) and the one button on the page that sells,
+  `UpgradeToProButton`: the primary amber fill with the sparkle drawn in
+  ink as its icon, no motion on hover, full width in its column. On Pro that place
+  holds an outline "Manage subscription", a door rather than a sale. The
+  drawing and the arrow note are the region's pair (section 4); the button's
+  sparkle is an icon, not a third element. An empty queue is a sentence, never a large zero. Chosen by the
+  founder on 2026-09-09 among four prototypes.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
   controls, newest first. Under the tabs, one list panel (`--surface`,
@@ -457,7 +537,8 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
 
 ## 7. Components
 
-- Buttons: `--radius-md`, height 40px (44px on public surfaces), `ui` type at
+- Buttons: `--radius-md`, height 40px (44px on public surfaces; 36px, the
+  `sm` size, inside the sidebar's plan card, the one compact place), `ui` type at
   weight 600. Primary is `--brand` fill with `--brand-ink` text, hover
   `--brand-strong`, active translates down 1px, focus shows a 3px
   `--brand-ring`. Secondary is `--surface` with a `--line-2` border. Ghost has
@@ -481,12 +562,22 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   `popover` to `src/components/ui`); native controls styled inline are
   retired.
 - Cards: `--surface`, `--line` border, `--radius-lg`, padding 20px (24px for
-  hero panels). Title at `subheading`. Cards are used only when grouping
+  hero panels). Title at `subheading`, except the Brand overview's Public Wall
+  panel, which opens with a `heading` as a statement (decided 2026-09-09).
+  Cards are used only when grouping
   earns it; in lists, rows with dividers replace cards.
-- Sidebar navigation: items 36px tall, `--radius-md`, `ui` weight 500. Hover
-  `--surface-2`. Active is `--brand-soft` fill, `--ink` text at weight 600,
-  and a 3px `--brand` bar on the left edge. The three states must be
-  distinguishable at a glance.
+- Sidebar navigation: no group labels, the project title above says where
+  we are. Items 36px tall, `--radius-md`, 12px inset, `ui` weight 500: an
+  18px Tabler icon at stroke 1.75 in `--ink-2`, the name, and the meaning on
+  the right edge, the Inbox queue as a count (`small` 600, tabular, on
+  `--surface-2`, "500+" past the ceiling) or a small arrow on what opens in
+  a new tab (the Wall). Hover `--surface-2`. Active is not a style on the item but one indicator
+  per list: a `--brand-soft` pill the item's exact size, and a 3px `--brand`
+  rail in the gutter, flush with the panel's edge and rounded on its inner
+  side; the name goes to 600 and the icon to `--ink`. Chosen by the founder
+  on 2026-09-09: the navigation as a mix of two of six drafts, the indicator
+  as the rail among six drawings of the pill-and-bar pair. It travels
+  (section 8.3). The three states must be distinguishable at a glance.
 - Testimonial card: keeps one markup for Wall, Inbox and embed
   (`testimonial-card-markup.ts`). `--radius-lg`, `--line` border, no shadow,
   24px padding. The stars open the card at 14px in the Brand accent with
@@ -572,8 +663,9 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   processing. Use the mascot for every visible wait, including compact labels,
   upload progress, video buffering, and page skeletons. Loading buttons use
   a small 16px spinner instead.
-- Icons: **Tabler** only, 20px in navigation and buttons, 16px inline, stroke
-  1.75. Lucide is removed once the last usages are migrated.
+- Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
+  and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
+  once the last usages are migrated.
 
 ## 8. Motion
 
@@ -633,13 +725,22 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
 - Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
+- Sidebar navigation: the active indicator is one element that slides to
+  the clicked item before the page arrives, overshoots and settles
+  (`--motion-settle`, `--ease-settle`), stretched along its travel and
+  squashed as it lands (`.nav-indicator-travel`, 6 and 4 percent, volume
+  kept); the name and icon change with it, and the route confirms the move.
+  Under reduced motion it jumps.
 - Lists and grids mount with a 30ms stagger, 12px upward travel, opacity from 0. Maximum 12 items staggered; the rest appear instantly.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
   tint.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
-  (`AnimatedBlob`), one per screen. The preview-only marquee is a narrow
+  (`AnimatedBlob`), one per screen. The sidebar's plan card is the founder's
+  exception (section 6): its blob changes face every few seconds and a light
+  sweeps its button, both still under reduced motion. The preview-only
+  marquee is a narrow
   exception: it may scroll continuously, with a visible Pause animation /
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides
@@ -666,7 +767,9 @@ notes may be playful; the rest of the interface stays clear.
   the direct competitor's pair (Senja). Before adopting any signature element
   (font, accent, illustration style), check it is not already a competitor's.
 - Violet `#6d5dfc` as a default anywhere. White text on the amber accent.
-- A second accent color. Gradients on text or backgrounds. Neon or outer glows.
+- A second accent color. Gradients on text or backgrounds (the one exception:
+  the light that sweeps the sidebar's Upgrade button, section 6, a moving
+  highlight, never a fill). Neon or outer glows.
 - Shadows on resting cards. `shadow-xs` sprinkled on every surface.
 - Three equal cards in a row. Centered card on an empty background as a page.
 - Page titles under 24px. Literal font weights like 510 and 590.

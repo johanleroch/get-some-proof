@@ -3,7 +3,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
+import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
+import { useInboxPages } from "./use-inbox-pages";
+import { InboxSyncIndicator } from "./inbox-sync-indicator";
 import {
   IconAlertTriangle,
   IconArchive,
@@ -19,12 +22,8 @@ import {
 } from "@tabler/icons-react";
 import type { Route } from "next";
 import Link from "next/link";
-import {
-  useAction,
-  useMutation,
-  usePaginatedQuery,
-  useQuery,
-} from "convex/react";
+import { useSearchParams } from "next/navigation";
+import { useAction, useMutation, useQuery } from "convex/react";
 
 import { HighlightTestimonialDialog } from "./highlight-testimonial-dialog";
 import { VideoPreviewDialog } from "./video-preview-dialog";
@@ -668,7 +667,7 @@ export function TestimonialInboxView({
 
   if (testimonials.length === 0) {
     return (
-      <section className="bg-surface border-line rounded-lg border">
+      <section className="bg-surface border-line grid min-h-96 place-items-center rounded-lg border">
         <EmptyState
           action={emptyAction}
           description={
@@ -696,7 +695,7 @@ export function TestimonialInboxView({
         </p>
       ) : null}
       <section
-        className="bg-surface border-line overflow-hidden rounded-lg border"
+        className="bg-surface border-line min-h-96 overflow-hidden rounded-lg border"
         style={{ "--wall-accent": accentColor } as CSSProperties}
       >
         <ol className="divide-line divide-y">
@@ -825,7 +824,9 @@ export function InboxCategoryTabs({
   counts,
   moderationStatus,
   onModerationStatusChange,
+  syncIndicator,
 }: {
+  syncIndicator?: ReactNode;
   /** The category's own panel: only the open one is rendered. */
   children: ReactNode;
   counts?: InboxCounts;
@@ -840,23 +841,30 @@ export function InboxCategoryTabs({
       }
       value={moderationStatus}
     >
-      <TabsList aria-label="Testimonial categories">
-        {inboxCategories.map((category) => {
-          const count = counts?.[category.key] ?? 0;
-          return (
-            <TabsTrigger key={category.key} value={category.key}>
-              {category.label}{" "}
-              {count > 0 ? (
-                // Inherits the tab's colour so an inactive count keeps AA
-                // contrast; weight alone separates it from the label.
-                <span className="font-medium tabular-nums">
-                  {count > inboxCountCeiling ? `${inboxCountCeiling}+` : count}
-                </span>
-              ) : null}
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
+      <div className="relative">
+        <TabsList aria-label="Testimonial categories">
+          {inboxCategories.map((category) => {
+            const count = counts?.[category.key] ?? 0;
+            return (
+              <TabsTrigger key={category.key} value={category.key}>
+                {category.label}{" "}
+                {count > 0 ? (
+                  // Inherits the tab's colour so an inactive count keeps AA
+                  // contrast; weight alone separates it from the label.
+                  <span className="font-medium tabular-nums">
+                    {count > inboxCountCeiling
+                      ? `${inboxCountCeiling}+`
+                      : count}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+        <div className="absolute -top-5 right-0 flex size-4 items-center justify-center">
+          {syncIndicator}
+        </div>
+      </div>
       <TabsContent className="space-y-6" value={moderationStatus}>
         {children}
       </TabsContent>
@@ -941,16 +949,41 @@ async function runInboxAction({
   }
 }
 
-export function TestimonialInbox({
-  slug,
-  importJobId,
-}: {
-  slug: string;
-  importJobId?: string;
-}) {
+function inboxCategoryFromUrl(searchParams: {
+  getAll: (name: string) => string[];
+}): InboxCategory {
+  const requestedCategory = searchParams.getAll("tab");
+  return (
+    (requestedCategory.length === 1
+      ? inboxCategories.find(
+          (category) => category.key === requestedCategory[0],
+        )?.key
+      : undefined) ?? "pending"
+  );
+}
+
+function setModerationStatusFilter(category: InboxCategory) {
+  const url = new URL(window.location.href);
+  if (
+    url.searchParams.getAll("tab").length === 1 &&
+    url.searchParams.get("tab") === category
+  )
+    return;
+  url.searchParams.set("tab", category);
+  window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function useInboxData(
+  slug: string,
+  importJobId: string | undefined,
+  moderationStatus: InboxCategory,
+) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const [moderationStatus, setModerationStatusFilter] =
-    useState<InboxCategory>("pending");
+  const assistantEntitlement = useQuery(
+    api.billing.getProjectEntitlement,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
     api.testimonialModeration.countInbox,
@@ -962,18 +995,44 @@ export function TestimonialInbox({
     loadMore,
     results: testimonials,
     status: paginationStatus,
-  } = usePaginatedQuery(
-    api.testimonialModeration.listInbox,
-    organization
-      ? {
-          ...importFilter,
-          organizationId: organization.id,
-          sort: moderationStatus === "published" ? "wall" : "newest",
-          status: moderationStatus,
-        }
-      : "skip",
-    { initialNumItems: 20 },
+  } = useInboxPages(moderationStatus, {
+    organizationId: organization?.id,
+    importJobId,
+  });
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
   );
+  return {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  };
+}
+
+export function TestimonialInbox({
+  slug,
+  importJobId,
+}: {
+  slug: string;
+  importJobId?: string;
+}) {
+  const searchParams = useSearchParams();
+  const moderationStatus = inboxCategoryFromUrl(searchParams);
+  const {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  } = useInboxData(slug, importJobId, moderationStatus);
+
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -988,10 +1047,6 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
     null,
-  );
-  const wallSettings = useQuery(
-    api.wallCustomization.getSettings,
-    organization ? { organizationId: organization.id } : "skip",
   );
   const movePublished = useMutation(api.wallCustomization.movePublished);
   const setVisibility = useMutation(
@@ -1057,9 +1112,6 @@ export function TestimonialInbox({
         />
       </section>
     );
-  }
-  if (paginationStatus === "LoadingFirstPage") {
-    return <OverviewPageSkeleton />;
   }
   const activeOrganization = organization;
   const wallVisibility: WallVisibility | undefined = wallSettings?.visibility;
@@ -1214,84 +1266,83 @@ export function TestimonialInbox({
     <>
       <PageHeader
         actions={
-          <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href={`/org/${slug}/import` as Route}>
-                Import testimonials
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link
-                href={`/w/${organization.publicSlug}` as Route}
-                target="_blank"
-              >
-                Open Public Wall
-                <IconExternalLink aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
+          <InboxImportActions
+            slug={slug}
+            publicSlug={organization.publicSlug}
+            paid={assistantEntitlement?.effectivePlan === "premium"}
+          />
         }
         description="Review private Submissions and choose what becomes public."
         eyebrow="Workspace"
         title="Inbox"
       />
 
-      {importJobId !== undefined && (
-        <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-          <p className="type-body text-ink-2">
-            Showing testimonials from this import.
-          </p>
-          <Button asChild variant="ghost">
-            <Link href={`/org/${slug}/inbox` as Route}>
-              Show all testimonials
-            </Link>
-          </Button>
-        </div>
-      )}
+      <AssistantImportNotice
+        organizationId={organization.id}
+        jobId={importJobId}
+        slug={slug}
+      />
       <InboxFeedback error={error} message={message} />
 
       <InboxCategoryTabs
         counts={counts}
         moderationStatus={moderationStatus}
         onModerationStatusChange={setModerationStatusFilter}
-      >
-        <TestimonialInboxView
-          accentColor={wallSettings?.accentColor}
-          actionsDisabled={pendingId !== null}
-          category={moderationStatus}
-          importFiltered={importJobId !== undefined}
-          emptyAction={
-            importJobId !== undefined ? (
-              <Button asChild variant="outline">
-                <Link href={`/org/${slug}/inbox` as Route}>
-                  Show all testimonials
-                </Link>
-              </Button>
-            ) : moderationStatus === "pending" ? null : (
-              <Button
-                onClick={() => setModerationStatusFilter("pending")}
-                variant="outline"
-              >
-                Go to Pending
-              </Button>
-            )
-          }
-          footer={
-            <InboxLoadMore
-              onLoadMore={() => loadMore(20)}
-              paginationStatus={paginationStatus}
-              pending={pendingId !== null}
+        syncIndicator={
+          paginationStatus !== "LoadingFirstPage" ? (
+            <InboxSyncIndicator
+              updating={
+                pendingId !== null || paginationStatus === "LoadingMore"
+              }
             />
-          }
-          onAction={handleInboxAction}
-          onMove={
-            moderationStatus === "published" && importJobId === undefined
-              ? moveOnWall
-              : undefined
-          }
-          pendingId={pendingId}
-          testimonials={testimonials}
-        />
+          ) : undefined
+        }
+      >
+        {paginationStatus === "LoadingFirstPage" ? (
+          <BlobLoader
+            className="bg-surface border-line min-h-96 rounded-lg border"
+            label="Loading testimonials"
+            showLabel
+          />
+        ) : (
+          <TestimonialInboxView
+            accentColor={wallSettings?.accentColor}
+            actionsDisabled={pendingId !== null}
+            category={moderationStatus}
+            importFiltered={importJobId !== undefined}
+            emptyAction={
+              importJobId !== undefined ? (
+                <Button asChild variant="outline">
+                  <Link href={`/org/${slug}/inbox` as Route}>
+                    Show all testimonials
+                  </Link>
+                </Button>
+              ) : moderationStatus === "pending" ? null : (
+                <Button
+                  onClick={() => setModerationStatusFilter("pending")}
+                  variant="outline"
+                >
+                  Go to Pending
+                </Button>
+              )
+            }
+            footer={
+              <InboxLoadMore
+                onLoadMore={() => loadMore(20)}
+                paginationStatus={paginationStatus}
+                pending={pendingId !== null}
+              />
+            }
+            onAction={handleInboxAction}
+            onMove={
+              moderationStatus === "published" && importJobId === undefined
+                ? moveOnWall
+                : undefined
+            }
+            pendingId={pendingId}
+            testimonials={testimonials}
+          />
+        )}
       </InboxCategoryTabs>
 
       {highlightTarget?.card?.type === "text" ? (
@@ -1428,5 +1479,39 @@ export function TestimonialInbox({
         />
       )}
     </>
+  );
+}
+
+export function InboxImportActions({
+  slug,
+  publicSlug,
+  paid,
+}: {
+  slug: string;
+  publicSlug: string;
+  paid: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button
+        asChild
+        variant="ghost"
+        className={paid ? undefined : "text-ink-2"}
+      >
+        <Link href={`/org/${slug}/mcp` as Route}>
+          Import with an assistant
+          {!paid ? " · Pro" : ""}
+        </Link>
+      </Button>
+      <Button asChild>
+        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href={`/w/${publicSlug}` as Route} target="_blank">
+          Open Public Wall
+          <IconExternalLink aria-hidden="true" />
+        </Link>
+      </Button>
+    </div>
   );
 }

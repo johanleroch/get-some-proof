@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { WallFrames } from "@/components/doodles";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { productDescription } from "@/lib/brand";
 
 /**
@@ -13,10 +12,7 @@ import { productDescription } from "@/lib/brand";
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <main className="bg-paper relative grid min-h-svh lg:grid-cols-[minmax(28rem,1fr)_minmax(0,1.618fr)]">
-      <div className="absolute top-5 right-5 z-10">
-        <ThemeToggle />
-      </div>
+    <main className="bg-paper grid min-h-svh lg:grid-cols-[minmax(28rem,1fr)_minmax(0,1.618fr)]">
       <section className="flex flex-col px-5 py-10 sm:px-8 lg:px-14 lg:py-12">
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col">
           <div className="mb-10">

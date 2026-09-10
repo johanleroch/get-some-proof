@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => {
   const resolved = () => vi.fn().mockResolvedValue(null);
   return {
     functions: {
+      "assistantImports:resumeVideos": resolved(),
+      "testimonialImportAvatar:retry": resolved(),
       "testimonialModeration:generatePosterUploadUrl": resolved(),
       "testimonialModeration:markSpam": resolved(),
       "testimonialModeration:remove": resolved(),
@@ -42,6 +44,24 @@ const mocks = vi.hoisted(() => {
     useMutation: vi.fn(),
     usePaginatedQuery: vi.fn(),
     useQuery: vi.fn(),
+  };
+});
+
+// Mirror Next.js's History API subscription without a server navigation.
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(
+          (notify) => {
+            window.addEventListener("popstate", notify);
+            return () => window.removeEventListener("popstate", notify);
+          },
+          () => window.location.search,
+          () => "",
+        ),
+      ),
   };
 });
 
@@ -70,6 +90,7 @@ vi.mock("convex/react", async () => {
           },
   );
   return {
+    useConvexConnectionState: () => ({ isWebSocketConnected: true }),
     useAction: mocks.useAction,
     useMutation: mocks.useMutation,
     usePaginatedQuery: mocks.usePaginatedQuery,
@@ -221,7 +242,11 @@ function calledFunctions(hook: ReturnType<typeof vi.fn>) {
 
 function lastListArgs() {
   const calls = mocks.usePaginatedQuery.mock.calls;
-  return calls[calls.length - 1]![1];
+  const selected =
+    new URLSearchParams(window.location.search).get("tab") ?? "pending";
+  return calls.findLast(
+    ([, args]) => args !== "skip" && args.status === selected,
+  )?.[1];
 }
 
 function deferred<T>() {
@@ -241,6 +266,13 @@ function successToast() {
 describe("TestimonialInbox (live wiring)", () => {
   beforeEach(() => {
     cleanup();
+    vi.restoreAllMocks();
+    window.history.replaceState(null, "", "/org/fernhill/inbox");
+    const pushState = window.history.pushState.bind(window.history);
+    vi.spyOn(window.history, "pushState").mockImplementation((...args) => {
+      pushState(...args);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
     for (const fn of Object.values(mocks.functions)) {
       fn.mockReset().mockResolvedValue(null);
     }
@@ -280,6 +312,80 @@ describe("TestimonialInbox (live wiring)", () => {
       published: [remyPublished, alicePublished],
       spam: [suspicious],
     };
+  });
+
+  it("opens the URL category and preserves import scope when switching tabs", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/org/fernhill/inbox?import=job-june&tab=published#list",
+    );
+    const view = render(
+      <TestimonialInbox slug="fernhill" importJobId="job-june" />,
+    );
+    const heading = screen.getByRole("heading", { name: "Inbox" });
+    const tabs = screen.getByRole("tablist");
+    expect(screen.getByRole("tab", { name: "Published 2" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Archived" }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    expect(window.location.search).toBe("?import=job-june&tab=archived");
+    expect(window.location.hash).toBe("#list");
+    expect(screen.getByRole("heading", { name: "Inbox" })).toBe(heading);
+    expect(screen.getByRole("tablist")).toBe(tabs);
+    view.unmount();
+    render(<TestimonialInbox slug="fernhill" importJobId="job-june" />);
+    expect(screen.getByRole("tab", { name: "Archived" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it.each(["?tab=unknown", "?tab=published&tab=spam"])(
+    "defaults invalid category %s to Pending",
+    (query) => {
+      window.history.replaceState(null, "", `/org/fernhill/inbox${query}`);
+      render(<TestimonialInbox slug="fernhill" />);
+      expect(screen.getByRole("tab", { name: "Pending 3" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    },
+  );
+
+  it("keeps the header and tabs mounted while only the selected panel loads", () => {
+    const view = render(<TestimonialInbox slug="fernhill" />);
+    const heading = screen.getByRole("heading", { name: "Inbox" });
+    const tabs = screen.getByRole("tablist");
+    mocks.paginationStatus = "LoadingFirstPage";
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Published 2" }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    expect(window.location.search).toBe("?tab=published");
+    expect(screen.getByRole("heading", { name: "Inbox" })).toBe(heading);
+    expect(screen.getByRole("tablist")).toBe(tabs);
+    expect(
+      within(screen.getByRole("tabpanel")).getByText("Loading testimonials"),
+    ).toBeVisible();
+    expect(screen.queryByText("No published testimonials yet")).toBeNull();
+    mocks.paginationStatus = "Exhausted";
+    view.rerender(<TestimonialInbox slug="fernhill" />);
+    expect(screen.queryByText("Loading testimonials")).toBeNull();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    act(() => {
+      window.history.replaceState(null, "", "/org/fernhill/inbox?tab=pending");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.getByRole("tab", { name: "Pending 3" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tablist")).toBe(tabs);
   });
 
   it("reads the Brand, its counts and its Wall settings, and opens on Pending", () => {
@@ -863,7 +969,7 @@ describe("TestimonialInbox (live wiring)", () => {
       screen.getByRole("link", { name: "Show all testimonials" }),
     ).toHaveAttribute("href", "/org/fernhill/inbox");
     goTo(/Published/);
-    expect(mocks.usePaginatedQuery).toHaveBeenLastCalledWith(
+    expect(mocks.usePaginatedQuery).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         importJobId: "job-june",

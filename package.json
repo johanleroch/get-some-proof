@@ -8,12 +8,12 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "predev": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs",
+    "predev": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs && node scripts/build-assistant-upload.mjs",
     "dev": "next dev",
-    "predev:https": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs",
+    "predev:https": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs && node scripts/build-assistant-upload.mjs",
     "dev:https": "bash scripts/dev-https.sh",
     "dev:convex": "convex dev",
-    "prebuild": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs",
+    "prebuild": "node scripts/copy-mux-player.mjs && node scripts/build-import-widget.mjs && node scripts/build-assistant-upload.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",

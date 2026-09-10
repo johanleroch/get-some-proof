@@ -29,10 +29,12 @@ import {
   claimOwnedPreview,
 } from "./anonymousWallImports";
 
-const importGrant = v.object({
+export const importGrant = v.object({
   actorId: v.string(),
   clientId: v.string(),
   issuedAt: v.number(),
+  generation: v.optional(v.number()),
+  scope: v.optional(v.string()),
   verifiedAt: v.number(),
   expiresAt: v.number(),
 });
@@ -74,7 +76,7 @@ export const eligibility = internalMutation({
   },
 });
 
-async function requireImportPrincipal(
+export async function requireImportPrincipal(
   ctx: QueryCtx | MutationCtx,
   grant: ImportAccessGrant,
 ) {
@@ -87,6 +89,9 @@ async function requireImportPrincipal(
       clientId: grant.clientId,
       expiresAt: grant.expiresAt,
       verifiedAt: grant.verifiedAt,
+      issuedAt: grant.issuedAt,
+      generation: grant.generation,
+      scope: grant.scope,
     },
   );
   if (!principal)
@@ -235,6 +240,8 @@ export const destinations = internalQuery({
       actorId: v.string(),
       clientId: v.string(),
       issuedAt: v.number(),
+      generation: v.optional(v.number()),
+      scope: v.optional(v.string()),
       verifiedAt: v.number(),
       expiresAt: v.number(),
     }),
@@ -263,6 +270,9 @@ export const destinations = internalQuery({
         clientId: args.grant.clientId,
         expiresAt: args.grant.expiresAt,
         verifiedAt: args.grant.verifiedAt,
+        issuedAt: args.grant.issuedAt,
+        generation: args.grant.generation,
+        scope: args.grant.scope,
       },
     );
     if (!principal)
@@ -297,6 +307,8 @@ export const save = internalMutation({
       actorId: v.string(),
       clientId: v.string(),
       issuedAt: v.number(),
+      generation: v.optional(v.number()),
+      scope: v.optional(v.string()),
       verifiedAt: v.number(),
       expiresAt: v.number(),
     }),
@@ -318,6 +330,9 @@ export const save = internalMutation({
         clientId: args.grant.clientId,
         expiresAt: args.grant.expiresAt,
         verifiedAt: args.grant.verifiedAt,
+        issuedAt: args.grant.issuedAt,
+        generation: args.grant.generation,
+        scope: args.grant.scope,
       },
     );
     if (!principal)

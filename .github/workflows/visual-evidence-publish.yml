@@ -4,6 +4,15 @@ on:
   workflow_run:
     workflows: [Visual evidence capture]
     types: [completed]
+  # A change to this publisher only runs automatically once it is on the
+  # default branch. A collaborator proves it before that by dispatching it on
+  # its own branch with the id of a successful capture run.
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Id of the Visual evidence capture run to publish"
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -12,41 +21,63 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: visual-publish-${{ github.event.workflow_run.id }}
+  group: visual-publish-${{ inputs.run_id || github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.repository.default_branch }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Resolve the capture run
+        id: capture
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+        run: |
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}")"
+          name="$(jq -r '.name' <<<"$run")"
+          conclusion="$(jq -r '.conclusion' <<<"$run")"
+          head_sha="$(jq -r '.head_sha' <<<"$run")"
+          if [ "$name" != "Visual evidence capture" ] || [ "$conclusion" != "success" ]; then
+            echo "Run ${RUN_ID} is '${name}' with conclusion '${conclusion}', not a successful capture" >&2
+            exit 1
+          fi
+          number="$(jq -r '.pull_requests[0].number // empty' <<<"$run")"
+          if [ -z "$number" ]; then
+            number="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/pulls" --jq '.[0].number // empty')"
+          fi
+          if [ -z "$number" ]; then
+            echo "No pull request found for ${head_sha}" >&2
+            exit 1
+          fi
+          {
+            echo "run_id=${RUN_ID}"
+            echo "head_sha=${head_sha}"
+            echo "number=${number}"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v8
         with:
-          name: visual-evidence-${{ github.event.workflow_run.id }}
+          name: visual-evidence-${{ steps.capture.outputs.run_id }}
           path: visual-evidence
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-      - name: Install gh-image
-        run: gh extension install drogers0/gh-image --pin v1.3.0
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - name: Publish GitHub attachments and synchronize the PR comment
+          run-id: ${{ steps.capture.outputs.run_id }}
+      - name: Publish the captures and synchronize the PR comment
         run: pnpm visual:publish
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_SESSION_TOKEN: ${{ secrets.GH_SESSION_TOKEN }}
           VISUAL_EVIDENCE_DIR: visual-evidence
-          VISUAL_EVIDENCE_EXPECTED_RUN_ID: ${{ github.event.workflow_run.id }}
-          VISUAL_EVIDENCE_EXPECTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          VISUAL_EVIDENCE_EXPECTED_TARGET_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          VISUAL_EVIDENCE_EXPECTED_RUN_ID: ${{ steps.capture.outputs.run_id }}
+          VISUAL_EVIDENCE_EXPECTED_HEAD_SHA: ${{ steps.capture.outputs.head_sha }}
+          VISUAL_EVIDENCE_EXPECTED_TARGET_NUMBER: ${{ steps.capture.outputs.number }}

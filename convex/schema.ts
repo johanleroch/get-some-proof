@@ -2,6 +2,7 @@ import { richTextValidator } from "./domain/testimonialRichText";
 import {
   importResult,
   importOrigin,
+  importProvider,
   wallCandidate,
   wallProvider,
 } from "./domain/testimonialImport";
@@ -10,6 +11,72 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  assistantImportUploads: defineTable({
+    actorId: v.string(),
+    jobId: v.id("testimonialImportJobs"),
+    itemId: v.id("testimonialImportItems"),
+    assetId: v.id("videoAssets"),
+    requestId: v.string(),
+    token: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    grant: v.optional(
+      v.object({
+        actorId: v.string(),
+        clientId: v.string(),
+        issuedAt: v.number(),
+        generation: v.optional(v.number()),
+        scope: v.optional(v.string()),
+        verifiedAt: v.number(),
+        expiresAt: v.number(),
+      }),
+    ),
+    totalBytes: v.number(),
+    mimeType: v.string(),
+    offset: v.number(),
+    status: v.union(
+      v.literal("preparing"),
+      v.literal("uploading"),
+      v.literal("finalizing"),
+      v.literal("complete"),
+      v.literal("failed"),
+    ),
+    providerUploadUrl: v.optional(v.string()),
+    creationStartedAt: v.number(),
+    pending: v.optional(
+      v.object({
+        offset: v.number(),
+        length: v.number(),
+        digest: v.string(),
+        final: v.boolean(),
+      }),
+    ),
+    previous: v.optional(
+      v.object({ offset: v.number(), length: v.number(), digest: v.string() }),
+    ),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_itemId_and_requestId", ["itemId", "requestId"]),
+  assistantImportMigrations: defineTable({
+    organizationId: v.id("organizations"),
+    actorId: v.string(),
+    clientId: v.string(),
+    sourceUrl: v.string(),
+    discoveredCount: v.number(),
+    processedCount: v.number(),
+    batchCount: v.number(),
+    result: importResult,
+  }).index("by_organizationId_and_clientId", ["organizationId", "clientId"]),
+  assistantImportMigrationSources: defineTable({
+    migrationId: v.id("assistantImportMigrations"),
+    sourceId: v.string(),
+  }).index("by_migrationId_and_sourceId", ["migrationId", "sourceId"]),
+  assistantImportActivations: defineTable({
+    actorId: v.string(),
+    acceptedAt: v.number(),
+    version: v.string(),
+    text: v.string(),
+  }).index("by_actorId", ["actorId"]),
   importAcquisitionFlows: defineTable({
     channel: importChannel,
     stages: v.array(importStage),
@@ -50,18 +117,28 @@ export default defineSchema({
     claimedOrganizationId: v.optional(v.id("organizations")),
   }).index("by_tokenHash", ["tokenHash"]),
   testimonialImportJobs: defineTable({
+    migrationId: v.optional(v.id("assistantImportMigrations")),
+    requestId: v.optional(v.string()),
+    inputHash: v.optional(v.string()),
     acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
     selectedItemIds: v.optional(v.array(v.id("testimonialImportItems"))),
     result: v.optional(importResult),
     organizationId: v.id("organizations"),
     createdBy: v.string(),
-    provider: wallProvider,
+    provider: importProvider,
     sourceUrl: v.string(),
     itemCount: v.number(),
     createdAt: v.number(),
     expiresAt: v.number(),
   })
     .index("by_organizationId", ["organizationId"])
+    .index("by_migrationId", ["migrationId"])
+    .index("by_organizationId_and_requestId", ["organizationId", "requestId"])
+    .index("by_organizationId_and_provider_and_createdBy", [
+      "organizationId",
+      "provider",
+      "createdBy",
+    ])
     .index("by_expiresAt", ["expiresAt"]),
   testimonialImportItems: defineTable({
     avatarAttempt: v.optional(v.number()),
@@ -80,6 +157,7 @@ export default defineSchema({
     ),
     workflowId: v.optional(v.string()),
     videoAssetId: v.optional(v.id("videoAssets")),
+    capacityBlocked: v.optional(v.boolean()),
     videoStatus: v.optional(
       v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
     ),
@@ -845,6 +923,8 @@ export default defineSchema({
     .index("by_provider_upload_id", ["providerUploadId"])
     .index("by_expiry", ["expiresAt"]),
   videoAssets: defineTable({
+    assistantImport: v.optional(v.boolean()),
+    importedFileVerified: v.optional(v.boolean()),
     importCopyStartedAt: v.optional(v.number()),
     importItemId: v.optional(v.id("testimonialImportItems")),
     accountId: v.optional(v.id("accounts")),

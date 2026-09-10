@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isCaptureViewport,
   listIssueComments,
   renderComment,
   validateManifest,
@@ -99,5 +100,16 @@ describe("visual evidence artifact contract", () => {
     );
     expect(comments).toHaveLength(101);
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("capture viewports", () => {
+  it("keeps only the folders Playwright writes, never the hand-made ones", () => {
+    expect(isCaptureViewport("desktop-chromium")).toBe(true);
+    expect(isCaptureViewport("mobile-webkit")).toBe(true);
+    expect(isCaptureViewport("manual")).toBe(false);
+    expect(isCaptureViewport("desktop")).toBe(false);
+    expect(isCaptureViewport("Desktop-Chromium")).toBe(false);
+    expect(isCaptureViewport(undefined)).toBe(false);
   });
 });

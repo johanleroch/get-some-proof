@@ -2,9 +2,6 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import { IconExternalLink } from "@tabler/icons-react";
-import type { Route } from "next";
-import Link from "next/link";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AccountDeletionSection } from "@/components/account/account-closure";
@@ -32,6 +29,7 @@ import {
   type InboxCategory,
   type InboxTestimonial,
   InboxFeedback,
+  InboxImportActions,
   InboxCategoryTabs,
   TestimonialDeleteDialog,
   TestimonialInboxView,
@@ -469,15 +467,11 @@ export function TestimonialInboxScreenFixture({
     <section className="space-y-6">
       <PageHeader
         actions={
-          <Button asChild variant="outline">
-            <Link
-              href={`/w/${collectionFormFixtureBrand.publicSlug}` as Route}
-              target="_blank"
-            >
-              Open Public Wall
-              <IconExternalLink aria-hidden="true" />
-            </Link>
-          </Button>
+          <InboxImportActions
+            slug="fernhill-studio-l5pg"
+            publicSlug={collectionFormFixtureBrand.publicSlug}
+            paid
+          />
         }
         description="Review private Submissions and choose what becomes public."
         eyebrow="Workspace"
@@ -742,6 +736,7 @@ export function DashboardBackgroundScreenFixture({
       organizationSlug={project.slug}
       pathname={`/org/${project.slug}/dashboard`}
       account={account}
+      inboxCount={pendingCount}
       authorization={{
         can: { manageOwnership: true, updateOrganization: true },
       }}

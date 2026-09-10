@@ -1,4 +1,12 @@
+import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import type { GenericCtx } from "@convex-dev/better-auth";
+import {
+  assistantTextInput,
+  assistantBatchInput,
+  assistantMigrationInput,
+  assistantUploadInput,
+  assistantResumeInput,
+} from "../src/lib/chatgpt/assistant-tools";
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth/minimal";
 import type { DataModel } from "./_generated/dataModel";
@@ -12,6 +20,7 @@ import {
   createImportOAuthOptions,
   importOAuthBasePath,
   importOAuthScope,
+  assistantOAuthScope,
 } from "./importOAuthOptions";
 
 export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
@@ -20,6 +29,30 @@ export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
   return betterAuth(
     createImportOAuthOptions({
       siteUrl: env.SITE_URL,
+      getGrantGeneration: (actorId, clientId) =>
+        ctx.runQuery(components.betterAuth.importGrants.generation, {
+          actorId,
+          clientId,
+        }),
+      canExchangeCode: async (actorId, clientId, issuedAt, generation, scope) =>
+        Boolean(
+          await ctx.runQuery(components.betterAuth.importGrants.resolve, {
+            actorId,
+            clientId,
+            issuedAt,
+            generation,
+            scope,
+            verifiedAt: Date.now(),
+            expiresAt: Date.now() + 1,
+          }),
+        ),
+      canConnect: async (actorId, requireActivation) => {
+        const state = await ctx.runQuery(
+          internal.assistantImports.connectionStatusForSession,
+          { actorId },
+        );
+        return state.paid && (!requireActivation || state.activated);
+      },
       database: (options: BetterAuthOptions) => {
         const adapter = database(options);
         return {
@@ -73,6 +106,7 @@ export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
 
 const allowedPaths: Record<string, string> = {
   "/oauth2/authorize": "GET",
+  "/oauth2/register": "POST",
   "/oauth2/consent": "POST",
   "/oauth2/token": "POST",
   "/oauth2/revoke": "POST",
@@ -80,15 +114,63 @@ const allowedPaths: Record<string, string> = {
   "/jwks": "GET",
 };
 
+const registrationLimiter = new RateLimiter(components.rateLimiter, {
+  publicImportClients: { kind: "fixed window", rate: 200, period: HOUR },
+});
+export const allowRegistration = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) =>
+    (await registrationLimiter.limit(ctx, "publicImportClients")).ok,
+});
+
 export const importOAuthHttp = httpAction(async (ctx, request) => {
   if (env.CHATGPT_IMPORT_ENABLED !== "true")
     return new Response(null, { status: 404 });
   const path = new URL(request.url).pathname.slice(importOAuthBasePath.length);
   if (allowedPaths[path] !== request.method)
     return new Response(null, { status: 404 });
+  let forwarded = request;
+  if (path === "/oauth2/register") {
+    const reader = request.body?.getReader();
+    if (!reader) return new Response(null, { status: 400 });
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > 16_384) {
+        await reader.cancel();
+        return new Response(null, { status: 413 });
+      }
+      chunks.push(value);
+    }
+    if (!(await ctx.runMutation(internal.importOAuth.allowRegistration, {})))
+      return new Response(null, {
+        status: 429,
+        headers: { "Retry-After": "3600" },
+      });
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    forwarded = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: bytes,
+    });
+  }
   const auth = await createImportOAuth(ctx);
-  const response = await auth.handler(request);
+  const response = await auth.handler(forwarded);
   response.headers.set("Cache-Control", "no-store");
+  if (path === "/oauth2/register" && response.status === 200)
+    return new Response(response.body, {
+      status: 201,
+      headers: response.headers,
+    });
   return response;
 });
 
@@ -99,7 +181,7 @@ export const importOAuthMetadata = httpAction(async (ctx, request) => {
   return oauthProviderAuthServerMetadata(auth)(request);
 });
 
-/** Operator-only provisioning. Public registration endpoints stay closed. */
+/** Operator-only provisioning for the existing provider-wall integration. */
 export const registerClient = internalMutation({
   args: { name: v.string(), redirectUri: v.string() },
   returns: v.object({ clientId: v.string() }),
@@ -193,7 +275,20 @@ export const importDestinationsHttp = httpAction(async (ctx, request) => {
 });
 
 function importCommandHttp(
-  command: "save" | "status" | "retry" | "retry-photo" | "eligibility",
+  command:
+    | "save"
+    | "status"
+    | "retry"
+    | "retry-photo"
+    | "eligibility"
+    | "assistant-text"
+    | "assistant-upload"
+    | "assistant-resume-videos"
+    | "assistant-migration"
+    | "assistant-batch"
+    | "assistant-projects"
+    | "assistant-status"
+    | "assistant-retry-portrait",
 ) {
   return httpAction(async (ctx, request) => {
     if (env.CHATGPT_IMPORT_ENABLED !== "true")
@@ -206,6 +301,7 @@ function importCommandHttp(
     const grant = await verifyImportAccessToken(
       authorization,
       auth.api.verifyJWT,
+      command.startsWith("assistant-") ? assistantOAuthScope : importOAuthScope,
     );
     if (!grant) return new Response(null, { status: 401, headers });
     const reader = request.body?.getReader();
@@ -216,7 +312,16 @@ function importCommandHttp(
       const { value, done } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > 1024) {
+      if (
+        length >
+        (command === "assistant-batch"
+          ? 504_096
+          : command === "assistant-text"
+            ? 60_000
+            : command === "assistant-resume-videos"
+              ? 8192
+              : 1024)
+      ) {
         await reader.cancel();
         return new Response(null, { status: 413, headers });
       }
@@ -233,7 +338,94 @@ function importCommandHttp(
       if (!args || typeof args !== "object")
         return new Response(null, { status: 400, headers });
       let result: unknown;
-      if (command === "save" || command === "eligibility") {
+      if (command === "assistant-resume-videos") {
+        const input = assistantResumeInput.parse(args);
+        const jobId =
+          input.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">;
+        await ctx.runMutation(
+          internal.assistantImports.resumeVideosForAssistant,
+          {
+            grant,
+            jobId,
+            itemIds:
+              input.itemIds as import("./_generated/dataModel").Id<"testimonialImportItems">[],
+          },
+        );
+        result = await ctx.runQuery(internal.assistantImports.status, {
+          grant,
+          jobId,
+        });
+      } else if (command === "assistant-upload") {
+        const input = assistantUploadInput.parse(args);
+        result = await ctx.runAction(
+          internal.assistantUploads.issueForAssistant,
+          {
+            ...input,
+            grant,
+            jobId:
+              input.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+            itemId:
+              input.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
+          },
+        );
+      } else if (command === "assistant-migration") {
+        const input = assistantMigrationInput.parse(args);
+        result = await ctx.runQuery(internal.assistantImports.migrationStatus, {
+          ...input,
+          grant,
+          organizationId:
+            input.organizationId as import("./_generated/dataModel").Id<"organizations">,
+        });
+      } else if (command === "assistant-projects") {
+        const cursor = "cursor" in args ? args.cursor : null;
+        if (
+          cursor !== null &&
+          (typeof cursor !== "string" || cursor.length > 2048)
+        )
+          return new Response(null, { status: 400, headers });
+        result = await ctx.runQuery(internal.assistantImports.destinations, {
+          grant,
+          paginationOpts: { cursor, numItems: 20 },
+        });
+      } else if (
+        command === "assistant-status" ||
+        command === "assistant-retry-portrait"
+      ) {
+        if (!("jobId" in args) || typeof args.jobId !== "string")
+          return new Response(null, { status: 400, headers });
+        if (command === "assistant-retry-portrait") {
+          if (!("itemId" in args) || typeof args.itemId !== "string")
+            return new Response(null, { status: 400, headers });
+          await ctx.runMutation(internal.assistantImports.retryPortrait, {
+            grant,
+            jobId:
+              args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+            itemId:
+              args.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
+          });
+        }
+        result = await ctx.runQuery(internal.assistantImports.status, {
+          grant,
+          jobId:
+            args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+        });
+      } else if (command === "assistant-batch") {
+        const input = assistantBatchInput.parse(args);
+        result = await ctx.runMutation(internal.assistantImports.submitBatch, {
+          ...input,
+          organizationId: input.organizationId as
+            import("./_generated/dataModel").Id<"organizations"> | undefined,
+          grant,
+        });
+      } else if (command === "assistant-text") {
+        const input = assistantTextInput.parse(args);
+        result = await ctx.runMutation(internal.assistantImports.submitText, {
+          ...input,
+          organizationId: input.organizationId as
+            import("./_generated/dataModel").Id<"organizations"> | undefined,
+          grant,
+        });
+      } else if (command === "save" || command === "eligibility") {
         if (
           !("token" in args) ||
           typeof args.token !== "string" ||
@@ -289,7 +481,10 @@ function importCommandHttp(
         error instanceof ConvexError &&
         typeof error.data === "object" &&
         error.data &&
-        (error.data.code === "VIDEO_CAPACITY_REACHED" ||
+        (error.data.code === "ASSISTANT_BATCH_CONFLICT" ||
+          error.data.code === "ASSISTANT_BATCH_LIMIT" ||
+          error.data.code === "ASSISTANT_SOURCE_IDENTITY" ||
+          error.data.code === "VIDEO_CAPACITY_REACHED" ||
           error.data.code === "INVALID_RETRY" ||
           error.data.code === "IMPORT_UNAVAILABLE")
       )
@@ -307,3 +502,18 @@ export const importStatusHttp = importCommandHttp("status");
 export const importPhotoRetryHttp = importCommandHttp("retry-photo");
 export const importRetryHttp = importCommandHttp("retry");
 export const importEligibilityHttp = importCommandHttp("eligibility");
+export const assistantTextHttp = importCommandHttp("assistant-text");
+export const assistantBatchHttp = importCommandHttp("assistant-batch");
+export const assistantProjectsHttp = importCommandHttp("assistant-projects");
+export const assistantStatusHttp = importCommandHttp("assistant-status");
+export const assistantPortraitRetryHttp = importCommandHttp(
+  "assistant-retry-portrait",
+);
+
+export const assistantMigrationHttp = importCommandHttp("assistant-migration");
+
+export const assistantUploadHttp = importCommandHttp("assistant-upload");
+
+export const assistantResumeVideosHttp = importCommandHttp(
+  "assistant-resume-videos",
+);

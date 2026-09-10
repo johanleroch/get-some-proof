@@ -13,6 +13,18 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * only checks that they are reachable and named, never that they act.
  */
 
+/** Safari on macOS uses Option-Tab for all controls; retain plain Tab elsewhere.
+ * Matches microsoft/playwright tests/page/page-focus.spec.ts.
+ */
+async function navigationTab(page: Page, reverse = false) {
+  const macWebKit =
+    process.platform === "darwin" &&
+    page.context().browser()?.browserType().name() === "webkit";
+  await page.keyboard.press(
+    `${macWebKit ? "Alt+" : ""}${reverse ? "Shift+" : ""}Tab`,
+  );
+}
+
 const wcagTags = [
   "wcag2a",
   "wcag2aa",
@@ -49,11 +61,15 @@ async function expectNoWcagViolations(page: Page, context: string) {
 }
 
 /**
- * The theme script honours prefers-color-scheme when nothing is stored, so
- * emulating the media query is enough to get the `.dark` root class.
+ * The product ships light whatever the system prefers (DESIGN.md section 6),
+ * so the dark scheme is reached the way a stored preference reaches it: the
+ * theme script reads it before hydration and sets the `.dark` root class.
  */
 async function openInbox(page: Page, path: string, scheme: Scheme = "light") {
   await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+  await page.addInitScript((theme) => {
+    localStorage.setItem("get-some-proof-theme", theme);
+  }, scheme);
   await page.goto(path);
   // CSS locators on purpose: two fixtures open a modal dialog at load, which
   // aria-hides the page behind it and takes it out of the role tree.
@@ -124,7 +140,7 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
   const first = await focused(page);
   stops.push(`${first.role}: ${first.name}`);
   for (let index = 0; index < max; index++) {
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     if (
       await page.evaluate(() =>
         document.activeElement?.hasAttribute("data-keyboard-sequence-end"),
@@ -135,6 +151,9 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
     if (stop.role === "body") break;
     const key = `${stop.role}: ${stop.name}`;
     if (key === stops[0]) break;
+    // Firefox leaves focus on the last control instead of handing it to the
+    // browser chrome, so the sequence ends when Tab no longer moves.
+    if (key === stops[stops.length - 1]) break;
     expect(stop.disabled, `Tab landed on a disabled control: ${key}`).toBe(
       false,
     );
@@ -423,6 +442,15 @@ test.describe("keyboard", () => {
       "Mark as Spam",
       "Delete permanently",
     ]);
+    // Focus lands inside the menu: on its first item, or on the menu itself
+    // when a slow first paint mounts the items after the roving focus group
+    // has looked for one, in which case ArrowDown reaches the first item.
+    await expect
+      .poll(async () => (await focused(page)).role)
+      .toMatch(/^menu(item)?$/);
+    if ((await focused(page)).role === "menu") {
+      await page.keyboard.press("ArrowDown");
+    }
     await expect(
       page.getByRole("menuitem", { name: "Highlight a phrase" }),
     ).toBeFocused();
@@ -435,7 +463,7 @@ test.describe("keyboard", () => {
       page.getByRole("menuitem", { name: "Delete permanently" }),
     ).toBeFocused();
     // Tab must not escape the menu into the page.
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     expect((await focused(page)).role).toBe("menuitem");
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
@@ -496,7 +524,7 @@ test.describe("keyboard", () => {
 
     const reached = new Set<string>();
     for (let index = 0; index < 6; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(
         stop.inDialog,
@@ -511,7 +539,7 @@ test.describe("keyboard", () => {
       ]),
     );
     for (let index = 0; index < 3; index++) {
-      await page.keyboard.press("Shift+Tab");
+      await navigationTab(page, true);
       expect((await focused(page)).inDialog).toBe(true);
     }
 
@@ -598,7 +626,7 @@ test.describe("keyboard", () => {
 
     const reached = new Set<string>();
     for (let index = 0; index < 14; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(
         stop.inDialog,
@@ -647,7 +675,7 @@ test.describe("keyboard", () => {
     expect((await focused(page)).inDialog).toBe(true);
     const reached = new Set<string>();
     for (let index = 0; index < 4; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(stop.inDialog).toBe(true);
       reached.add(`${stop.role}: ${stop.name}`);
@@ -784,7 +812,7 @@ test.describe("keyboard", () => {
         name: "More actions for Alice Martin's Testimonial",
       })
       .focus();
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     const still = page.getByRole("button", {
       name: "Preview Remy Jupille's video",
     });

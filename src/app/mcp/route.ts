@@ -1,3 +1,10 @@
+import { assistantUploadCapabilitySchema } from "@/lib/chatgpt/import-wire";
+import { assistantMigrationStatusSchema } from "@/lib/chatgpt/import-wire";
+import {
+  AssistantAuthenticationRequired,
+  AssistantOperationError,
+  assistantOperationCode,
+} from "@/lib/chatgpt/assistant-tools";
 import { ConvexHttpClient } from "convex/browser";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { api } from "@convex/_generated/api";
@@ -25,6 +32,13 @@ export async function POST(request: Request) {
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!backend || !origin)
     return new Response("Not configured", { status: 503 });
+  const parsedOrigin = URL.parse(origin);
+  if (!parsedOrigin || !["http:", "https:"].includes(parsedOrigin.protocol))
+    return new Response("Not configured", { status: 503 });
+  const transferHelperUrl = new URL(
+    "/assistant-upload.mjs",
+    parsedOrigin.origin,
+  ).href;
   const reader = request.body?.getReader();
   if (!reader) return new Response("Missing body", { status: 400 });
   const chunks: Uint8Array[] = [];
@@ -59,9 +73,76 @@ export async function POST(request: Request) {
     typeof parsedBody.params === "object" &&
     "name" in parsedBody.params &&
     parsedBody.params.name === "set_testimonial_photo";
-  if (length > 16_384 && !photoCall)
+  const assistantTextCall =
+    parsedBody &&
+    typeof parsedBody === "object" &&
+    "method" in parsedBody &&
+    parsedBody.method === "tools/call" &&
+    "params" in parsedBody &&
+    parsedBody.params &&
+    typeof parsedBody.params === "object" &&
+    "name" in parsedBody.params &&
+    ["import_testimonial_text", "import_testimonials"].includes(
+      String(parsedBody.params.name),
+    );
+  if (length > (assistantTextCall ? 504_096 : 16_384) && !photoCall)
     return new Response("Request too large", { status: 413 });
   const client = new ConvexHttpClient(backend);
+  async function assistantRequest(
+    command: string,
+    args: Record<string, unknown>,
+  ) {
+    const authorization = request.headers.get("authorization");
+    if (!authorization || authorization.length > 8192)
+      throw new AssistantAuthenticationRequired();
+    const backendSite = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
+    if (!backendSite) throw new Error("Import backend unavailable.");
+    const response = await fetch(
+      new URL(`/api/import-mcp/assistant-${command}`, backendSite),
+      {
+        method: "POST",
+        headers: { authorization, "content-type": "application/json" },
+        body: JSON.stringify(args),
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (response.status === 401) throw new AssistantAuthenticationRequired();
+    if (response.status === 409) {
+      const failure: unknown = await response.json();
+      if (failure && typeof failure === "object" && "code" in failure) {
+        const parsed = assistantOperationCode.safeParse(failure.code);
+        if (parsed.success) throw new AssistantOperationError(parsed.data);
+      }
+    }
+    if (!response.ok) throw new Error("Import unavailable.");
+    const body: unknown = await response.json();
+    if (command === "projects") return importProjectsSchema.parse(body);
+    if (command === "upload")
+      return {
+        ...assistantUploadCapabilitySchema.parse(body),
+        transferHelperUrl,
+      };
+    if (command === "migration")
+      return assistantMigrationStatusSchema.parse(body);
+    const saved = (
+      command === "status" ||
+      command === "retry-portrait" ||
+      command === "resume-videos"
+        ? importStatusSchema
+        : savedImportSchema
+    )
+      .omit({ inboxUrl: true })
+      .parse(body);
+    return {
+      ...saved,
+      inboxUrl: new URL(
+        `/org/${encodeURIComponent(saved.organizationSlug)}/inbox?import=${encodeURIComponent(saved.jobId)}`,
+        origin,
+      ).href,
+    };
+  }
   async function importProgress(
     command: "status" | "retry" | "retry-photo",
     args: { jobId: string; itemId?: string },
@@ -129,7 +210,7 @@ export async function POST(request: Request) {
         "utf8",
       ),
     {
-      challenge: `Bearer resource_metadata="${new URL(origin).origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import", error="insufficient_scope", error_description="Connect your account to choose a Project"`,
+      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import", error="insufficient_scope", error_description="Connect your account to choose a Project"`,
       status: (args) => importProgress("status", args),
       retryPhoto: (args) => importProgress("retry-photo", args),
       retryVideo: (args) => importProgress("retry", args),
@@ -212,13 +293,24 @@ export async function POST(request: Request) {
     },
     origin,
     backend,
+    {
+      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import:assistant"`,
+      destinations: (cursor) => assistantRequest("projects", { cursor }),
+      status: (jobId) => assistantRequest("status", { jobId }),
+      retryPortrait: (args) => assistantRequest("retry-portrait", args),
+      resumeVideos: (args) => assistantRequest("resume-videos", args),
+      submitText: (args) => assistantRequest("text", args),
+      submitBatch: (args) => assistantRequest("batch", args),
+      migrationStatus: (args) => assistantRequest("migration", args),
+      upload: (args) => assistantRequest("upload", args),
+    },
   );
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
     enableDnsRebindingProtection: true,
-    allowedHosts: [new URL(origin).host],
-    allowedOrigins: [new URL(origin).origin, "https://chatgpt.com"],
+    allowedHosts: [parsedOrigin.host],
+    allowedOrigins: [parsedOrigin.origin, "https://chatgpt.com"],
   });
   await server.connect(transport);
   try {
