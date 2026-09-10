@@ -841,7 +841,7 @@ export function InboxCategoryTabs({
       }
       value={moderationStatus}
     >
-      <div className="flex items-center gap-3">
+      <div className="relative">
         <TabsList aria-label="Testimonial categories">
           {inboxCategories.map((category) => {
             const count = counts?.[category.key] ?? 0;
@@ -861,7 +861,7 @@ export function InboxCategoryTabs({
             );
           })}
         </TabsList>
-        <div className="flex size-6 shrink-0 items-center justify-center">
+        <div className="absolute -top-5 right-0 flex size-4 items-center justify-center">
           {syncIndicator}
         </div>
       </div>
