@@ -1,3 +1,4 @@
+import { AssistantAuthenticationRequired } from "@/lib/chatgpt/assistant-tools";
 import { ConvexHttpClient } from "convex/browser";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { api } from "@convex/_generated/api";
@@ -59,9 +60,52 @@ export async function POST(request: Request) {
     typeof parsedBody.params === "object" &&
     "name" in parsedBody.params &&
     parsedBody.params.name === "set_testimonial_photo";
-  if (length > 16_384 && !photoCall)
+  const assistantTextCall =
+    parsedBody &&
+    typeof parsedBody === "object" &&
+    "method" in parsedBody &&
+    parsedBody.method === "tools/call" &&
+    "params" in parsedBody &&
+    parsedBody.params &&
+    typeof parsedBody.params === "object" &&
+    "name" in parsedBody.params &&
+    parsedBody.params.name === "import_testimonial_text";
+  if (length > (assistantTextCall ? 60_000 : 16_384) && !photoCall)
     return new Response("Request too large", { status: 413 });
   const client = new ConvexHttpClient(backend);
+  async function assistantRequest(
+    command: string,
+    args: Record<string, unknown>,
+  ) {
+    const authorization = request.headers.get("authorization");
+    if (!authorization || authorization.length > 8192)
+      throw new AssistantAuthenticationRequired();
+    const backendSite = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
+    if (!backendSite) throw new Error("Import backend unavailable.");
+    const response = await fetch(
+      new URL(`/api/import-mcp/assistant-${command}`, backendSite),
+      {
+        method: "POST",
+        headers: { authorization, "content-type": "application/json" },
+        body: JSON.stringify(args),
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (response.status === 401) throw new AssistantAuthenticationRequired();
+    if (!response.ok) throw new Error("Import unavailable.");
+    const body: unknown = await response.json();
+    if (command === "projects") return importProjectsSchema.parse(body);
+    const saved = savedImportSchema.omit({ inboxUrl: true }).parse(body);
+    return {
+      ...saved,
+      inboxUrl: new URL(
+        `/org/${encodeURIComponent(saved.organizationSlug)}/inbox?import=${encodeURIComponent(saved.jobId)}`,
+        origin,
+      ).href,
+    };
+  }
   async function importProgress(
     command: "status" | "retry" | "retry-photo",
     args: { jobId: string; itemId?: string },
@@ -212,6 +256,12 @@ export async function POST(request: Request) {
     },
     origin,
     backend,
+    {
+      challenge: `Bearer resource_metadata="${new URL(origin).origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import"`,
+      destinations: (cursor) => assistantRequest("projects", { cursor }),
+      status: (jobId) => assistantRequest("status", { jobId }),
+      submitText: (args) => assistantRequest("text", args),
+    },
   );
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

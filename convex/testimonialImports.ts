@@ -23,6 +23,7 @@ import {
   importResult,
   wallCandidate,
   wallProvider,
+  importProvider,
 } from "./domain/testimonialImport";
 import {
   requireOrganizationPermission,
@@ -39,7 +40,7 @@ const previewLimiter = new RateLimiter(components.rateLimiter, {
 });
 
 function requireStableTextIdentity(
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   item: Infer<typeof wallCandidate>,
 ) {
   if (
@@ -56,7 +57,7 @@ function requireStableTextIdentity(
 export async function findImportSource(
   ctx: MutationCtx | QueryCtx,
   organizationId: Id<"organizations">,
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   sourceUrl: string,
   item: Infer<typeof wallCandidate>,
 ) {
@@ -96,7 +97,7 @@ export async function findImportSource(
 async function resolveImportSource(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   sourceUrl: string,
   item: Infer<typeof wallCandidate>,
 ) {
@@ -166,7 +167,8 @@ export const expirePreview = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
-    if (!job || job.expiresAt > Date.now()) return null;
+    if (!job || job.expiresAt > Date.now() || job.provider === "assistant")
+      return null;
     const items = await ctx.db
       .query("testimonialImportItems")
       .withIndex("by_jobId_and_position", (index) => index.eq("jobId", job._id))
@@ -514,7 +516,7 @@ export const getPreview = query({
       result: v.union(importResult, v.null()),
       selectedItemIds: v.array(v.id("testimonialImportItems")),
       sourceUrl: v.string(),
-      provider: wallProvider,
+      provider: importProvider,
       itemCount: v.number(),
       expiresAt: v.number(),
       videoCapacity: v.object({

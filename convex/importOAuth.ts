@@ -1,4 +1,5 @@
 import type { GenericCtx } from "@convex-dev/better-auth";
+import { assistantTextInput } from "../src/lib/chatgpt/assistant-tools";
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth/minimal";
 import type { DataModel } from "./_generated/dataModel";
@@ -193,7 +194,15 @@ export const importDestinationsHttp = httpAction(async (ctx, request) => {
 });
 
 function importCommandHttp(
-  command: "save" | "status" | "retry" | "retry-photo" | "eligibility",
+  command:
+    | "save"
+    | "status"
+    | "retry"
+    | "retry-photo"
+    | "eligibility"
+    | "assistant-text"
+    | "assistant-projects"
+    | "assistant-status",
 ) {
   return httpAction(async (ctx, request) => {
     if (env.CHATGPT_IMPORT_ENABLED !== "true")
@@ -216,7 +225,7 @@ function importCommandHttp(
       const { value, done } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > 1024) {
+      if (length > (command === "assistant-text" ? 60_000 : 1024)) {
         await reader.cancel();
         return new Response(null, { status: 413, headers });
       }
@@ -233,7 +242,34 @@ function importCommandHttp(
       if (!args || typeof args !== "object")
         return new Response(null, { status: 400, headers });
       let result: unknown;
-      if (command === "save" || command === "eligibility") {
+      if (command === "assistant-projects") {
+        const cursor = "cursor" in args ? args.cursor : null;
+        if (
+          cursor !== null &&
+          (typeof cursor !== "string" || cursor.length > 2048)
+        )
+          return new Response(null, { status: 400, headers });
+        result = await ctx.runQuery(internal.assistantImports.destinations, {
+          grant,
+          paginationOpts: { cursor, numItems: 20 },
+        });
+      } else if (command === "assistant-status") {
+        if (!("jobId" in args) || typeof args.jobId !== "string")
+          return new Response(null, { status: 400, headers });
+        result = await ctx.runQuery(internal.assistantImports.status, {
+          grant,
+          jobId:
+            args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+        });
+      } else if (command === "assistant-text") {
+        const input = assistantTextInput.parse(args);
+        result = await ctx.runMutation(internal.assistantImports.submitText, {
+          ...input,
+          organizationId: input.organizationId as
+            import("./_generated/dataModel").Id<"organizations"> | undefined,
+          grant,
+        });
+      } else if (command === "save" || command === "eligibility") {
         if (
           !("token" in args) ||
           typeof args.token !== "string" ||
@@ -307,3 +343,6 @@ export const importStatusHttp = importCommandHttp("status");
 export const importPhotoRetryHttp = importCommandHttp("retry-photo");
 export const importRetryHttp = importCommandHttp("retry");
 export const importEligibilityHttp = importCommandHttp("eligibility");
+export const assistantTextHttp = importCommandHttp("assistant-text");
+export const assistantProjectsHttp = importCommandHttp("assistant-projects");
+export const assistantStatusHttp = importCommandHttp("assistant-status");

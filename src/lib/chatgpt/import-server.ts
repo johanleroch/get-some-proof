@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { registerAssistantTools } from "./assistant-tools";
 import {
   snapshotSchema,
   savedImportSchema,
@@ -114,6 +115,7 @@ export function createImportServer(
   privateGateway?: PrivateImportGateway,
   websiteOrigin?: string,
   avatarStorageOrigin?: string,
+  assistantGateway?: import("./assistant-tools").AssistantGateway,
 ) {
   const server = new McpServer(
     { name: "get-some-proof-import", version: "0.1.0" },
@@ -629,5 +631,6 @@ export function createImportServer(
         }
       },
     );
+  if (assistantGateway) registerAssistantTools(server, assistantGateway);
   return server;
 }

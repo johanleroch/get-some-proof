@@ -2,6 +2,7 @@ import { richTextValidator } from "./domain/testimonialRichText";
 import {
   importResult,
   importOrigin,
+  importProvider,
   wallCandidate,
   wallProvider,
 } from "./domain/testimonialImport";
@@ -10,6 +11,12 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  assistantImportActivations: defineTable({
+    actorId: v.string(),
+    acceptedAt: v.number(),
+    version: v.string(),
+    text: v.string(),
+  }).index("by_actorId", ["actorId"]),
   importAcquisitionFlows: defineTable({
     channel: importChannel,
     stages: v.array(importStage),
@@ -55,7 +62,7 @@ export default defineSchema({
     result: v.optional(importResult),
     organizationId: v.id("organizations"),
     createdBy: v.string(),
-    provider: wallProvider,
+    provider: importProvider,
     sourceUrl: v.string(),
     itemCount: v.number(),
     createdAt: v.number(),

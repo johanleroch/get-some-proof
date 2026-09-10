@@ -29,7 +29,7 @@ import {
   claimOwnedPreview,
 } from "./anonymousWallImports";
 
-const importGrant = v.object({
+export const importGrant = v.object({
   actorId: v.string(),
   clientId: v.string(),
   issuedAt: v.number(),
@@ -74,7 +74,7 @@ export const eligibility = internalMutation({
   },
 });
 
-async function requireImportPrincipal(
+export async function requireImportPrincipal(
   ctx: QueryCtx | MutationCtx,
   grant: ImportAccessGrant,
 ) {

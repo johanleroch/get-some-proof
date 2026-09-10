@@ -156,7 +156,8 @@ export const source = internalQuery({
       item.avatarAttempt !== args.attempt ||
       testimonial.avatarStorageId ||
       !item.avatarUrl ||
-      testimonial.importOrigin?.originalAvatarUrl !== item.avatarUrl
+      testimonial.importOrigin?.originalAvatarUrl !== item.avatarUrl ||
+      testimonial.importOrigin.provider === "assistant"
     )
       return null;
     return { provider: testimonial.importOrigin.provider, url: item.avatarUrl };

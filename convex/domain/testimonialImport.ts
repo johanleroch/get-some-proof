@@ -17,9 +17,10 @@ export const wallProvider = v.union(
   v.literal("testimonial-to"),
   v.literal("senja"),
 );
+export const importProvider = v.union(wallProvider, v.literal("assistant"));
 export const importOrigin = v.object({
   acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
-  provider: wallProvider,
+  provider: importProvider,
   sourceUrl: v.string(),
   sourceId: v.string(),
   originalAuthorName: v.string(),

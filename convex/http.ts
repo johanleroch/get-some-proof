@@ -7,6 +7,9 @@ import { authComponent, createAuth } from "./auth";
 import { muxWebhook } from "./muxWebhook";
 import {
   importOAuthHttp,
+  assistantTextHttp,
+  assistantProjectsHttp,
+  assistantStatusHttp,
   importOAuthMetadata,
   importDestinationsHttp,
   importSaveHttp,
@@ -17,6 +20,21 @@ import {
 } from "./importOAuth";
 
 const http = httpRouter();
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-text",
+  handler: assistantTextHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-projects",
+  handler: assistantProjectsHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-status",
+  handler: assistantStatusHttp,
+});
 
 http.route({ method: "POST", path: "/mux/webhook", handler: muxWebhook });
 

@@ -11,6 +11,7 @@
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as accounts from "../accounts.js";
 import type * as anonymousWallImports from "../anonymousWallImports.js";
+import type * as assistantImports from "../assistantImports.js";
 import type * as auditEvents from "../auditEvents.js";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
@@ -104,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   accountDeletion: typeof accountDeletion;
   accounts: typeof accounts;
   anonymousWallImports: typeof anonymousWallImports;
+  assistantImports: typeof assistantImports;
   auditEvents: typeof auditEvents;
   auth: typeof auth;
   authorization: typeof authorization;
