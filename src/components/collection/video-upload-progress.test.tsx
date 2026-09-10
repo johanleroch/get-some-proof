@@ -38,7 +38,7 @@ describe("VideoUploadProgress", () => {
       "100",
     );
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Video uploaded!");
+    expect(status).toHaveTextContent("Video uploaded !");
     expect(status).toHaveTextContent("Processing");
     expect(
       screen.getByText("Processing and captions continue in the background."),

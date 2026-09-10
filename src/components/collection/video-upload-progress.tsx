@@ -12,7 +12,8 @@ import type { VideoUploadPhase } from "@/hooks/use-video-upload";
  * moves on `scaleX`, so the only thing animating is a transform (section 8).
  * The landing gets its own beat: the mascot hops once and the new label rises
  * behind it (`.upload-status-cheer`, `.upload-status-label` in globals.css),
- * which is what turns "Uploading your video…" into "Video uploaded!".
+ * which is what turns "Uploading your video…" into "Video uploaded !"
+ * (the space before the mark is non-breaking, so it never wraps alone).
  */
 export function VideoUploadProgress({
   onCancel,
@@ -43,7 +44,7 @@ export function VideoUploadProgress({
             role={uploading ? undefined : "status"}
           >
             <p className="upload-status-label font-medium" key={phase}>
-              {uploading ? "Uploading your video…" : "Video uploaded!"}
+              {uploading ? "Uploading your video…" : "Video uploaded !"}
             </p>
             <span className="text-ink-2 tabular-nums">
               {uploading ? `${percentage}%` : "Processing…"}
