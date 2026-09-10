@@ -44,6 +44,20 @@
       "theme": "light"
     },
     {
+      "slug": "onboarding-check-email",
+      "title": "Onboarding - check your email",
+      "path": "/kit/onboarding/stage?step=check-email",
+      "heading": "Check your email",
+      "theme": "light"
+    },
+    {
+      "slug": "onboarding-verification-email",
+      "title": "Onboarding - verification email",
+      "path": "/kit/onboarding/stage?step=verification-email",
+      "heading": "Welcome to Get Some Proof",
+      "theme": "light"
+    },
+    {
       "slug": "two-factor",
       "title": "Two-factor verification",
       "path": "/two-factor",
