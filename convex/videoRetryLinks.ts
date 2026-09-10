@@ -19,7 +19,12 @@ export async function createVideoRetryLink(
   const brand = testimonial
     ? await ctx.db.get(testimonial.organizationId)
     : null;
-  if (!testimonial || !brand || brand.deletionStartedAt !== undefined)
+  if (
+    !testimonial ||
+    testimonial.importOrigin ||
+    !brand ||
+    brand.deletionStartedAt !== undefined
+  )
     return undefined;
 
   const oldLinks = await ctx.db

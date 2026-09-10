@@ -2,6 +2,9 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { importAttestationVersion } from "@convex/domain/testimonialImport";
+import { AssistantImportNotice } from "./assistant-import-recovery";
+import { ImportPublicationDialog } from "./import-publication-dialog";
 import {
   IconAlertTriangle,
   IconArchive,
@@ -73,14 +76,15 @@ import {
 } from "@/components/testimonials/inbox-testimonial-menu";
 
 type InboxTestimonialIdentity = {
+  requiresImportAttestation?: boolean;
   card: TestimonialCardValue | null;
-  consentAcceptedAt: number;
+  consentAcceptedAt?: number;
   createdAt: number;
   moderationStatus: "pending" | "published" | "archived" | "spam";
   publicVisibilityOverrides?: WallVisibilityOverrides;
   quarantineExpiresAt?: number;
   spamCreditRestored?: boolean;
-  submitterEmail: string;
+  submitterEmail?: string;
   submitterName: string;
   testimonialId: Id<"testimonials">;
 };
@@ -188,7 +192,10 @@ function videoState(testimonial: VideoInboxTestimonial) {
       return {
         badge: "danger" as const,
         label: "Failed",
-        note: "The Submitter received a link to replace the video.",
+        note:
+          testimonial.requiresImportAttestation !== undefined
+            ? "The imported video could not be copied."
+            : "The Submitter received a link to replace the video.",
       };
     case "processing":
       return {
@@ -466,12 +473,16 @@ function InboxRow({
 
         <p className="type-small text-ink-2 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span>Received {formatShortDate(testimonial.createdAt)}</span>
-          <span aria-hidden="true" className="hidden sm:inline">
-            ·
-          </span>
-          <span className="w-full truncate sm:w-auto">
-            {testimonial.submitterEmail}
-          </span>
+          {testimonial.submitterEmail && (
+            <>
+              <span aria-hidden="true" className="hidden sm:inline">
+                ·
+              </span>
+              <span className="w-full truncate sm:w-auto">
+                {testimonial.submitterEmail}
+              </span>
+            </>
+          )}
           {isSpam && testimonial.quarantineExpiresAt ? (
             <>
               <span aria-hidden="true">·</span>
@@ -590,6 +601,7 @@ export function TestimonialInboxView({
   actionsDisabled = false,
   category,
   emptyAction,
+  importFiltered = false,
   footer,
   onAction,
   onMove,
@@ -600,6 +612,7 @@ export function TestimonialInboxView({
   actionsDisabled?: boolean;
   category: InboxCategory;
   emptyAction?: ReactNode;
+  importFiltered?: boolean;
   /** Rendered inside the panel after the rows: the Load more control. */
   footer?: ReactNode;
   onAction: (
@@ -659,9 +672,17 @@ export function TestimonialInboxView({
       <section className="bg-surface border-line rounded-lg border">
         <EmptyState
           action={emptyAction}
-          description={categoryOf(category).empty.description}
+          description={
+            importFiltered
+              ? "Choose another category or return to all testimonials."
+              : categoryOf(category).empty.description
+          }
           illustration={<SpeechBubbleStars className="h-28" />}
-          title={categoryOf(category).empty.title}
+          title={
+            importFiltered
+              ? "No testimonials from this import here"
+              : categoryOf(category).empty.title
+          }
         />
       </section>
     );
@@ -921,13 +942,22 @@ async function runInboxAction({
   }
 }
 
-export function TestimonialInbox({ slug }: { slug: string }) {
+function useInboxData(
+  slug: string,
+  importJobId: string | undefined,
+  moderationStatus: InboxCategory,
+) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const [moderationStatus, setModerationStatusFilter] =
-    useState<InboxCategory>("pending");
+  const assistantEntitlement = useQuery(
+    api.billing.getProjectEntitlement,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
     api.testimonialModeration.countInbox,
-    organization ? { organizationId: organization.id } : "skip",
+    organization
+      ? { organizationId: organization.id, ...importFilter }
+      : "skip",
   );
   const {
     loadMore,
@@ -937,6 +967,7 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     api.testimonialModeration.listInbox,
     organization
       ? {
+          ...importFilter,
           organizationId: organization.id,
           sort: moderationStatus === "published" ? "wall" : "newest",
           status: moderationStatus,
@@ -944,7 +975,42 @@ export function TestimonialInbox({ slug }: { slug: string }) {
       : "skip",
     { initialNumItems: 20 },
   );
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  return {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  };
+}
+
+export function TestimonialInbox({
+  slug,
+  importJobId,
+}: {
+  slug: string;
+  importJobId?: string;
+}) {
+  const [moderationStatus, setModerationStatusFilter] =
+    useState<InboxCategory>("pending");
+  const {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  } = useInboxData(slug, importJobId, moderationStatus);
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
+  const [importPublicationTarget, setImportPublicationTarget] =
+    useState<InboxTestimonial | null>(null);
   const saveHighlights = useMutation(api.testimonialModeration.setHighlights);
   const [highlightTarget, setHighlightTarget] =
     useState<InboxTestimonial | null>(null);
@@ -956,10 +1022,6 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     useState<InboxTestimonial | null>(null);
   const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
     null,
-  );
-  const wallSettings = useQuery(
-    api.wallCustomization.getSettings,
-    organization ? { organizationId: organization.id } : "skip",
   );
   const movePublished = useMutation(api.wallCustomization.movePublished);
   const setVisibility = useMutation(
@@ -1160,6 +1222,11 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         void changeSpamStatus(testimonial, action === "spam" ? "mark" : "undo");
         return;
       case "publish":
+        if (testimonial.requiresImportAttestation) {
+          dialogOpener.current = null;
+          setImportPublicationTarget(testimonial);
+          return;
+        }
         void changeStatus(testimonial, "published");
         return;
       case "archive":
@@ -1177,21 +1244,22 @@ export function TestimonialInbox({ slug }: { slug: string }) {
     <>
       <PageHeader
         actions={
-          <Button asChild variant="outline">
-            <Link
-              href={`/w/${organization.publicSlug}` as Route}
-              target="_blank"
-            >
-              Open Public Wall
-              <IconExternalLink aria-hidden="true" />
-            </Link>
-          </Button>
+          <InboxImportActions
+            slug={slug}
+            publicSlug={organization.publicSlug}
+            paid={assistantEntitlement?.effectivePlan === "premium"}
+          />
         }
         description="Review private Submissions and choose what becomes public."
         eyebrow="Workspace"
         title="Inbox"
       />
 
+      <AssistantImportNotice
+        organizationId={organization.id}
+        jobId={importJobId}
+        slug={slug}
+      />
       <InboxFeedback error={error} message={message} />
 
       <InboxCategoryTabs
@@ -1203,8 +1271,15 @@ export function TestimonialInbox({ slug }: { slug: string }) {
           accentColor={wallSettings?.accentColor}
           actionsDisabled={pendingId !== null}
           category={moderationStatus}
+          importFiltered={importJobId !== undefined}
           emptyAction={
-            moderationStatus === "pending" ? null : (
+            importJobId !== undefined ? (
+              <Button asChild variant="outline">
+                <Link href={`/org/${slug}/inbox` as Route}>
+                  Show all testimonials
+                </Link>
+              </Button>
+            ) : moderationStatus === "pending" ? null : (
               <Button
                 onClick={() => setModerationStatusFilter("pending")}
                 variant="outline"
@@ -1221,7 +1296,11 @@ export function TestimonialInbox({ slug }: { slug: string }) {
             />
           }
           onAction={handleInboxAction}
-          onMove={moderationStatus === "published" ? moveOnWall : undefined}
+          onMove={
+            moderationStatus === "published" && importJobId === undefined
+              ? moveOnWall
+              : undefined
+          }
           pendingId={pendingId}
           testimonials={testimonials}
         />
@@ -1336,6 +1415,64 @@ export function TestimonialInbox({ slug }: { slug: string }) {
         pending={pendingId !== null}
         target={deleteTarget}
       />
+      {importPublicationTarget && (
+        <ImportPublicationDialog
+          key={importPublicationTarget.testimonialId}
+          name={importPublicationTarget.submitterName}
+          onClose={() => setImportPublicationTarget(null)}
+          onCloseAutoFocus={returnFocus}
+          onPublish={async () => {
+            await setModerationStatus({
+              organizationId: activeOrganization.id,
+              testimonialId: importPublicationTarget.testimonialId,
+              status: "published",
+              importAttestationAccepted: true,
+              importAttestationVersion,
+            });
+            dialogOpener.current = {
+              kind: "gone",
+              testimonialId: importPublicationTarget.testimonialId,
+            };
+            setMessage(
+              `${importPublicationTarget.submitterName}'s Testimonial is now published.`,
+            );
+          }}
+        />
+      )}
     </>
+  );
+}
+
+export function InboxImportActions({
+  slug,
+  publicSlug,
+  paid,
+}: {
+  slug: string;
+  publicSlug: string;
+  paid: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button
+        asChild
+        variant="ghost"
+        className={paid ? undefined : "text-ink-2"}
+      >
+        <Link href={`/org/${slug}/mcp` as Route}>
+          Import with an assistant
+          {!paid ? " · Pro" : ""}
+        </Link>
+      </Button>
+      <Button asChild>
+        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href={`/w/${publicSlug}` as Route} target="_blank">
+          Open Public Wall
+          <IconExternalLink aria-hidden="true" />
+        </Link>
+      </Button>
+    </div>
   );
 }

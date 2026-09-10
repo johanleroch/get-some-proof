@@ -43,7 +43,7 @@ export const claim = internalMutation({
       ctx.db.get(link.testimonialId),
       ctx.db.get(link.organizationId),
     ]);
-    if (!testimonial || !brand) return null;
+    if (!testimonial || !brand || !testimonial.submitterEmail) return null;
     const attempt = (link.deliveryAttempts ?? 0) + 1;
     await ctx.db.patch(link._id, {
       deliveryAttempts: attempt,

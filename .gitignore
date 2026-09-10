@@ -27,3 +27,7 @@
 .DS_Store
 .idea
 .vscode
+
+/public/chatgpt/import-widget.html
+
+/public/assistant-upload.mjs

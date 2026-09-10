@@ -1,8 +1,13 @@
 import { removePublicProjection } from "./publicProjection";
+import { cancel, type WorkflowId } from "@convex-dev/workflow";
 import { deleteTestimonialImages } from "./testimonialImages";
+import {
+  preserveImportCopyCleanup,
+  rememberUnresolvedImportCopy,
+} from "./videoImportCleanup";
 import { v } from "convex/values";
 
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 
@@ -11,6 +16,7 @@ const relationshipPurgeBatchSize = 32;
 export async function enqueueAssetCleanup(
   ctx: MutationCtx,
   input: {
+    accountId?: Id<"accounts">;
     organizationId: Id<"organizations">;
     provider: "fake" | "mux";
     providerAssetId?: string;
@@ -38,7 +44,8 @@ export async function enqueueAssetCleanup(
         .first();
   if (existing) return;
   const cleanupJobId = await ctx.db.insert("videoProviderCleanupJobs", {
-    accountId: (await ctx.db.get(input.organizationId))?.accountId,
+    accountId:
+      input.accountId ?? (await ctx.db.get(input.organizationId))?.accountId,
     attempts: 0,
     createdAt: Date.now(),
     organizationId: input.organizationId,
@@ -57,6 +64,7 @@ export async function enqueueVideoAssetCleanup(
   asset: Doc<"videoAssets">,
   testimonialId: Id<"testimonials"> | undefined = asset.testimonialId,
 ) {
+  await rememberUnresolvedImportCopy(ctx, asset);
   if (asset.cleanupScheduled) return;
   await ctx.db.patch(asset._id, { cleanupScheduled: true });
   await enqueueAssetCleanup(ctx, {
@@ -85,41 +93,53 @@ async function purgeTestimonialRelationshipBatch(
   includeVideoRelations: boolean,
   preserveQuarantines = false,
 ) {
-  const [consent, deliveries, projection, quarantines, replacementItems] =
-    await Promise.all([
-      ctx.db
-        .query("publicationConsents")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .unique(),
-      ctx.db
-        .query("submissionEmailDeliveries")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .take(relationshipPurgeBatchSize),
-      ctx.db
-        .query("publicTestimonialProjections")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .unique(),
-      preserveQuarantines
-        ? []
-        : ctx.db
-            .query("spamQuarantines")
-            .withIndex("by_testimonial", (index) =>
-              index.eq("testimonialId", testimonialId),
-            )
-            .take(relationshipPurgeBatchSize),
-      ctx.db
-        .query("managementLinkReplacementItems")
-        .withIndex("by_testimonial", (index) =>
-          index.eq("testimonialId", testimonialId),
-        )
-        .take(relationshipPurgeBatchSize),
-    ]);
+  const [
+    consent,
+    deliveries,
+    projection,
+    quarantines,
+    replacementItems,
+    importItems,
+  ] = await Promise.all([
+    ctx.db
+      .query("publicationConsents")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonialId),
+      )
+      .unique(),
+    ctx.db
+      .query("submissionEmailDeliveries")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonialId),
+      )
+      .take(relationshipPurgeBatchSize),
+    ctx.db
+      .query("publicTestimonialProjections")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonialId),
+      )
+      .unique(),
+    preserveQuarantines
+      ? []
+      : ctx.db
+          .query("spamQuarantines")
+          .withIndex("by_testimonial", (index) =>
+            index.eq("testimonialId", testimonialId),
+          )
+          .take(relationshipPurgeBatchSize),
+    ctx.db
+      .query("managementLinkReplacementItems")
+      .withIndex("by_testimonial", (index) =>
+        index.eq("testimonialId", testimonialId),
+      )
+      .take(relationshipPurgeBatchSize),
+    ctx.db
+      .query("testimonialImportItems")
+      .withIndex("by_testimonialId", (index) =>
+        index.eq("testimonialId", testimonialId),
+      )
+      .take(relationshipPurgeBatchSize),
+  ]);
   const [retryLinks, revisions] = includeVideoRelations
     ? await Promise.all([
         ctx.db
@@ -139,6 +159,16 @@ async function purgeTestimonialRelationshipBatch(
 
   if (projection) await removePublicProjection(ctx, projection);
   if (consent) await ctx.db.delete(consent._id);
+  for (const item of importItems) {
+    if (item.workflowId)
+      await cancel(ctx, components.workflow, item.workflowId as WorkflowId);
+    await ctx.db.delete(item._id);
+    const job = await ctx.db.get(item.jobId);
+    if (job)
+      await ctx.db.patch(job._id, {
+        selectedItemIds: job.selectedItemIds?.filter((id) => id !== item._id),
+      });
+  }
   for (const delivery of deliveries) await ctx.db.delete(delivery._id);
   for (const quarantine of quarantines) await ctx.db.delete(quarantine._id);
   for (const item of replacementItems) {
@@ -180,6 +210,7 @@ async function purgeTestimonialRelationshipBatch(
   }
 
   const hasMore = [
+    importItems,
     deliveries,
     quarantines,
     replacementItems,
@@ -239,6 +270,7 @@ export async function deleteTestimonialRecords(
       )
       .unique();
     if (asset) {
+      await preserveImportCopyCleanup(ctx, asset);
       if (reason !== "permanentDeletion")
         await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
       await ctx.db.delete(asset._id);
