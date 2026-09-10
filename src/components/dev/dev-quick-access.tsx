@@ -249,6 +249,9 @@ function QuickAccessMenu({
             Test toast
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <a href="/kit/upload-progress">Upload wait</a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <a href="/kit/templates">Templates</a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
