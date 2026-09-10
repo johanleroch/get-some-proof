@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("private video waits show the mascot and clear on playback, pause or error", async ({
   page,
 }) => {
-  await page.route("https://stream.mux.com/**", () => {});
+  await page.route("https://stream.mux.com/**", (route) => route.abort());
   await page.goto("/visual-evidence/managed-video-processing");
   const replacement = page
     .getByRole("status")
@@ -17,21 +17,43 @@ test("private video waits show the mascot and clear on playback, pause or error"
     "mux-player:not([data-mux-player-react-lazy-placeholder])",
   );
   await expect(player).toBeVisible();
-  // This test drives lifecycle events explicitly. Detach the real media source
-  // so late WebKit loadstart/waiting events cannot race the synthetic events.
+  // Test the UI's lifecycle handlers independently of HLS. Mux forwards native
+  // events asynchronously and React can restore playback-id on re-render, so
+  // removing the source alone does not isolate this synthetic event sequence.
   await player.evaluate((element) => {
-    element.removeAttribute("playback-id");
-    element.removeAttribute("src");
+    for (const name of [
+      "loadstart",
+      "waiting",
+      "canplay",
+      "playing",
+      "pause",
+      "error",
+    ]) {
+      element.addEventListener(
+        name,
+        (event) => {
+          if (!(event instanceof CustomEvent && event.detail?.fixtureLifecycle))
+            event.stopImmediatePropagation();
+        },
+        { capture: true },
+      );
+    }
   });
-  await player.dispatchEvent("waiting");
+  const lifecycle = (name: string) =>
+    player.evaluate((element, name) => {
+      element.dispatchEvent(
+        new CustomEvent(name, { detail: { fixtureLifecycle: true } }),
+      );
+    }, name);
+  await lifecycle("waiting");
   const loader = page
     .getByRole("status")
     .filter({ has: page.getByText("Loading video", { exact: true }) });
   await expect(loader.locator("svg")).toBeVisible();
   for (const event of ["canplay", "playing", "pause", "error"]) {
-    await player.dispatchEvent("waiting");
+    await lifecycle("waiting");
     await expect(loader.locator("svg")).toBeVisible();
-    await player.dispatchEvent(event);
+    await lifecycle(event);
     await expect(loader).toHaveCount(0);
   }
 });

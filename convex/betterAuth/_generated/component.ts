@@ -152,6 +152,15 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             | {
                 data: {
                   clientId: string;
+                  generation?: number;
+                  revokedAt: number;
+                  userId: string;
+                };
+                model: "importOAuthRevocations";
+              }
+            | {
+                data: {
+                  clientId: string;
                   clientSecret?: null | string;
                   contacts?: null | Array<string>;
                   createdAt?: null | number;
@@ -558,6 +567,34 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                 where?: Array<{
                   connector?: "AND" | "OR";
                   field: "key" | "count" | "lastRequest" | "_id";
+                  mode?: "sensitive" | "insensitive";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
+                model: "importOAuthRevocations";
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    "clientId" | "userId" | "revokedAt" | "generation" | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
                     | "lt"
@@ -1111,6 +1148,34 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                 }>;
               }
             | {
+                model: "importOAuthRevocations";
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    "clientId" | "userId" | "revokedAt" | "generation" | "_id";
+                  mode?: "sensitive" | "insensitive";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
                 model: "importOAuthClient";
                 where?: Array<{
                   connector?: "AND" | "OR";
@@ -1298,6 +1363,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             | "oauthConsent"
             | "jwks"
             | "rateLimit"
+            | "importOAuthRevocations"
             | "importOAuthClient"
             | "importOAuthConsent"
             | "importOAuthAccessToken"
@@ -1352,6 +1418,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
             | "oauthConsent"
             | "jwks"
             | "rateLimit"
+            | "importOAuthRevocations"
             | "importOAuthClient"
             | "importOAuthConsent"
             | "importOAuthAccessToken"
@@ -1799,6 +1866,40 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                 where?: Array<{
                   connector?: "AND" | "OR";
                   field: "key" | "count" | "lastRequest" | "_id";
+                  mode?: "sensitive" | "insensitive";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
+                model: "importOAuthRevocations";
+                update: {
+                  clientId?: string;
+                  generation?: number;
+                  revokedAt?: number;
+                  userId?: string;
+                };
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    "clientId" | "userId" | "revokedAt" | "generation" | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
                     | "lt"
@@ -2504,6 +2605,40 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                 }>;
               }
             | {
+                model: "importOAuthRevocations";
+                update: {
+                  clientId?: string;
+                  generation?: number;
+                  revokedAt?: number;
+                  userId?: string;
+                };
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    "clientId" | "userId" | "revokedAt" | "generation" | "_id";
+                  mode?: "sensitive" | "insensitive";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
                 model: "importOAuthClient";
                 update: {
                   clientId?: string;
@@ -2738,6 +2873,20 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       >;
     };
     importGrants: {
+      generation: FunctionReference<
+        "query",
+        "internal",
+        { actorId: string; clientId: string },
+        number,
+        Name
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        { actorId: string },
+        Array<{ clientId: string; createdAt: number; name: string }>,
+        Name
+      >;
       resolve: FunctionReference<
         "query",
         "internal",
@@ -2745,6 +2894,9 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           actorId: string;
           clientId: string;
           expiresAt: number;
+          generation?: number;
+          issuedAt: number;
+          scope?: string;
           verifiedAt: number;
         },
         null | {
@@ -2753,6 +2905,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           emailVerified: boolean;
           name: string;
         },
+        Name
+      >;
+      revoke: FunctionReference<
+        "mutation",
+        "internal",
+        { actorId: string; clientId: string },
+        null,
         Name
       >;
     };

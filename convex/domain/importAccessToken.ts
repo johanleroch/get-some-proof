@@ -9,6 +9,8 @@ export type ImportAccessGrant = {
   actorId: string;
   clientId: string;
   issuedAt: number;
+  generation?: number;
+  scope?: string;
   verifiedAt: number;
   expiresAt: number;
 };
@@ -20,6 +22,7 @@ export type ImportAccessGrant = {
 export async function verifyImportAccessToken(
   authorization: string | null,
   verifyJwt: JwtVerifier,
+  requiredScope = importOAuthScope,
 ): Promise<ImportAccessGrant | null> {
   if (!authorization || authorization.length > 8192) return null;
   const match =
@@ -39,7 +42,11 @@ export async function verifyImportAccessToken(
     !payload.azp ||
     payload.azp.length > 256 ||
     typeof payload.scope !== "string" ||
-    !payload.scope.split(" ").includes(importOAuthScope) ||
+    !payload.scope.split(" ").includes(requiredScope) ||
+    (payload.import_grant_generation !== undefined &&
+      (typeof payload.import_grant_generation !== "number" ||
+        !Number.isSafeInteger(payload.import_grant_generation) ||
+        payload.import_grant_generation < 0)) ||
     typeof payload.iat !== "number" ||
     !Number.isSafeInteger(payload.iat) ||
     typeof payload.exp !== "number" ||
@@ -51,9 +58,13 @@ export async function verifyImportAccessToken(
   )
     return null;
   return {
+    scope: requiredScope,
     actorId: payload.sub,
     clientId: payload.azp,
     issuedAt: payload.iat * 1000,
+    ...(typeof payload.import_grant_generation === "number"
+      ? { generation: payload.import_grant_generation }
+      : {}),
     verifiedAt,
     expiresAt: payload.exp * 1000,
   };

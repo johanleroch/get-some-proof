@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => {
   const resolved = () => vi.fn().mockResolvedValue(null);
   return {
     functions: {
+      "assistantImports:resumeVideos": resolved(),
+      "testimonialImportAvatar:retry": resolved(),
       "testimonialModeration:generatePosterUploadUrl": resolved(),
       "testimonialModeration:markSpam": resolved(),
       "testimonialModeration:remove": resolved(),
