@@ -12,6 +12,24 @@ describe("VideoUploadProgress", () => {
     expect(screen.queryByRole("progressbar")).toBeNull();
   });
 
+  it("keeps the percentage on the label's line while uploading", () => {
+    render(
+      <VideoUploadProgress
+        onCancel={() => undefined}
+        phase="uploading"
+        progress={46.4}
+      />,
+    );
+
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "46",
+    );
+    expect(screen.getByText("Uploading your video")).toBeVisible();
+    expect(screen.getByText("46%")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cancel upload" })).toBeVisible();
+  });
+
   it("makes the processing transition explicit after upload reaches 100%", () => {
     render(<VideoUploadProgress phase="processing" progress={100} />);
 
@@ -19,10 +37,12 @@ describe("VideoUploadProgress", () => {
       "aria-valuenow",
       "100",
     );
-    expect(screen.getByText(/video uploaded — processing/i)).toBeVisible();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Video uploaded — processing",
-    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Video uploaded");
+    expect(status).toHaveTextContent("Processing");
+    expect(
+      screen.getByText("Processing and captions continue in the background."),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel upload" })).toBeNull();
   });
 });
