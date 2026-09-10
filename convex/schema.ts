@@ -25,6 +25,8 @@ export default defineSchema({
         actorId: v.string(),
         clientId: v.string(),
         issuedAt: v.number(),
+        generation: v.optional(v.number()),
+        scope: v.optional(v.string()),
         verifiedAt: v.number(),
         expiresAt: v.number(),
       }),

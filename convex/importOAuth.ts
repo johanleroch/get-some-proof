@@ -1,3 +1,4 @@
+import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import {
   assistantTextInput,
@@ -19,6 +20,7 @@ import {
   createImportOAuthOptions,
   importOAuthBasePath,
   importOAuthScope,
+  assistantOAuthScope,
 } from "./importOAuthOptions";
 
 export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
@@ -27,6 +29,30 @@ export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
   return betterAuth(
     createImportOAuthOptions({
       siteUrl: env.SITE_URL,
+      getGrantGeneration: (actorId, clientId) =>
+        ctx.runQuery(components.betterAuth.importGrants.generation, {
+          actorId,
+          clientId,
+        }),
+      canExchangeCode: async (actorId, clientId, issuedAt, generation, scope) =>
+        Boolean(
+          await ctx.runQuery(components.betterAuth.importGrants.resolve, {
+            actorId,
+            clientId,
+            issuedAt,
+            generation,
+            scope,
+            verifiedAt: Date.now(),
+            expiresAt: Date.now() + 1,
+          }),
+        ),
+      canConnect: async (actorId, requireActivation) => {
+        const state = await ctx.runQuery(
+          internal.assistantImports.connectionStatusForSession,
+          { actorId },
+        );
+        return state.paid && (!requireActivation || state.activated);
+      },
       database: (options: BetterAuthOptions) => {
         const adapter = database(options);
         return {
@@ -80,6 +106,7 @@ export async function createImportOAuth(ctx: GenericCtx<DataModel>) {
 
 const allowedPaths: Record<string, string> = {
   "/oauth2/authorize": "GET",
+  "/oauth2/register": "POST",
   "/oauth2/consent": "POST",
   "/oauth2/token": "POST",
   "/oauth2/revoke": "POST",
@@ -87,15 +114,63 @@ const allowedPaths: Record<string, string> = {
   "/jwks": "GET",
 };
 
+const registrationLimiter = new RateLimiter(components.rateLimiter, {
+  publicImportClients: { kind: "fixed window", rate: 200, period: HOUR },
+});
+export const allowRegistration = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) =>
+    (await registrationLimiter.limit(ctx, "publicImportClients")).ok,
+});
+
 export const importOAuthHttp = httpAction(async (ctx, request) => {
   if (env.CHATGPT_IMPORT_ENABLED !== "true")
     return new Response(null, { status: 404 });
   const path = new URL(request.url).pathname.slice(importOAuthBasePath.length);
   if (allowedPaths[path] !== request.method)
     return new Response(null, { status: 404 });
+  let forwarded = request;
+  if (path === "/oauth2/register") {
+    const reader = request.body?.getReader();
+    if (!reader) return new Response(null, { status: 400 });
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > 16_384) {
+        await reader.cancel();
+        return new Response(null, { status: 413 });
+      }
+      chunks.push(value);
+    }
+    if (!(await ctx.runMutation(internal.importOAuth.allowRegistration, {})))
+      return new Response(null, {
+        status: 429,
+        headers: { "Retry-After": "3600" },
+      });
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    forwarded = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: bytes,
+    });
+  }
   const auth = await createImportOAuth(ctx);
-  const response = await auth.handler(request);
+  const response = await auth.handler(forwarded);
   response.headers.set("Cache-Control", "no-store");
+  if (path === "/oauth2/register" && response.status === 200)
+    return new Response(response.body, {
+      status: 201,
+      headers: response.headers,
+    });
   return response;
 });
 
@@ -106,7 +181,7 @@ export const importOAuthMetadata = httpAction(async (ctx, request) => {
   return oauthProviderAuthServerMetadata(auth)(request);
 });
 
-/** Operator-only provisioning. Public registration endpoints stay closed. */
+/** Operator-only provisioning for the existing provider-wall integration. */
 export const registerClient = internalMutation({
   args: { name: v.string(), redirectUri: v.string() },
   returns: v.object({ clientId: v.string() }),
@@ -226,6 +301,7 @@ function importCommandHttp(
     const grant = await verifyImportAccessToken(
       authorization,
       auth.api.verifyJWT,
+      command.startsWith("assistant-") ? assistantOAuthScope : importOAuthScope,
     );
     if (!grant) return new Response(null, { status: 401, headers });
     const reader = request.body?.getReader();

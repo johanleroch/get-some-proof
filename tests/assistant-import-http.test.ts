@@ -47,7 +47,7 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       data: {
         clientId,
         redirectUris: ["https://client.example/callback"],
-        scopes: ["testimonials:import"],
+        scopes: ["testimonials:import:assistant"],
       },
     },
   });
@@ -57,11 +57,11 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       data: {
         clientId,
         userId: owner.actorId,
-        scopes: ["testimonials:import"],
+        scopes: ["testimonials:import:assistant"],
       },
     },
   });
-  const sign = (actorId: string) =>
+  const sign = (actorId: string, scope = "testimonials:import:assistant") =>
     t.run(async (ctx) => {
       const auth = await createImportOAuth(ctx);
       const now = Math.floor(Date.now() / 1000);
@@ -70,7 +70,7 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
           payload: {
             sub: actorId,
             azp: clientId,
-            scope: "testimonials:import",
+            scope,
             iat: now,
             exp: now + 900,
           },
@@ -120,9 +120,29 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
     expect(response.status).toBe(200);
     return (await response.json()).result;
   }
+  const legacyToken = await sign(owner.actorId, "testimonials:import");
+  expect(
+    (await call("list_assistant_import_projects", {}, legacyToken.token))
+      .isError,
+  ).toBe(true);
   expect(
     (await call("list_assistant_import_projects", {})).structuredContent.page,
   ).toMatchObject([{ id: project.id }]);
+  await t.mutation(components.betterAuth.adapter.updateOne, {
+    input: {
+      model: "importOAuthConsent",
+      where: [{ field: "clientId", value: clientId }],
+      update: { scopes: ["testimonials:import"] },
+    },
+  });
+  expect((await call("list_assistant_import_projects", {})).isError).toBe(true);
+  await t.mutation(components.betterAuth.adapter.updateOne, {
+    input: {
+      model: "importOAuthConsent",
+      where: [{ field: "clientId", value: clientId }],
+      update: { scopes: ["testimonials:import:assistant"] },
+    },
+  });
   const imported = await call("import_testimonial_text", {
     sourceUrl: "https://willow.example/customers",
     sourceId: "camille-1",
@@ -722,7 +742,7 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       data: {
         clientId,
         userId: other.actorId,
-        scopes: ["testimonials:import"],
+        scopes: ["testimonials:import:assistant"],
       },
     },
   });

@@ -1,6 +1,7 @@
 import {
   importOAuthBasePath,
   importOAuthScope,
+  assistantOAuthScope,
 } from "@convex/importOAuthOptions";
 
 export function GET() {
@@ -14,7 +15,7 @@ export function GET() {
     {
       resource: `${origin}/mcp`,
       authorization_servers: [`${origin}${importOAuthBasePath}`],
-      scopes_supported: [importOAuthScope],
+      scopes_supported: [importOAuthScope, assistantOAuthScope],
       bearer_methods_supported: ["header"],
     },
     { headers },

@@ -195,7 +195,7 @@ export function registerAssistantTools(
       "create_assistant_video_upload",
       {
         description:
-          "Get an expiring file-upload capability for your own missing or failed Pending video. Preserve the same request ID on retries. Transfer actual binary file pieces of at most chunkSize bytes with POST, Authorization: Bearer uploadToken and Content-Range: bytes START-END/TOTAL to uploadUrl. When capability status is uploading, begin at the returned offset. HTTP 202 or status finalizing means the final transfer is awaiting confirmation: stop sending and poll read_assistant_import. Status complete confirms the bytes only, not video readiness. Never put local paths or base64 file bytes into MCP JSON. Keep the token private. A complete upload remains processing until the provider validates it; only read_assistant_import can report Ready. Maximum 512 MB and 10 minutes. If you cannot execute file commands, use the Inbox file picker.",
+          "Get an expiring file-upload capability for your own missing or failed Pending video. Preserve the same request ID on retries. Transfer actual binary file pieces of at most chunkSize bytes with POST, Authorization: Bearer uploadToken and Content-Range: bytes START-END/TOTAL to uploadUrl. When capability status is uploading, begin at the returned offset. HTTP 202 or status finalizing means the final transfer is awaiting confirmation: stop sending and poll read_assistant_import. Status complete confirms the bytes only, not video readiness. Never put local paths or base64 file bytes into MCP JSON. Keep the token private. In a Node 24+ environment, download transferHelperUrl as assistant-upload.mjs and run node assistant-upload.mjs /absolute/path/video.mp4, passing the capability JSON through stdin, not command arguments. The helper sends bounded chunks and supports the returned offset. A complete upload remains processing until the provider validates it; only read_assistant_import can report Ready. Maximum 512 MB and 10 minutes. If you cannot execute file commands, use the Inbox file picker.",
         inputSchema: assistantUploadInput.shape,
         annotations: {
           readOnlyHint: false,
@@ -205,7 +205,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -235,7 +235,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -267,7 +267,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -299,7 +299,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -333,7 +333,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -371,7 +371,7 @@ export function registerAssistantTools(
         },
         _meta: {
           securitySchemes: [
-            { type: "oauth2", scopes: ["testimonials:import"] },
+            { type: "oauth2", scopes: ["testimonials:import:assistant"] },
           ],
         },
       },
@@ -405,7 +405,9 @@ export function registerAssistantTools(
         idempotentHint: false,
       },
       _meta: {
-        securitySchemes: [{ type: "oauth2", scopes: ["testimonials:import"] }],
+        securitySchemes: [
+          { type: "oauth2", scopes: ["testimonials:import:assistant"] },
+        ],
       },
     },
     async (input) => {

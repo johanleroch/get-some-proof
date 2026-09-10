@@ -942,20 +942,16 @@ async function runInboxAction({
   }
 }
 
-export function TestimonialInbox({
-  slug,
-  importJobId,
-}: {
-  slug: string;
-  importJobId?: string;
-}) {
+function useInboxData(
+  slug: string,
+  importJobId: string | undefined,
+  moderationStatus: InboxCategory,
+) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const assistantEntitlement = useQuery(
     api.billing.getProjectEntitlement,
     organization ? { organizationId: organization.id } : "skip",
   );
-  const [moderationStatus, setModerationStatusFilter] =
-    useState<InboxCategory>("pending");
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
     api.testimonialModeration.countInbox,
@@ -979,6 +975,39 @@ export function TestimonialInbox({
       : "skip",
     { initialNumItems: 20 },
   );
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  return {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  };
+}
+
+export function TestimonialInbox({
+  slug,
+  importJobId,
+}: {
+  slug: string;
+  importJobId?: string;
+}) {
+  const [moderationStatus, setModerationStatusFilter] =
+    useState<InboxCategory>("pending");
+  const {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  } = useInboxData(slug, importJobId, moderationStatus);
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -993,10 +1022,6 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
     null,
-  );
-  const wallSettings = useQuery(
-    api.wallCustomization.getSettings,
-    organization ? { organizationId: organization.id } : "skip",
   );
   const movePublished = useMutation(api.wallCustomization.movePublished);
   const setVisibility = useMutation(
@@ -1219,38 +1244,11 @@ export function TestimonialInbox({
     <>
       <PageHeader
         actions={
-          <div className="flex flex-wrap gap-3">
-            <Button
-              asChild
-              variant="ghost"
-              className={
-                assistantEntitlement?.effectivePlan === "premium"
-                  ? undefined
-                  : "text-ink-2"
-              }
-            >
-              <Link href={`/org/${slug}/mcp` as Route}>
-                Import with an assistant
-                {assistantEntitlement?.effectivePlan !== "premium"
-                  ? " · Pro"
-                  : ""}
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href={`/org/${slug}/import` as Route}>
-                Import testimonials
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link
-                href={`/w/${organization.publicSlug}` as Route}
-                target="_blank"
-              >
-                Open Public Wall
-                <IconExternalLink aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
+          <InboxImportActions
+            slug={slug}
+            publicSlug={organization.publicSlug}
+            paid={assistantEntitlement?.effectivePlan === "premium"}
+          />
         }
         description="Review private Submissions and choose what becomes public."
         eyebrow="Workspace"
@@ -1442,5 +1440,39 @@ export function TestimonialInbox({
         />
       )}
     </>
+  );
+}
+
+function InboxImportActions({
+  slug,
+  publicSlug,
+  paid,
+}: {
+  slug: string;
+  publicSlug: string;
+  paid: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button
+        asChild
+        variant="ghost"
+        className={paid ? undefined : "text-ink-2"}
+      >
+        <Link href={`/org/${slug}/mcp` as Route}>
+          Import with an assistant
+          {!paid ? " · Pro" : ""}
+        </Link>
+      </Button>
+      <Button asChild>
+        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href={`/w/${publicSlug}` as Route} target="_blank">
+          Open Public Wall
+          <IconExternalLink aria-hidden="true" />
+        </Link>
+      </Button>
+    </div>
   );
 }

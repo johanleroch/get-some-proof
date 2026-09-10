@@ -207,6 +207,27 @@ export const screenSections: ScreenSection[] = [
         requiresAuth: true,
       },
       {
+        slug: "mcp-setup-connected",
+        title: "Connected assistant settings",
+        description: "Connected assistant settings.",
+        fixturePath: "/visual-evidence/mcp-setup-connected",
+        requiresAuth: true,
+      },
+      {
+        slug: "assistant-import-consent",
+        title: "Assistant connection authorization",
+        description: "Assistant connection authorization.",
+        fixturePath: "/visual-evidence/assistant-import-consent",
+        requiresAuth: true,
+      },
+      {
+        slug: "assistant-import-consent-free",
+        title: "Assistant authorization on Free",
+        description: "Assistant authorization on Free.",
+        fixturePath: "/visual-evidence/assistant-import-consent-free",
+        requiresAuth: true,
+      },
+      {
         slug: "mcp-setup",
         title: "Assistant import setup",
         description: "Paid import activation and reuse-rights attestation.",

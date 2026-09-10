@@ -585,6 +585,27 @@
       "path": "/visual-evidence/assistant-import-recovery",
       "heading": "Inbox",
       "theme": "dark"
+    },
+    {
+      "slug": "mcp-setup-connected",
+      "title": "Connected assistant settings",
+      "path": "/visual-evidence/mcp-setup-connected",
+      "heading": "Import with your assistant",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-consent",
+      "title": "Assistant connection authorization",
+      "path": "/visual-evidence/assistant-import-consent",
+      "heading": "Connect your proof",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-consent-free",
+      "title": "Assistant authorization on Free",
+      "path": "/visual-evidence/assistant-import-consent-free",
+      "heading": "Connect your proof",
+      "theme": "light"
     }
   ]
 }

@@ -59,8 +59,10 @@ export const prepare = internalMutation({
     const principal = args.grant
       ? await requireImportPrincipal(ctx, args.grant)
       : await requireVerifiedPrincipal(ctx);
-    const job = await ctx.db.get(args.jobId);
-    const item = await ctx.db.get(args.itemId);
+    const [job, item] = await Promise.all([
+      ctx.db.get(args.jobId),
+      ctx.db.get(args.itemId),
+    ]);
     if (
       !job ||
       job.provider !== "assistant" ||
@@ -296,9 +298,11 @@ async function authorizeUpload(ctx: MutationCtx, token: string) {
       name: user.name,
     };
   }
-  const job = await ctx.db.get(current.jobId);
-  const asset = await ctx.db.get(current.assetId);
-  const item = await ctx.db.get(current.itemId);
+  const [job, asset, item] = await Promise.all([
+    ctx.db.get(current.jobId),
+    ctx.db.get(current.assetId),
+    ctx.db.get(current.itemId),
+  ]);
   if (
     !job ||
     !asset ||

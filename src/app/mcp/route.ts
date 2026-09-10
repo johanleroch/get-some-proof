@@ -35,6 +35,10 @@ export async function POST(request: Request) {
   const parsedOrigin = URL.parse(origin);
   if (!parsedOrigin || !["http:", "https:"].includes(parsedOrigin.protocol))
     return new Response("Not configured", { status: 503 });
+  const transferHelperUrl = new URL(
+    "/assistant-upload.mjs",
+    parsedOrigin.origin,
+  ).href;
   const reader = request.body?.getReader();
   if (!reader) return new Response("Missing body", { status: 400 });
   const chunks: Uint8Array[] = [];
@@ -116,7 +120,10 @@ export async function POST(request: Request) {
     const body: unknown = await response.json();
     if (command === "projects") return importProjectsSchema.parse(body);
     if (command === "upload")
-      return assistantUploadCapabilitySchema.parse(body);
+      return {
+        ...assistantUploadCapabilitySchema.parse(body),
+        transferHelperUrl,
+      };
     if (command === "migration")
       return assistantMigrationStatusSchema.parse(body);
     const saved = (
@@ -287,7 +294,7 @@ export async function POST(request: Request) {
     origin,
     backend,
     {
-      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import"`,
+      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import:assistant"`,
       destinations: (cursor) => assistantRequest("projects", { cursor }),
       status: (jobId) => assistantRequest("status", { jobId }),
       retryPortrait: (args) => assistantRequest("retry-portrait", args),

@@ -8,7 +8,7 @@ try {
   const filePath = process.argv[2];
   if (!filePath || process.argv.length !== 3)
     throw new Error(
-      "Usage: node scripts/upload-assistant-video.mjs /absolute/path/video.mp4 < private-capability.json",
+      "Usage: node assistant-upload.mjs /absolute/path/video.mp4 < private-capability.json",
     );
   let input = "";
   for await (const chunk of process.stdin) {

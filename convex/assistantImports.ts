@@ -1,3 +1,4 @@
+import { components } from "./_generated/api";
 import { authzForOrganization } from "./authorization";
 import { ConvexError, v, type Infer } from "convex/values";
 import {
@@ -57,7 +58,9 @@ export const activation = query({
         .unique(),
     ]);
     return {
-      paid: entitlement.effectivePlan === "premium",
+      paid:
+        entitlement.effectivePlan === "premium" &&
+        entitlement.state !== "past_due",
       activated: !!activation,
     };
   },
@@ -227,7 +230,10 @@ export const activate = mutation({
       ctx,
       args.organizationId,
     );
-    if (entitlement.effectivePlan !== "premium")
+    if (
+      entitlement.effectivePlan !== "premium" ||
+      entitlement.state === "past_due"
+    )
       throw new ConvexError("Pro is required for assistant imports.");
     const existing = await ctx.db
       .query("assistantImportActivations")
@@ -459,16 +465,18 @@ async function acceptBatch(
     createdAt: now,
     expiresAt: now + 86400_000,
   });
-  const itemIds = [];
-  for (const [position, item] of items.entries())
-    itemIds.push(
-      await ctx.db.insert("testimonialImportItems", {
+  // Item inserts are independent; Promise.all keeps input order. The import
+  // confirmation below starts only after every item exists in this transaction.
+  const itemIds = await Promise.all(
+    items.map((item, position) =>
+      ctx.db.insert("testimonialImportItems", {
         ...item,
         organizationId,
         jobId,
         position,
       }),
-    );
+    ),
+  );
   const result = await confirmOwnedImport(ctx, { jobId, itemIds }, principal);
   const migration = (await ctx.db.get(migrationId))!;
   let processedCount = migration.processedCount;
@@ -816,4 +824,81 @@ export const recent = query({
       result: job.result,
     }));
   },
+});
+
+const connectionState = v.object({ paid: v.boolean(), activated: v.boolean() });
+async function accountConnectionState(
+  ctx: QueryCtx | MutationCtx,
+  actorId: string,
+) {
+  const [account, activation] = await Promise.all([
+    ctx.db
+      .query("accounts")
+      .withIndex("by_owner", (q) => q.eq("ownerUserId", actorId))
+      .unique(),
+    ctx.db
+      .query("assistantImportActivations")
+      .withIndex("by_actorId", (q) => q.eq("actorId", actorId))
+      .unique(),
+  ]);
+  const entitlement =
+    account && account.deletionStartedAt === undefined
+      ? await getAccountBillingEntitlement(ctx, account._id)
+      : null;
+  return {
+    paid:
+      entitlement?.effectivePlan === "premium" &&
+      entitlement.state !== "past_due",
+    activated: !!activation,
+  };
+}
+export const connectionStatus = query({
+  args: {},
+  returns: connectionState,
+  handler: async (ctx) =>
+    accountConnectionState(ctx, (await requireVerifiedPrincipal(ctx)).actorId),
+});
+/** Only the verified website OAuth session supplies this actor. */
+export const connectionStatusForSession = internalQuery({
+  args: { actorId: v.string() },
+  returns: connectionState,
+  handler: (ctx, args) => accountConnectionState(ctx, args.actorId),
+});
+export const activateConnection = mutation({
+  args: { acceptReuseRights: v.literal(true) },
+  returns: v.null(),
+  handler: async (ctx) => {
+    const principal = await requireVerifiedPrincipal(ctx);
+    const state = await accountConnectionState(ctx, principal.actorId);
+    if (!state.paid)
+      throw new ConvexError("Pro is required for assistant imports.");
+    if (!state.activated)
+      await ctx.db.insert("assistantImportActivations", {
+        actorId: principal.actorId,
+        acceptedAt: Date.now(),
+        version: "2026-09-10",
+        text: assistantReuseRightsText,
+      });
+    return null;
+  },
+});
+
+export const connections = query({
+  args: {},
+  returns: v.array(
+    v.object({ clientId: v.string(), name: v.string(), createdAt: v.number() }),
+  ),
+  handler: async (ctx) =>
+    ctx.runQuery(components.betterAuth.importGrants.list, {
+      actorId: (await requireVerifiedPrincipal(ctx)).actorId,
+    }),
+});
+export const revokeConnection = mutation({
+  args: { clientId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) =>
+    ctx.runMutation(components.betterAuth.importGrants.revoke, {
+      actorId: (await requireVerifiedPrincipal(ctx)).actorId,
+      clientId: args.clientId,
+    }),
 });

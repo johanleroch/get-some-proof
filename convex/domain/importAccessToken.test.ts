@@ -24,6 +24,7 @@ it("checks expiry at the HTTP boundary and carries that verified time into priva
       actorId: "owner-willow",
       clientId: "import-client",
       issuedAt: issuedAt * 1000,
+      scope: "testimonials:import",
       expiresAt: (issuedAt + 900) * 1000,
       verifiedAt: Date.now(),
     });
