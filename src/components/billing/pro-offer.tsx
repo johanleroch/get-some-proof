@@ -6,7 +6,6 @@ import { IconCheck } from "@tabler/icons-react";
 import { Blob } from "@/components/brand/blob";
 import { ArrowNote } from "@/components/doodles";
 import { Segmented } from "@/components/ui/segmented";
-import { cn } from "@/lib/utils";
 
 /**
  * The Pro offer on the billing page (DESIGN.md section 6): the sidebar's
@@ -33,7 +32,13 @@ export type ProOfferView = {
   name: string;
 };
 
-function formatAmount(amount: number, currency: string) {
+/**
+ * The one way this page prints money. `organization-billing.tsx` wraps it for
+ * the shapes it already holds rather than keeping a second copy: two
+ * formatters on one page drift, and the locale they resolve is a live
+ * question (the server and a French browser disagree today).
+ */
+export function formatAmount(amount: number, currency: string) {
   return new Intl.NumberFormat(undefined, {
     currency,
     maximumFractionDigits: amount % 100 === 0 ? 0 : 2,
@@ -46,40 +51,36 @@ function formatAmount(amount: number, currency: string) {
  * lifted onto paper. Two Buttons could not say it: the pressed one wore the
  * amber fill and the pressed tint at once.
  */
-export function ProIntervalControl({
+export function ProOfferHeader({
   disabled = false,
-  onChange,
-  value,
+  interval,
+  onIntervalChange,
+  twoMonthsFree = false,
 }: {
   disabled?: boolean;
-  onChange: (value: "month" | "year") => void;
-  value: "month" | "year";
+  interval: "month" | "year";
+  onIntervalChange: (interval: "month" | "year") => void;
+  twoMonthsFree?: boolean;
 }) {
   return (
-    <Segmented
-      label="Billing interval"
-      onChange={(next) => {
-        if (!disabled) onChange(next);
-      }}
-      options={[
-        { key: "month", label: "Monthly" },
-        { key: "year", label: "Annual" },
-      ]}
-      value={value}
-    />
-  );
-}
-
-/** The two free months, in the hand that writes every other note. */
-function TwoMonthsNote({ className }: { className?: string }) {
-  return (
-    <ArrowNote
-      arrow="flat"
-      className={cn("shrink-0", className)}
-      direction="left"
-    >
-      two months on us
-    </ArrowNote>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <Segmented
+        disabled={disabled}
+        label="Billing interval"
+        onChange={onIntervalChange}
+        options={[
+          { key: "month", label: "Monthly" },
+          { key: "year", label: "Annual" },
+        ]}
+        value={interval}
+      />
+      {/* The two free months, in the hand that writes every other note. */}
+      {twoMonthsFree ? (
+        <ArrowNote arrow="flat" className="shrink-0" direction="left">
+          two months on us
+        </ArrowNote>
+      ) : null}
+    </div>
   );
 }
 
@@ -87,7 +88,7 @@ function TwoMonthsNote({ className }: { className?: string }) {
  * A promise and its mark. The check sits in a box as tall as the line it
  * belongs to, so it centres on the words instead of riding above them.
  */
-function Promise({ children }: { children: ReactNode }) {
+function OfferPromise({ children }: { children: ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
       <span className="flex h-(--type-body-leading) shrink-0 items-center">
@@ -104,32 +105,15 @@ function Promise({ children }: { children: ReactNode }) {
 
 export function ProOffer({
   checkoutButton,
-  interval,
   offer,
-  onIntervalChange,
-  switchDisabled = false,
-  twoMonthsFree = false,
 }: {
   /** The button, or the sentence that replaces it when an Owner is needed. */
   checkoutButton: ReactNode;
-  interval: "month" | "year";
   offer: ProOfferView;
-  onIntervalChange: (interval: "month" | "year") => void;
-  switchDisabled?: boolean;
-  twoMonthsFree?: boolean;
 }) {
   const annual = offer.interval === "year";
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <ProIntervalControl
-          disabled={switchDisabled}
-          onChange={onIntervalChange}
-          value={interval}
-        />
-        {twoMonthsFree ? <TwoMonthsNote /> : null}
-      </div>
-
+    <>
       {/* The poster is its own query container: how much room the mascot
           has is the poster's width, never the window's. The billing card is
           a column beside a sidebar on one screen and the whole page on
@@ -165,7 +149,7 @@ export function ProOffer({
             {offer.features.length > 0 ? (
               <ul className="grid gap-2">
                 {offer.features.map((feature) => (
-                  <Promise key={feature}>{feature}</Promise>
+                  <OfferPromise key={feature}>{feature}</OfferPromise>
                 ))}
               </ul>
             ) : null}
@@ -196,6 +180,6 @@ export function ProOffer({
           </span>
         </span>
       </div>
-    </div>
+    </>
   );
 }

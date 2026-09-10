@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BillingPageLoading } from "./billing-page-loading";
 import { AccountFreeProjectSelection } from "./account-free-project-selection";
-import { ProIntervalControl, ProOffer } from "./pro-offer";
+import { ProOffer, ProOfferHeader, formatAmount } from "./pro-offer";
 
 function billingErrorMessage(error: unknown) {
   if (!(error instanceof Error))
@@ -72,11 +72,7 @@ type SubscriptionDetails = {
 };
 
 function formatOfferAmount(offer: Pick<PublicOffer, "amount" | "currency">) {
-  return new Intl.NumberFormat(undefined, {
-    currency: offer.currency,
-    maximumFractionDigits: offer.amount % 100 === 0 ? 0 : 2,
-    style: "currency",
-  }).format(offer.amount / 100);
+  return formatAmount(offer.amount, offer.currency);
 }
 
 type BillingState =
@@ -965,14 +961,14 @@ export function BillingCockpit({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              <ProOfferHeader
+                disabled={checkoutPending}
+                interval={selectedInterval}
+                onIntervalChange={setSelectedInterval}
+                twoMonthsFree={Boolean(twoMonthsFree)}
+              />
               {offersError ? (
-                <>
-                  <ProIntervalControl
-                    onChange={setSelectedInterval}
-                    value={selectedInterval}
-                  />
-                  <ErrorToast message={offersError} />
-                </>
+                <ErrorToast message={offersError} />
               ) : selectedOffer ? (
                 <ProOffer
                   checkoutButton={
@@ -991,26 +987,14 @@ export function BillingCockpit({
                       </p>
                     )
                   }
-                  interval={selectedInterval}
                   offer={selectedOffer}
-                  onIntervalChange={setSelectedInterval}
-                  switchDisabled={checkoutPending}
-                  twoMonthsFree={Boolean(twoMonthsFree)}
                 />
+              ) : offers ? (
+                <p className="type-small text-ink-2">
+                  This billing option is temporarily unavailable.
+                </p>
               ) : (
-                <>
-                  <ProIntervalControl
-                    onChange={setSelectedInterval}
-                    value={selectedInterval}
-                  />
-                  {offers ? (
-                    <p className="type-small text-ink-2">
-                      This billing option is temporarily unavailable.
-                    </p>
-                  ) : (
-                    <BlobLoadingText label="Loading Pro prices…" />
-                  )}
-                </>
+                <BlobLoadingText label="Loading Pro prices…" />
               )}
 
               <div className="border-t pt-5">

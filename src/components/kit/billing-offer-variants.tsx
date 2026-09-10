@@ -3,7 +3,7 @@
 import { type ReactNode, useState } from "react";
 import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
 
-import { ProOffer } from "@/components/billing/pro-offer";
+import { ProOffer, ProOfferHeader } from "@/components/billing/pro-offer";
 import { ArrowNote, CircleAround, Sparkle } from "@/components/doodles";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -87,9 +87,9 @@ function formatAmount(amount: number, currency: string) {
   }).format(amount / 100);
 }
 
-/** Two months free is the annual promise; keep it derived, never written. */
+/** What a year on the annual plan keeps, in cents. Positive is a saving. */
 function annualSaving() {
-  return offers.year.amount - offers.month.amount * 12;
+  return offers.month.amount * 12 - offers.year.amount;
 }
 
 function useInterval() {
@@ -312,6 +312,11 @@ function VariantPoster() {
   const { interval, offer, setInterval } = useInterval();
   return (
     <UpgradeCard cta={false}>
+      <ProOfferHeader
+        interval={interval}
+        onIntervalChange={setInterval}
+        twoMonthsFree
+      />
       <ProOffer
         checkoutButton={
           <Button type="button">
@@ -319,10 +324,7 @@ function VariantPoster() {
             Continue to Stripe
           </Button>
         }
-        interval={interval}
         offer={offer}
-        onIntervalChange={setInterval}
-        twoMonthsFree
       />
     </UpgradeCard>
   );
@@ -495,7 +497,7 @@ function VariantToday() {
         {annual ? (
           <p className="text-muted-foreground mt-2 text-sm">
             {formatAmount(offer.amount / 12, offer.currency)} / month, billed
-            annually. Save {formatAmount(-annualSaving(), offer.currency)} a
+            annually. Save {formatAmount(annualSaving(), offer.currency)} a
             year.
           </p>
         ) : null}

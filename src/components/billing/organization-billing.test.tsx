@@ -690,3 +690,62 @@ it("charges the selected annual offer and displays the full annual total", async
     expect(onStartCheckout).toHaveBeenCalledWith("pro_annual"),
   );
 });
+
+it("locks the billing interval while Checkout is starting", async () => {
+  cleanup();
+  // A Checkout that never settles, so the pending state stays observable.
+  const onStartCheckout = vi.fn().mockReturnValue(new Promise(() => {}));
+  render(
+    <BillingCockpit
+      offers={[
+        {
+          amount: 2900,
+          currency: "eur",
+          description: null,
+          features: [],
+          interval: "month",
+          lookupKey: "pro_monthly",
+          name: "Pro",
+        },
+        {
+          amount: 29000,
+          currency: "eur",
+          description: null,
+          features: [],
+          interval: "year",
+          lookupKey: "pro_annual",
+          name: "Pro",
+        },
+      ]}
+      overview={{
+        availability: "available",
+        billingContact: null,
+        canManage: true,
+        effectivePlan: "free",
+        state: "missing",
+        subscription: null,
+      }}
+      onUpdateContact={async () => undefined}
+      onStartCheckout={onStartCheckout}
+      navigateToCheckout={() => undefined}
+    />,
+  );
+
+  const annual = screen.getByRole("button", { name: "Annual" });
+  expect(annual).toBeEnabled();
+
+  fireEvent.click(screen.getByRole("button", { name: "Continue to Stripe" }));
+  await waitFor(() =>
+    expect(onStartCheckout).toHaveBeenCalledWith("pro_monthly"),
+  );
+
+  // The interval must say it cannot be changed, not silently ignore the
+  // click: the control is really disabled, so it is also out of the tab
+  // order and the price on screen still matches the Checkout in flight.
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Annual" })).toBeDisabled(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Annual" }));
+  expect(screen.getByText(/29/)).toBeVisible();
+  expect(screen.queryByText(/290/)).toBeNull();
+});
