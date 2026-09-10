@@ -3,6 +3,23 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BrandDashboardView } from "./organization-dashboard";
 
+const toasts = vi.hoisted(() => ({ success: vi.fn() }));
+
+vi.mock("@/components/brand/blob-toast", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/components/brand/blob-toast")>();
+  return {
+    ...actual,
+    blobToast: { ...actual.blobToast, success: toasts.success },
+  };
+});
+
+/** An address is set in pieces so it wraps after slashes; read the whole line. */
+const address = (text: string) =>
+  screen.getByText(
+    (_, element) => element?.tagName === "P" && element.textContent === text,
+  );
+
 const base = {
   collectionUrl: "getsomeproof.com/c/acme-studio",
   name: "Acme Studio",
@@ -121,7 +138,7 @@ describe("BrandDashboardView", () => {
     // An empty queue is a sentence, not a figure dressed up as news.
     expect(screen.queryByText("0")).toBeNull();
     expect(screen.queryByRole("link", { name: /Review/ })).toBeNull();
-    expect(screen.getByText("getsomeproof.com/c/acme-studio")).toBeVisible();
+    expect(address("getsomeproof.com/c/acme-studio")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Open Collection Form" }),
     ).toHaveAttribute("href", "/c/acme-studio");
@@ -142,7 +159,7 @@ describe("BrandDashboardView", () => {
       />,
     );
 
-    expect(screen.getByText("getsomeproof.com/w/acme-studio")).toBeVisible();
+    expect(address("getsomeproof.com/w/acme-studio")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open Wall" })).toHaveAttribute(
       "href",
       "/w/acme-studio",
@@ -185,5 +202,44 @@ describe("BrandDashboardView", () => {
     );
 
     expect(screen.getByText("Testimonial waiting for review")).toBeVisible();
+  });
+
+  it("greets the Brand that was just created, once", () => {
+    toasts.success.mockClear();
+    sessionStorage.setItem("get-some-proof-just-created", "Brand");
+    const { rerender } = render(
+      <BrandDashboardView
+        {...base}
+        copyCollectionUrl={async () => {}}
+        justCreated="Brand"
+        pendingCount={0}
+      />,
+    );
+    expect(toasts.success).toHaveBeenCalledWith("Your Brand is ready.", {
+      description: "Share your Collection Form to start collecting.",
+      id: "just-created",
+    });
+    expect(sessionStorage.getItem("get-some-proof-just-created")).toBeNull();
+    rerender(
+      <BrandDashboardView
+        {...base}
+        copyCollectionUrl={async () => {}}
+        justCreated={null}
+        pendingCount={0}
+      />,
+    );
+    expect(toasts.success).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps quiet on an ordinary visit", () => {
+    toasts.success.mockClear();
+    render(
+      <BrandDashboardView
+        {...base}
+        copyCollectionUrl={async () => {}}
+        pendingCount={0}
+      />,
+    );
+    expect(toasts.success).not.toHaveBeenCalled();
   });
 });

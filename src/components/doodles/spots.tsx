@@ -261,6 +261,112 @@ export function EnvelopeStamp(props: DoodleProps) {
 }
 
 /**
+ * The same envelope on its way, climbing to the right: the speed lines
+ * trail from its lower-left corner, along the line of flight, the middle
+ * one longest. For the moment an email has just gone out.
+ */
+export function EnvelopeSent(props: DoodleProps) {
+  return (
+    <svg {...doodleProps(props, "0 0 320 220")}>
+      <g
+        className="doodle-item"
+        style={
+          {
+            animationDelay: "-0.4s",
+            animationDuration: "5.4s",
+            "--doodle-float": "-6px",
+          } as CSSProperties
+        }
+      >
+        <g>
+          <path
+            {...strokeAttributes}
+            d="M40 127C43.2 126.6,52.7 125.4,59 124.4C65.3 123.4,74.8 121.6,78 121"
+          />
+          <path
+            {...strokeAttributes}
+            d="M12 149C17.8 148.4,35.3 146.9,47 145.6C58.7 144.3,76.2 141.8,82 141"
+          />
+          <path
+            {...strokeAttributes}
+            d="M34 171C38.3 170.5,51.3 169.3,60 168.1C68.7 166.9,81.7 164.7,86 164"
+          />
+        </g>
+      </g>
+      <g
+        className="doodle-item"
+        style={
+          {
+            animationDelay: "-1.7000000000000002s",
+            animationDuration: "6.300000000000001s",
+            "--doodle-float": "-4px",
+          } as CSSProperties
+        }
+      >
+        <g transform="rotate(-5 198 111)">
+          <path
+            {...strokeAttributes}
+            d="M111 54C164.7 53.2,229.4 54.6,285 54Q296 54,296 65C295.2 91.6,296.8 129.2,296 157Q296 168,285 168C229.4 167.2,164.7 168.1,111 168Q100 168,100 157C99.2 129.2,100.5 91.6,100 65Q100 54,111 54Z"
+            fill="var(--surface)"
+          />
+          <path
+            {...strokeAttributes}
+            d="M102 60C139 85,171 109,198 134C225 114,257 90,294 60"
+          />
+          <path {...strokeAttributes} d="M102 160C126 141,146 126,163 113" />
+          <path {...strokeAttributes} d="M294 160C270 141,250 126,233 113" />
+          <path
+            {...strokeAttributes}
+            d="M205 78Q213 77.2,221 78Q229 78.8,237 78"
+          />
+          <path
+            {...strokeAttributes}
+            d="M211 86Q217.5 85.2,224 86Q230.5 86.8,237 86"
+          />
+          <path
+            {...strokeAttributes}
+            d="M247 64C256.9 64.1,269.7 64.8,280 64Q283 64,283 67C283.3 75.2,283.8 86.4,283 95Q283 98,280 98C269.7 98.4,256.9 98.6,247 98Q244 98,244 95C244.9 86.4,244.1 75.2,244 67Q244 64,247 64Z"
+            fill="var(--surface)"
+          />
+          <path
+            {...strokeAttributes}
+            d="M250 68C257.9 67.4,267.8 68.6,276 68Q278 68,278 70C277.3 76.3,278 84.5,278 91Q278 93,276 93C267.8 93,257.9 93.8,250 93Q248 93,248 91C248.5 84.5,248.5 76.3,248 70Q248 68,250 68Z"
+          />
+          <path
+            {...strokeAttributes}
+            d="M263.4 71.5L265.6 78.2L272.9 78.2L267 82.4L269.1 89.1L262.7 85.3L257.7 89.1L258.4 82.4L253.9 78.2L259.9 78.2Z"
+            fill="var(--brand)"
+          />
+        </g>
+      </g>
+      <g
+        className="doodle-item"
+        style={
+          {
+            animationDelay: "-3s",
+            animationDuration: "7.2s",
+            "--doodle-float": "-6px",
+          } as CSSProperties
+        }
+      >
+        <g>
+          <path
+            {...strokeAttributes}
+            d="M298 28c0 4.3 1.7 6 6 6c-4.3 0-6 1.7-6 6c0-4.3-1.7-6-6-6c4.3 0 6-1.7 6-6z"
+            fill="var(--brand)"
+          />
+          <path
+            {...strokeAttributes}
+            d="M44 75c0 3.6 1.4 5 5 5c-3.6 0-5 1.4-5 5c0-3.6-1.4-5-5-5c3.6 0 5-1.4 5-5z"
+            fill="var(--brand)"
+          />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/**
  * A wall of customer proof: a text Testimonial with its five stars, a
  * video Testimonial and a short quote, pinned at slight angles.
  */

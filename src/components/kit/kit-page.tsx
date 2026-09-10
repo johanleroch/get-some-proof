@@ -6,6 +6,7 @@ import {
   IconCopy,
   IconLayoutGrid,
   IconRefresh,
+  IconRoute,
   IconStar,
   IconTemplate,
 } from "@tabler/icons-react";
@@ -19,6 +20,7 @@ import {
   ArrowNote,
   CameraTripod,
   CircleAround,
+  EnvelopeSent,
   EnvelopeStamp,
   Sparkle,
   SpeechBubbleStars,
@@ -332,6 +334,12 @@ export function KitPage() {
               only.
             </p>
           </div>
+          <Button asChild size="sm" variant="outline">
+            <a href="/kit/onboarding">
+              <IconRoute aria-hidden="true" />
+              Onboarding
+            </a>
+          </Button>
           <Button asChild size="sm" variant="outline">
             <a href="/kit/templates">
               <IconTemplate aria-hidden="true" />
@@ -1398,6 +1406,7 @@ function DoodleShowcase() {
           ["SpeechBubbleStars", <SpeechBubbleStars key="bubble" />],
           ["CameraTripod", <CameraTripod key="camera" />],
           ["EnvelopeStamp", <EnvelopeStamp key="envelope" />],
+          ["EnvelopeSent", <EnvelopeSent key="envelope-sent" />],
           ["WallFrames", <WallFrames key="wall" />],
         ].map(([name, element]) => (
           <div

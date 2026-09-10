@@ -345,6 +345,57 @@ const spots = [
   },
   {
     doc: [
+      "The same envelope on its way, climbing to the right: the speed lines",
+      "trail from its lower-left corner, along the line of flight, the middle",
+      "one longest. For the moment an email has just gone out.",
+    ],
+    draw(p) {
+      return [
+        group("", [
+          stroke(
+            p.through([
+              [40, 127],
+              [59, 124.4],
+              [78, 121],
+            ]),
+          ),
+          stroke(
+            p.through([
+              [12, 149],
+              [47, 145.6],
+              [82, 141],
+            ]),
+          ),
+          stroke(
+            p.through([
+              [34, 171],
+              [60, 168.1],
+              [86, 164],
+            ]),
+          ),
+        ]),
+        group("rotate(-5 198 111)", [
+          filled(p.rect(100, 54, 196, 114, 11), SURFACE),
+          stroke("M102 60C139 85,171 109,198 134C225 114,257 90,294 60"),
+          stroke("M102 160C126 141,146 126,163 113"),
+          stroke("M294 160C270 141,250 126,233 113"),
+          stroke(p.line(205, 78, 237)),
+          stroke(p.line(211, 86, 237)),
+          filled(p.rect(244, 64, 39, 34, 3), SURFACE),
+          stroke(p.rect(248, 68, 30, 25, 2)),
+          filled(p.star(263, 81, 9.5), BRAND),
+        ]),
+        group("", [
+          filled(p.sparkle(298, 34, 6), BRAND),
+          filled(p.sparkle(44, 80, 5), BRAND),
+        ]),
+      ];
+    },
+    name: "EnvelopeSent",
+    seed: 53,
+  },
+  {
+    doc: [
       "A wall of customer proof: a text Testimonial with its five stars, a",
       "video Testimonial and a short quote, pinned at slight angles.",
     ],

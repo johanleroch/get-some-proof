@@ -4,26 +4,39 @@ import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
+/** What an auth attempt answers: an error to show, or nothing. */
+export type AuthAttempt =
+  { error?: { message?: string } | null } | null | undefined;
+
+export type SocialSignIn = (args: {
+  callbackURL: Route;
+}) => Promise<AuthAttempt>;
+
 export function GoogleSignInButton({
   callbackURL,
   pending,
   setPending,
   setError,
+  signIn,
 }: {
   callbackURL: Route;
   pending: boolean;
   setPending: (pending: boolean) => void;
   setError: (error: string | null) => void;
+  /** Replaces the real provider round trip; the onboarding playground uses it. */
+  signIn?: SocialSignIn;
 }) {
   async function signInWithGoogle() {
     setError(null);
     setPending(true);
     sessionStorage.setItem("post-two-factor-route", callbackURL);
-    const result = await authClient.signIn.social({
-      provider: "google",
-      callbackURL,
-      errorCallbackURL: "/sign-in?error=oauth",
-    });
+    const result = signIn
+      ? await signIn({ callbackURL })
+      : await authClient.signIn.social({
+          provider: "google",
+          callbackURL,
+          errorCallbackURL: "/sign-in?error=oauth",
+        });
 
     if (result?.error) {
       setPending(false);

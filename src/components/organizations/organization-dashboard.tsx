@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   IconArrowRight,
   IconCode,
@@ -13,12 +13,20 @@ import { useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import { UpgradeToProButton } from "@/components/account/upgrade-to-pro-button";
+import { blobToast } from "@/components/brand/blob-toast";
 import { ArrowNote, WallFrames } from "@/components/doodles";
+import { PublicAddress } from "@/components/organizations/public-address";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import {
+  clearJustCreated,
+  type CreatedNoun,
+  readJustCreated,
+  subscribeToNothing,
+} from "@/lib/just-created";
 import { cn } from "@/lib/utils";
 
 /**
@@ -209,6 +217,8 @@ export type BrandDashboardViewProps = {
   } | null;
   billingHref?: string;
   copyCollectionUrl: () => Promise<void>;
+  /** Set on the first arrival after creation: the mascot says it is ready. */
+  justCreated?: CreatedNoun | null;
   name: string;
   pendingCount: number;
   publicSlug: string;
@@ -220,6 +230,7 @@ export function BrandDashboardView({
   account,
   billingHref,
   copyCollectionUrl,
+  justCreated = null,
   name,
   pendingCount,
   publicSlug,
@@ -228,6 +239,17 @@ export function BrandDashboardView({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const collectionPath = `/c/${publicSlug}` as Route;
+
+  // The end of onboarding: one greeting, then the flag goes so a reload
+  // never repeats it.
+  useEffect(() => {
+    if (!justCreated) return;
+    blobToast.success(`Your ${justCreated} is ready.`, {
+      description: "Share your Collection Form to start collecting.",
+      id: "just-created",
+    });
+    clearJustCreated();
+  }, [justCreated]);
   const inboxPath = `/org/${slug}/inbox` as Route;
   const wallPath = `/w/${publicSlug}` as Route;
   const embedPath = `/org/${slug}/settings#embed` as Route;
@@ -304,8 +326,8 @@ export function BrandDashboardView({
                 the tokens rather than a `type-*` utility, because those carry
                 the display family with them and would quietly put Gelica
                 here. */}
-            <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold [overflow-wrap:anywhere]">
-              {collectionUrl}
+            <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold">
+              <PublicAddress url={collectionUrl} />
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Button onClick={copyLink} type="button">
@@ -350,8 +372,8 @@ export function BrandDashboardView({
               <h2 className="type-heading mt-1">
                 Only what you publish reaches it
               </h2>
-              <p className="mt-2 font-mono text-[length:var(--type-ui-size)] leading-[var(--type-ui-leading)] font-semibold [overflow-wrap:anywhere]">
-                {wallUrl}
+              <p className="mt-2 font-mono text-[length:var(--type-ui-size)] leading-[var(--type-ui-leading)] font-semibold">
+                <PublicAddress url={wallUrl} />
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button asChild variant="outline">
@@ -382,6 +404,11 @@ export function BrandDashboardView({
 }
 
 export function OrganizationDashboard({ slug }: { slug: string }) {
+  const justCreated = useSyncExternalStore(
+    subscribeToNothing,
+    readJustCreated,
+    () => null,
+  );
   const account = useQuery(api.accounts.getMine, {});
   const organization = useQuery(api.organizations.getBySlug, { slug });
   const pendingCount = useQuery(
@@ -415,6 +442,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
       billingHref="/account/billing"
       collectionUrl={collectionUrl}
       copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
+      justCreated={justCreated}
       name={organization.name}
       pendingCount={pendingCount}
       publicSlug={organization.publicSlug}

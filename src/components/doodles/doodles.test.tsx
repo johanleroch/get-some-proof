@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   CameraTripod,
   CircleAround,
+  EnvelopeSent,
   EnvelopeStamp,
   MarkerHighlight,
   SketchArrow,
@@ -14,7 +15,13 @@ import {
 import { spotViewBox } from "@/components/doodles/spots";
 
 const marks = { CircleAround, MarkerHighlight, SketchArrow, Sparkle };
-const spots = { CameraTripod, EnvelopeStamp, SpeechBubbleStars, WallFrames };
+const spots = {
+  CameraTripod,
+  EnvelopeSent,
+  EnvelopeStamp,
+  SpeechBubbleStars,
+  WallFrames,
+};
 const allowedFills = new Set([
   "var(--surface)",
   "var(--brand)",

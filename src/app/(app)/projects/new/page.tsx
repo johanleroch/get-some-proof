@@ -8,7 +8,7 @@ export default function NewProjectPage() {
         title="Create project"
         description="Give this business its own identity and collection form. All your projects share your account's plan and quotas."
       />
-      <OrganizationOnboardingForm />
+      <OrganizationOnboardingForm noun="project" />
     </div>
   );
 }

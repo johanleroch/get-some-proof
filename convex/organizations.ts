@@ -129,7 +129,7 @@ export const create = mutation({
     if (existingPublicSlug) {
       throw new ConvexError({
         code: "PUBLIC_SLUG_UNAVAILABLE",
-        message: "That Public Slug is already taken. Choose another one.",
+        message: "That public address is already taken. Choose another one.",
       });
     }
 
@@ -474,7 +474,7 @@ export const changePublicSlug = mutation({
       throw new ConvexError({
         code: "INVALID_PUBLIC_SLUG",
         message:
-          error instanceof Error ? error.message : "Invalid Public Slug.",
+          error instanceof Error ? error.message : "Invalid public address.",
       });
     }
 
@@ -491,7 +491,7 @@ export const changePublicSlug = mutation({
     if (access.organization.publicSlugChangedAt !== undefined) {
       throw new ConvexError({
         code: "PUBLIC_SLUG_CHANGE_ALREADY_USED",
-        message: "The Public Slug has already been changed once.",
+        message: "The public address has already been changed once.",
       });
     }
 
@@ -504,7 +504,7 @@ export const changePublicSlug = mutation({
     if (existing) {
       throw new ConvexError({
         code: "PUBLIC_SLUG_UNAVAILABLE",
-        message: "That Public Slug is already taken. Choose another one.",
+        message: "That public address is already taken. Choose another one.",
       });
     }
 

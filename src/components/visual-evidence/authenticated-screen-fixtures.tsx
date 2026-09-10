@@ -7,7 +7,6 @@ import type { Id } from "@convex/_generated/dataModel";
 import { AccountDeletionSection } from "@/components/account/account-closure";
 import { AccountFreeProjectSelectionView } from "@/components/billing/account-free-project-selection";
 import { AccountProfileView } from "@/components/account/account-profile";
-import { BrandLogo } from "@/components/brand-logo";
 import { AppShellView } from "@/components/app-shell";
 import { NavUserView } from "@/components/account/nav-user";
 import { OrganizationSwitcherView } from "@/components/organizations/organization-switcher";
@@ -18,6 +17,7 @@ import { CollectionFormShellView } from "@/components/collection/collection-form
 import { VideoRetryFormView } from "@/components/collection/video-retry-form";
 import { VideoUploadProgress } from "@/components/collection/video-upload-progress";
 import { OrganizationOnboardingFormView } from "@/components/organizations/organization-onboarding-form";
+import { OrganizationOnboardingScreen } from "@/components/organizations/organization-onboarding-screen";
 import {
   OrganizationSettingsView,
   WorkspaceDeletionProgress,
@@ -145,27 +145,19 @@ export function ProfileScreenFixture() {
 
 export function OnboardingScreenFixture() {
   return (
-    <main className="bg-paper min-h-svh px-5 py-8 md:px-8 md:py-10">
-      <div className="mx-auto max-w-5xl space-y-10">
-        <BrandLogo />
-        <PageHeader
-          description="This is the identity your customers see when you ask them for a Testimonial. Only the name is needed; we write the rest for you."
-          eyebrow="First step"
-          title="Create your Brand"
-        />
-        <OrganizationOnboardingFormView
-          createOrganization={async () => ({
-            id: "fixture-organization" as Id<"organizations">,
-            publicSlug: "fernhill-studio",
-            slug: "fernhill-studio-l5pg",
-          })}
-          generateUploadUrl={async () => "fixture://upload"}
-          navigate={() => undefined}
-          setLogo={async () => null}
-          uploadImage={async () => "fixture-image" as Id<"_storage">}
-        />
-      </div>
-    </main>
+    <OrganizationOnboardingScreen>
+      <OrganizationOnboardingFormView
+        createOrganization={async () => ({
+          id: "fixture-organization" as Id<"organizations">,
+          publicSlug: "fernhill-studio",
+          slug: "fernhill-studio-l5pg",
+        })}
+        generateUploadUrl={async () => "fixture://upload"}
+        navigate={() => undefined}
+        setLogo={async () => null}
+        uploadImage={async () => "fixture-image" as Id<"_storage">}
+      />
+    </OrganizationOnboardingScreen>
   );
 }
 

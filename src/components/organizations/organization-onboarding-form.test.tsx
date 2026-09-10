@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { ConvexError } from "convex/values";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationOnboardingForm } from "./organization-onboarding-form";
@@ -68,7 +69,7 @@ describe("OrganizationOnboardingForm", () => {
     expect(
       screen.getByText(/Your public address will be \/c\/northwind-bakery\./),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() =>
       expect(mocks.create).toHaveBeenCalledWith({
@@ -84,6 +85,7 @@ describe("OrganizationOnboardingForm", () => {
     expect(mocks.push).toHaveBeenCalledWith(
       "/org/visual-studio-ab12/dashboard",
     );
+    expect(sessionStorage.getItem("get-some-proof-just-created")).toBe("Brand");
   });
 
   it("reveals an invalid privacy email after its disclosure was collapsed", async () => {
@@ -100,7 +102,7 @@ describe("OrganizationOnboardingForm", () => {
     fireEvent.click(disclosure);
     expect(privacyContact).not.toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() => expect(privacyContact).toHaveFocus());
     expect(privacyContact).toBeVisible();
@@ -114,7 +116,7 @@ describe("OrganizationOnboardingForm", () => {
     fireEvent.change(privacyContact, {
       target: { value: "privacy@northwind.example" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
     await waitFor(() =>
       expect(mocks.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -149,7 +151,7 @@ describe("OrganizationOnboardingForm", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Coral" }));
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     await waitFor(() => {
       expect(mocks.create).toHaveBeenCalledWith({
@@ -180,11 +182,11 @@ describe("OrganizationOnboardingForm", () => {
       target: { value: "Visual Studio" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Stage test logo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
 
     expect(
       await screen.findByText(
-        "Your project was created, but the logo upload failed. Retry or continue without it.",
+        "Your Brand was created, but the logo upload failed. Retry or continue without it.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(
@@ -193,5 +195,33 @@ describe("OrganizationOnboardingForm", () => {
 
     await waitFor(() => expect(mocks.push).toHaveBeenCalledOnce());
     expect(mocks.create).toHaveBeenCalledOnce();
+  });
+
+  it("says a taken address under its field, opened and focused", async () => {
+    mocks.create.mockRejectedValueOnce(
+      new ConvexError({
+        code: "PUBLIC_SLUG_UNAVAILABLE",
+        message: "That public address is already taken. Choose another one.",
+      }),
+    );
+    render(<OrganizationOnboardingForm />);
+
+    fireEvent.change(screen.getByLabelText("Brand name"), {
+      target: { value: "Northwind Bakery" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Brand" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "That public address is already taken. Choose another one.",
+    );
+    const slug = screen.getByLabelText("Public address");
+    expect(slug).toHaveAttribute("aria-invalid", "true");
+    expect(slug).toHaveValue("northwind-bakery");
+    expect(screen.queryByTestId("error-toast-message")).toBeNull();
+
+    fireEvent.change(slug, { target: { value: "northwind-bakery-paris" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(slug).not.toHaveAttribute("aria-invalid");
   });
 });

@@ -26,7 +26,7 @@ export function normalizePublicSlug(value: string) {
   const normalized = publicSlugFromBrandName(value);
 
   if (normalized.length < 2) {
-    throw new Error("Public Slugs must contain at least 2 letters or numbers.");
+    throw new Error("A public address needs at least 2 letters or numbers.");
   }
 
   return normalized;

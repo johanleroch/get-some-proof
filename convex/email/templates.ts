@@ -12,40 +12,120 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
+/**
+ * One layout for every transactional email (DESIGN.md section 7), simple
+ * and minimal: the light theme in hex, since mail clients know no tokens;
+ * paper behind a 480px column; the lockup at the top, then the title in the
+ * serif that stands in for Gelica, the message, the one amber button with
+ * ink text, and a small footnote. Nothing else: a mail is read once. The
+ * lockup is a PNG under public/brand/email, rendered by
+ * scripts/email/build-assets.mjs from the site's own logo.
+ */
+const palette = {
+  brand: "#ffbb16",
+  brandText: "#815300",
+  ink: "#26201c",
+  ink2: "#645c55",
+  paper: "#fcfaf6",
+};
+
+const bodyFont =
+  "Figtree, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+const displayFont = "Georgia, 'Times New Roman', serif";
+
+const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+
+export const emailLogo = {
+  alt: "Get Some Proof",
+  height: 28,
+  src: `${siteUrl}/brand/email/logo.png`,
+  width: 173,
+} as const;
+
+export const defaultFootnote =
+  "If you did not request this, you can ignore this email.";
+
+function paragraph(html: string) {
+  return `<p style="margin:0;font-family:${bodyFont};font-size:15px;line-height:24px;color:${palette.ink}">${html}</p>`;
+}
+
+function emailLayout({
+  action,
+  bodyHtml,
+  footnote,
+  preheader,
+  title,
+  url,
+}: {
+  /** The one button; omitted when the body carries its own links. */
+  action?: string;
+  bodyHtml: string;
+  footnote: string;
+  preheader: string;
+  title: string;
+  url?: string;
+}) {
+  const safeUrl = url ? escapeHtml(url) : null;
+  const button =
+    action && safeUrl
+      ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 0"><tr><td style="background:${palette.brand};border-radius:8px"><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;font-family:${bodyFont};font-size:15px;line-height:20px;font-weight:600;color:${palette.ink};text-decoration:none">${escapeHtml(action)}</a></td></tr></table>`
+      : "";
+  return (
+    `<div style="background:${palette.paper};padding:40px 24px">` +
+    `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${escapeHtml(preheader)}</div>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="max-width:480px;margin:0 auto">` +
+    `<tr><td style="padding:0 0 40px"><img src="${emailLogo.src}" width="${emailLogo.width}" height="${emailLogo.height}" alt="${emailLogo.alt}" style="display:block;border:0;width:${emailLogo.width}px;height:${emailLogo.height}px"></td></tr>` +
+    `<tr><td><h1 style="margin:0 0 12px;font-family:${displayFont};font-size:24px;line-height:30px;font-weight:700;letter-spacing:-0.01em;color:${palette.ink}">${escapeHtml(title)}</h1>${bodyHtml}${button}</td></tr>` +
+    `<tr><td style="padding:40px 0 0;font-family:${bodyFont};font-size:13px;line-height:18px;color:${palette.ink2}">${escapeHtml(footnote)}</td></tr>` +
+    `</table></div>`
+  );
+}
+
 function buildActionEmail({
   action,
   description,
   email,
+  footnote = defaultFootnote,
   subject,
   template,
+  title,
   url,
 }: {
   action: string;
   description: string;
   email: string;
+  footnote?: string;
   subject: string;
   template: TransactionalEmailTemplate;
+  /** The heading; the subject when it reads well as one. */
+  title?: string;
   url: string;
 }): TransactionalEmailMessage {
-  const safeUrl = escapeHtml(url);
-
   return {
     to: email,
     subject,
     template,
     actionUrl: url,
-    text: `${description}\n\n${url}\n\nIf you did not request this, you can ignore this email.`,
-    html: `<div style="font-family:ui-sans-serif,system-ui;max-width:560px;margin:0 auto;color:#171717"><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(description)}</p><p style="margin:28px 0"><a href="${safeUrl}" style="background:#4f46e5;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">${escapeHtml(action)}</a></p><p style="color:#737373;font-size:14px">If you did not request this, you can ignore this email.</p></div>`,
+    text: `${description}\n\n${url}\n\n${footnote}`,
+    html: emailLayout({
+      action,
+      bodyHtml: paragraph(escapeHtml(description)),
+      footnote,
+      preheader: description,
+      title: title ?? subject,
+      url,
+    }),
   };
 }
 
 export function buildVerificationEmail(email: string, url: string) {
   return buildActionEmail({
-    action: "Verify email",
+    action: "Verify my email",
     description:
-      "Verify your email address before creating or joining an Organization.",
+      "Thanks for signing up. Here is your link to verify your email address. Once that is done, you can create your Brand.",
     email,
-    subject: "Verify your email address",
+    footnote: "If you did not create an account, you can ignore this email.",
+    subject: "Welcome to Get Some Proof",
     template: "verify-email",
     url,
   });
@@ -167,15 +247,20 @@ export function buildReplacementManagementLinkEmail({
   const links = urls
     .map(
       (url, index) =>
-        `<li style="margin:12px 0"><a href="${escapeHtml(url)}">Manage submission ${index + 1}</a></li>`,
+        `<li style="margin:0 0 8px;font-family:${bodyFont};font-size:15px;line-height:24px;color:${palette.ink}"><a href="${escapeHtml(url)}" style="color:${palette.brandText};font-weight:600">Manage submission ${index + 1}</a></li>`,
     )
     .join("");
   return {
     actionUrl: urls[0]!,
-    html: `<div style="font-family:ui-sans-serif,system-ui;max-width:560px;margin:0 auto;color:#171717"><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(description)}</p><ol>${links}</ol><p style="color:#737373;font-size:14px">If you did not request this, you can ignore this email.</p></div>`,
+    html: emailLayout({
+      bodyHtml: `${paragraph(escapeHtml(description))}<ol style="margin:16px 0 0;padding:0 0 0 20px">${links}</ol>`,
+      footnote: defaultFootnote,
+      preheader: description,
+      title: subject,
+    }),
     subject,
     template: "management-link-replacement" as const,
-    text: `${description}\n\n${urls.map((url, index) => `Submission ${index + 1}: ${url}`).join("\n")}\n\nIf you did not request this, you can ignore this email.`,
+    text: `${description}\n\n${urls.map((url, index) => `Submission ${index + 1}: ${url}`).join("\n")}\n\n${defaultFootnote}`,
     to: email,
   };
 }
@@ -197,6 +282,7 @@ export function buildNewPendingTestimonialEmail({
     action: "Review testimonial",
     description: `${submitterName} sent a new ${submissionType} testimonial to ${brandName}. It is Pending review in your private Workspace.`,
     email,
+    footnote: `You receive this because you own ${brandName} on Get Some Proof.`,
     subject: `New testimonial for ${brandName}`,
     template: "new-pending-testimonial",
     url,
@@ -229,6 +315,7 @@ export function buildBillingLifecycleEmail({
       ? `${brandName} moves to Free in ${days} ${days === 1 ? "day" : "days"}. Choose up to 2 videos and 13 text Testimonials to keep Published; otherwise the most recently Published proof stays public.`
       : `${brandName} has video Testimonials retained for ${days} ${days === 1 ? "day" : "days"}. They remain exceptionally downloadable until their Mux media is permanently deleted.`,
     email,
+    footnote: `You receive this because you own ${brandName} on Get Some Proof.`,
     subject: downgrade
       ? `${brandName} moves to Free in ${days} ${days === 1 ? "day" : "days"}`
       : `${brandName}: retained videos delete in ${days} ${days === 1 ? "day" : "days"}`,
