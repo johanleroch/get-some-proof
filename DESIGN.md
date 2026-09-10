@@ -273,7 +273,9 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   sidebar plan card (section 6) carries it at 128px on every dashboard
   screen of a Free Account, cropped and tilted the same way; it is the
   sidebar's signature element, and loaders or toasts in the main region keep
-  theirs. In motion
+  theirs. A third (2026-09-10): the Pro offer on the billing page carries it
+  at 400px, cropped and tilted the same way, because that poster is the
+  sidebar card told in full. In motion
   (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
   amplitudes, volume kept in every squash, pivot on its base, frozen by
   reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or
@@ -420,6 +422,43 @@ pages still start at the top and scroll normally.
   "Share your Collection Form to start collecting.", handed over through
   session storage so a reload never repeats it. Addresses wrap only after a
   slash (`PublicAddress`), never inside the slug.
+- Billing, the Pro offer: the sidebar's plan card told in full, so the sale
+  reads as one thing from the sidebar to this page. Inside the "Upgrade to
+  Pro" card, a `--brand-soft` poster (`--radius-lg`, no border, 24px
+  padding) holds the plan's own name as a `micro` eyebrow, the sentence
+  Stripe sends as the promise at `heading`, the price as the one number at
+  `kpi` in Gelica with tabular figures and the interval as a `small` suffix,
+  the promises as a list whose Tabler check is centred on its line in
+  `--brand-text`, and the amber button with the sparkle drawn in ink as its
+  icon. The starstruck blob sits in the bottom right at 400px, cropped by
+  the poster on two sides and tilted 8 degrees left: the founder's third
+  exception to the 96 to 200px range, decided on 2026-09-10 (the first two
+  are `/templates` and the sidebar card, section 4). It is that big because
+  the poster is as wide as its card while the words are one column: at 200
+  and again at 280 the mascot only moved the void to the middle, and the
+  block read as text at one edge and a drawing at the other. The size is set
+  by the empty amber, not by the mascot. It shrinks in three steps and the
+  steps are **container queries on the poster, never window breakpoints**:
+  this card is a column beside a sidebar on one screen and the whole page on
+  another, so the window says nothing about the room the mascot has, and a
+  window-wide breakpoint shrank it while the poster was still 880px
+  wide. Full size from 768px of poster, 0.7 from 576, 0.55 from 448, and
+  under that it goes and the poster is words alone. Only the crop stays
+  fixed at every size: about a tenth of the width and a fifth of the height,
+  the ratio the sidebar card uses. Cropping harder turns the blob into a
+  dome with two stars in it, which is what a percentage `translate` sitting
+  on the same element as the `scale` quietly does, since it is read against
+  the unscaled box: the offset belongs on an inner element so the scale
+  takes it down too. Monthly and Annual are the
+  `Segmented` primitive, never two Buttons, one of which wore the amber fill
+  and the pressed tint at once; the two free months an annual plan gives are
+  said by hand, an `ArrowNote` pointing at the Annual tab, because a tag was
+  one more pill and the founder asked to see them. The note and the mascot
+  are the region's pair (section 4). Payment finishing on Stripe stays a
+  quiet line under a rule, with no button beside it: the poster holds the
+  one that sells. Chosen by the founder on 2026-09-10 among four drafts
+  (receipt, poster, comparison, rows);
+  `src/components/billing/pro-offer.tsx`.
 - Inbox: the four categories as tabs with their counts, Pending first
   because it is the queue, and nothing else to set: no type or sort
   controls, newest first. Under the tabs, one list panel (`--surface`,

@@ -679,9 +679,10 @@ it("charges the selected annual offer and displays the full annual total", async
       navigateToCheckout={() => undefined}
     />,
   );
-  fireEvent.click(
-    screen.getByRole("button", { name: /Annual.*2 months free/ }),
-  );
+  // The two free months are no longer folded into the tab's label: they are
+  // the handwritten note pointing at it (DESIGN.md section 4).
+  expect(screen.getByText("two months on us")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Annual" }));
   expect(screen.getByText(/290/)).toBeVisible();
   expect(screen.getByText(/24.17.*billed annually/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Continue to Stripe" }));
