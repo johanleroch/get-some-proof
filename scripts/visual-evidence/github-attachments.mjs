@@ -46,10 +46,33 @@ export async function uploadAttachment(
   return { ...screenshot, url };
 }
 
+/**
+ * The attachment transport: gh-image and a browser session, one image at a
+ * time. Kept for a contributor who prefers GitHub attachments; it cannot run
+ * on Actions, whose token the attachment endpoint refuses.
+ */
+export async function uploadAttachments(
+  manifest,
+  _github,
+  upload = uploadAttachment,
+) {
+  const published = [];
+  for (const screenshot of manifest.screenshots) {
+    published.push(await upload(manifest.repository, screenshot));
+  }
+  return { published };
+}
+
+/**
+ * Checks the target still points at the captured commit, hands the images to
+ * the transport (which must verify every byte before returning URLs), checks
+ * again, then creates or replaces the one marked comment. A transport that
+ * throws leaves the previous comment intact.
+ */
 export async function publishEvidence(
   manifest,
   github,
-  upload = uploadAttachment,
+  transport = uploadAttachments,
 ) {
   const [owner, repository] = manifest.repository.split("/");
   const targetPath = `/repos/${owner}/${repository}/${manifest.target.kind === "pull" ? "pulls" : "issues"}/${manifest.target.number}`;
@@ -62,19 +85,16 @@ export async function publishEvidence(
     return true;
   };
   if (!(await isCurrent())) return { stale: true, count: 0 };
-  const published = [];
-  for (const screenshot of manifest.screenshots) {
-    published.push(await upload(manifest.repository, screenshot));
-  }
+  const { published, ...hosting } = await transport(manifest, github);
   const comments = await listIssueComments(
     github,
     owner,
     repository,
     manifest.target.number,
   );
-  // Uploading all screens can take minutes; check again immediately before writing.
+  // Publishing all screens can take minutes; check again immediately before writing.
   if (!(await isCurrent())) return { stale: true, count: 0 };
-  const body = renderComment(manifest, published);
+  const body = renderComment(manifest, published, hosting);
   const marker = `<!-- visual-evidence:${manifest.project} -->`;
   const existing = comments.find((comment) => comment.body?.includes(marker));
   await github(
@@ -87,5 +107,5 @@ export async function publishEvidence(
       body: JSON.stringify({ body }),
     },
   );
-  return { stale: false, count: published.length };
+  return { stale: false, count: published.length, ...hosting };
 }

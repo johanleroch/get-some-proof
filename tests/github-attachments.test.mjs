@@ -7,6 +7,7 @@ import {
   attachmentUrl,
   publishEvidence,
   uploadAttachment,
+  uploadAttachments,
 } from "../scripts/visual-evidence/github-attachments.mjs";
 
 const sha = "a".repeat(40);
@@ -25,6 +26,7 @@ const manifest = {
   target: { kind: "pull", number: 57 },
   screenshots: [screenshot],
 };
+const published = async () => ({ published: [{ ...screenshot, url }] });
 const temporary = [];
 afterEach(async () => {
   await Promise.all(
@@ -69,6 +71,14 @@ describe("GitHub visual attachments", () => {
     ).rejects.toThrow(/verification failed/);
   });
 
+  it("uploads every screenshot of the manifest through the attachment transport", async () => {
+    const upload = vi.fn(async (repository, item) => ({ ...item, url }));
+    expect(await uploadAttachments(manifest, null, upload)).toEqual({
+      published: [{ ...screenshot, url }],
+    });
+    expect(upload).toHaveBeenCalledWith("owner/repo", screenshot);
+  });
+
   it.each([
     "![x](https://evil.example/x)",
     `![x](${url})\n![y](${url})`,
@@ -87,11 +97,11 @@ describe("GitHub visual attachments", () => {
         return [{ id: 42, body: "<!-- visual-evidence:project --> old" }];
       return {};
     });
-    const upload = vi.fn(async () => {
+    const transport = vi.fn(async () => {
       events.push("verified-upload");
-      return { ...screenshot, url };
+      return { published: [{ ...screenshot, url }] };
     });
-    expect(await publishEvidence(manifest, github, upload)).toEqual({
+    expect(await publishEvidence(manifest, github, transport)).toEqual({
       stale: false,
       count: 1,
     });
@@ -121,11 +131,11 @@ describe("GitHub visual attachments", () => {
             }
           : [],
       );
-      const upload = vi.fn(async () => ({ ...screenshot, url }));
-      expect((await publishEvidence(manifest, github, upload)).stale).toBe(
+      const transport = vi.fn(published);
+      expect((await publishEvidence(manifest, github, transport)).stale).toBe(
         true,
       );
-      expect(upload).toHaveBeenCalledTimes(duringUpload ? 1 : 0);
+      expect(transport).toHaveBeenCalledTimes(duringUpload ? 1 : 0);
       expect(github.mock.calls.every((call) => !call[1])).toBe(true);
     },
   );
@@ -145,7 +155,7 @@ describe("GitHub visual attachments", () => {
     const github = vi.fn(async (pathname, options) =>
       pathname.includes("comments?") ? [] : options ? {} : { number: 56 },
     );
-    await publishEvidence(issue, github, async () => ({ ...screenshot, url }));
+    await publishEvidence(issue, github, published);
     expect(github.mock.calls.at(-1)[1].method).toBe("POST");
     await expect(
       publishEvidence(issue, async () => ({ pull_request: {} }), vi.fn()),

@@ -5,6 +5,15 @@ const SAFE_SEGMENT = /^[a-z0-9][a-z0-9._-]{0,99}$/;
 const SAFE_TITLE = /^[A-Za-z0-9][A-Za-z0-9 .:()/_-]{0,119}$/;
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_SCREENSHOT_BYTES = 10 * 1024 * 1024;
+// The folders Playwright writes, one per project: desktop-chromium,
+// mobile-webkit and so on. Anything else under the evidence directory, such
+// as the hand-made comparisons kept in visual-evidence/manual, is not a
+// capture of the commit and never enters a manifest.
+const CAPTURE_VIEWPORT = /^(desktop|mobile)-[a-z0-9]+$/;
+
+export function isCaptureViewport(viewport) {
+  return typeof viewport === "string" && CAPTURE_VIEWPORT.test(viewport);
+}
 
 export function assertSafeSegment(value, label) {
   if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
@@ -156,7 +165,7 @@ export async function listIssueComments(
   throw new Error("Too many comments to synchronize safely");
 }
 
-export function renderComment(manifest, publishedScreenshots) {
+export function renderComment(manifest, publishedScreenshots, hosting = {}) {
   const marker = `<!-- visual-evidence:${manifest.project} -->`;
   const headSha = manifest.headSha;
   const images = publishedScreenshots
@@ -167,5 +176,9 @@ export function renderComment(manifest, publishedScreenshots) {
     .join("\n\n");
 
   const targetLabel = manifest.target.kind === "pull" ? "la PR" : "l’issue";
-  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${headSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.\n\n${images}`;
+  const served =
+    hosting.ref && hosting.commit
+      ? ` Images servies depuis \`${hosting.ref}\` (commit \`${hosting.commit}\`).`
+      : "";
+  return `${marker}\n## Visual evidence\n\nCaptures automatiques du commit \`${headSha}\`. Elles remplacent les captures précédentes de ${targetLabel}.${served}\n\n${images}`;
 }
