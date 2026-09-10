@@ -244,3 +244,67 @@ describe("public testimonial wall retrieval", () => {
     ]);
   });
 });
+
+it("converts Senja highlight markup into visible testimonial words", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          `<script>start({data:{reviews:[{id:"marked-review",type:"text",text:"Une <mark>super expérience</mark> !",customer:{name:"Camille"}}]}});</script>`,
+          { headers: { "content-type": "text/html" } },
+        ),
+      ),
+  );
+  try {
+    const preview = await previewWall(
+      "https://senja.io/p/atelier/testimonials",
+    );
+    expect(preview.items[0]?.text).toBe("Une super expérience !");
+    expect(preview.items[0]?.richText).toEqual([
+      {
+        type: "p",
+        children: [
+          { text: "Une " },
+          { text: "super expérience", highlight: true },
+          { text: " !" },
+        ],
+      },
+    ]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("keeps paragraph boundaries and decoded words while dropping unsafe HTML", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          `<script>start({data:{reviews:[{id:"formatted",type:"text",text:"<p>Merci &amp; <mark>bravo<br>encore</mark></p><p>2 &lt; 3<script>alert(1)<\\/script></p>",customer:{name:"Camille"}}]}});</script>`,
+        ),
+      ),
+  );
+  try {
+    const { items } = await previewWall(
+      "https://senja.io/p/atelier/testimonials",
+    );
+    expect(items[0]?.text).toBe("Merci & bravo\nencore\n2 < 3");
+    expect(items[0]?.richText).toEqual([
+      {
+        type: "p",
+        children: [{ text: "Merci & " }, { text: "bravo", highlight: true }],
+      },
+      {
+        type: "p",
+        children: [{ text: "encore", highlight: true }, { text: "" }],
+      },
+      { type: "p", children: [{ text: "2 < 3" }] },
+    ]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

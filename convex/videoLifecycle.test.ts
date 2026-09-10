@@ -125,3 +125,69 @@ describe("Video reservation cleanup", () => {
     );
   });
 });
+
+describe("Video duration limits", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it.each([
+    { imported: false, duration: 120, status: "ready" },
+    { imported: false, duration: 121, status: "failed" },
+    { imported: true, duration: 600, status: "ready" },
+    { imported: true, duration: 601, status: "failed" },
+  ])(
+    "$imported import, $duration seconds becomes $status",
+    async ({ imported, duration, status }) => {
+      const { t, upload } = await setup();
+      const video = await upload("duration-boundary");
+      await t.run(async (ctx) => {
+        const asset = (await ctx.db.get(video.assetId))!;
+        await ctx.db.patch(asset._id, {
+          status: "processing",
+          providerAssetId: "duration-asset",
+        });
+        if (imported) {
+          const jobId = await ctx.db.insert("testimonialImportJobs", {
+            organizationId: asset.organizationId,
+            createdBy: "fixture-owner",
+            provider: "senja",
+            sourceUrl: "https://love.senja.io/",
+            itemCount: 1,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + 86400000,
+          });
+          const itemId = await ctx.db.insert("testimonialImportItems", {
+            organizationId: asset.organizationId,
+            jobId,
+            position: 0,
+            sourceId: "duration-review",
+            type: "video",
+            authorName: "Camille",
+            text: "",
+            videoStatus: "processing",
+            videoAssetId: asset._id,
+          });
+          await ctx.db.patch(asset._id, { importItemId: itemId });
+        }
+      });
+      await t.mutation(internal.videoWebhooks.applyEvent, {
+        event: {
+          id: "duration-ready",
+          type: "video.asset.ready",
+          data: {
+            id: "duration-asset",
+            passthrough: video.reservationId,
+            duration,
+            playback_ids: [{ id: "duration-playback", policy: "public" }],
+          },
+        },
+        retryTokenHash: "fixture-hash",
+        retryTokenSeed: "fixture-seed",
+      });
+      const asset = await t.run((ctx) => ctx.db.get(video.assetId));
+      expect(asset?.status).toBe(status);
+      if (status === "failed")
+        expect(asset?.failureReason).toBe(
+          `Video must be no longer than ${imported ? 10 : 2} minutes.`,
+        );
+    },
+  );
+});

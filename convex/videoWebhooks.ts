@@ -12,7 +12,10 @@ import {
   type MutationCtx,
 } from "./_generated/server";
 import { hashSubmissionManagementToken } from "./domain/submission";
-import { deriveVideoRetryToken } from "./domain/video";
+import {
+  deriveVideoRetryToken,
+  maximumImportedVideoDurationSeconds,
+} from "./domain/video";
 import { createVideoRetryLink } from "./videoRetryLinks";
 import { consumeReadyVideoCredit } from "./collectionQuotas";
 import { settleImportedVideo } from "./testimonialImportVideo";
@@ -320,7 +323,8 @@ export const applyEvent = internalMutation({
           typeof data.duration !== "number" ||
           !Number.isFinite(data.duration) ||
           data.duration <= 0 ||
-          data.duration > (asset.assistantImport ? 600 : 120) ||
+          data.duration >
+            (asset.importItemId ? maximumImportedVideoDurationSeconds : 120) ||
           (asset.assistantImport &&
             (!asset.importedFileVerified ||
               !asset.fileSizeBytes ||
@@ -331,7 +335,7 @@ export const applyEvent = internalMutation({
             asset,
             asset.assistantImport
               ? "Imported video must be a verified file no larger than 512 MB and no longer than 10 minutes."
-              : "Video must be no longer than 2 minutes.",
+              : `Video must be no longer than ${asset.importItemId ? maximumImportedVideoDurationSeconds / 60 : 2} minutes.`,
           );
           if (failedNow && asset.testimonialId) {
             await createVideoRetryLink(ctx, asset, {

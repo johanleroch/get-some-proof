@@ -538,7 +538,7 @@ it("saves an OAuth selection once, preserves Pending and rejects revoked consent
     (await t.query(internal.importOAuthCommands.status, statusArgs)).videos[0]
       .failureMessage,
   ).toBe(
-    "This video exceeds the 2-minute limit. Shorten it at the source before retrying.",
+    "This copy failed under the previous 2-minute limit. Retry to apply the current 10-minute import limit.",
   );
   await expect(
     t.mutation(internal.importOAuthCommands.retryVideo, retryArgs),

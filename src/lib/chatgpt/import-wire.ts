@@ -22,6 +22,16 @@ export const snapshotSchema = {
       type: z.enum(["text", "video"]),
       authorName: z.string(),
       text: z.string(),
+      richText: z
+        .array(
+          z.object({
+            type: z.literal("p"),
+            children: z.array(
+              z.object({ text: z.string(), highlight: z.boolean().optional() }),
+            ),
+          }),
+        )
+        .optional(),
       tagline: z.string().optional(),
       avatarUrl: z.string().optional(),
       videoUrl: z.string().optional(),
