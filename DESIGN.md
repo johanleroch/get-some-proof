@@ -750,12 +750,20 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
 - Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
-- Sidebar navigation: the active indicator is one element that slides to
-  the clicked item before the page arrives, overshoots and settles
-  (`--motion-settle`, `--ease-settle`), stretched along its travel and
-  squashed as it lands (`.nav-indicator-travel`, 6 and 4 percent, volume
-  kept); the name and icon change with it, and the route confirms the move.
-  Under reduced motion it jumps.
+- Sidebar navigation: the amber rail in the gutter is the only thing that
+  travels. Its leading edge leaves at once and its trailing edge follows
+  90ms later (`.nav-indicator-rail`, `--motion-base`, `--ease-out-soft`), so
+  the line stretches across the gap and gathers itself into the new row: the
+  squash and stretch of section 8.2 on the one shape that cannot deform,
+  since a 3px line has neither corners to distort nor a radius to smear. The
+  soft pill never moves, it cross-fades under the rail (in on
+  `--motion-base`, out on `--motion-exit`), and the name eases between
+  medium and semibold on Figtree's weight axis (`.nav-item-label`) rather
+  than snapping. A click sends all of it to the clicked item before the page
+  arrives and the route confirms the move; under reduced motion it jumps.
+  Chosen by the founder on 2026-09-10 from four candidates, over the
+  travelling pill that overshot and squashed before it: on a rounded
+  rectangle that body language read as a rubber band.
 - Lists and grids mount with a 30ms stagger, 12px upward travel, opacity from 0. Maximum 12 items staggered; the rest appear instantly.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
   tint.

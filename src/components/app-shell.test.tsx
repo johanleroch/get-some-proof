@@ -144,11 +144,12 @@ describe("AppShell", () => {
       container.querySelector(
         '[data-slot="sidebar-active-indicator"]',
       ) as HTMLElement;
-    expect(indicator().style.transform).toBe("translateY(0px)");
+    expect(indicator().style.top).toBe("0px");
 
     fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
 
-    expect(indicator().style.transform).toBe("translateY(40px)");
+    expect(indicator().style.top).toBe("40px");
+    expect(indicator()).toHaveAttribute("data-travel", "down");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "data-active",
       "true",
@@ -169,7 +170,7 @@ describe("AppShell", () => {
         Inbox
       </AppShell>,
     );
-    expect(indicator().style.transform).toBe("translateY(40px)");
+    expect(indicator().style.top).toBe("40px");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "aria-current",
       "page",
