@@ -1,5 +1,5 @@
-import { expect, it } from "vitest";
-import { components } from "../convex/_generated/api";
+import { expect, it, vi } from "vitest";
+import { api, components } from "../convex/_generated/api";
 import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
 import { importOAuthScope } from "../convex/importOAuthOptions";
 
@@ -106,6 +106,7 @@ it("requires current client consent and a verified existing account", async () =
   const args = {
     actorId,
     clientId: "policy-fixture",
+    issuedAt: Date.now(),
     verifiedAt: Date.now(),
     expiresAt: Date.now() + 900_000,
   };
@@ -178,4 +179,100 @@ it("requires current client consent and a verified existing account", async () =
     },
   });
   expect(await resolve()).toBeNull();
+});
+
+it("revokes only the signed-in account and keeps old grants invalid after reconnecting", async () => {
+  vi.useFakeTimers();
+  try {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const other = await authenticatedUser(t, {
+      email: "other-revoke@example.com",
+    });
+    const clientId = "reconnect-client";
+    await t.mutation(components.betterAuth.adapter.create, {
+      input: {
+        model: "importOAuthClient",
+        data: {
+          clientId,
+          name: "Codex",
+          redirectUris: ["http://127.0.0.1/callback"],
+          scopes: [importOAuthScope],
+        },
+      },
+    });
+    const consent = () =>
+      t.mutation(components.betterAuth.adapter.create, {
+        input: {
+          model: "importOAuthConsent",
+          data: {
+            clientId,
+            userId: owner.actorId,
+            scopes: [importOAuthScope],
+            createdAt: Date.now(),
+          },
+        },
+      });
+    await consent();
+    const args = {
+      actorId: owner.actorId,
+      clientId,
+      issuedAt: Date.now(),
+      verifiedAt: Date.now(),
+      expiresAt: Date.now() + 900_000,
+    };
+    const refresh = await t.mutation(components.betterAuth.adapter.create, {
+      input: {
+        model: "importOAuthRefreshToken",
+        data: {
+          token: "old-refresh-fixture",
+          clientId,
+          userId: owner.actorId,
+          scopes: [importOAuthScope],
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 900_000,
+        },
+      },
+    });
+    expect(
+      await owner.client.query(api.assistantImports.connections, {}),
+    ).toEqual([{ clientId, name: "Codex", createdAt: Date.now() }]);
+    await other.client.mutation(api.assistantImports.revokeConnection, {
+      clientId,
+    });
+    expect(
+      await t.query(components.betterAuth.importGrants.resolve, args),
+    ).not.toBeNull();
+    await owner.client.mutation(api.assistantImports.revokeConnection, {
+      clientId,
+    });
+    expect(
+      await owner.client.query(api.assistantImports.connections, {}),
+    ).toEqual([]);
+    expect(
+      await t.query(components.betterAuth.importGrants.resolve, args),
+    ).toBeNull();
+    await vi.advanceTimersByTimeAsync(1100);
+    await consent();
+    expect(
+      await t.query(components.betterAuth.importGrants.resolve, {
+        ...args,
+        verifiedAt: Date.now(),
+      }),
+    ).toBeNull();
+    expect(
+      await t.mutation(components.betterAuth.importRefreshTokens.consume, {
+        id: String(refresh._id),
+      }),
+    ).toBe(false);
+    expect(
+      await t.query(components.betterAuth.importGrants.resolve, {
+        ...args,
+        issuedAt: Date.now(),
+        verifiedAt: Date.now(),
+      }),
+    ).not.toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });

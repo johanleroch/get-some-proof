@@ -6,6 +6,7 @@ import type { VariantProps } from "class-variance-authority";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { loopDialogOptionTab } from "@/lib/dialog-option-tab";
 
 function AlertDialog(
   props: React.ComponentProps<typeof AlertDialogPrimitive.Root>,
@@ -17,6 +18,7 @@ function AlertDialogContent({
   className,
   onCloseAutoFocus,
   onOpenAutoFocus,
+  onKeyDown,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   // Same contract as DialogContent: focus returns to whatever opened the
@@ -27,6 +29,10 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          loopDialogOptionTab(event);
+        }}
         onCloseAutoFocus={(event) => {
           onCloseAutoFocus?.(event);
           if (event.defaultPrevented) return;

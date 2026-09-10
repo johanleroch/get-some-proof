@@ -5,6 +5,7 @@ import { IconX } from "@tabler/icons-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { loopDialogOptionTab } from "@/lib/dialog-option-tab";
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -37,6 +38,7 @@ function DialogContent({
   className,
   onCloseAutoFocus,
   onOpenAutoFocus,
+  onKeyDown,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
@@ -52,6 +54,10 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          loopDialogOptionTab(event);
+        }}
         onCloseAutoFocus={(event) => {
           onCloseAutoFocus?.(event);
           if (event.defaultPrevented) return;

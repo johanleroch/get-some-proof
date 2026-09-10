@@ -13,6 +13,18 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * only checks that they are reachable and named, never that they act.
  */
 
+/** Safari on macOS uses Option-Tab for all controls; retain plain Tab elsewhere.
+ * Matches microsoft/playwright tests/page/page-focus.spec.ts.
+ */
+async function navigationTab(page: Page, reverse = false) {
+  const macWebKit =
+    process.platform === "darwin" &&
+    page.context().browser()?.browserType().name() === "webkit";
+  await page.keyboard.press(
+    `${macWebKit ? "Alt+" : ""}${reverse ? "Shift+" : ""}Tab`,
+  );
+}
+
 const wcagTags = [
   "wcag2a",
   "wcag2aa",
@@ -124,7 +136,7 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
   const first = await focused(page);
   stops.push(`${first.role}: ${first.name}`);
   for (let index = 0; index < max; index++) {
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     if (
       await page.evaluate(() =>
         document.activeElement?.hasAttribute("data-keyboard-sequence-end"),
@@ -435,7 +447,7 @@ test.describe("keyboard", () => {
       page.getByRole("menuitem", { name: "Delete permanently" }),
     ).toBeFocused();
     // Tab must not escape the menu into the page.
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     expect((await focused(page)).role).toBe("menuitem");
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
@@ -496,7 +508,7 @@ test.describe("keyboard", () => {
 
     const reached = new Set<string>();
     for (let index = 0; index < 6; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(
         stop.inDialog,
@@ -511,7 +523,7 @@ test.describe("keyboard", () => {
       ]),
     );
     for (let index = 0; index < 3; index++) {
-      await page.keyboard.press("Shift+Tab");
+      await navigationTab(page, true);
       expect((await focused(page)).inDialog).toBe(true);
     }
 
@@ -598,7 +610,7 @@ test.describe("keyboard", () => {
 
     const reached = new Set<string>();
     for (let index = 0; index < 14; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(
         stop.inDialog,
@@ -647,7 +659,7 @@ test.describe("keyboard", () => {
     expect((await focused(page)).inDialog).toBe(true);
     const reached = new Set<string>();
     for (let index = 0; index < 4; index++) {
-      await page.keyboard.press("Tab");
+      await navigationTab(page);
       const stop = await focused(page);
       expect(stop.inDialog).toBe(true);
       reached.add(`${stop.role}: ${stop.name}`);
@@ -784,7 +796,7 @@ test.describe("keyboard", () => {
         name: "More actions for Alice Martin's Testimonial",
       })
       .focus();
-    await page.keyboard.press("Tab");
+    await navigationTab(page);
     const still = page.getByRole("button", {
       name: "Preview Remy Jupille's video",
     });

@@ -1,3 +1,4 @@
+import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { ConvexError, v } from "convex/values";
 import { requireOrganizationPermissionForPrincipal } from "./security/organizationAccess";
 import { requireVerifiedPrincipal, type Principal } from "./security/principal";
@@ -12,7 +13,7 @@ import {
   query,
 } from "./_generated/server";
 import { downloadImportAvatar } from "../src/lib/testimonial-import/avatar";
-import { wallProvider } from "./domain/testimonialImport";
+import { importProvider } from "./domain/testimonialImport";
 import { upsertPublicProjection } from "./publicProjection";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
 
@@ -31,6 +32,19 @@ export async function retryOwnedImportAvatar(
     "ownership:manage",
     principal,
   );
+  const job = await ctx.db.get(item.jobId);
+  if (!job) throw new ConvexError({ code: "IMPORT_UNAVAILABLE" });
+  if (job.provider === "assistant") {
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      item.organizationId,
+    );
+    if (
+      entitlement.effectivePlan !== "premium" ||
+      entitlement.state === "past_due"
+    )
+      throw new ConvexError("Pro is required to retry an imported photo.");
+  }
   const testimonial = item.testimonialId
     ? await ctx.db.get(item.testimonialId)
     : null;
@@ -142,7 +156,7 @@ export const source = internalQuery({
   args: copyArgs,
   returns: v.union(
     v.null(),
-    v.object({ provider: wallProvider, url: v.string() }),
+    v.object({ provider: importProvider, url: v.string() }),
   ),
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
@@ -229,12 +243,14 @@ export const expireAttempt = internalMutation({
 export const copy = internalAction({
   args: copyArgs,
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<null> => {
     const source = await ctx.runQuery(
       internal.testimonialImportAvatar.source,
       args,
     );
     if (!source) return null;
+    if (source.provider === "assistant")
+      return ctx.runAction(internal.assistantImportMedia.copyPortrait, args);
     let storageId: Id<"_storage"> | undefined;
     try {
       storageId = await ctx.storage.store(
