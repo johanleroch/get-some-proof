@@ -20,7 +20,7 @@ Commit and review the changes, capture the exact commit, and inspect every image
 
 The publisher requires a clean worktree and matching HEAD. For PRs it checks the remote head before upload and again before updating the comment. An issue manifest cannot target a PR. Every upload must return a GitHub image attachment URL and its authenticated download must match the local SHA-256. A failed upload or verification leaves the previous comment intact.
 
-Preserve unrelated work; use a separate clean checkout when needed. Existing CI captures may be reused only after verifying their repository, target PR, run and full head SHA. Keep their manifest provenance intact and inspect every image. Otherwise, capture again from the reviewed commit with `pnpm test:visual` before building the manifest.
+Preserve unrelated work; use a separate clean checkout when needed. Existing CI captures may be reused only after verifying their repository, target PR, run, full head SHA and that their scope matches the affected interfaces selected under [the skill](../../.agents/skills/visual-evidence/SKILL.md). Keep their manifest provenance intact and inspect every image. Otherwise, capture the selected tests again from the reviewed commit into a fresh `VISUAL_EVIDENCE_DIR` before building the manifest. Use that same directory for publication.
 
 ## Automatic publication
 
