@@ -242,8 +242,19 @@ for (const screen of config.screens) {
     }
     if (fixtureMode && screen.slug === "workspace-billing") {
       await page.getByRole("button", { name: "Annual" }).click();
+      // Scrolling to the card's title left the offer poster below the fold on
+      // desktop, so the capture proved everything about this screen except
+      // the block it exists to show. Scroll the whole card instead: it fits a
+      // desktop viewport, so the interval, the handwritten note and the
+      // poster with its mascot all land in one frame.
       await page
-        .getByRole("heading", { name: "Upgrade to Pro", exact: true })
+        .locator("[data-slot=card]")
+        .filter({
+          has: page.getByRole("heading", {
+            name: "Upgrade to Pro",
+            exact: true,
+          }),
+        })
         .scrollIntoViewIfNeeded();
     }
     if (fixtureMode && screen.slug === "account-invoices") {
