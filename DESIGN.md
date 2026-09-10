@@ -782,9 +782,14 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides
   the animation control. This does not add a marquee to live customer Walls.
-- Animate `transform` and `opacity` only. The global
-  `prefers-reduced-motion` rule in `globals.css` stays and every animation
-  must look correct when it fires (final state, no draw-in).
+- Animate `transform` and `opacity` only, with one exception: the sidebar's
+  active rail moves its `top` and `bottom` edges, because two edges on
+  independent delays is what makes the line stretch, and a `scaleY` would
+  smear the rounded caps it exists to keep. It is 3px wide and out of flow,
+  so the layout it costs is a rounding error; nothing else in the interface
+  gets that licence. The global `prefers-reduced-motion` rule in
+  `globals.css` stays and every animation must look correct when it fires
+  (final state, no draw-in).
 
 Review the curves and replay every entrance in the development `/kit` page,
 Motion section.

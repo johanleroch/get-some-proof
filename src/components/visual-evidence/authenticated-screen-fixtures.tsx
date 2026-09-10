@@ -62,8 +62,9 @@ function useFixtureImage() {
 }
 
 /**
- * The fictional project every authenticated screenshot is taken on. The file
- * lives in `public/fixtures/`, so swapping the image swaps it everywhere.
+ * The fictional project every authenticated screenshot is taken on: Bumpr's
+ * own mark on its black, the only fixture asset under `public/fixtures/`.
+ * Dropping a different file at that path changes every screenshot at once.
  */
 const bumprLogo = "/fixtures/bumpr-logo.svg";
 

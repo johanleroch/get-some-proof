@@ -150,6 +150,18 @@ describe("AppShell", () => {
 
     expect(indicator().style.top).toBe("40px");
     expect(indicator()).toHaveAttribute("data-travel", "down");
+
+    // Back up the list: the other edge of the rail has to lead, so the
+    // direction has to flip with it.
+    fireEvent.click(screen.getByRole("link", { name: "Overview" }));
+
+    expect(indicator().style.top).toBe("0px");
+    expect(indicator()).toHaveAttribute("data-travel", "up");
+
+    fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
+
+    expect(indicator().style.top).toBe("40px");
+    expect(indicator()).toHaveAttribute("data-travel", "down");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "data-active",
       "true",
