@@ -61,6 +61,12 @@ function useFixtureImage() {
   };
 }
 
+/**
+ * The fictional project every authenticated screenshot is taken on. The file
+ * lives in `public/fixtures/`, so swapping the image swaps it everywhere.
+ */
+const bumprLogo = "/fixtures/bumpr-logo.svg";
+
 export function ToastErrorScreenFixture() {
   return (
     <section className="bg-card min-h-64 rounded-xl border p-6 shadow-xs">
@@ -91,14 +97,14 @@ export function ProfileScreenFixture() {
   const image = useFixtureImage();
   return (
     <AppShellView
-      organizationId={"fixture-harbor" as Id<"organizations">}
-      organizationName="Harbor Studio"
-      organizationPublicSlug="harbor-studio"
-      organizationSlug="harbor-studio"
+      organizationId={"fixture-bumpr" as Id<"organizations">}
+      organizationName="Bumpr"
+      organizationPublicSlug="bumpr"
+      organizationSlug="bumpr"
       pathname="/account/profile"
       account={{
         effectivePlan: "free",
-        freeProjectId: "fixture-harbor" as Id<"organizations">,
+        freeProjectId: "fixture-bumpr" as Id<"organizations">,
       }}
       authorization={{
         can: { manageOwnership: true, updateOrganization: true },
@@ -116,13 +122,15 @@ export function ProfileScreenFixture() {
           canReadAudit={false}
           canReadBilling={false}
           canUpdateOrganization
-          currentName="Harbor Studio"
-          currentSlug="harbor-studio"
+          currentLogoUrl={bumprLogo}
+          currentName="Bumpr"
+          currentSlug="bumpr"
           organizations={[
             {
-              id: "fixture-harbor",
-              name: "Harbor Studio",
-              slug: "harbor-studio",
+              id: "fixture-bumpr",
+              logoUrl: bumprLogo,
+              name: "Bumpr",
+              slug: "bumpr",
             },
           ]}
           status="Exhausted"
@@ -698,10 +706,13 @@ export function DashboardBackgroundScreenFixture({
   plan?: "free" | "premium";
   inactive?: boolean;
 }) {
+  // Bumpr carries a logo and Northwind does not, so every screenshot of the
+  // sidebar and the project menu shows both states of the title.
   const projects = [
-    { id: "fixture-harbor", name: "Harbor Studio", slug: "harbor-studio" },
+    { id: "fixture-bumpr", logoUrl: bumprLogo, name: "Bumpr", slug: "bumpr" },
     {
       id: "fixture-northwind",
+      logoUrl: null,
       name: "Northwind Coffee",
       slug: "northwind-coffee",
     },
@@ -745,6 +756,7 @@ export function DashboardBackgroundScreenFixture({
           canReadAudit={false}
           canReadBilling={false}
           canUpdateOrganization
+          currentLogoUrl={project.logoUrl}
           currentName={project.name}
           currentSlug={project.slug}
           organizations={
@@ -830,16 +842,16 @@ export function AccountFreeProjectScreenFixture() {
       <AccountFreeProjectSelectionView
         projects={[
           {
-            id: "fixture-harbor" as Id<"organizations">,
-            name: "Harbor Studio",
+            id: "fixture-bumpr" as Id<"organizations">,
+            name: "Bumpr",
           },
           {
             id: "fixture-northwind" as Id<"organizations">,
             name: "Northwind Coffee",
           },
         ]}
-        freeProjectId={"fixture-harbor" as Id<"organizations">}
-        freeProjectName="Harbor Studio"
+        freeProjectId={"fixture-bumpr" as Id<"organizations">}
+        freeProjectName="Bumpr"
         status="Exhausted"
         loadMore={() => undefined}
         selectProject={async () => undefined}

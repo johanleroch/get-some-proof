@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { AccountBilling } from "./account-billing";
 
 const mocks = vi.hoisted(() => ({
-  projects: [{ id: "own-project", slug: "harbor-studio" }],
+  projects: [{ id: "own-project", slug: "bumpr" }],
   deleting: false,
 }));
 vi.mock("convex/react", async () => {
@@ -34,14 +34,12 @@ vi.mock("./account-closure", () => ({
 }));
 beforeEach(() => {
   cleanup();
-  mocks.projects = [{ id: "own-project", slug: "harbor-studio" }];
+  mocks.projects = [{ id: "own-project", slug: "bumpr" }];
   mocks.deleting = false;
 });
 it("shows full plan controls in the personal account", () => {
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for harbor-studio"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "View plan details" })).toBeNull();
 });
 it("preserves billing access without a project", () => {
@@ -62,8 +60,6 @@ it("does not expose plan actions while account deletion is running", () => {
 it("does not select another account's project for personal billing", () => {
   mocks.projects.unshift({ id: "foreign-project", slug: "aaa-other-account" });
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for harbor-studio"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByText("Plan controls for aaa-other-account")).toBeNull();
 });

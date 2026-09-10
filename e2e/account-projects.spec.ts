@@ -28,7 +28,7 @@ test("Free exposes shared credits and an upgrade path from project creation", as
   await openProjectSelector(page);
   await expect(
     page.getByRole("menuitem", { name: "Create project" }),
-  ).toHaveAttribute("href", "/org/harbor-studio/billing");
+  ).toHaveAttribute("href", "/org/bumpr/billing");
 });
 
 test("Pro switches independent projects while keeping the Account plan and shared usage", async ({
@@ -68,7 +68,7 @@ test("a downgraded project explains its private-only availability", async ({
     page.getByRole("region", { name: "Inactive project" }),
   ).toContainText("Collection, the public Wall, and embeds are disabled.");
   await expect(
-    page.getByRole("heading", { name: "Harbor Studio", exact: true }),
+    page.getByRole("heading", { name: "Bumpr", exact: true }),
   ).toBeVisible();
 });
 

@@ -57,9 +57,9 @@ describe("AppShell", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
@@ -76,9 +76,9 @@ describe("AppShell", () => {
     const { container } = render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
@@ -113,16 +113,16 @@ describe("AppShell", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
     );
     expect(
       screen.getByRole("link", { name: "Inbox, 3 to review" }),
-    ).toHaveAttribute("href", "/org/harbor-1234/inbox");
+    ).toHaveAttribute("href", "/org/bumpr-1234/inbox");
     expect(screen.getByRole("link", { name: "Public Wall" })).toHaveAttribute(
       "target",
       "_blank",

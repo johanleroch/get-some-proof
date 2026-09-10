@@ -26,10 +26,10 @@ export function BillingVisualFixture({
   return (
     <AppShellView
       organizationId={"fixture-billing" as Id<"organizations">}
-      organizationName="Harbor Studio"
-      organizationPublicSlug="harbor-studio"
-      organizationSlug="harbor-studio"
-      pathname="/org/harbor-studio/billing"
+      organizationName="Bumpr"
+      organizationPublicSlug="bumpr"
+      organizationSlug="bumpr"
+      pathname="/org/bumpr/billing"
       account={{
         effectivePlan: premium ? "premium" : "free",
         freeProjectId: "fixture-billing" as Id<"organizations">,
@@ -49,8 +49,9 @@ export function BillingVisualFixture({
       }
       projectSwitcher={
         <OrganizationSwitcherView
-          currentName="Harbor Studio"
-          currentSlug="harbor-studio"
+          currentLogoUrl="/fixtures/bumpr-logo.svg"
+          currentName="Bumpr"
+          currentSlug="bumpr"
           canCreateProject={premium}
           canReadAudit={false}
           canReadBilling={false}
@@ -58,8 +59,9 @@ export function BillingVisualFixture({
           organizations={[
             {
               id: "fixture-billing",
-              name: "Harbor Studio",
-              slug: "harbor-studio",
+              logoUrl: "/fixtures/bumpr-logo.svg",
+              name: "Bumpr",
+              slug: "bumpr",
             },
           ]}
           status="Exhausted"
