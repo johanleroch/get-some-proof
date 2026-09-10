@@ -17,6 +17,7 @@ import { ErrorToast } from "@/components/ui/error-toast";
 import { Field, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 
 /** The title and lead above the account form. They leave with the form. */
@@ -120,13 +121,12 @@ export function SignUpFormView({
         </Field>
         <Field>
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             autoComplete="new-password"
             id="password"
             minLength={8}
             name="password"
             required
-            type="password"
           />
           <FieldDescription>Use at least 8 characters.</FieldDescription>
         </Field>
