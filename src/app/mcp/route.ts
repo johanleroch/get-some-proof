@@ -120,7 +120,9 @@ export async function POST(request: Request) {
     if (command === "migration")
       return assistantMigrationStatusSchema.parse(body);
     const saved = (
-      command === "status" || command === "retry-portrait"
+      command === "status" ||
+      command === "retry-portrait" ||
+      command === "resume-videos"
         ? importStatusSchema
         : savedImportSchema
     )
@@ -289,6 +291,7 @@ export async function POST(request: Request) {
       destinations: (cursor) => assistantRequest("projects", { cursor }),
       status: (jobId) => assistantRequest("status", { jobId }),
       retryPortrait: (args) => assistantRequest("retry-portrait", args),
+      resumeVideos: (args) => assistantRequest("resume-videos", args),
       submitText: (args) => assistantRequest("text", args),
       submitBatch: (args) => assistantRequest("batch", args),
       migrationStatus: (args) => assistantRequest("migration", args),

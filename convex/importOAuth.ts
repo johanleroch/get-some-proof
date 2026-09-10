@@ -4,6 +4,7 @@ import {
   assistantBatchInput,
   assistantMigrationInput,
   assistantUploadInput,
+  assistantResumeInput,
 } from "../src/lib/chatgpt/assistant-tools";
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth/minimal";
@@ -207,6 +208,7 @@ function importCommandHttp(
     | "eligibility"
     | "assistant-text"
     | "assistant-upload"
+    | "assistant-resume-videos"
     | "assistant-migration"
     | "assistant-batch"
     | "assistant-projects"
@@ -240,7 +242,9 @@ function importCommandHttp(
           ? 504_096
           : command === "assistant-text"
             ? 60_000
-            : 1024)
+            : command === "assistant-resume-videos"
+              ? 8192
+              : 1024)
       ) {
         await reader.cancel();
         return new Response(null, { status: 413, headers });
@@ -258,7 +262,24 @@ function importCommandHttp(
       if (!args || typeof args !== "object")
         return new Response(null, { status: 400, headers });
       let result: unknown;
-      if (command === "assistant-upload") {
+      if (command === "assistant-resume-videos") {
+        const input = assistantResumeInput.parse(args);
+        const jobId =
+          input.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">;
+        await ctx.runMutation(
+          internal.assistantImports.resumeVideosForAssistant,
+          {
+            grant,
+            jobId,
+            itemIds:
+              input.itemIds as import("./_generated/dataModel").Id<"testimonialImportItems">[],
+          },
+        );
+        result = await ctx.runQuery(internal.assistantImports.status, {
+          grant,
+          jobId,
+        });
+      } else if (command === "assistant-upload") {
         const input = assistantUploadInput.parse(args);
         result = await ctx.runAction(
           internal.assistantUploads.issueForAssistant,
@@ -416,3 +437,7 @@ export const assistantPortraitRetryHttp = importCommandHttp(
 export const assistantMigrationHttp = importCommandHttp("assistant-migration");
 
 export const assistantUploadHttp = importCommandHttp("assistant-upload");
+
+export const assistantResumeVideosHttp = importCommandHttp(
+  "assistant-resume-videos",
+);

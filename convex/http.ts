@@ -12,6 +12,7 @@ import {
   assistantBatchHttp,
   assistantMigrationHttp,
   assistantUploadHttp,
+  assistantResumeVideosHttp,
   assistantProjectsHttp,
   assistantStatusHttp,
   assistantPortraitRetryHttp,
@@ -138,8 +139,6 @@ http.route({
   handler: importEligibilityHttp,
 });
 
-export default http;
-
 http.route({
   method: "POST",
   path: "/api/import-mcp/assistant-migration",
@@ -162,3 +161,11 @@ http.route({
   path: "/api/import-mcp/assistant-upload",
   handler: assistantUploadHttp,
 });
+
+http.route({
+  path: "/api/import-mcp/assistant-resume-videos",
+  method: "POST",
+  handler: assistantResumeVideosHttp,
+});
+
+export default http;

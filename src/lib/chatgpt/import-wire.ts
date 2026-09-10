@@ -87,6 +87,7 @@ export const savedImportSchema = z.object({
 });
 
 export const importStatusSchema = savedImportSchema.extend({
+  availableVideoSlots: z.number().int().nonnegative().optional(),
   photos: z
     .array(
       z.object({

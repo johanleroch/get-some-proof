@@ -1,3 +1,4 @@
+import { authzForOrganization } from "./authorization";
 import { ConvexError, v, type Infer } from "convex/values";
 import {
   internalMutation,
@@ -23,6 +24,10 @@ import {
 import type { ImportAccessGrant } from "./domain/importAccessToken";
 import { listImportDestinations } from "./anonymousWallImports";
 import { confirmOwnedImport } from "./testimonialImports";
+import { getVideoStorageAvailability } from "./collectionQuotas";
+import { retryOwnedImportVideo } from "./testimonialImportVideo";
+import { requireVerifiedPrincipal, type Principal } from "./security/principal";
+import type { Id } from "./_generated/dataModel";
 import { retryOwnedImportAvatar } from "./testimonialImportAvatar";
 import {
   importResult,
@@ -98,6 +103,7 @@ export const status = internalQuery({
     jobId: v.id("testimonialImportJobs"),
     organizationSlug: v.string(),
     result: importResult,
+    availableVideoSlots: v.number(),
     outcomes: v.array(assistantOutcome),
     photos: v.array(
       v.object({
@@ -140,11 +146,17 @@ export const status = internalQuery({
       "ownership:manage",
       principal,
     );
-    const items = await ctx.db
-      .query("testimonialImportItems")
-      .withIndex("by_jobId_and_position", (q) => q.eq("jobId", job._id))
-      .take(50);
+    const [items, capacity] = await Promise.all([
+      ctx.db
+        .query("testimonialImportItems")
+        .withIndex("by_jobId_and_position", (q) => q.eq("jobId", job._id))
+        .take(50),
+      getVideoStorageAvailability(ctx, job.organizationId),
+    ]);
     return {
+      availableVideoSlots: capacity.available
+        ? Math.max(0, capacity.limit - capacity.used)
+        : 0,
       jobId: job._id,
       organizationSlug: organization.slug,
       result: job.result,
@@ -604,6 +616,7 @@ export const inboxStatus = query({
       result: importResult,
       createdCount: v.number(),
       readyCount: v.number(),
+      availableVideoSlots: v.number(),
       canUpload: v.boolean(),
       items: v.array(
         v.object({
@@ -634,12 +647,13 @@ export const inboxStatus = query({
       !job.result
     )
       return null;
-    const [entitlement, items] = await Promise.all([
+    const [entitlement, items, capacity] = await Promise.all([
       getOrganizationBillingEntitlement(ctx, job.organizationId),
       ctx.db
         .query("testimonialImportItems")
         .withIndex("by_jobId_and_position", (q) => q.eq("jobId", job._id))
         .take(50),
+      getVideoStorageAvailability(ctx, job.organizationId),
     ]);
     return {
       jobId: job._id,
@@ -653,6 +667,9 @@ export const inboxStatus = query({
           item.outcome !== "changed",
       ).length,
       readyCount: items.filter((item) => item.videoStatus === "ready").length,
+      availableVideoSlots: capacity.available
+        ? Math.max(0, capacity.limit - capacity.used)
+        : 0,
       canUpload:
         entitlement.effectivePlan === "premium" &&
         entitlement.state !== "past_due",
@@ -666,5 +683,137 @@ export const inboxStatus = query({
         hasVideoUrl: !!item.videoUrl,
       })),
     };
+  },
+});
+
+const resumeVideoArgs = {
+  jobId: v.id("testimonialImportJobs"),
+  itemIds: v.array(v.id("testimonialImportItems")),
+};
+async function resumeOwnedVideos(
+  ctx: MutationCtx,
+  args: {
+    jobId: Id<"testimonialImportJobs">;
+    itemIds: Id<"testimonialImportItems">[];
+  },
+  principal: Principal,
+) {
+  const job = await ctx.db.get(args.jobId);
+  if (
+    !job ||
+    job.provider !== "assistant" ||
+    job.createdBy !== principal.actorId
+  )
+    throw new ConvexError("Import unavailable.");
+  await requireOrganizationPermissionForPrincipal(
+    ctx,
+    { organizationId: job.organizationId },
+    "ownership:manage",
+    principal,
+  );
+  const entitlement = await getOrganizationBillingEntitlement(
+    ctx,
+    job.organizationId,
+  );
+  if (
+    entitlement.effectivePlan !== "premium" ||
+    entitlement.state === "past_due"
+  )
+    throw new ConvexError("Pro is required to start another media transfer.");
+  if (
+    !args.itemIds.length ||
+    args.itemIds.length > 50 ||
+    new Set(args.itemIds).size !== args.itemIds.length
+  )
+    throw new ConvexError("Choose between 1 and 50 distinct failed videos.");
+  const items = await Promise.all(args.itemIds.map((id) => ctx.db.get(id)));
+  for (const item of items) {
+    if (
+      !item ||
+      item.jobId !== job._id ||
+      item.organizationId !== job.organizationId ||
+      item.type !== "video" ||
+      item.videoStatus !== "failed" ||
+      !item.testimonialId
+    )
+      throw new ConvexError({
+        code: "INVALID_RETRY",
+        message: "Only failed videos from this import can be resumed.",
+      });
+    if (!item.videoUrl)
+      throw new ConvexError({
+        code: "INVALID_RETRY",
+        message:
+          "Choose the original local file for videos without a public file URL.",
+      });
+  }
+  const capacity = await getVideoStorageAvailability(ctx, job.organizationId);
+  const available = capacity.available
+    ? Math.max(0, capacity.limit - capacity.used)
+    : 0;
+  if (args.itemIds.length > available)
+    throw new ConvexError({
+      code: "VIDEO_CAPACITY_REACHED",
+      message: `Choose at most ${available} videos with the storage currently available.`,
+    });
+  // Each reservation observes the preceding writes. A failure rolls back the
+  // whole explicit selection, including workflow scheduling.
+  for (const itemId of args.itemIds)
+    await retryOwnedImportVideo(ctx, itemId, principal, job._id);
+  return null;
+}
+export const resumeVideos = mutation({
+  args: resumeVideoArgs,
+  returns: v.null(),
+  handler: async (ctx, args) =>
+    resumeOwnedVideos(ctx, args, await requireVerifiedPrincipal(ctx)),
+});
+export const resumeVideosForAssistant = internalMutation({
+  args: { ...resumeVideoArgs, grant: importGrant },
+  returns: v.null(),
+  handler: async (ctx, args) =>
+    resumeOwnedVideos(ctx, args, await requirePaidAssistant(ctx, args.grant)),
+});
+
+export const recent = query({
+  args: { organizationId: v.id("organizations") },
+  returns: v.array(
+    v.object({
+      jobId: v.id("testimonialImportJobs"),
+      sourceUrl: v.string(),
+      createdAt: v.number(),
+      result: v.optional(importResult),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const { principal, tenantId } = await requireOrganizationPermission(
+      ctx,
+      args,
+      "organization:read",
+    );
+    if (
+      !(await authzForOrganization(tenantId).can(
+        ctx,
+        principal.actorId,
+        "ownership:manage",
+      ))
+    )
+      return [];
+    const jobs = await ctx.db
+      .query("testimonialImportJobs")
+      .withIndex("by_organizationId_and_provider_and_createdBy", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("provider", "assistant")
+          .eq("createdBy", principal.actorId),
+      )
+      .order("desc")
+      .take(10);
+    return jobs.map((job) => ({
+      jobId: job._id,
+      sourceUrl: job.sourceUrl,
+      createdAt: job.createdAt,
+      result: job.result,
+    }));
   },
 });

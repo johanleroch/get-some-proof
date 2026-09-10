@@ -4,6 +4,12 @@ import { z } from "zod";
 export class AssistantAuthenticationRequired extends Error {}
 
 const operationMessages = {
+  VIDEO_CAPACITY_REACHED:
+    "Video capacity changed. Read import progress and choose only the failed videos that fit the available storage.",
+  INVALID_RETRY:
+    "Select only failed videos from this import. Use the Inbox file picker for a video without a public file URL.",
+  IMPORT_UNAVAILABLE:
+    "This import is unavailable. Open the Inbox to check its current state.",
   ASSISTANT_BATCH_CONFLICT:
     "This request ID belongs to a different batch. Retry with the original payload, or use a new request ID for a new batch. Existing testimonials were preserved.",
   ASSISTANT_BATCH_LIMIT:
@@ -12,6 +18,9 @@ const operationMessages = {
     "Provide bounded original text and an explicit stable source identity. Report ambiguous identities to the Owner instead of guessing.",
 } as const;
 export const assistantOperationCode = z.enum([
+  "VIDEO_CAPACITY_REACHED",
+  "INVALID_RETRY",
+  "IMPORT_UNAVAILABLE",
   "ASSISTANT_BATCH_CONFLICT",
   "ASSISTANT_BATCH_LIMIT",
   "ASSISTANT_SOURCE_IDENTITY",
@@ -91,6 +100,9 @@ export const assistantTextInput = z.object({
 });
 
 export type AssistantGateway = {
+  resumeVideos?(
+    input: z.infer<typeof assistantResumeInput>,
+  ): Promise<Record<string, unknown>>;
   upload?(
     input: z.infer<typeof assistantUploadInput>,
   ): Promise<Record<string, unknown>>;
@@ -111,6 +123,11 @@ export type AssistantGateway = {
     itemId: string;
   }): Promise<Record<string, unknown>>;
 };
+
+export const assistantResumeInput = z.object({
+  jobId: z.string().min(1).max(128),
+  itemIds: z.array(z.string().min(1).max(128)).min(1).max(50),
+});
 
 export const assistantUploadInput = z.object({
   jobId: z.string().min(1).max(128),
@@ -257,6 +274,38 @@ export function registerAssistantTools(
       async (args) => {
         try {
           const result = await gateway.submitBatch!(args);
+          return {
+            structuredContent: result,
+            content: [{ type: "text" as const, text: JSON.stringify(result) }],
+          };
+        } catch (error) {
+          return failure(error, gateway);
+        }
+      },
+    );
+  if (gateway.resumeVideos)
+    server.registerTool(
+      "resume_assistant_import_videos",
+      {
+        title: "Resume chosen failed videos",
+        description:
+          "After the Owner chooses the videos to resume, retry only those failed videos from this import using their original public file URLs. Read availableVideoSlots first; an oversized selection is rejected without reserving an arbitrary subset. Existing Ready media and testimonial identity are preserved. A missing local file requires create_assistant_video_upload or the Inbox file picker. The returned Processing state is not Ready.",
+        inputSchema: assistantResumeInput.shape,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: true,
+          idempotentHint: false,
+        },
+        _meta: {
+          securitySchemes: [
+            { type: "oauth2", scopes: ["testimonials:import"] },
+          ],
+        },
+      },
+      async (args) => {
+        try {
+          const result = await gateway.resumeVideos!(args);
           return {
             structuredContent: result,
             content: [{ type: "text" as const, text: JSON.stringify(result) }],

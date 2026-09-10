@@ -1,3 +1,4 @@
+import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { ConvexError, v } from "convex/values";
 import { requireOrganizationPermissionForPrincipal } from "./security/organizationAccess";
 import { requireVerifiedPrincipal, type Principal } from "./security/principal";
@@ -31,6 +32,19 @@ export async function retryOwnedImportAvatar(
     "ownership:manage",
     principal,
   );
+  const job = await ctx.db.get(item.jobId);
+  if (!job) throw new ConvexError({ code: "IMPORT_UNAVAILABLE" });
+  if (job.provider === "assistant") {
+    const entitlement = await getOrganizationBillingEntitlement(
+      ctx,
+      item.organizationId,
+    );
+    if (
+      entitlement.effectivePlan !== "premium" ||
+      entitlement.state === "past_due"
+    )
+      throw new ConvexError("Pro is required to retry an imported photo.");
+  }
   const testimonial = item.testimonialId
     ? await ctx.db.get(item.testimonialId)
     : null;

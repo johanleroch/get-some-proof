@@ -132,6 +132,11 @@ export default defineSchema({
     .index("by_organizationId", ["organizationId"])
     .index("by_migrationId", ["migrationId"])
     .index("by_organizationId_and_requestId", ["organizationId", "requestId"])
+    .index("by_organizationId_and_provider_and_createdBy", [
+      "organizationId",
+      "provider",
+      "createdBy",
+    ])
     .index("by_expiresAt", ["expiresAt"]),
   testimonialImportItems: defineTable({
     avatarAttempt: v.optional(v.number()),

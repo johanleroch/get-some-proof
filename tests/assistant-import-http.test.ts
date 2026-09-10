@@ -667,6 +667,51 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
     }
   });
 
+  const fifty = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "fifty-retries",
+    discoveredCount: 50,
+    items: Array.from({ length: 50 }, (_, i) => ({
+      sourceId: `fifty-${i}`,
+      type: "video",
+      videoUrl: `https://media.example/fifty-${i}.mp4`,
+    })),
+  });
+  const fiftyRetry = await call("resume_assistant_import_videos", {
+    jobId: fifty.structuredContent.jobId,
+    itemIds: fifty.structuredContent.outcomes.map(
+      (item: { itemId: string }) => item.itemId,
+    ),
+  });
+  expect(JSON.stringify(fiftyRetry)).toContain("Video capacity changed.");
+
+  const chosenVideos = overCapacity.structuredContent.outcomes.filter(
+    (item: { status: string }) => item.status === "blocked",
+  );
+  expect(
+    (
+      await call("resume_assistant_import_videos", {
+        jobId: overCapacity.structuredContent.jobId,
+        itemIds: chosenVideos.map((item: { itemId: string }) => item.itemId),
+      })
+    ).isError,
+  ).toBe(true);
+  const resumedSelection = await call("resume_assistant_import_videos", {
+    jobId: overCapacity.structuredContent.jobId,
+    itemIds: chosenVideos
+      .slice(-2)
+      .map((item: { itemId: string }) => item.itemId),
+  });
+  expect(resumedSelection.isError).not.toBe(true);
+  expect(resumedSelection.structuredContent.result).toMatchObject({
+    processing: 2,
+    blocked: 24,
+  });
+  expect(
+    resumedSelection.structuredContent.availableVideoSlots,
+  ).toBeGreaterThanOrEqual(0);
+
   const other = await authenticatedUser(t, { email: "fern@example.com" });
   const otherProject = await other.client.mutation(api.organizations.create, {
     name: "Fern Studio",
