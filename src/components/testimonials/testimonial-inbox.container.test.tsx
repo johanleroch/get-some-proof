@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => {
   const resolved = () => vi.fn().mockResolvedValue(null);
   return {
     functions: {
+      "assistantImports:resumeVideos": resolved(),
+      "testimonialImportAvatar:retry": resolved(),
       "testimonialModeration:generatePosterUploadUrl": resolved(),
       "testimonialModeration:markSpam": resolved(),
       "testimonialModeration:remove": resolved(),
@@ -431,6 +433,30 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(setStatus).toHaveBeenCalledTimes(3);
   });
 
+  it("requires an explicit attestation before publishing imported proof", async () => {
+    mocks.lists.pending = [{ ...alice, requiresImportAttestation: true }];
+    const setStatus = mocks.functions["testimonialModeration:setStatus"]!;
+    render(<TestimonialInbox slug="fernhill" />);
+    fireEvent.click(rowOf(alice).getByRole("button", { name: "Publish" }));
+    const dialog = screen.getByRole("dialog");
+    const publish = within(dialog).getByRole("button", {
+      name: "Publish testimonial",
+    });
+    expect(publish).toBeDisabled();
+    expect(setStatus).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("checkbox"));
+    fireEvent.click(publish);
+    await waitFor(() =>
+      expect(setStatus).toHaveBeenCalledWith({
+        organizationId,
+        testimonialId: alice.testimonialId,
+        status: "published",
+        importAttestationAccepted: true,
+        importAttestationVersion: "2026-09-09",
+      }),
+    );
+  });
+
   it("Mark as Spam quarantines, Not Spam undoes it", async () => {
     render(<TestimonialInbox slug="fernhill" />);
 
@@ -820,5 +846,36 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(successToast()).toHaveTextContent(
       "Alice Martin's Testimonial is now published.",
     );
+  });
+  it("scopes the Inbox list and counts to the import and offers the complete Inbox", () => {
+    render(<TestimonialInbox slug="fernhill" importJobId="job-june" />);
+    expect(mocks.usePaginatedQuery).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ importJobId: "job-june", organizationId }),
+      { initialNumItems: 20 },
+    );
+    expect(mocks.useQuery).toHaveBeenCalledWith(expect.anything(), {
+      importJobId: "job-june",
+      organizationId,
+    });
+    expect(
+      screen.getByText("Showing testimonials from this import."),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Show all testimonials" }),
+    ).toHaveAttribute("href", "/org/fernhill/inbox");
+    goTo(/Published/);
+    expect(mocks.usePaginatedQuery).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        importJobId: "job-june",
+        status: "published",
+        sort: "wall",
+      }),
+      { initialNumItems: 20 },
+    );
+    expect(
+      screen.queryByRole("button", { name: /Move.*up/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -144,6 +144,7 @@ export function ProfileImageControl({
           </div>
         ) : null}
         <input
+          aria-label={`Upload ${label.toLowerCase()}`}
           accept="image/png,image/svg+xml,image/jpeg,image/webp"
           className="sr-only"
           onChange={(event) => {

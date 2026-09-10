@@ -283,7 +283,7 @@
       "title": "Testimonial Inbox - details shown on the Wall",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-inbox-details",
-      "heading": "Details on Alice Martin’s card",
+      "heading": "Details on Alice Martin\u2019s card",
       "theme": "light",
       "requiresAuth": true
     },
@@ -458,6 +458,153 @@
       "fixturePath": "/visual-evidence/account-security",
       "heading": "Security",
       "requiresAuth": true,
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-identity",
+      "title": "Wall import identity correction",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-identity-dark",
+      "title": "Wall import identity correction dark",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import",
+      "title": "Wall import selection",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-url",
+      "title": "Wall import URL",
+      "path": "/visual-evidence/testimonial-import-url",
+      "heading": "Import testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-dark",
+      "title": "Wall import selection - dark",
+      "path": "/visual-evidence/testimonial-import",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-url-dark",
+      "title": "Wall import URL - dark",
+      "path": "/visual-evidence/testimonial-import-url",
+      "heading": "Import testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-publication",
+      "title": "Wall import publication",
+      "path": "/visual-evidence/testimonial-import-publication",
+      "heading": "Publish Camille Laurent's testimonial?",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-publication-dark",
+      "title": "Wall import publication - dark",
+      "path": "/visual-evidence/testimonial-import-publication",
+      "heading": "Publish Camille Laurent's testimonial?",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-expired",
+      "title": "Wall import expired preview",
+      "path": "/visual-evidence/testimonial-import-expired",
+      "heading": "This preview is no longer available",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-failed",
+      "title": "Wall import video failed",
+      "path": "/visual-evidence/testimonial-import-video-failed",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-processing",
+      "title": "Wall import video processing",
+      "path": "/visual-evidence/testimonial-import-video-processing",
+      "heading": "Importing your videos",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-import-video-failed-dark",
+      "title": "Wall import video failed dark",
+      "path": "/visual-evidence/testimonial-import-video-failed",
+      "heading": "Select testimonials",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-video-processing-dark",
+      "title": "Wall import video processing dark",
+      "path": "/visual-evidence/testimonial-import-video-processing",
+      "heading": "Importing your videos",
+      "theme": "dark"
+    },
+    {
+      "slug": "testimonial-import-public",
+      "title": "Public wall import selection",
+      "path": "/visual-evidence/testimonial-import-public",
+      "heading": "Select testimonials",
+      "theme": "light"
+    },
+    {
+      "slug": "mcp-setup",
+      "title": "Assistant import setup",
+      "path": "/visual-evidence/mcp-setup",
+      "heading": "Import with your assistant",
+      "theme": "light"
+    },
+    {
+      "slug": "mcp-setup-free",
+      "title": "Assistant import on Free",
+      "path": "/visual-evidence/mcp-setup-free",
+      "heading": "Import with your assistant",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-recovery",
+      "title": "Assistant import recovery light",
+      "path": "/visual-evidence/assistant-import-recovery",
+      "heading": "Inbox",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-recovery-dark",
+      "title": "Assistant import recovery dark",
+      "path": "/visual-evidence/assistant-import-recovery",
+      "heading": "Inbox",
+      "theme": "dark"
+    },
+    {
+      "slug": "mcp-setup-connected",
+      "title": "Connected assistant settings",
+      "path": "/visual-evidence/mcp-setup-connected",
+      "heading": "Import with your assistant",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-consent",
+      "title": "Assistant connection authorization",
+      "path": "/visual-evidence/assistant-import-consent",
+      "heading": "Connect your proof",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-consent-free",
+      "title": "Assistant authorization on Free",
+      "path": "/visual-evidence/assistant-import-consent-free",
+      "heading": "Connect your proof",
       "theme": "light"
     }
   ]

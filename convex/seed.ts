@@ -277,3 +277,92 @@ export const demo = internalMutation({
     };
   },
 });
+
+/** Synthetic Owner fixture for repeatable real MCP client certification. */
+export const assistantCertification = internalMutation({
+  args: {
+    confirmation: v.literal("SEED_ASSISTANT_CERTIFICATION"),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    profilesCreated: v.number(),
+    subscriptionsCreated: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    requireLocalSeedAuthorization();
+    const project = await ctx.db.get(args.organizationId);
+    const account = project?.accountId
+      ? await ctx.db.get(project.accountId)
+      : null;
+    const user = account
+      ? await ctx.runQuery(components.betterAuth.adapter.findOne, {
+          model: "user",
+          where: [{ field: "_id", value: account.ownerUserId }],
+        })
+      : null;
+    if (
+      !project ||
+      !account ||
+      account.deletionStartedAt ||
+      !user?.emailVerified ||
+      !/^mcp-certification-\d{8}@demo\.example\.invalid$/.test(user.email) ||
+      !project.slug.startsWith("mcp-certification-")
+    )
+      throw new ConvexError(
+        "Use only a synthetic MCP certification Owner and Project.",
+      );
+    const customerId = `cus_mcp_certification_${account._id}`;
+    const subscriptionId = `sub_mcp_certification_${account._id}`;
+    const profile = await ctx.db
+      .query("billingProfiles")
+      .withIndex("by_account", (q) => q.eq("accountId", account._id))
+      .unique();
+    if (
+      profile?.stripeCustomerId &&
+      !profile.stripeCustomerId.startsWith("cus_mcp_certification_")
+    )
+      throw new ConvexError(
+        "Existing billing configuration is not a certification fixture.",
+      );
+    const now = Date.now();
+    const profileData = {
+      accountId: account._id,
+      organizationId: project._id,
+      billingEmail: user.email,
+      stripeCustomerId: customerId,
+      expectedProPriceId: "price_pro_monthly",
+      updatedAt: now,
+    };
+    if (profile) await ctx.db.patch(profile._id, profileData);
+    else
+      await ctx.db.insert("billingProfiles", {
+        ...profileData,
+        createdAt: now,
+      });
+    const subscription = await ctx.db
+      .query("billingSubscriptionStates")
+      .withIndex("by_stripe_subscription", (q) =>
+        q.eq("stripeSubscriptionId", subscriptionId),
+      )
+      .unique();
+    const state = {
+      accountId: account._id,
+      organizationId: project._id,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
+      priceId: "price_pro_monthly",
+      status: "active",
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: Math.floor(now / 1000) + 86_400,
+      lastStripeEventCreated: Math.floor(now / 1000),
+      lastStripeEventId: `evt_mcp_certification_${account._id}`,
+      updatedAt: now,
+    };
+    if (subscription) await ctx.db.patch(subscription._id, state);
+    else await ctx.db.insert("billingSubscriptionStates", state);
+    return {
+      profilesCreated: profile ? 0 : 1,
+      subscriptionsCreated: subscription ? 0 : 1,
+    };
+  },
+});

@@ -4,7 +4,8 @@ import {
 } from "./testimonialImages";
 import { ConvexError, v } from "convex/values";
 
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
+import { cancel, type WorkflowId } from "@convex-dev/workflow";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import {
   action,
@@ -24,9 +25,12 @@ import {
   requireVerifiedPrincipal,
 } from "./security/principal";
 import { cancelVideoDirectUpload, deleteVideoAsset } from "./videoProvider";
+import { preserveImportCopyCleanup } from "./videoImportCleanup";
 
 const purgeBatchSize = 32;
 const purgePhases = [
+  "importItems",
+  "importJobs",
   "managementItems",
   "managementRequests",
   "videoRetryLinks",
@@ -401,7 +405,10 @@ export const completeMediaBatch = internalMutation({
     await requireDeletionAccess(ctx, args.deletionId);
     for (const assetId of args.assetIds) {
       const asset = await ctx.db.get(assetId);
-      if (asset) await ctx.db.delete(asset._id);
+      if (asset) {
+        await preserveImportCopyCleanup(ctx, asset);
+        await ctx.db.delete(asset._id);
+      }
     }
     return null;
   },
@@ -424,6 +431,22 @@ async function deletePhaseBatch(
   }> = [];
 
   switch (phase) {
+    case "importItems":
+      records = await ctx.db
+        .query("testimonialImportItems")
+        .withIndex("by_organizationId", (i) =>
+          i.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      break;
+    case "importJobs":
+      records = await ctx.db
+        .query("testimonialImportJobs")
+        .withIndex("by_organizationId", (i) =>
+          i.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      break;
     case "managementItems":
       records = await ctx.db
         .query("managementLinkReplacementItems")
@@ -465,12 +488,8 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       break;
     case "videoCleanupJobs":
-      records = await ctx.db
-        .query("videoProviderCleanupJobs")
-        .withIndex("by_organization", (i) =>
-          i.eq("organizationId", organizationId),
-        )
-        .take(purgeBatchSize);
+      // Earlier jobs were handled in providerCleanup. A late copy may enqueue
+      // new work after that phase: its worker must finish, even after deletion.
       break;
     case "videoRetentions":
       records = await ctx.db
@@ -701,7 +720,11 @@ async function deletePhaseBatch(
       return true;
     }
   }
-  for (const record of records) await ctx.db.delete(record._id);
+  for (const record of records) {
+    if (phase === "importItems" && typeof record.workflowId === "string")
+      await cancel(ctx, components.workflow, record.workflowId as WorkflowId);
+    await ctx.db.delete(record._id);
+  }
   if (records.length < purgeBatchSize) {
     await ctx.db.patch(deletion._id, {
       phase: purgePhases[phaseIndex + 1] ?? "organization",

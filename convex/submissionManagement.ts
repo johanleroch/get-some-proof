@@ -234,7 +234,13 @@ export const get = query({
               .unique()
           : null,
       ]);
-    if (!brand || !consent || !(await isProjectOpen(ctx, brand))) return null;
+    if (
+      !brand ||
+      !consent ||
+      !testimonial.submitterEmail ||
+      !(await isProjectOpen(ctx, brand))
+    )
+      return null;
     const replacementAsset = revision?.videoAssetId
       ? await ctx.db.get(revision.videoAssetId)
       : null;

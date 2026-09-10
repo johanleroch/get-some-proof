@@ -1,5 +1,19 @@
+import {
+  ImportConsentFixture,
+  ImportConsentFreeFixture,
+} from "@/components/visual-evidence/import-consent-fixture";
+import { AssistantImportRecoveryFixture } from "@/components/visual-evidence/assistant-import-recovery-fixture";
 import { AccountSecurity } from "@/components/account/account-security";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
+import {
+  TestimonialImportFixture,
+  PublicTestimonialImportFixture,
+  TestimonialImportUrlFixture,
+  ImportPublicationFixture,
+  TestimonialImportExpiredFixture,
+  TestimonialImportVideoFailedFixture,
+  TestimonialImportVideoProcessingFixture,
+} from "@/components/visual-evidence/testimonial-import-fixture";
 import { BlobLoaderScreen } from "@/components/brand/blob-loader";
 import { RichTestimonialScreenFixture } from "@/components/visual-evidence/rich-testimonial-fixture";
 import { VideoThumbnailScreenFixture } from "@/components/visual-evidence/video-thumbnail-fixture";
@@ -41,6 +55,20 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "assistant-import-recovery": AssistantImportRecoveryFixture,
+  "mcp-setup": McpSetupFixture,
+  "mcp-setup-free": McpFreeSetupFixture,
+  "mcp-setup-connected": McpConnectedSetupFixture,
+  "assistant-import-consent": ImportConsentFixture,
+  "assistant-import-consent-free": ImportConsentFreeFixture,
+  "testimonial-import": TestimonialImportFixture,
+  "testimonial-import-public": PublicTestimonialImportFixture,
+  "testimonial-import-url": TestimonialImportUrlFixture,
+  "testimonial-import-publication": ImportPublicationFixture,
+  "testimonial-import-expired": TestimonialImportExpiredFixture,
+  "testimonial-import-video-failed": TestimonialImportVideoFailedFixture,
+  "testimonial-import-video-processing":
+    TestimonialImportVideoProcessingFixture,
   "account-security": AccountSecurity,
   "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
@@ -97,6 +125,7 @@ export default async function VisualEvidenceFixturePage({
   if (!Screen) notFound();
 
   return screen === "profile" ||
+    screen.startsWith("testimonial-import") ||
     screen === "project-settings-shell" ||
     screen === "full-page-loading" ||
     screen === "onboarding" ||
@@ -119,3 +148,8 @@ export default async function VisualEvidenceFixturePage({
     </main>
   );
 }
+import {
+  McpSetupFixture,
+  McpConnectedSetupFixture,
+  McpFreeSetupFixture,
+} from "@/components/visual-evidence/mcp-setup-fixture";

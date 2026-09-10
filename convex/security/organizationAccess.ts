@@ -52,7 +52,19 @@ export async function findActiveOrganizationAccess(
   ctx: DatabaseCtx,
   selector: OrganizationSelector,
 ): Promise<ActiveOrganizationAccess | null> {
-  const principal = await requireVerifiedPrincipal(ctx);
+  return findOrganizationAccessForPrincipal(
+    ctx,
+    selector,
+    await requireVerifiedPrincipal(ctx),
+  );
+}
+
+async function findOrganizationAccessForPrincipal(
+  ctx: DatabaseCtx,
+  selector: OrganizationSelector,
+  principal: Principal,
+): Promise<ActiveOrganizationAccess | null> {
+  if (!principal.emailVerified) return null;
   const organization = await findOrganization(ctx, selector);
 
   if (!organization || organization.deletionStartedAt !== undefined) {
@@ -99,7 +111,24 @@ export async function requireOrganizationPermission(
   selector: OrganizationSelector,
   permission: OrganizationPermission,
 ): Promise<ActiveOrganizationAccess> {
-  const access = await requireActiveOrganizationAccess(ctx, selector);
+  return requireOrganizationPermissionForPrincipal(
+    ctx,
+    selector,
+    permission,
+    await requireVerifiedPrincipal(ctx),
+  );
+}
+
+/** Internal callers supply an identity verified for their own authentication boundary. */
+export async function requireOrganizationPermissionForPrincipal(
+  ctx: DatabaseCtx,
+  selector: OrganizationSelector,
+  permission: OrganizationPermission,
+  principal: Principal,
+): Promise<ActiveOrganizationAccess> {
+  const access =
+    (await findOrganizationAccessForPrincipal(ctx, selector, principal)) ??
+    organizationUnavailable();
   const allowed = await authzForOrganization(access.tenantId).can(
     ctx,
     access.principal.actorId,

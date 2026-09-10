@@ -1,4 +1,13 @@
-import { removePublicProjection } from "./publicProjection";
+import { recordImportStage } from "./importAcquisition";
+import {
+  freePublicationCount,
+  removePublicProjection,
+} from "./publicProjection";
+import { isProjectActive } from "./projectActivity";
+import {
+  importAttestationText,
+  importAttestationVersion,
+} from "./domain/testimonialImport";
 import {
   richTextValidator,
   normalizeRichText,
@@ -44,13 +53,14 @@ const inboxStatusValidator = v.union(
 type InboxStatus = "pending" | "published" | "archived" | "spam";
 
 const inboxIdentityValidator = {
-  consentAcceptedAt: v.number(),
+  requiresImportAttestation: v.optional(v.boolean()),
+  consentAcceptedAt: v.optional(v.number()),
   createdAt: v.number(),
   moderationStatus: inboxStatusValidator,
   quarantineExpiresAt: v.optional(v.number()),
   spamCreditRestored: v.optional(v.boolean()),
   submitterName: v.string(),
-  submitterEmail: v.string(),
+  submitterEmail: v.optional(v.string()),
   testimonialId: v.id("testimonials"),
   publicVisibilityOverrides: v.optional(
     v.object({
@@ -147,9 +157,15 @@ async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
             .first()
         : null,
     ]);
-  if (!consent) testimonialUnavailable();
+  if (!consent && !testimonial.importOrigin) testimonialUnavailable();
   const identity = {
-    consentAcceptedAt: consent.acceptedAt,
+    ...(testimonial.importOrigin
+      ? {
+          requiresImportAttestation:
+            !testimonial.importOrigin.publicationAttestation,
+        }
+      : {}),
+    consentAcceptedAt: consent?.acceptedAt,
     createdAt: testimonial.createdAt,
     moderationStatus: testimonial.moderationStatus,
     quarantineExpiresAt: quarantine?.expiresAt,
@@ -231,7 +247,10 @@ export const inboxCountCeiling = 500;
  * page of each list is loaded.
  */
 export const countInbox = query({
-  args: { organizationId: v.id("organizations") },
+  args: {
+    organizationId: v.id("organizations"),
+    importJobId: v.optional(v.string()),
+  },
   returns: v.object({
     archived: v.number(),
     pending: v.number(),
@@ -244,19 +263,32 @@ export const countInbox = query({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
+    const importJobId =
+      args.importJobId === undefined
+        ? undefined
+        : ctx.db.normalizeId("testimonialImportJobs", args.importJobId);
+    if (importJobId === null)
+      return { pending: 0, published: 0, archived: 0, spam: 0 };
     // Bounded on purpose: a tab says "500+" past this, and the query never
     // reads more than 501 rows per status however large a Brand grows.
     const statuses = ["pending", "published", "archived", "spam"] as const;
     const counts = await Promise.all(
       statuses.map(async (status) => {
-        const rows = await ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_status", (index) =>
-            index
-              .eq("organizationId", access.organization._id)
-              .eq("moderationStatus", status),
-          )
-          .take(inboxCountCeiling + 1);
+        const source = ctx.db.query("testimonials");
+        const rows = await (
+          importJobId
+            ? source.withIndex("by_organization_import_status", (index) =>
+                index
+                  .eq("organizationId", access.organization._id)
+                  .eq("importJobId", importJobId)
+                  .eq("moderationStatus", status),
+              )
+            : source.withIndex("by_organization_status", (index) =>
+                index
+                  .eq("organizationId", access.organization._id)
+                  .eq("moderationStatus", status),
+              )
+        ).take(inboxCountCeiling + 1);
         return rows.length;
       }),
     );
@@ -271,6 +303,7 @@ export const countInbox = query({
 
 export const listInbox = query({
   args: {
+    importJobId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
     /**
@@ -289,6 +322,12 @@ export const listInbox = query({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
+    const importJobId =
+      args.importJobId === undefined
+        ? undefined
+        : ctx.db.normalizeId("testimonialImportJobs", args.importJobId);
+    if (importJobId === null)
+      return { page: [], isDone: true, continueCursor: "" };
     if (args.sort === "wall") {
       if (args.status !== "published") {
         throw new ConvexError({
@@ -296,12 +335,20 @@ export const listInbox = query({
           message: "Only Published Testimonials have a Wall order.",
         });
       }
-      const orderedProjections = ctx.db
-        .query("publicTestimonialProjections")
-        .withIndex("by_organization_order_key", (index) =>
-          index.eq("organizationId", access.organization._id),
-        )
-        .order("desc");
+      const projectionsQuery = ctx.db.query("publicTestimonialProjections");
+      const orderedProjections = (
+        importJobId
+          ? projectionsQuery.withIndex(
+              "by_organization_import_order",
+              (index) =>
+                index
+                  .eq("organizationId", access.organization._id)
+                  .eq("importJobId", importJobId),
+            )
+          : projectionsQuery.withIndex("by_organization_order_key", (index) =>
+              index.eq("organizationId", access.organization._id),
+            )
+      ).order("desc");
       // The type filter runs before pagination, like the status branch, so a
       // page is never empty while isDone is still false.
       const projections = await (
@@ -324,19 +371,36 @@ export const listInbox = query({
         page: items.filter((item) => item !== null),
       };
     }
-    const indexedQuery = args.status
-      ? ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_status", (index) =>
-            index
-              .eq("organizationId", access.organization._id)
-              .eq("moderationStatus", args.status!),
-          )
-      : ctx.db
-          .query("testimonials")
-          .withIndex("by_organization_created_at", (index) =>
-            index.eq("organizationId", access.organization._id),
-          );
+    const indexedQuery = importJobId
+      ? args.status
+        ? ctx.db
+            .query("testimonials")
+            .withIndex("by_organization_import_status", (index) =>
+              index
+                .eq("organizationId", access.organization._id)
+                .eq("importJobId", importJobId)
+                .eq("moderationStatus", args.status!),
+            )
+        : ctx.db
+            .query("testimonials")
+            .withIndex("by_organization_import", (index) =>
+              index
+                .eq("organizationId", access.organization._id)
+                .eq("importJobId", importJobId),
+            )
+      : args.status
+        ? ctx.db
+            .query("testimonials")
+            .withIndex("by_organization_status", (index) =>
+              index
+                .eq("organizationId", access.organization._id)
+                .eq("moderationStatus", args.status!),
+            )
+        : ctx.db
+            .query("testimonials")
+            .withIndex("by_organization_created_at", (index) =>
+              index.eq("organizationId", access.organization._id),
+            );
     const visibleQuery = args.submissionType
       ? indexedQuery.filter((filter) =>
           filter.eq(filter.field("submissionType"), args.submissionType),
@@ -369,6 +433,8 @@ async function restorePublishedProjection(
 
 export const setStatus = mutation({
   args: {
+    importAttestationAccepted: v.optional(v.boolean()),
+    importAttestationVersion: v.optional(v.string()),
     organizationId: v.id("organizations"),
     status: inboxStatusValidator,
     testimonialId: v.id("testimonials"),
@@ -380,7 +446,7 @@ export const setStatus = mutation({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
-    const testimonial = await findTestimonial(
+    let testimonial = await findTestimonial(
       ctx,
       access.organization._id,
       args.testimonialId,
@@ -420,6 +486,43 @@ export const setStatus = mutation({
       .unique();
     const now = Date.now();
     if (args.status === "published") {
+      if (!(await isProjectActive(ctx, access.organization))) {
+        throw new ConvexError({
+          code: "PROJECT_INACTIVE",
+          message:
+            "Select this Project as your Free project or reactivate Pro before publishing.",
+        });
+      }
+      if (
+        testimonial.importOrigin &&
+        !testimonial.importOrigin.publicationAttestation
+      ) {
+        if (
+          args.importAttestationAccepted !== true ||
+          args.importAttestationVersion !== importAttestationVersion
+        )
+          throw new ConvexError({
+            code: "IMPORT_ATTESTATION_REQUIRED",
+            message:
+              "Confirm your permission to publish this imported testimonial and its customer details.",
+          });
+        const importOrigin = {
+          ...testimonial.importOrigin,
+          publicationAttestation: {
+            acceptedBy: access.principal.actorId,
+            acceptedAt: now,
+            version: importAttestationVersion,
+            text: importAttestationText,
+          },
+        };
+        await recordImportStage(
+          ctx,
+          importOrigin.acquisitionFlowId,
+          "published",
+        );
+        await ctx.db.patch(testimonial._id, { importOrigin });
+        testimonial = { ...testimonial, importOrigin };
+      }
       const entitlement = await getOrganizationBillingEntitlement(
         ctx,
         access.organization._id,
@@ -452,17 +555,14 @@ export const setStatus = mutation({
         await cancelVideoRetentionForReactivation(ctx, testimonial._id);
       }
       if (entitlement.effectivePlan === "free") {
-        const published = await ctx.db
-          .query("publicTestimonialProjections")
-          .withIndex("by_organization_published_at", (index) =>
-            index.eq("organizationId", access.organization._id),
-          )
-          .collect();
         const limit = testimonial.submissionType === "video" ? 2 : 13;
         if (
-          published.filter(
-            (projection) => projection.type === testimonial.submissionType,
-          ).length >= limit
+          (await freePublicationCount(
+            ctx,
+            access.organization,
+            testimonial.submissionType,
+            limit,
+          )) >= limit
         ) {
           throw new ConvexError({
             code: "FREE_PUBLICATION_LIMIT_REACHED",

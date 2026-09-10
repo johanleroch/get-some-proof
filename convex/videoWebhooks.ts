@@ -15,6 +15,8 @@ import { hashSubmissionManagementToken } from "./domain/submission";
 import { deriveVideoRetryToken } from "./domain/video";
 import { createVideoRetryLink } from "./videoRetryLinks";
 import { consumeReadyVideoCredit } from "./collectionQuotas";
+import { settleImportedVideo } from "./testimonialImportVideo";
+import { resolveImportCleanup } from "./videoImportCleanup";
 
 const eventValidator = v.object({
   data: v.any(),
@@ -182,9 +184,28 @@ export const applyEvent = internalMutation({
       .unique();
     if (duplicate) return { outcome: "duplicate" };
 
-    const asset = await findAsset(ctx, event);
+    let asset = await findAsset(ctx, event);
     const data = eventData(event.data);
     let outcome = "ignored";
+    if (
+      [
+        "video.asset.ready",
+        "video.asset.errored",
+        "video.asset.updated",
+      ].includes(event.type) &&
+      typeof data.id === "string" &&
+      typeof data.passthrough === "string"
+    ) {
+      const reservationId = ctx.db.normalizeId(
+        "videoReservations",
+        data.passthrough,
+      );
+      if (
+        reservationId &&
+        (await resolveImportCleanup(ctx, reservationId, data.id))
+      )
+        outcome = "released";
+    }
     if (asset) {
       const reservation = await ctx.db.get(asset.reservationId);
       const providerAssetId =
@@ -199,6 +220,10 @@ export const applyEvent = internalMutation({
               ].includes(event.type) && typeof data.id === "string"
             ? data.id
             : asset.providerAssetId;
+      if (providerAssetId && providerAssetId !== asset.providerAssetId) {
+        await ctx.db.patch(asset._id, { providerAssetId });
+        asset = { ...asset, providerAssetId };
+      }
       if (
         asset.status === "failed" ||
         !reservation ||
@@ -295,12 +320,18 @@ export const applyEvent = internalMutation({
           typeof data.duration !== "number" ||
           !Number.isFinite(data.duration) ||
           data.duration <= 0 ||
-          data.duration > 120
+          data.duration > (asset.assistantImport ? 600 : 120) ||
+          (asset.assistantImport &&
+            (!asset.importedFileVerified ||
+              !asset.fileSizeBytes ||
+              asset.fileSizeBytes > 512 * 1024 * 1024))
         ) {
           const failedNow = await failAsset(
             ctx,
             asset,
-            "Video must be no longer than 2 minutes.",
+            asset.assistantImport
+              ? "Imported video must be a verified file no larger than 512 MB and no longer than 10 minutes."
+              : "Video must be no longer than 2 minutes.",
           );
           if (failedNow && asset.testimonialId) {
             await createVideoRetryLink(ctx, asset, {
@@ -337,10 +368,13 @@ export const applyEvent = internalMutation({
             });
             await ctx.db.patch(reservation._id, {
               status: "consumed",
-              freeCreditPending: reservation.plan === "free" ? true : undefined,
+              freeCreditPending:
+                reservation.plan === "free" && !reservation.importItemId
+                  ? true
+                  : undefined,
               updatedAt: Date.now(),
             });
-            if (asset.testimonialId) {
+            if (asset.testimonialId && !reservation.importItemId) {
               await consumeReadyVideoCredit(ctx, {
                 organizationId: reservation.organizationId,
                 plan: reservation.plan,
@@ -373,6 +407,10 @@ export const applyEvent = internalMutation({
         }
         outcome = captionsAvailable ? "captions_ready" : "captions_failed";
       }
+    }
+    if (asset?.importItemId) {
+      const currentAsset = await ctx.db.get(asset._id);
+      if (currentAsset) await settleImportedVideo(ctx, currentAsset);
     }
     await ctx.db.insert("videoWebhookEvents", {
       eventType: event.type,

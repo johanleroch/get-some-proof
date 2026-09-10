@@ -24,6 +24,8 @@ vi.mock("convex/react", () => ({
           displayName: "Johan Le Roch",
           email: "johan@example.com",
           role: "owner",
+          createdAt: Date.UTC(2026, 8, 1),
+          updatedAt: Date.UTC(2026, 8, 1),
         },
       ],
       { can: { manageMembers: true, manageOwnership: true } },

@@ -200,6 +200,49 @@ export const screenSections: ScreenSection[] = [
     title: "Brand workspace",
     screens: [
       {
+        slug: "assistant-import-recovery",
+        title: "Assistant import recovery",
+        description: "Mixed media outcomes and local video file fallback.",
+        fixturePath: "/visual-evidence/assistant-import-recovery",
+        requiresAuth: true,
+      },
+      {
+        slug: "mcp-setup-connected",
+        title: "Connected assistant settings",
+        description: "Connected assistant settings.",
+        fixturePath: "/visual-evidence/mcp-setup-connected",
+        requiresAuth: true,
+      },
+      {
+        slug: "assistant-import-consent",
+        title: "Assistant connection authorization",
+        description: "Assistant connection authorization.",
+        fixturePath: "/visual-evidence/assistant-import-consent",
+        requiresAuth: true,
+      },
+      {
+        slug: "assistant-import-consent-free",
+        title: "Assistant authorization on Free",
+        description: "Assistant authorization on Free.",
+        fixturePath: "/visual-evidence/assistant-import-consent-free",
+        requiresAuth: true,
+      },
+      {
+        slug: "mcp-setup",
+        title: "Assistant import setup",
+        description: "Paid import activation and reuse-rights attestation.",
+        fixturePath: "/visual-evidence/mcp-setup",
+        livePath: "/org/:organizationSlug/mcp",
+        requiresAuth: true,
+      },
+      {
+        slug: "mcp-setup-free",
+        title: "Assistant import on Free",
+        description: "Explains assistant imports and the Pro upgrade.",
+        fixturePath: "/visual-evidence/mcp-setup-free",
+        requiresAuth: true,
+      },
+      {
         slug: "dashboard",
         title: "Brand overview, nothing waiting",
         description:
@@ -233,6 +276,47 @@ export const screenSections: ScreenSection[] = [
           "The Published category is the Public Wall in its Curated Order: grip, arrows, Unpublish, and the details each card shows.",
         // Sample only: the live route always opens on Pending.
         fixturePath: "/visual-evidence/testimonial-inbox-published",
+      },
+      {
+        slug: "testimonial-import-public",
+        title: "Preview a wall before signup",
+        description:
+          "Choose testimonials before signing in, then continue to an owned Project.",
+        livePath: "/import",
+        fixturePath: "/visual-evidence/testimonial-import-public",
+      },
+      {
+        slug: "testimonial-import",
+        title: "Import testimonials",
+        description:
+          "Read a public wall, select testimonials and import them into the Inbox.",
+        livePath: "/org/:organizationSlug/import",
+        fixturePath: "/visual-evidence/testimonial-import",
+        requiresAuth: true,
+      },
+      {
+        slug: "testimonial-import-video-failed",
+        title: "Retry an imported video",
+        description:
+          "Review a failed video copy and retry without creating another testimonial.",
+        fixturePath: "/visual-evidence/testimonial-import-video-failed",
+        requiresAuth: true,
+      },
+      {
+        slug: "testimonial-import-video-processing",
+        title: "Video import in progress",
+        description:
+          "Track copied testimonials and videos that are still processing.",
+        fixturePath: "/visual-evidence/testimonial-import-video-processing",
+        requiresAuth: true,
+      },
+      {
+        slug: "testimonial-import-publication",
+        title: "Publish an imported testimonial",
+        description:
+          "Confirm permission before publishing a testimonial from another wall.",
+        fixturePath: "/visual-evidence/testimonial-import-publication",
+        requiresAuth: true,
       },
       {
         slug: "settings",

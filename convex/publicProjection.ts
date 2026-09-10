@@ -75,7 +75,8 @@ export async function upsertPublicProjection(
         )
         .unique(),
     ]);
-  if (!organization || !consent) unavailable();
+  const importedPublication = testimonial.importOrigin?.publicationAttestation;
+  if (!organization || (!consent && !importedPublication)) unavailable();
   if (
     testimonial.submissionType === "video" &&
     (!videoAsset || videoAsset.status !== "ready" || !videoAsset.playbackId)
@@ -88,8 +89,11 @@ export async function upsertPublicProjection(
   const account = organization.accountId
     ? await ctx.db.get(organization.accountId)
     : null;
-  const consentFields = new Set(consent.identityFields);
+  const consentFields = new Set(
+    consent?.identityFields ?? ["name", "avatar", "role", "company", "rating"],
+  );
   const identity = {
+    importJobId: testimonial.importJobId,
     publicationGeneration: approvePublication
       ? (account?.publicationGeneration ?? 0)
       : (existingProjection?.publicationGeneration ?? 0),
@@ -214,4 +218,48 @@ export function projectionIsPublic(
       (account.publicationGeneration ?? 0) ||
     (account.preservedPublicationIds ?? []).includes(projection.testimonialId)
   );
+}
+
+/** Free exposes one selected Project. Count only proof visible in its Account generation. */
+export async function freePublicationCount(
+  ctx: MutationCtx,
+  organization: Doc<"organizations">,
+  type: "text" | "video",
+  limit: number,
+) {
+  const account = organization.accountId
+    ? await ctx.db.get(organization.accountId)
+    : null;
+  const generation = account?.publicationGeneration ?? 0;
+  const current = await (
+    generation === 0
+      ? ctx.db
+          .query("publicTestimonialProjections")
+          .withIndex("by_organization_type_published_at", (q) =>
+            q.eq("organizationId", organization._id).eq("type", type),
+          )
+      : ctx.db
+          .query("publicTestimonialProjections")
+          .withIndex("by_organization_type_generation", (q) =>
+            q
+              .eq("organizationId", organization._id)
+              .eq("type", type)
+              .gte("publicationGeneration", generation),
+          )
+  ).take(limit);
+  const ids = new Set(current.map((projection) => projection.testimonialId));
+  if (ids.size >= limit || generation === 0) return ids.size;
+  for (const testimonialId of account?.preservedPublicationIds ?? []) {
+    const projection = await ctx.db
+      .query("publicTestimonialProjections")
+      .withIndex("by_testimonial", (q) => q.eq("testimonialId", testimonialId))
+      .unique();
+    if (
+      projection?.organizationId === organization._id &&
+      projection.type === type
+    )
+      ids.add(testimonialId);
+    if (ids.size >= limit) break;
+  }
+  return ids.size;
 }
