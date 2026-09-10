@@ -23,7 +23,7 @@ The publisher requires a clean worktree and matching HEAD. For PRs it checks the
 
 `VISUAL_EVIDENCE_TRANSPORT=attachments` keeps the older path, GitHub attachments through the `drogers0/gh-image` extension and a browser session, for a contributor who prefers it locally. It cannot run on Actions.
 
-Preserve unrelated work; use a separate clean checkout when needed. Existing CI captures may be reused only after verifying their repository, target PR, run and full head SHA. Keep their manifest provenance intact and inspect every image. Otherwise, capture again from the reviewed commit with `pnpm test:visual` before building the manifest.
+Preserve unrelated work; use a separate clean checkout when needed. Existing CI captures may be reused only after verifying their repository, target PR, run, full head SHA and that their scope matches the affected interfaces selected under [the skill](../../.agents/skills/visual-evidence/SKILL.md). Keep their manifest provenance intact and inspect every image. Otherwise, capture the selected tests again from the reviewed commit into a fresh `VISUAL_EVIDENCE_DIR` before building the manifest. Use that same directory for publication.
 
 ## Automatic publication
 

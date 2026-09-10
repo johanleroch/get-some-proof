@@ -13,9 +13,15 @@ test("Free exposes shared credits and an upgrade path from project creation", as
   await page.goto("/visual-evidence/dashboard");
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Free plan");
-  await expect(usage).toContainText("1 / 1 active project");
-  await expect(usage).toContainText("Unlimited projects with Pro");
-  await expect(usage).toContainText("4 / 13 text credits used");
+  await expect(usage).toContainText("1 of 1 active Project");
+  await expect(usage.getByLabel("Text credits")).toHaveAttribute(
+    "aria-valuenow",
+    "4",
+  );
+  await expect(usage).toContainText("4 / 13");
+  await expect(usage).toContainText(
+    "Pro adds unlimited Projects and text, and 25 stored videos.",
+  );
   await expect(
     usage.getByRole("link", { name: "Upgrade to Pro" }),
   ).toBeVisible();
@@ -42,8 +48,12 @@ test("Pro switches independent projects while keeping the Account plan and share
   ).toBeVisible();
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Pro plan");
-  await expect(usage).toContainText("Unlimited projects");
-  await expect(usage).toContainText("8 / 25 videos stored");
+  await expect(usage).toContainText("Unlimited Projects");
+  await expect(usage.getByLabel("Videos stored")).toHaveAttribute(
+    "aria-valuenow",
+    "8",
+  );
+  await expect(usage).toContainText("8 / 25");
   await expect(usage).toContainText("1 video slot reserved");
   await expect(
     page.getByRole("link", { name: "Open Collection Form" }),
@@ -64,6 +74,7 @@ test("a downgraded project explains its private-only availability", async ({
 
 test("Billing scrolls to its final controls while navigation stays available", async ({
   page,
+  isMobile,
 }) => {
   await page.goto("/visual-evidence/billing?state=cancellation_scheduled");
   await expect(
@@ -83,8 +94,12 @@ test("Billing scrolls to its final controls while navigation stays available", a
   await expect(
     page.getByRole("button", { name: "Manage subscription", exact: true }),
   ).toBeInViewport();
+  // Navigation stays in reach: the menu button on a phone, the sidebar itself
+  // on desktop, where the page no longer carries a bar of its own.
   await expect(
-    page.getByRole("button", { name: "Toggle Sidebar" }),
+    isMobile
+      ? page.getByRole("button", { name: "Toggle Sidebar" })
+      : page.getByRole("button", { name: "Switch project" }),
   ).toBeInViewport();
 });
 

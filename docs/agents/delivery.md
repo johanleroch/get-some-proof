@@ -22,7 +22,7 @@ Use a clean-clone installation when changing dependencies, the toolchain, the bu
 
 Completion criterion: every applicable local command exits successfully and the worktree contains only the intended changes.
 
-For user-visible work, also follow `.agents/skills/visual-evidence/SKILL.md`: update the canonical screen list when necessary, run `pnpm test:visual`, and inspect the generated desktop and mobile images. Screenshots containing secrets, personal data, or unrelated browser state must never be published.
+For user-visible work, follow `.agents/skills/visual-evidence/SKILL.md` to select and capture only the interfaces and states affected by the diff, then inspect the selected desktop and mobile images. Screenshots containing secrets, personal data, or unrelated browser state must never be published.
 
 ## 3. Run the Matt review gate
 
