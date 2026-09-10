@@ -61,11 +61,15 @@ async function expectNoWcagViolations(page: Page, context: string) {
 }
 
 /**
- * The theme script honours prefers-color-scheme when nothing is stored, so
- * emulating the media query is enough to get the `.dark` root class.
+ * The product ships light whatever the system prefers (DESIGN.md section 6),
+ * so the dark scheme is reached the way a stored preference reaches it: the
+ * theme script reads it before hydration and sets the `.dark` root class.
  */
 async function openInbox(page: Page, path: string, scheme: Scheme = "light") {
   await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+  await page.addInitScript((theme) => {
+    localStorage.setItem("get-some-proof-theme", theme);
+  }, scheme);
   await page.goto(path);
   // CSS locators on purpose: two fixtures open a modal dialog at load, which
   // aria-hides the page behind it and takes it out of the role tree.
@@ -147,6 +151,9 @@ async function tabSequenceFrom(page: Page, start: Locator, max = 40) {
     if (stop.role === "body") break;
     const key = `${stop.role}: ${stop.name}`;
     if (key === stops[0]) break;
+    // Firefox leaves focus on the last control instead of handing it to the
+    // browser chrome, so the sequence ends when Tab no longer moves.
+    if (key === stops[stops.length - 1]) break;
     expect(stop.disabled, `Tab landed on a disabled control: ${key}`).toBe(
       false,
     );
@@ -435,6 +442,15 @@ test.describe("keyboard", () => {
       "Mark as Spam",
       "Delete permanently",
     ]);
+    // Focus lands inside the menu: on its first item, or on the menu itself
+    // when a slow first paint mounts the items after the roving focus group
+    // has looked for one, in which case ArrowDown reaches the first item.
+    await expect
+      .poll(async () => (await focused(page)).role)
+      .toMatch(/^menu(item)?$/);
+    if ((await focused(page)).role === "menu") {
+      await page.keyboard.press("ArrowDown");
+    }
     await expect(
       page.getByRole("menuitem", { name: "Highlight a phrase" }),
     ).toBeFocused();

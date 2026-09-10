@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   applyThemePreference,
+  defaultThemePreference,
   readThemePreference,
   themeChangeEvent,
   themeStorageKey,
@@ -134,7 +135,7 @@ function QuickAccessMenu({
   const theme = useSyncExternalStore(
     subscribeToTheme,
     readThemePreference,
-    (): ThemePreference => "system",
+    (): ThemePreference => defaultThemePreference,
   );
 
   useEffect(() => {

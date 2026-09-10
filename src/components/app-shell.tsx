@@ -22,9 +22,8 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
 import { SidebarPlanCard } from "@/components/account/sidebar-plan-card";
+import { BrandMark } from "@/components/brand-mark";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -265,12 +264,20 @@ function NavigationList({
   );
 }
 
-function pageTitle(pathname: string, items: NavigationItem[]) {
+/**
+ * Below 768px the sidebar is a sheet, so the page needs a way in: one 48px
+ * bar with the menu button and the brand mark, nothing else. On desktop the
+ * sidebar is always there and the page header is the top of the page, so
+ * there is no bar at all (DESIGN.md section 6); ⌘B folds the sidebar. Hidden
+ * by CSS rather than by the mobile hook, so a phone never sees the page
+ * jump down once the bar hydrates in.
+ */
+function MobileBar() {
   return (
-    items.find(
-      ({ href }) =>
-        pathname === href || (pathname.startsWith(`${href}/`) && href !== "/"),
-    )?.label ?? "Dashboard"
+    <header className="border-line flex h-12 shrink-0 items-center gap-1 border-b px-2 md:hidden">
+      <SidebarTrigger className="size-11 [&_svg]:size-5" />
+      <BrandMark className="size-7" />
+    </header>
   );
 }
 
@@ -391,18 +398,10 @@ export function AppShellView({
         },
       ]
     : [{ label: "Project", items: productNavigation }];
-  const navigation = navigationSections.flatMap(({ items }) => items);
-  const title = pageTitle(pathname, navigation);
-
   return (
     <SidebarProvider
       className="dashboard-frame h-svh overflow-hidden"
-      style={
-        {
-          "--sidebar-width": "17rem",
-          "--header-height": "3rem",
-        } as CSSProperties
-      }
+      style={{ "--sidebar-width": "17rem" } as CSSProperties}
     >
       <Sidebar
         className="group-data-[side=left]:border-r-0"
@@ -426,23 +425,7 @@ export function AppShellView({
       </Sidebar>
       <SidebarInset className="dashboard-view min-h-0 overflow-clip">
         <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
-          <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-            <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                className="mx-2 data-[orientation=vertical]:h-4"
-                orientation="vertical"
-              />
-              <div className="min-w-0">
-                <p className="text-ink-2 truncate text-sm font-medium tracking-[-0.008em]">
-                  {title}
-                </p>
-              </div>
-              <div className="ml-auto flex items-center gap-2">
-                <ThemeToggle />
-              </div>
-            </div>
-          </header>
+          <MobileBar />
           <div
             role="region"
             aria-label="Page content"
