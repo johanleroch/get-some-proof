@@ -1,3 +1,8 @@
+import {
+  ImportConsentFixture,
+  ImportConsentFreeFixture,
+} from "@/components/visual-evidence/import-consent-fixture";
+import { AssistantImportRecoveryFixture } from "@/components/visual-evidence/assistant-import-recovery-fixture";
 import { AccountSecurity } from "@/components/account/account-security";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import {
@@ -50,6 +55,12 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "assistant-import-recovery": AssistantImportRecoveryFixture,
+  "mcp-setup": McpSetupFixture,
+  "mcp-setup-free": McpFreeSetupFixture,
+  "mcp-setup-connected": McpConnectedSetupFixture,
+  "assistant-import-consent": ImportConsentFixture,
+  "assistant-import-consent-free": ImportConsentFreeFixture,
   "testimonial-import": TestimonialImportFixture,
   "testimonial-import-public": PublicTestimonialImportFixture,
   "testimonial-import-url": TestimonialImportUrlFixture,
@@ -137,3 +148,8 @@ export default async function VisualEvidenceFixturePage({
     </main>
   );
 }
+import {
+  McpSetupFixture,
+  McpConnectedSetupFixture,
+  McpFreeSetupFixture,
+} from "@/components/visual-evidence/mcp-setup-fixture";

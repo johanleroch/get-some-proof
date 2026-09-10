@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
+import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
 import { useInboxPages } from "./use-inbox-pages";
 import { InboxSyncIndicator } from "./inbox-sync-indicator";
@@ -972,16 +973,17 @@ function setModerationStatusFilter(category: InboxCategory) {
   window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
-export function TestimonialInbox({
-  slug,
-  importJobId,
-}: {
-  slug: string;
-  importJobId?: string;
-}) {
+function useInboxData(
+  slug: string,
+  importJobId: string | undefined,
+  moderationStatus: InboxCategory,
+) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const searchParams = useSearchParams();
-  const moderationStatus = inboxCategoryFromUrl(searchParams);
+  const assistantEntitlement = useQuery(
+    api.billing.getProjectEntitlement,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
     api.testimonialModeration.countInbox,
@@ -997,6 +999,40 @@ export function TestimonialInbox({
     organizationId: organization?.id,
     importJobId,
   });
+  const wallSettings = useQuery(
+    api.wallCustomization.getSettings,
+    organization ? { organizationId: organization.id } : "skip",
+  );
+  return {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  };
+}
+
+export function TestimonialInbox({
+  slug,
+  importJobId,
+}: {
+  slug: string;
+  importJobId?: string;
+}) {
+  const searchParams = useSearchParams();
+  const moderationStatus = inboxCategoryFromUrl(searchParams);
+  const {
+    organization,
+    assistantEntitlement,
+    counts,
+    loadMore,
+    testimonials,
+    paginationStatus,
+    wallSettings,
+  } = useInboxData(slug, importJobId, moderationStatus);
+
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -1011,10 +1047,6 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
     null,
-  );
-  const wallSettings = useQuery(
-    api.wallCustomization.getSettings,
-    organization ? { organizationId: organization.id } : "skip",
   );
   const movePublished = useMutation(api.wallCustomization.movePublished);
   const setVisibility = useMutation(
@@ -1234,40 +1266,22 @@ export function TestimonialInbox({
     <>
       <PageHeader
         actions={
-          <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href={`/org/${slug}/import` as Route}>
-                Import testimonials
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link
-                href={`/w/${organization.publicSlug}` as Route}
-                target="_blank"
-              >
-                Open Public Wall
-                <IconExternalLink aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
+          <InboxImportActions
+            slug={slug}
+            publicSlug={organization.publicSlug}
+            paid={assistantEntitlement?.effectivePlan === "premium"}
+          />
         }
         description="Review private Submissions and choose what becomes public."
         eyebrow="Workspace"
         title="Inbox"
       />
 
-      {importJobId !== undefined && (
-        <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-          <p className="type-body text-ink-2">
-            Showing testimonials from this import.
-          </p>
-          <Button asChild variant="ghost">
-            <Link href={`/org/${slug}/inbox` as Route}>
-              Show all testimonials
-            </Link>
-          </Button>
-        </div>
-      )}
+      <AssistantImportNotice
+        organizationId={organization.id}
+        jobId={importJobId}
+        slug={slug}
+      />
       <InboxFeedback error={error} message={message} />
 
       <InboxCategoryTabs
@@ -1465,5 +1479,39 @@ export function TestimonialInbox({
         />
       )}
     </>
+  );
+}
+
+export function InboxImportActions({
+  slug,
+  publicSlug,
+  paid,
+}: {
+  slug: string;
+  publicSlug: string;
+  paid: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button
+        asChild
+        variant="ghost"
+        className={paid ? undefined : "text-ink-2"}
+      >
+        <Link href={`/org/${slug}/mcp` as Route}>
+          Import with an assistant
+          {!paid ? " · Pro" : ""}
+        </Link>
+      </Button>
+      <Button asChild>
+        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href={`/w/${publicSlug}` as Route} target="_blank">
+          Open Public Wall
+          <IconExternalLink aria-hidden="true" />
+        </Link>
+      </Button>
+    </div>
   );
 }

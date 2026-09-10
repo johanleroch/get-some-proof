@@ -23,13 +23,17 @@ import {
   importResult,
   wallCandidate,
   wallProvider,
+  importProvider,
 } from "./domain/testimonialImport";
 import {
   requireOrganizationPermission,
   requireOrganizationPermissionForPrincipal,
 } from "./security/organizationAccess";
 import schema from "./schema";
-import { queueImportedVideo } from "./testimonialImportVideo";
+import {
+  queueImportedVideo,
+  retainCapacityBlockedVideo,
+} from "./testimonialImportVideo";
 import { queueImportedAvatar } from "./testimonialImportAvatar";
 import { isProjectActive } from "./projectActivity";
 
@@ -39,7 +43,7 @@ const previewLimiter = new RateLimiter(components.rateLimiter, {
 });
 
 function requireStableTextIdentity(
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   item: Infer<typeof wallCandidate>,
 ) {
   if (
@@ -56,7 +60,7 @@ function requireStableTextIdentity(
 export async function findImportSource(
   ctx: MutationCtx | QueryCtx,
   organizationId: Id<"organizations">,
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   sourceUrl: string,
   item: Infer<typeof wallCandidate>,
 ) {
@@ -96,7 +100,7 @@ export async function findImportSource(
 async function resolveImportSource(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   sourceUrl: string,
   item: Infer<typeof wallCandidate>,
 ) {
@@ -166,7 +170,8 @@ export const expirePreview = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
-    if (!job || job.expiresAt > Date.now()) return null;
+    if (!job || job.expiresAt > Date.now() || job.provider === "assistant")
+      return null;
     const items = await ctx.db
       .query("testimonialImportItems")
       .withIndex("by_jobId_and_position", (index) => index.eq("jobId", job._id))
@@ -286,6 +291,32 @@ export async function confirmOwnedImport(
       unavailable: 0,
     }),
   };
+  let blockAssistantVideos = false;
+  if (job.provider === "assistant") {
+    const sourceIds = new Set<string>();
+    for (const id of new Set(args.itemIds)) {
+      const item = await ctx.db.get(id);
+      if (
+        item?.jobId === job._id &&
+        item.type === "video" &&
+        item.videoUrl &&
+        !item.outcome &&
+        !item.videoStatus &&
+        !(await resolveImportSource(
+          ctx,
+          job.organizationId,
+          job.provider,
+          job.sourceUrl,
+          item,
+        ))
+      )
+        sourceIds.add(item.sourceId);
+    }
+    const capacity = await getVideoStorageAvailability(ctx, job.organizationId);
+    blockAssistantVideos =
+      sourceIds.size > 0 &&
+      (!capacity.available || sourceIds.size > capacity.limit - capacity.used);
+  }
   for (const id of new Set(args.itemIds)) {
     const item = await ctx.db.get(id);
     if (!item || item.jobId !== job._id)
@@ -295,7 +326,10 @@ export async function confirmOwnedImport(
       });
     if (item.outcome || item.videoStatus) continue;
     requireStableTextIdentity(job.provider, item);
-    if (item.unavailableReason || (item.type === "video" && !item.videoUrl)) {
+    if (
+      item.unavailableReason ||
+      (job.provider !== "assistant" && item.type === "video" && !item.videoUrl)
+    ) {
       result.unavailable++;
       await ctx.db.patch(item._id, { outcome: "unavailable" });
       continue;
@@ -329,6 +363,22 @@ export async function confirmOwnedImport(
       continue;
     }
     if (item.type === "video") {
+      if (job.provider === "assistant" && !item.videoUrl) {
+        await retainCapacityBlockedVideo(
+          ctx,
+          job,
+          item,
+          principal.actorId,
+          false,
+        );
+        result.failed = (result.failed ?? 0) + 1;
+        continue;
+      }
+      if (blockAssistantVideos) {
+        await retainCapacityBlockedVideo(ctx, job, item, principal.actorId);
+        result.blocked = (result.blocked ?? 0) + 1;
+        continue;
+      }
       if (await queueImportedVideo(ctx, job, item, principal.actorId)) {
         result.processing = (result.processing ?? 0) + 1;
       } else {
@@ -350,6 +400,9 @@ export async function confirmOwnedImport(
       moderationStatus: "pending",
       submitterName: item.identityCorrection?.authorName ?? item.authorName,
       text: item.text,
+      richText: item.richText,
+      company: item.company,
+      rating: item.rating,
       role: item.identityCorrection
         ? item.identityCorrection.tagline || undefined
         : item.tagline,
@@ -362,6 +415,9 @@ export async function confirmOwnedImport(
         originalText: item.text,
         originalAuthorName: item.authorName,
         originalTagline: item.tagline,
+        originalCompany: item.company,
+        originalRating: item.rating,
+        originalRichText: item.richText,
         originalType: item.type,
         originalAvatarUrl: item.avatarUrl,
         importedBy: principal.actorId,
@@ -514,7 +570,7 @@ export const getPreview = query({
       result: v.union(importResult, v.null()),
       selectedItemIds: v.array(v.id("testimonialImportItems")),
       sourceUrl: v.string(),
-      provider: wallProvider,
+      provider: importProvider,
       itemCount: v.number(),
       expiresAt: v.number(),
       videoCapacity: v.object({

@@ -1,3 +1,4 @@
+import { isImportOAuthRedirect } from "@/lib/chatgpt/oauth-redirect";
 import { handler } from "@/lib/auth-server";
 
 export const POST = handler.POST;
@@ -23,10 +24,7 @@ export async function GET(request: Request) {
       typeof result.url === "string"
     ) {
       const target = new URL(result.url);
-      const siteOrigin = new URL(
-        process.env.NEXT_PUBLIC_SITE_URL ?? request.url,
-      ).origin;
-      if (target.protocol !== "https:" && target.origin !== siteOrigin)
+      if (!isImportOAuthRedirect(target.href))
         return new Response(null, { status: 502 });
       const headers = new Headers(response.headers);
       headers.delete("content-type");

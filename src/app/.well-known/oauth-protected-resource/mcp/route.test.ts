@@ -14,7 +14,7 @@ it("advertises only the configured import resource and respects the rollout flag
   expect(await response.json()).toEqual({
     resource: "https://proof.example/mcp",
     authorization_servers: ["https://proof.example/api/import-auth"],
-    scopes_supported: ["testimonials:import"],
+    scopes_supported: ["testimonials:import", "testimonials:import:assistant"],
     bearer_methods_supported: ["header"],
   });
 });

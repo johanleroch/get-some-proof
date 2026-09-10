@@ -13,7 +13,7 @@ import { findImportSource } from "./testimonialImports";
 import {
   hasUnchangedImportContent,
   wallCandidate,
-  wallProvider,
+  importProvider,
 } from "./domain/testimonialImport";
 
 export const eligibility = v.object({
@@ -31,7 +31,7 @@ export const eligibility = v.object({
 export async function assessImportSelection(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  provider: Infer<typeof wallProvider>,
+  provider: Infer<typeof importProvider>,
   sourceUrl: string,
   candidates: {
     key: string;

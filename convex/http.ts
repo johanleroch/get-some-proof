@@ -1,3 +1,4 @@
+import { receivePart } from "./assistantUploads";
 import { httpRouter } from "convex/server";
 import { registerRoutes } from "@convex-dev/stripe";
 
@@ -7,6 +8,14 @@ import { authComponent, createAuth } from "./auth";
 import { muxWebhook } from "./muxWebhook";
 import {
   importOAuthHttp,
+  assistantTextHttp,
+  assistantBatchHttp,
+  assistantMigrationHttp,
+  assistantUploadHttp,
+  assistantResumeVideosHttp,
+  assistantProjectsHttp,
+  assistantStatusHttp,
+  assistantPortraitRetryHttp,
   importOAuthMetadata,
   importDestinationsHttp,
   importSaveHttp,
@@ -17,6 +26,31 @@ import {
 } from "./importOAuth";
 
 const http = httpRouter();
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-batch",
+  handler: assistantBatchHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-retry-portrait",
+  handler: assistantPortraitRetryHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-text",
+  handler: assistantTextHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-projects",
+  handler: assistantProjectsHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-status",
+  handler: assistantStatusHttp,
+});
 
 http.route({ method: "POST", path: "/mux/webhook", handler: muxWebhook });
 
@@ -103,6 +137,35 @@ http.route({
   path: "/api/import-mcp/eligibility",
   method: "POST",
   handler: importEligibilityHttp,
+});
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-migration",
+  handler: assistantMigrationHttp,
+});
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/upload",
+  handler: receivePart,
+});
+http.route({
+  method: "OPTIONS",
+  path: "/api/import-mcp/upload",
+  handler: receivePart,
+});
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-upload",
+  handler: assistantUploadHttp,
+});
+
+http.route({
+  path: "/api/import-mcp/assistant-resume-videos",
+  method: "POST",
+  handler: assistantResumeVideosHttp,
 });
 
 export default http;
