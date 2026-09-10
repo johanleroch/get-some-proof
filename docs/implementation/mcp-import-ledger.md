@@ -46,7 +46,7 @@ Open PRs inspected at start: #109 (Senja import metadata/video duration), #108 (
 - When a batch's new videos exceed available capacity, all those videos receive Pending placeholders with blocked outcomes and released reservations; text proceeds. No arbitrary subset is transferred.
 - Intermediate Spec review found paid-retry bypass, unclassified Mux creation outages, and cancellation webhook races. Fixes now require Pro for new assistant reservations, classify temporary provider failures, and detach retired upload IDs atomically while scheduling cleanup before a retry.
 - Latest targeted validation: TypeScript and 25 tests passed, including public signed-MCP video-only import, 600/601 seconds, unverified completion, blocked batch, retired-upload cancellation interleaving, rejected Free retry, safe chunk limits and uncertain final upload. The full local `pnpm check` passed: formatting, lint, TypeScript, 151 files / 865 tests and build.
-- Real development ingestion is still unverified. No backend deployment has been performed. No #114 delivery claim yet.
+- Real development ingestion is still unverified. No backend deployment has been performed. No #114 delivery claim yet. A follow-up review also found interrupted Mux response-body reads; those now produce a transient provider error, with 21 provider tests passing.
 
 ## Next slice: #115 local upload implementation approach
 

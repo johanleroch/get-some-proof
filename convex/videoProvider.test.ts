@@ -9,6 +9,28 @@ import {
 } from "./videoProvider";
 
 describe("video upload provider", () => {
+  it("classifies a connection interrupted while reading the creation response", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "test-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => {
+          throw new TypeError("Response stream interrupted");
+        },
+      }),
+    );
+    await expect(
+      createVideoDirectUpload({
+        corsOrigin: "https://app.example",
+        passthrough: "reserved-item",
+        organizationId: "project",
+        spokenLanguage: "en",
+      }),
+    ).rejects.toMatchObject({ transient: true });
+  });
   it("classifies a temporary direct-upload outage so a later attempt can succeed", async () => {
     vi.stubEnv("MUX_PROVIDER", "mux");
     vi.stubEnv("MUX_TOKEN_ID", "test-id");

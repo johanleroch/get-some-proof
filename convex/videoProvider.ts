@@ -197,7 +197,9 @@ export async function createVideoDirectUpload(input: {
       response.status === 429 || response.status >= 500,
     );
   }
-  const body = (await response.json()) as {
+  const body = (await response.json().catch((error: unknown) => {
+    throw new VideoProviderError(!(error instanceof SyntaxError));
+  })) as {
     data?: { id?: unknown; url?: unknown };
   };
   if (typeof body.data?.id !== "string" || typeof body.data.url !== "string") {
