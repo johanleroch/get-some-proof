@@ -882,14 +882,14 @@ export function KitPage() {
                 <TabsTrigger value="published">Published</TabsTrigger>
               </TabsList>
               <TabsContent value="all">
-                <p className="text-ink-2 type-body">Three testimonials.</p>
+                <p className="text-ink-2 type-body">Three Testimonials.</p>
               </TabsContent>
               <TabsContent value="pending">
-                <p className="text-ink-2 type-body">One pending testimonial.</p>
+                <p className="text-ink-2 type-body">One pending Testimonial.</p>
               </TabsContent>
               <TabsContent value="published">
                 <p className="text-ink-2 type-body">
-                  One published testimonial.
+                  One published Testimonial.
                 </p>
               </TabsContent>
             </Tabs>
@@ -935,7 +935,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Dialogs, confirmations, menus, sheets and tooltips sit on --surface with --shadow-float."
+            description="Dialogs, confirmations, menus and tooltips sit on --surface with --shadow-float."
             id="overlays"
             title="Overlays"
           >

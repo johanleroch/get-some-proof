@@ -52,7 +52,7 @@ Light (default):
 | ------------- | ----------------------- | --------- | ---------------------------------------- |
 | `--paper`     | `oklch(0.985 0.005 85)` | `#FCFAF5` | Page background                          |
 | `--surface`   | `oklch(1 0 0)`          | `#FFFFFF` | Cards, inputs, popovers, sidebar panels  |
-| `--surface-2` | `oklch(0.965 0.008 85)` | `#F5F1EA` | Muted fills, hover rows, table headers   |
+| `--surface-2` | `oklch(0.965 0.008 85)` | `#F5F1EA` | Muted fills, hover rows, neutral tags    |
 | `--ink`       | `oklch(0.25 0.012 60)`  | `#2E2A25` | Primary text, icons                      |
 | `--ink-2`     | `oklch(0.48 0.015 60)`  | `#6B655C` | Secondary text, descriptions, metadata   |
 | `--ink-3`     | `oklch(0.65 0.012 60)`  | `#9A948B` | Placeholders, disabled text              |
@@ -204,7 +204,7 @@ Scale (size / line-height, Figtree unless noted):
 | subheading | 18px | 26px | 600    | -0.005em | Gelica  | Card titles, empty-state titles        |
 | body       | 15px | 24px | 400    | -0.011em | Figtree | Paragraphs                             |
 | quote      | 17px | 26px | 400    | -0.011em | Figtree | The words on a Testimonial card        |
-| ui         | 14px | 20px | 500    | -0.008em | Figtree | Buttons, inputs, navigation, table     |
+| ui         | 14px | 20px | 500    | -0.008em | Figtree | Buttons, inputs, navigation            |
 | small      | 13px | 18px | 400    | -0.004em | Figtree | Metadata, helper text                  |
 | micro      | 12px | 16px | 600    | +0.06em  | Figtree | Eyebrows and group labels, uppercase   |
 | kpi        | 40px | 44px | 700    | -0.02em  | Gelica  | Counts on the dashboard, tabular nums  |
@@ -572,7 +572,7 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   a `--brand` border. Label above at `ui` weight 500, helper text below at
   `small` in `--ink-2`, error text below in `--danger` with the field border
   in `--danger`. Selects, checkboxes, switches and the color picker become real
-  primitives (add `select`, `checkbox`, `switch`, `tabs`, `badge`, `table`,
+  primitives (add `select`, `checkbox`, `switch`, `tabs`, `badge`,
   `popover` to `src/components/ui`); native controls styled inline are
   retired.
 - Cards: `--surface`, `--line` border, `--radius-lg`, padding 20px (24px for
@@ -826,7 +826,7 @@ Order of work, each step verified in `/screens` (sample and live) and with
    removed. Retire the dark-only chrome and the `.dashboard-frame` literal
    sizes.
 2. Primitives: button (with loading), input, textarea, select, checkbox,
-   switch, badge, tabs, table, popover, empty state, doodles, toast theme.
+   switch, badge, tabs, popover, empty state, doodles, toast theme.
 3. Shell: sidebar, header, page header pattern, auth split layout.
 4. Screens in gallery order: authentication, onboarding and account, Brand
    workspace, dialogs and feedback, Collection Form, Public Wall, private
