@@ -25,7 +25,7 @@ describe("VideoUploadProgress", () => {
       "aria-valuenow",
       "46",
     );
-    expect(screen.getByText("Uploading your video")).toBeVisible();
+    expect(screen.getByText("Uploading your video…")).toBeVisible();
     expect(screen.getByText("46%")).toBeVisible();
     expect(screen.getByRole("button", { name: "Cancel upload" })).toBeVisible();
   });
@@ -38,7 +38,7 @@ describe("VideoUploadProgress", () => {
       "100",
     );
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Video uploaded");
+    expect(status).toHaveTextContent("Video uploaded!");
     expect(status).toHaveTextContent("Processing");
     expect(
       screen.getByText("Processing and captions continue in the background."),
