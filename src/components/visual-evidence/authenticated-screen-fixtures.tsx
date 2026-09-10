@@ -220,8 +220,10 @@ export function VideoUploadProgressScreenFixture() {
         } as CSSProperties
       }
     >
-      {/* The block as the form shows it: no frame of its own around it. */}
+      {/* The block as the form shows it: no frame of its own around it. The
+          title belongs to the review page, which the capture waits for. */}
       <div className="w-full max-w-[520px] space-y-4">
+        <h1 className="type-heading">Video upload progress</h1>
         <VideoUploadProgress
           onCancel={() => undefined}
           phase="uploading"
