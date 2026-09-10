@@ -1,5 +1,9 @@
 import type { GenericCtx } from "@convex-dev/better-auth";
-import { assistantTextInput } from "../src/lib/chatgpt/assistant-tools";
+import {
+  assistantTextInput,
+  assistantBatchInput,
+  assistantMigrationInput,
+} from "../src/lib/chatgpt/assistant-tools";
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth/minimal";
 import type { DataModel } from "./_generated/dataModel";
@@ -201,8 +205,11 @@ function importCommandHttp(
     | "retry-photo"
     | "eligibility"
     | "assistant-text"
+    | "assistant-migration"
+    | "assistant-batch"
     | "assistant-projects"
-    | "assistant-status",
+    | "assistant-status"
+    | "assistant-retry-portrait",
 ) {
   return httpAction(async (ctx, request) => {
     if (env.CHATGPT_IMPORT_ENABLED !== "true")
@@ -225,7 +232,14 @@ function importCommandHttp(
       const { value, done } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > (command === "assistant-text" ? 60_000 : 1024)) {
+      if (
+        length >
+        (command === "assistant-batch"
+          ? 504_096
+          : command === "assistant-text"
+            ? 60_000
+            : 1024)
+      ) {
         await reader.cancel();
         return new Response(null, { status: 413, headers });
       }
@@ -242,7 +256,15 @@ function importCommandHttp(
       if (!args || typeof args !== "object")
         return new Response(null, { status: 400, headers });
       let result: unknown;
-      if (command === "assistant-projects") {
+      if (command === "assistant-migration") {
+        const input = assistantMigrationInput.parse(args);
+        result = await ctx.runQuery(internal.assistantImports.migrationStatus, {
+          ...input,
+          grant,
+          organizationId:
+            input.organizationId as import("./_generated/dataModel").Id<"organizations">,
+        });
+      } else if (command === "assistant-projects") {
         const cursor = "cursor" in args ? args.cursor : null;
         if (
           cursor !== null &&
@@ -253,13 +275,35 @@ function importCommandHttp(
           grant,
           paginationOpts: { cursor, numItems: 20 },
         });
-      } else if (command === "assistant-status") {
+      } else if (
+        command === "assistant-status" ||
+        command === "assistant-retry-portrait"
+      ) {
         if (!("jobId" in args) || typeof args.jobId !== "string")
           return new Response(null, { status: 400, headers });
+        if (command === "assistant-retry-portrait") {
+          if (!("itemId" in args) || typeof args.itemId !== "string")
+            return new Response(null, { status: 400, headers });
+          await ctx.runMutation(internal.assistantImports.retryPortrait, {
+            grant,
+            jobId:
+              args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+            itemId:
+              args.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
+          });
+        }
         result = await ctx.runQuery(internal.assistantImports.status, {
           grant,
           jobId:
             args.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+        });
+      } else if (command === "assistant-batch") {
+        const input = assistantBatchInput.parse(args);
+        result = await ctx.runMutation(internal.assistantImports.submitBatch, {
+          ...input,
+          organizationId: input.organizationId as
+            import("./_generated/dataModel").Id<"organizations"> | undefined,
+          grant,
         });
       } else if (command === "assistant-text") {
         const input = assistantTextInput.parse(args);
@@ -325,7 +369,10 @@ function importCommandHttp(
         error instanceof ConvexError &&
         typeof error.data === "object" &&
         error.data &&
-        (error.data.code === "VIDEO_CAPACITY_REACHED" ||
+        (error.data.code === "ASSISTANT_BATCH_CONFLICT" ||
+          error.data.code === "ASSISTANT_BATCH_LIMIT" ||
+          error.data.code === "ASSISTANT_SOURCE_IDENTITY" ||
+          error.data.code === "VIDEO_CAPACITY_REACHED" ||
           error.data.code === "INVALID_RETRY" ||
           error.data.code === "IMPORT_UNAVAILABLE")
       )
@@ -344,5 +391,11 @@ export const importPhotoRetryHttp = importCommandHttp("retry-photo");
 export const importRetryHttp = importCommandHttp("retry");
 export const importEligibilityHttp = importCommandHttp("eligibility");
 export const assistantTextHttp = importCommandHttp("assistant-text");
+export const assistantBatchHttp = importCommandHttp("assistant-batch");
 export const assistantProjectsHttp = importCommandHttp("assistant-projects");
 export const assistantStatusHttp = importCommandHttp("assistant-status");
+export const assistantPortraitRetryHttp = importCommandHttp(
+  "assistant-retry-portrait",
+);
+
+export const assistantMigrationHttp = importCommandHttp("assistant-migration");

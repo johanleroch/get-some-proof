@@ -352,6 +352,9 @@ export async function confirmOwnedImport(
       moderationStatus: "pending",
       submitterName: item.identityCorrection?.authorName ?? item.authorName,
       text: item.text,
+      richText: item.richText,
+      company: item.company,
+      rating: item.rating,
       role: item.identityCorrection
         ? item.identityCorrection.tagline || undefined
         : item.tagline,
@@ -364,6 +367,9 @@ export async function confirmOwnedImport(
         originalText: item.text,
         originalAuthorName: item.authorName,
         originalTagline: item.tagline,
+        originalCompany: item.company,
+        originalRating: item.rating,
+        originalRichText: item.richText,
         originalType: item.type,
         originalAvatarUrl: item.avatarUrl,
         importedBy: principal.actorId,

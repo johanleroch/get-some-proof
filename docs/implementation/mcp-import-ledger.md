@@ -24,6 +24,20 @@ Open PRs inspected at start: #109 (Senja import metadata/video duration), #108 (
 - DESIGN.md, domain guidance, schema, Convex guidelines, Next route-handler guide and applicable delivery/visual skills were read. MCP SDK v1.29.0 documentation was fetched through Context7.
 - Claude Code was not found in PATH; no Claude desktop app appeared in the available app inventory. The Owner was asked which real Claude surface is available. Codex CLI exists. Neither real connection is certified yet.
 
+## Checkpoint after #111–#113 implementation
+
+- Text and faithful identity fields are stored as Pending; an absent author remains unset. The Inbox entry leads to the Free/Pro rights activation screen.
+- Public portraits use DNS validation and pinned sockets on every redirect, bounded actual bytes, and three total attempts for transient failures. Temporary DNS and interrupted body failures are normalized and covered.
+- Batch requests accept at most 50 records. An exact concurrent replay returns the original job; changed payload under the same request ID fails explicitly. Source changes preserve the existing testimonial as a conflict.
+- A shared migration ID persists unique source progress, aggregate submission outcomes and recoverable paginated batch IDs. Retrying an accepted request does not increment progress or schedule media again.
+- Latest targeted run: 4 files / 20 tests passed, including the signed JWT through Next MCP and Convex HTTP, concurrent replay, migration recovery, absent author and hostile/media network cases. TypeScript passed after migration changes.
+- Setup desktop/mobile browser tests and four screenshots were inspected during implementation. Screens remain `todo` until final UI and current-head publication. These images are not publication evidence yet.
+- Independent Standards/Spec review confirmed the earlier activation and HTTP-test findings resolved. Both reviewers found transient network retry handling; Spec additionally found missing cross-batch recovery. Those paths are now implemented and tested; final review is still required.
+- Current Mux docs were fetched through Context7 for resumable direct uploads. #114 onward remain unfinished; existing video flow is not claimed to support generic direct sources yet.
+
+- Follow-up Spec review verified both P2 fixes and ran 7 tests successfully. No new defect in those corrections.
+- React Doctor changed-scope scan improved 81 to 82 after parallelizing independent activation reads and guarding configured-origin parsing. Remaining diagnostics were inspected: bounded transaction loops preserve order/read-after-write; Inbox complexity predates this work; Zod format notation is a style preference. No rules suppressed or dependencies installed.
+
 ## Remaining gates
 
 All issue checkboxes remain unchecked. Implementation, negative/recovery tests, real-client checks, Standards/Spec review, current-commit desktop/mobile evidence, PR creation and remote CI are still in progress. No ticket is delivered yet. Do not infer delivery from passing unit tests.

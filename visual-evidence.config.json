@@ -557,6 +557,20 @@
       "path": "/visual-evidence/testimonial-import-public",
       "heading": "Select testimonials",
       "theme": "light"
+    },
+    {
+      "slug": "mcp-setup",
+      "title": "Assistant import setup",
+      "path": "/visual-evidence/mcp-setup",
+      "heading": "Import with your assistant",
+      "theme": "light"
+    },
+    {
+      "slug": "mcp-setup-free",
+      "title": "Assistant import on Free",
+      "path": "/visual-evidence/mcp-setup-free",
+      "heading": "Import with your assistant",
+      "theme": "light"
     }
   ]
 }

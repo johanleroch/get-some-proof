@@ -3,13 +3,35 @@ import { z } from "zod";
 
 export class AssistantAuthenticationRequired extends Error {}
 
+const operationMessages = {
+  ASSISTANT_BATCH_CONFLICT:
+    "This request ID belongs to a different batch. Retry with the original payload, or use a new request ID for a new batch. Existing testimonials were preserved.",
+  ASSISTANT_BATCH_LIMIT:
+    "Submit 1 to 50 records within 500 KB, a stable request ID and the total discovered count.",
+  ASSISTANT_SOURCE_IDENTITY:
+    "Provide bounded original text and an explicit stable source identity. Report ambiguous identities to the Owner instead of guessing.",
+} as const;
+export const assistantOperationCode = z.enum([
+  "ASSISTANT_BATCH_CONFLICT",
+  "ASSISTANT_BATCH_LIMIT",
+  "ASSISTANT_SOURCE_IDENTITY",
+]);
+export class AssistantOperationError extends Error {
+  constructor(code: z.infer<typeof assistantOperationCode>) {
+    super(operationMessages[code]);
+  }
+}
+
 function failure(error: unknown, gateway: AssistantGateway) {
   return {
     isError: true,
     content: [
       {
         type: "text" as const,
-        text: "Import unavailable. Connect your paid account, confirm reuse rights and use your own Project or import.",
+        text:
+          error instanceof AssistantOperationError
+            ? error.message
+            : "Import unavailable. Connect your paid account, confirm reuse rights and use your own Project or import.",
       },
     ],
     ...(error instanceof AssistantAuthenticationRequired && gateway.challenge
@@ -22,23 +44,209 @@ export const assistantTextInput = z.object({
   organizationId: z.string().min(1).max(128).optional(),
   sourceUrl: z.string().url().max(2048),
   sourceId: z.string().min(1).max(200),
-  authorName: z.string().min(1).max(100),
+  authorName: z
+    .string()
+    .max(100)
+    .default("")
+    .describe(
+      "Only the explicitly supplied author name. Omit when absent; never invent a name.",
+    ),
   text: z.string().min(1).max(10_000),
+  role: z.string().max(200).optional(),
+  company: z.string().max(200).optional(),
+  portraitUrl: z
+    .string()
+    .url()
+    .max(2048)
+    .optional()
+    .describe(
+      "The author's explicit portrait URL. Never substitute a video thumbnail. Copied in the background; failure keeps the testimonial.",
+    ),
+  rating: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .optional()
+    .describe(
+      "Only an explicitly displayed individual rating; never the page-wide aggregate.",
+    ),
+  richText: z
+    .array(
+      z.object({
+        type: z.literal("p"),
+        children: z
+          .array(
+            z.object({ text: z.string(), highlight: z.boolean().optional() }),
+          )
+          .min(1)
+          .max(2000),
+      }),
+    )
+    .min(1)
+    .max(100)
+    .optional()
+    .describe(
+      "Original words split into paragraphs and highlighted spans. No HTML or rewritten text.",
+    ),
 });
 
 export type AssistantGateway = {
+  submitBatch?(
+    input: z.infer<typeof assistantBatchInput>,
+  ): Promise<Record<string, unknown>>;
+  migrationStatus?(
+    input: z.infer<typeof assistantMigrationInput>,
+  ): Promise<Record<string, unknown>>;
   challenge?: string;
   submitText(
     input: z.infer<typeof assistantTextInput>,
   ): Promise<Record<string, unknown>>;
   destinations?(cursor: string | null): Promise<Record<string, unknown>>;
   status?(jobId: string): Promise<Record<string, unknown>>;
+  retryPortrait?(args: {
+    jobId: string;
+    itemId: string;
+  }): Promise<Record<string, unknown>>;
 };
+
+export const assistantMigrationInput = z.object({
+  organizationId: z.string().min(1).max(128),
+  migrationId: z.string().min(1).max(128),
+  cursor: z.string().max(2048).nullable().default(null),
+});
+
+export const assistantBatchInput = z.object({
+  migrationId: z
+    .string()
+    .min(1)
+    .max(128)
+    .optional()
+    .describe(
+      "Use the same migration ID for every batch from this page. Keep it to recover overall progress after interruption.",
+    ),
+  organizationId: z.string().min(1).max(128).optional(),
+  sourceUrl: z.string().url().max(2048),
+  requestId: z
+    .string()
+    .min(1)
+    .max(128)
+    .describe(
+      "Keep this ID and the exact batch unchanged when retrying after interruption.",
+    ),
+  discoveredCount: z
+    .number()
+    .int()
+    .min(1)
+    .describe(
+      "Announce the total number of testimonials discovered on the supplied page before sending batches.",
+    ),
+  items: z
+    .array(assistantTextInput.omit({ organizationId: true, sourceUrl: true }))
+    .min(1)
+    .max(50),
+});
 
 export function registerAssistantTools(
   server: McpServer,
   gateway: AssistantGateway,
 ) {
+  if (gateway.migrationStatus)
+    server.registerTool(
+      "read_assistant_import_migration",
+      {
+        description:
+          "Recover all batches from a page migration using its original migration ID and owned Project. Reports unique source records processed, remaining discovered records and aggregate submission outcomes, with paginated batch IDs. New request IDs count as new submissions; exact retries do not.",
+        inputSchema: assistantMigrationInput.shape,
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+        _meta: {
+          securitySchemes: [
+            { type: "oauth2", scopes: ["testimonials:import"] },
+          ],
+        },
+      },
+      async (args) => {
+        try {
+          const result = await gateway.migrationStatus!(args);
+          return {
+            structuredContent: result,
+            content: [{ type: "text" as const, text: JSON.stringify(result) }],
+          };
+        } catch (error) {
+          return failure(error, gateway);
+        }
+      },
+    );
+  if (gateway.submitBatch)
+    server.registerTool(
+      "import_testimonials",
+      {
+        title: "Import a batch of original testimonials",
+        description:
+          "Save up to 50 original testimonials from the one supplied page directly as Pending after explicit import intent. Announce the discovered count. Preserve words and explicit individual identity; leave missing fields unset and never use page-wide ratings. Use stable source IDs, report ambiguous identities instead of guessing. Reuse the exact request ID and payload on interruption. Report created, duplicate and conflict outcomes separately; do not overwrite changed source records. Nothing is published.",
+        inputSchema: assistantBatchInput.shape,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: true,
+          idempotentHint: true,
+        },
+        _meta: {
+          securitySchemes: [
+            { type: "oauth2", scopes: ["testimonials:import"] },
+          ],
+        },
+      },
+      async (args) => {
+        try {
+          const result = await gateway.submitBatch!(args);
+          return {
+            structuredContent: result,
+            content: [{ type: "text" as const, text: JSON.stringify(result) }],
+          };
+        } catch (error) {
+          return failure(error, gateway);
+        }
+      },
+    );
+  if (gateway.retryPortrait)
+    server.registerTool(
+      "retry_assistant_import_portrait",
+      {
+        description:
+          "Retry a failed portrait copy in your own assistant import after checking its source. Does not duplicate the testimonial or replace a successful portrait.",
+        inputSchema: {
+          jobId: z.string().min(1).max(128),
+          itemId: z.string().min(1).max(128),
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: true,
+          idempotentHint: false,
+        },
+        _meta: {
+          securitySchemes: [
+            { type: "oauth2", scopes: ["testimonials:import"] },
+          ],
+        },
+      },
+      async (args) => {
+        try {
+          const result = await gateway.retryPortrait!(args);
+          return {
+            structuredContent: result,
+            content: [{ type: "text" as const, text: JSON.stringify(result) }],
+          };
+        } catch (error) {
+          return failure(error, gateway);
+        }
+      },
+    );
   for (const operation of ["destinations", "status"] as const) {
     if (!gateway[operation]) continue;
     server.registerTool(

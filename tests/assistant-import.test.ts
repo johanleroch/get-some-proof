@@ -127,6 +127,55 @@ it("saves original assistant-supplied text in the sole owned Project as Pending 
     await server.close();
   }
 
+  const detailed = await t.mutation(internal.assistantImports.submitText, {
+    ...input,
+    sourceId: "marie-3",
+    authorName: "Marie Laurent",
+    text: "The best workshop.\nWe will return.",
+    role: "Founder",
+    company: "Fern Studio",
+    rating: 4,
+    richText: [
+      {
+        type: "p",
+        children: [
+          { text: "The " },
+          { text: "best workshop", highlight: true },
+          { text: "." },
+        ],
+      },
+      { type: "p", children: [{ text: "We will return." }] },
+    ],
+  });
+  const detailedInbox = await owner.client.query(
+    api.testimonialModeration.listInbox,
+    {
+      organizationId: project.id,
+      importJobId: detailed.jobId,
+      status: "pending",
+      sort: "newest",
+      paginationOpts: { cursor: null, numItems: 20 },
+    },
+  );
+  expect(detailedInbox.page[0].card).toMatchObject({
+    name: "Marie Laurent",
+    role: "Founder",
+    company: "Fern Studio",
+    rating: 4,
+    text: "The best workshop.\nWe will return.",
+    richText: [
+      {
+        type: "p",
+        children: [
+          { text: "The " },
+          { text: "best workshop", highlight: true },
+          { text: "." },
+        ],
+      },
+      { type: "p", children: [{ text: "We will return." }] },
+    ],
+  });
+
   const stranger = await authenticatedUser(t, { email: "other@example.com" });
   const otherProject = await stranger.client.mutation(
     api.organizations.create,

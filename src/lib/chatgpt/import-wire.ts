@@ -55,6 +55,23 @@ export const importProjectsSchema = z.object({
   continueCursor: z.string(),
 });
 export const savedImportSchema = z.object({
+  outcomes: z
+    .array(
+      z.object({
+        sourceId: z.string(),
+        itemId: z.string(),
+        status: z.enum([
+          "created",
+          "duplicate",
+          "conflict",
+          "processing",
+          "failed",
+          "blocked",
+        ]),
+      }),
+    )
+    .max(50)
+    .optional(),
   jobId: z.string(),
   organizationSlug: z.string(),
   inboxUrl: z.string().url(),
@@ -104,3 +121,22 @@ export const importOperationErrorMessages = {
   IMPORT_UNAVAILABLE:
     "This import is no longer available. Open the Inbox to review your testimonials.",
 };
+
+export const assistantMigrationStatusSchema = z.object({
+  migrationId: z.string(),
+  discoveredCount: z.number(),
+  processedCount: z.number(),
+  remainingCount: z.number(),
+  batchCount: z.number(),
+  result: savedImportSchema.shape.result,
+  page: z
+    .array(
+      z.object({
+        jobId: z.string(),
+        result: savedImportSchema.shape.result.optional(),
+      }),
+    )
+    .max(20),
+  isDone: z.boolean(),
+  continueCursor: z.string(),
+});

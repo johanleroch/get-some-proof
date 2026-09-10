@@ -1,4 +1,9 @@
-import { AssistantAuthenticationRequired } from "@/lib/chatgpt/assistant-tools";
+import { assistantMigrationStatusSchema } from "@/lib/chatgpt/import-wire";
+import {
+  AssistantAuthenticationRequired,
+  AssistantOperationError,
+  assistantOperationCode,
+} from "@/lib/chatgpt/assistant-tools";
 import { ConvexHttpClient } from "convex/browser";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { api } from "@convex/_generated/api";
@@ -25,6 +30,9 @@ export async function POST(request: Request) {
   const backend = process.env.NEXT_PUBLIC_CONVEX_URL;
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!backend || !origin)
+    return new Response("Not configured", { status: 503 });
+  const parsedOrigin = URL.parse(origin);
+  if (!parsedOrigin || !["http:", "https:"].includes(parsedOrigin.protocol))
     return new Response("Not configured", { status: 503 });
   const reader = request.body?.getReader();
   if (!reader) return new Response("Missing body", { status: 400 });
@@ -69,8 +77,10 @@ export async function POST(request: Request) {
     parsedBody.params &&
     typeof parsedBody.params === "object" &&
     "name" in parsedBody.params &&
-    parsedBody.params.name === "import_testimonial_text";
-  if (length > (assistantTextCall ? 60_000 : 16_384) && !photoCall)
+    ["import_testimonial_text", "import_testimonials"].includes(
+      String(parsedBody.params.name),
+    );
+  if (length > (assistantTextCall ? 504_096 : 16_384) && !photoCall)
     return new Response("Request too large", { status: 413 });
   const client = new ConvexHttpClient(backend);
   async function assistantRequest(
@@ -94,10 +104,25 @@ export async function POST(request: Request) {
       },
     );
     if (response.status === 401) throw new AssistantAuthenticationRequired();
+    if (response.status === 409) {
+      const failure: unknown = await response.json();
+      if (failure && typeof failure === "object" && "code" in failure) {
+        const parsed = assistantOperationCode.safeParse(failure.code);
+        if (parsed.success) throw new AssistantOperationError(parsed.data);
+      }
+    }
     if (!response.ok) throw new Error("Import unavailable.");
     const body: unknown = await response.json();
     if (command === "projects") return importProjectsSchema.parse(body);
-    const saved = savedImportSchema.omit({ inboxUrl: true }).parse(body);
+    if (command === "migration")
+      return assistantMigrationStatusSchema.parse(body);
+    const saved = (
+      command === "status" || command === "retry-portrait"
+        ? importStatusSchema
+        : savedImportSchema
+    )
+      .omit({ inboxUrl: true })
+      .parse(body);
     return {
       ...saved,
       inboxUrl: new URL(
@@ -173,7 +198,7 @@ export async function POST(request: Request) {
         "utf8",
       ),
     {
-      challenge: `Bearer resource_metadata="${new URL(origin).origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import", error="insufficient_scope", error_description="Connect your account to choose a Project"`,
+      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import", error="insufficient_scope", error_description="Connect your account to choose a Project"`,
       status: (args) => importProgress("status", args),
       retryPhoto: (args) => importProgress("retry-photo", args),
       retryVideo: (args) => importProgress("retry", args),
@@ -257,18 +282,21 @@ export async function POST(request: Request) {
     origin,
     backend,
     {
-      challenge: `Bearer resource_metadata="${new URL(origin).origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import"`,
+      challenge: `Bearer resource_metadata="${parsedOrigin.origin}/.well-known/oauth-protected-resource/mcp", scope="testimonials:import"`,
       destinations: (cursor) => assistantRequest("projects", { cursor }),
       status: (jobId) => assistantRequest("status", { jobId }),
+      retryPortrait: (args) => assistantRequest("retry-portrait", args),
       submitText: (args) => assistantRequest("text", args),
+      submitBatch: (args) => assistantRequest("batch", args),
+      migrationStatus: (args) => assistantRequest("migration", args),
     },
   );
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
     enableDnsRebindingProtection: true,
-    allowedHosts: [new URL(origin).host],
-    allowedOrigins: [new URL(origin).origin, "https://chatgpt.com"],
+    allowedHosts: [parsedOrigin.host],
+    allowedOrigins: [parsedOrigin.origin, "https://chatgpt.com"],
   });
   await server.connect(transport);
   try {

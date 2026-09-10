@@ -8,8 +8,11 @@ import { muxWebhook } from "./muxWebhook";
 import {
   importOAuthHttp,
   assistantTextHttp,
+  assistantBatchHttp,
+  assistantMigrationHttp,
   assistantProjectsHttp,
   assistantStatusHttp,
+  assistantPortraitRetryHttp,
   importOAuthMetadata,
   importDestinationsHttp,
   importSaveHttp,
@@ -20,6 +23,16 @@ import {
 } from "./importOAuth";
 
 const http = httpRouter();
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-batch",
+  handler: assistantBatchHttp,
+});
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-retry-portrait",
+  handler: assistantPortraitRetryHttp,
+});
 http.route({
   method: "POST",
   path: "/api/import-mcp/assistant-text",
@@ -124,3 +137,9 @@ http.route({
 });
 
 export default http;
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-migration",
+  handler: assistantMigrationHttp,
+});

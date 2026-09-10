@@ -949,6 +949,10 @@ export function TestimonialInbox({
   importJobId?: string;
 }) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
+  const assistantEntitlement = useQuery(
+    api.billing.getProjectEntitlement,
+    organization ? { organizationId: organization.id } : "skip",
+  );
   const [moderationStatus, setModerationStatusFilter] =
     useState<InboxCategory>("pending");
   const importFilter = importJobId !== undefined ? { importJobId } : {};
@@ -1215,6 +1219,22 @@ export function TestimonialInbox({
       <PageHeader
         actions={
           <div className="flex flex-wrap gap-3">
+            <Button
+              asChild
+              variant="ghost"
+              className={
+                assistantEntitlement?.effectivePlan === "premium"
+                  ? undefined
+                  : "text-ink-2"
+              }
+            >
+              <Link href={`/org/${slug}/mcp` as Route}>
+                Import with an assistant
+                {assistantEntitlement?.effectivePlan !== "premium"
+                  ? " · Pro"
+                  : ""}
+              </Link>
+            </Button>
             <Button asChild>
               <Link href={`/org/${slug}/import` as Route}>
                 Import testimonials

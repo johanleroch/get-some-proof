@@ -12,7 +12,7 @@ import {
   query,
 } from "./_generated/server";
 import { downloadImportAvatar } from "../src/lib/testimonial-import/avatar";
-import { wallProvider } from "./domain/testimonialImport";
+import { importProvider } from "./domain/testimonialImport";
 import { upsertPublicProjection } from "./publicProjection";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
 
@@ -142,7 +142,7 @@ export const source = internalQuery({
   args: copyArgs,
   returns: v.union(
     v.null(),
-    v.object({ provider: wallProvider, url: v.string() }),
+    v.object({ provider: importProvider, url: v.string() }),
   ),
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
@@ -156,8 +156,7 @@ export const source = internalQuery({
       item.avatarAttempt !== args.attempt ||
       testimonial.avatarStorageId ||
       !item.avatarUrl ||
-      testimonial.importOrigin?.originalAvatarUrl !== item.avatarUrl ||
-      testimonial.importOrigin.provider === "assistant"
+      testimonial.importOrigin?.originalAvatarUrl !== item.avatarUrl
     )
       return null;
     return { provider: testimonial.importOrigin.provider, url: item.avatarUrl };
@@ -230,12 +229,14 @@ export const expireAttempt = internalMutation({
 export const copy = internalAction({
   args: copyArgs,
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<null> => {
     const source = await ctx.runQuery(
       internal.testimonialImportAvatar.source,
       args,
     );
     if (!source) return null;
+    if (source.provider === "assistant")
+      return ctx.runAction(internal.assistantImportMedia.copyPortrait, args);
     let storageId: Id<"_storage"> | undefined;
     try {
       storageId = await ctx.storage.store(

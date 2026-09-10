@@ -200,6 +200,21 @@ export const screenSections: ScreenSection[] = [
     title: "Brand workspace",
     screens: [
       {
+        slug: "mcp-setup",
+        title: "Assistant import setup",
+        description: "Paid import activation and reuse-rights attestation.",
+        fixturePath: "/visual-evidence/mcp-setup",
+        livePath: "/org/:organizationSlug/mcp",
+        requiresAuth: true,
+      },
+      {
+        slug: "mcp-setup-free",
+        title: "Assistant import on Free",
+        description: "Explains assistant imports and the Pro upgrade.",
+        fixturePath: "/visual-evidence/mcp-setup-free",
+        requiresAuth: true,
+      },
+      {
         slug: "dashboard",
         title: "Brand overview, nothing waiting",
         description:

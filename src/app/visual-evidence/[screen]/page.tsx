@@ -50,6 +50,8 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "mcp-setup": McpSetupFixture,
+  "mcp-setup-free": McpFreeSetupFixture,
   "testimonial-import": TestimonialImportFixture,
   "testimonial-import-public": PublicTestimonialImportFixture,
   "testimonial-import-url": TestimonialImportUrlFixture,
@@ -137,3 +139,7 @@ export default async function VisualEvidenceFixturePage({
     </main>
   );
 }
+import {
+  McpSetupFixture,
+  McpFreeSetupFixture,
+} from "@/components/visual-evidence/mcp-setup-fixture";

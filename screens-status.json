@@ -33,5 +33,7 @@
   "two-factor": "ok",
   "video-upload-progress": "todo",
   "workspace-delete": "todo",
-  "workspace-delete-progress": "ok"
+  "workspace-delete-progress": "ok",
+  "mcp-setup": "todo",
+  "mcp-setup-free": "todo"
 }

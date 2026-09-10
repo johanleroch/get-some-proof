@@ -1,6 +1,9 @@
 import { ConvexError, v, type Infer } from "convex/values";
+import { richTextValidator } from "./testimonialRichText";
 
 export const importAttestationVersion = "2026-09-09";
+export const assistantReuseRightsText =
+  "I confirm that I have the rights to reuse the testimonials and customer media I import. Importing saves them privately as Pending and does not publish them.";
 export const importAttestationText =
   "I confirm that I have permission to publish this testimonial and the displayed customer details for this Brand.";
 
@@ -18,6 +21,18 @@ export const wallProvider = v.union(
   v.literal("senja"),
 );
 export const importProvider = v.union(wallProvider, v.literal("assistant"));
+export const assistantOutcome = v.object({
+  sourceId: v.string(),
+  itemId: v.id("testimonialImportItems"),
+  status: v.union(
+    v.literal("created"),
+    v.literal("duplicate"),
+    v.literal("conflict"),
+    v.literal("processing"),
+    v.literal("failed"),
+    v.literal("blocked"),
+  ),
+});
 export const importOrigin = v.object({
   acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
   provider: importProvider,
@@ -26,6 +41,9 @@ export const importOrigin = v.object({
   originalAuthorName: v.string(),
   originalText: v.string(),
   originalTagline: v.optional(v.string()),
+  originalCompany: v.optional(v.string()),
+  originalRating: v.optional(v.number()),
+  originalRichText: v.optional(richTextValidator),
   originalType: v.optional(v.union(v.literal("text"), v.literal("video"))),
   originalVideoUrl: v.optional(v.string()),
   originalAvatarUrl: v.optional(v.string()),
@@ -41,6 +59,9 @@ export const importOrigin = v.object({
   ),
 });
 export const wallCandidate = v.object({
+  company: v.optional(v.string()),
+  rating: v.optional(v.number()),
+  richText: v.optional(richTextValidator),
   sourceId: v.string(),
   type: v.union(v.literal("text"), v.literal("video")),
   authorName: v.string(),
@@ -70,6 +91,12 @@ export function hasUnchangedImportContent(
     origin.originalText !== candidate.text ||
     origin.originalAuthorName !== candidate.authorName ||
     origin.originalTagline !== candidate.tagline ||
+    (origin.provider === "assistant" &&
+      origin.originalAvatarUrl !== candidate.avatarUrl) ||
+    origin.originalCompany !== candidate.company ||
+    origin.originalRating !== candidate.rating ||
+    JSON.stringify(origin.originalRichText) !==
+      JSON.stringify(candidate.richText) ||
     (origin.originalType ?? existing.submissionType) !== candidate.type
   )
     return false;

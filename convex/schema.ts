@@ -11,6 +11,20 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  assistantImportMigrations: defineTable({
+    organizationId: v.id("organizations"),
+    actorId: v.string(),
+    clientId: v.string(),
+    sourceUrl: v.string(),
+    discoveredCount: v.number(),
+    processedCount: v.number(),
+    batchCount: v.number(),
+    result: importResult,
+  }).index("by_organizationId_and_clientId", ["organizationId", "clientId"]),
+  assistantImportMigrationSources: defineTable({
+    migrationId: v.id("assistantImportMigrations"),
+    sourceId: v.string(),
+  }).index("by_migrationId_and_sourceId", ["migrationId", "sourceId"]),
   assistantImportActivations: defineTable({
     actorId: v.string(),
     acceptedAt: v.number(),
@@ -57,6 +71,9 @@ export default defineSchema({
     claimedOrganizationId: v.optional(v.id("organizations")),
   }).index("by_tokenHash", ["tokenHash"]),
   testimonialImportJobs: defineTable({
+    migrationId: v.optional(v.id("assistantImportMigrations")),
+    requestId: v.optional(v.string()),
+    inputHash: v.optional(v.string()),
     acquisitionFlowId: v.optional(v.id("importAcquisitionFlows")),
     selectedItemIds: v.optional(v.array(v.id("testimonialImportItems"))),
     result: v.optional(importResult),
@@ -69,6 +86,8 @@ export default defineSchema({
     expiresAt: v.number(),
   })
     .index("by_organizationId", ["organizationId"])
+    .index("by_migrationId", ["migrationId"])
+    .index("by_organizationId_and_requestId", ["organizationId", "requestId"])
     .index("by_expiresAt", ["expiresAt"]),
   testimonialImportItems: defineTable({
     avatarAttempt: v.optional(v.number()),
