@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  isCaptureViewport,
   listPngFiles,
   validateManifest,
   validateTrustedConfig,
@@ -27,15 +28,17 @@ const screenTitles = new Map(
   config.screens.map((screen) => [screen.slug, screen.title]),
 );
 
-const screenshots = (await listPngFiles(outputRoot)).map((filePath) => {
-  const [viewport, fileName] = filePath.split("/");
-  const slug = fileName.replace(/\.png$/, "");
-  return {
-    path: filePath,
-    title: screenTitles.get(slug) ?? slug,
-    viewport,
-  };
-});
+const screenshots = (await listPngFiles(outputRoot))
+  .filter((filePath) => isCaptureViewport(filePath.split("/")[0]))
+  .map((filePath) => {
+    const [viewport, fileName] = filePath.split("/");
+    const slug = fileName.replace(/\.png$/, "");
+    return {
+      path: filePath,
+      title: screenTitles.get(slug) ?? slug,
+      viewport,
+    };
+  });
 
 const manifest = validateManifest(
   {

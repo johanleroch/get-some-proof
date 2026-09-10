@@ -70,13 +70,13 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
 
     const trigger = screen.getByRole("button", {
-      name: "Switch project",
+      name: /switch project/i,
     });
     expect(trigger).toHaveClass("cursor-pointer");
-    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toHaveClass(
-      "bg-foreground",
-      "text-background",
-    );
+    // The project's name is the sidebar's title and the switch itself: no
+    // avatar, no initials, the name at `heading`.
+    expect(trigger.querySelector(".type-heading")).toHaveTextContent("Acme");
+    expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toBeNull();
 
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     expect(screen.getAllByText("Acme")).not.toHaveLength(0);
@@ -110,7 +110,7 @@ describe("OrganizationSwitcher", () => {
       canUpdateOrganization: false,
     });
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch project" }),
+      screen.getByRole("button", { name: /switch project/i }),
       { button: 0, ctrlKey: false },
     );
 
@@ -129,7 +129,7 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher();
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch project" }),
+      screen.getByRole("button", { name: /switch project/i }),
       { button: 0, ctrlKey: false },
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));
@@ -159,7 +159,7 @@ describe("OrganizationSwitcher", () => {
 
     renderSwitcher();
     fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Switch project" }),
+      screen.getByRole("button", { name: /switch project/i }),
       { button: 0, ctrlKey: false },
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Beta/ }));

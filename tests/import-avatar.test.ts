@@ -328,3 +328,23 @@ it("expires an interrupted attempt and fences its late result from a retry", asy
     "ready",
   );
 });
+
+it("preserves a safe download diagnostic for a failed photo", async () => {
+  const { t, owner, itemId, jobId, testimonialId } = await imported();
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(new Response("private error body", { status: 403 })),
+  );
+  await t.action(internal.testimonialImportAvatar.copy, {
+    itemId,
+    testimonialId,
+    attempt: 1,
+  });
+  expect(
+    await owner.client.query(api.testimonialImportAvatar.progress, { jobId }),
+  ).toMatchObject([
+    { itemId, status: "failed", diagnostic: "HTTP_403", attempt: 1 },
+  ]);
+});

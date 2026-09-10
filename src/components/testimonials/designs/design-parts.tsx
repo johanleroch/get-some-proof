@@ -54,7 +54,7 @@ export function DesignQuote({
    * with everything else on the card.
    */
   quoted?: boolean;
-  testimonial: TestimonialCardTextValue;
+  testimonial: Pick<TestimonialCardTextValue, "text" | "richText">;
 }) {
   const swash = markerHighlightImage(accentHighlight(accentColor));
   const blocks = testimonial.richText ?? [

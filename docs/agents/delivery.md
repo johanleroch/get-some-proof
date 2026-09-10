@@ -22,7 +22,7 @@ Use a clean-clone installation when changing dependencies, the toolchain, the bu
 
 Completion criterion: every applicable local command exits successfully and the worktree contains only the intended changes.
 
-For user-visible work, also follow `.agents/skills/visual-evidence/SKILL.md`: update the canonical screen list when necessary, run `pnpm test:visual`, and inspect the generated desktop and mobile images. Screenshots containing secrets, personal data, or unrelated browser state must never be published.
+For user-visible work, follow `.agents/skills/visual-evidence/SKILL.md` to select and capture only the interfaces and states affected by the diff, then inspect the selected desktop and mobile images. Screenshots containing secrets, personal data, or unrelated browser state must never be published.
 
 ## 3. Run the Matt review gate
 
@@ -44,7 +44,7 @@ Treat a failed, cancelled, skipped, pending, queued, or missing required check a
 
 Completion criterion: every required check on the pull request's current head commit has conclusion `success`.
 
-For user-visible work, the `Visual evidence capture` check must succeed and the trusted publisher must update the pull request's `Visual evidence` comment with GitHub attachment URLs for the current head commit. A GitHub artifact alone is not published visual evidence.
+For user-visible work, the `Visual evidence capture` check must succeed and the trusted publisher must update the pull request's `Visual evidence` comment with commit-pinned image URLs for the current head commit. A GitHub artifact alone is not published visual evidence.
 
 ## 5. Synchronize the tracker
 

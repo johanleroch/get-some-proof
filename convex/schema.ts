@@ -142,6 +142,7 @@ export default defineSchema({
     .index("by_expiresAt", ["expiresAt"]),
   testimonialImportItems: defineTable({
     avatarAttempt: v.optional(v.number()),
+    avatarDiagnostic: v.optional(v.string()),
     avatarStatus: v.optional(
       v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
     ),

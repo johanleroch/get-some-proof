@@ -3,7 +3,8 @@ import { appendFile, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { loadAndValidateArtifact, validateTrustedConfig } from "./core.mjs";
-import { publishEvidence } from "./github-attachments.mjs";
+import { publishEvidence, uploadAttachments } from "./github-attachments.mjs";
+import { downloadRaw, uploadToRef } from "./github-branch.mjs";
 
 const ci = process.env.GITHUB_ACTIONS === "true";
 const requiredEnvironment = ci
@@ -84,13 +85,39 @@ async function github(pathname, options = {}) {
     throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
   return response.status === 204 ? null : response.json();
 }
-const result = await publishEvidence(manifest, github);
+// The ref transport is the default: it only needs the token every job has.
+// `attachments` keeps gh-image for a contributor who prefers GitHub
+// attachments and has a browser session to lend it.
+const transports = {
+  ref: (target, api) =>
+    uploadToRef(target, api, {
+      // The bytes are proven through the API; whether the raw host already
+      // serves the commit is only reported, it comes and goes on its own.
+      probe: (url) =>
+        downloadRaw(url, token).then(
+          () => {},
+          (error) =>
+            console.warn(
+              `raw.githubusercontent.com is not serving the commit yet (${error.message}); the comment will render once it does.`,
+            ),
+        ),
+    }),
+  attachments: uploadAttachments,
+};
+const transportName = process.env.VISUAL_EVIDENCE_TRANSPORT ?? "ref";
+const transport = transports[transportName];
+if (!transport)
+  throw new Error(`Unknown VISUAL_EVIDENCE_TRANSPORT: ${transportName}`);
+const result = await publishEvidence(manifest, github, transport);
 if (result.stale) {
   console.log(
     "The PR advanced after capture; stale screenshots will not publish.",
   );
 } else {
-  const message = `Published and byte-verified ${result.count} GitHub attachments for ${manifest.headSha}.`;
+  const where = result.ref
+    ? `from ${result.ref} at ${result.commit}`
+    : "as GitHub attachments";
+  const message = `Published and byte-verified ${result.count} screenshots for ${manifest.headSha} ${where}.`;
   console.log(message);
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(

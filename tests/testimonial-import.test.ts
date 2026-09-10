@@ -1182,3 +1182,53 @@ it("keeps import-specific Inbox counts and pagination after preview deletion, wi
     ).toBe(0);
   }
 });
+
+it("preserves Senja highlights from source preview through saved testimonial", async () => {
+  const t = createConvexTest();
+  const owner = await authenticatedUser(t);
+  const project = await owner.client.mutation(api.organizations.create, {
+    name: "Atelier June",
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          '<script>start({data:{reviews:[{id:"marked-review",type:"text",text:"Une <mark>super expérience</mark> !",customer:{name:"Camille"}}]}});</script>',
+        ),
+    ),
+  );
+  const { jobId } = await owner.client.action(
+    api.testimonialImportSource.preview,
+    {
+      organizationId: project.id,
+      url: "https://senja.io/p/atelier/testimonials",
+    },
+  );
+  const preview = await owner.client.query(api.testimonialImports.getPreview, {
+    jobId,
+    paginationOpts: { cursor: null, numItems: 100 },
+  });
+  const item = preview!.items.page[0]!;
+  const expected = [
+    {
+      type: "p",
+      children: [
+        { text: "Une " },
+        { text: "super expérience", highlight: true },
+        { text: " !" },
+      ],
+    },
+  ];
+  expect(item.text).toBe("Une super expérience !");
+  expect(item.richText).toEqual(expected);
+  await owner.client.mutation(api.testimonialImports.confirm, {
+    jobId,
+    itemIds: [item._id],
+  });
+  const saved = await t.run((ctx) => ctx.db.query("testimonials").first());
+  expect(saved).toMatchObject({
+    text: "Une super expérience !",
+    richText: expected,
+  });
+});

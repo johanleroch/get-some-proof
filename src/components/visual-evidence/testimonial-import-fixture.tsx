@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import type { Doc, Id } from "@convex/_generated/dataModel";
+import type { TestimonialRichText } from "@convex/domain/testimonialRichText";
 import { TestimonialImportView } from "@/components/testimonials/testimonial-import";
 import { ImportPublicationDialog } from "@/components/testimonials/import-publication-dialog";
 import { Button } from "@/components/ui/button";
+import { ImportPhotoProgress } from "@/components/testimonials/import-photo-progress";
 
 const jobId = "fixture-wall-import" as Id<"testimonialImportJobs">;
 const quotes = [
@@ -12,6 +14,18 @@ const quotes = [
     authorName: "Camille Laurent",
     tagline: "Founder, Atelier June",
     text: "We had kind words scattered across emails and old pages. Now our customers can see them all in one place.",
+    richText: [
+      {
+        type: "p",
+        children: [
+          {
+            text: "We had kind words scattered across emails and old pages. Now our customers can ",
+          },
+          { text: "see them all in one place", highlight: true },
+          { text: "." },
+        ],
+      },
+    ] satisfies TestimonialRichText,
   },
   {
     authorName: "Daniel Reed",
@@ -186,6 +200,20 @@ export function TestimonialImportFixture({
               }
         }
       />
+      {initial === "video-failed" ? (
+        <ImportPhotoProgress
+          photos={[
+            {
+              itemId: "fixture-photo-error",
+              authorName: "Camille Laurent",
+              status: "failed",
+              diagnostic: "HTTP_403",
+              attempt: 2,
+            },
+          ]}
+          onRetry={async () => {}}
+        />
+      ) : undefined}
     </main>
   );
 }

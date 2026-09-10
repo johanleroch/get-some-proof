@@ -1,5 +1,6 @@
 import { load } from "cheerio/slim";
 import JSON5 from "json5";
+import type { TestimonialRichText } from "../../../convex/domain/testimonialRichText";
 import { testimonialTextIdentities } from "./testimonial-text-identity";
 
 export type WallProvider = "testimonial-to" | "senja";
@@ -9,6 +10,7 @@ export type WallCandidate = {
   type: "text" | "video";
   authorName: string;
   text: string;
+  richText?: TestimonialRichText;
   tagline?: string;
   avatarUrl?: string;
   videoUrl?: string;
@@ -237,7 +239,7 @@ export async function previewWall(input: string) {
       items.push({
         sourceId: review.id,
         type: review.type,
-        text: typeof review.text === "string" ? review.text : "",
+        ...senjaQuote(typeof review.text === "string" ? review.text : ""),
         authorName: customer.name,
         ...(review.type === "video"
           ? videoUrl
@@ -255,6 +257,56 @@ export async function previewWall(input: string) {
     }
   }
   return { provider: source.provider, sourceUrl: source.url, items };
+}
+
+/** Translate source HTML to our portable document; never render source HTML. */
+function senjaQuote(html: string): {
+  text: string;
+  richText?: TestimonialRichText;
+} {
+  const $ = load(html);
+  $("script,style").remove();
+  $("br").replaceWith("\n");
+  $("p,div").append("\n");
+  const richText: TestimonialRichText = [{ type: "p", children: [] }];
+  function visit(nodes: ReturnType<typeof $>, highlighted = false) {
+    nodes.each((_, node) => {
+      if (node.type === "text") {
+        node.data.split("\n").forEach((text, index) => {
+          if (index) richText.push({ type: "p", children: [] });
+          const children = richText[richText.length - 1]!.children;
+          const previous = children[children.length - 1];
+          if (previous && !!previous.highlight === highlighted)
+            previous.text += text;
+          else
+            children.push({
+              text,
+              ...(highlighted ? { highlight: true } : {}),
+            });
+        });
+      } else if ("name" in node) {
+        visit($(node).contents(), highlighted || node.name === "mark");
+      }
+    });
+  }
+  visit($.root().contents());
+  for (const block of richText)
+    if (!block.children.length) block.children.push({ text: "" });
+  // Remove only the separator introduced after a closing block element.
+  if (
+    /<\/(?:p|div)>\s*$/i.test(html) &&
+    richText[richText.length - 1]?.children.every((leaf) => !leaf.text)
+  )
+    richText.pop();
+  const text = richText
+    .map((block) => block.children.map((leaf) => leaf.text).join(""))
+    .join("\n");
+  return {
+    text,
+    ...(richText.some((block) => block.children.some((leaf) => leaf.highlight))
+      ? { richText }
+      : {}),
+  };
 }
 
 function senjaVideoUrl(asset: unknown) {
