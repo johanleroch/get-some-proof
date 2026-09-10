@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils";
  * The site's loader: the blob looking around, instead of a spinner. Use it
  * for every indeterminate wait that has no skeleton of its own (route
  * transitions, a form submitting, a video processing). Skeletons stay for
- * page structure with a mascot; buttons use a small inline spinner.
+ * page structure and carry no blob of their own — the route loader has just
+ * shown one, and a second blob over the shimmer reads as a glitch; buttons
+ * use a small inline spinner.
  */
 export function BlobLoader({
   className,

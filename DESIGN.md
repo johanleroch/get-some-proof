@@ -671,12 +671,14 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   keyboard keeps its own way in through `mod+shift+h`, since no floating
   control is reachable by Tab. Reviewed at `/visual-evidence/rich-testimonial`.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
+  No mascot inside a skeleton: the route loader has just shown the blob full
+  screen, and a second one popping in above the shimmer reads as a glitch.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
   transitions through the root `loading.tsx`, a form submitting, a video
   processing. Use the mascot for every visible wait, including compact labels,
-  upload progress, video buffering, and page skeletons. Loading buttons use
-  a small 16px spinner instead.
+  upload progress, and video buffering — but never inside a page skeleton.
+  Loading buttons use a small 16px spinner instead.
 - Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
   and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
   once the last usages are migrated.
