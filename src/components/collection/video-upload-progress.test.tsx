@@ -37,12 +37,44 @@ describe("VideoUploadProgress", () => {
       "aria-valuenow",
       "100",
     );
-    const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Video uploaded !");
-    expect(status).toHaveTextContent("Processing");
+    // The space before the mark is non-breaking on purpose: the founder asked
+    // for the space, and the mark must never wrap away from the word.
+    // The exact character is pinned: the default matcher would collapse the
+    // non-breaking space into an ordinary one and never see a regression.
+    expect(
+      screen.getByText("Video uploaded !", { normalizer: (text) => text }),
+    ).toBeVisible();
     expect(
       screen.getByText("Processing and captions continue in the background."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel upload" })).toBeNull();
+  });
+
+  it("announces the landing and plays the new label in", () => {
+    const { rerender } = render(
+      <VideoUploadProgress
+        onCancel={() => undefined}
+        phase="uploading"
+        progress={99}
+      />,
+    );
+
+    // The live region is mounted before the message it will carry, or screen
+    // readers miss the announcement.
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    const uploadingLabel = screen.getByText("Uploading your video…");
+
+    rerender(<VideoUploadProgress phase="processing" progress={100} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Video uploaded. Processing and captions continue in the background.",
+    );
+    const landedLabel = screen.getByText("Video uploaded !", {
+      normalizer: (text) => text,
+    });
+    expect(landedLabel).toHaveClass("upload-status-label");
+    // A new node, so its arrival animation replays instead of the text
+    // swapping in place.
+    expect(landedLabel).not.toBe(uploadingLabel);
   });
 });

@@ -884,7 +884,7 @@ mark {
 .upload-status-cheer {
   display: inline-block;
   transform-origin: bottom center;
-  animation: upload-status-cheer 420ms var(--ease-settle) both;
+  animation: upload-status-cheer var(--motion-settle) var(--ease-out-soft) both;
 }
 
 @keyframes upload-status-cheer {
