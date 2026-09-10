@@ -148,7 +148,11 @@ export function PublicWallLive({
     return () => {
       clearTimeout(initial);
       clearInterval(interval);
-      request.current?.abort();
+      // Retire the request before aborting: its rejection must not clear
+      // a valid snapshot while the next effect starts its replacement.
+      const obsoleteRequest = request.current;
+      request.current = null;
+      obsoleteRequest?.abort();
       if (expiry.current) clearTimeout(expiry.current);
       document.removeEventListener("visibilitychange", onVisible);
     };
