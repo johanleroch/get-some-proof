@@ -4,6 +4,7 @@ import { BlobLoadingText } from "@/components/brand/blob-loader";
 
 import { useEffect } from "react";
 import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -49,6 +50,7 @@ type OrganizationSwitcherProps = {
   canReadAudit: boolean;
   canReadBilling: boolean;
   canUpdateOrganization: boolean;
+  currentLogoUrl?: string | null;
   currentName: string;
   currentSlug: string;
 };
@@ -101,6 +103,7 @@ export function OrganizationSwitcherView({
   canReadAudit,
   canReadBilling,
   canUpdateOrganization,
+  currentLogoUrl,
   currentName,
   currentSlug,
   organizations,
@@ -125,13 +128,30 @@ export function OrganizationSwitcherView({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {/* The project's name is the sidebar's title, and the title is the
-                switch: Gelica at `heading`, a thin chevron, no logo and no
-                avatar (DESIGN.md section 6). */}
+                switch: the project's own logo when it has one, the name in
+                Gelica at `heading`, a thin chevron (DESIGN.md section 6).
+                A project without a logo shows the name alone: no initials, no
+                placeholder square, nothing to fill the hole. */}
             <button
               aria-label={`${currentName}, switch project`}
               className="hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-ring -mx-1.5 flex max-w-[calc(100%+0.75rem)] cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-left outline-none focus-visible:ring-[3px]"
               type="button"
             >
+              {/* The logo lands in the navigation's icon column (20px from
+                  the panel) and the name in its label column (50px), so the
+                  sidebar reads as one left rhythm rather than a title
+                  staggered above the list. The 4px and 2px sit on top of the
+                  button's own 4px gap. */}
+              {currentLogoUrl ? (
+                <Image
+                  alt=""
+                  className="mr-0.5 ml-1 size-6 shrink-0 rounded-md object-cover"
+                  height={24}
+                  src={currentLogoUrl}
+                  unoptimized
+                  width={24}
+                />
+              ) : null}
               <span className="type-heading min-w-0 truncate">
                 {currentName}
               </span>

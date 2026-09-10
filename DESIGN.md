@@ -366,14 +366,18 @@ pages still start at the top and scroll normally.
   for now (decided 2026-09-09); the dark tokens stay in `globals.css` and the
   development pages (`/kit`, `/screens`, the quick access) keep the switch so
   both themes stay reviewed.
-- Sidebar header: no logo and no avatar. The project's name is the title of
-  the sidebar, at `heading` in Gelica with a thin chevron beside it (20px,
-  `--ink-3`), and the whole title is the button that opens the project menu
-  (switch, create, settings): 16px inset, `--surface-2` on hover and while
-  open. Chosen by the founder on 2026-09-09 from six drafts (brand first,
-  project card, typographic, sectioned, ink panel, rows), the typographic
-  one without its wordmark: the product's name has no business in its own
-  shell. The navigation under it: section 7.
+- Sidebar header: the project's name is the title of the sidebar, at
+  `heading` in Gelica with a thin chevron beside it (20px, `--ink-3`), and
+  the whole title is the button that opens the project menu (switch, create,
+  settings): 16px inset, `--surface-2` on hover and while open. The project's
+  own logo sits before the name when it has one (24px, `--radius-md`,
+  `object-cover`, 8px from the name, the size it has in the project menu);
+  a project without a logo shows the name alone — no initials, no placeholder
+  square, nothing to fill the hole (2026-09-10). Never the product's own
+  wordmark or a user avatar: chosen by the founder on 2026-09-09 from six
+  drafts (brand first, project card, typographic, sectioned, ink panel,
+  rows), the typographic one without its wordmark, because the product's name
+  has no business in its own shell. The navigation under it: section 7.
 - Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
   footer above the user row, as a small poster on `--brand-soft`
   (`--radius-lg`, no border, 12px padding): the promise at `subheading`

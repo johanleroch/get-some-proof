@@ -327,6 +327,7 @@ export function AppShell(props: AppShellProps) {
           canReadBilling={false}
           canUpdateOrganization={authorization?.can.updateOrganization ?? false}
           canCreateProject={account?.effectivePlan === "premium"}
+          currentLogoUrl={props.organizationLogoUrl}
           currentName={props.organizationName}
           currentSlug={props.organizationSlug}
         />
