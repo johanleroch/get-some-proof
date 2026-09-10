@@ -105,6 +105,7 @@ export default defineSchema({
     ),
     workflowId: v.optional(v.string()),
     videoAssetId: v.optional(v.id("videoAssets")),
+    capacityBlocked: v.optional(v.boolean()),
     videoStatus: v.optional(
       v.union(v.literal("processing"), v.literal("ready"), v.literal("failed")),
     ),
@@ -870,6 +871,8 @@ export default defineSchema({
     .index("by_provider_upload_id", ["providerUploadId"])
     .index("by_expiry", ["expiresAt"]),
   videoAssets: defineTable({
+    assistantImport: v.optional(v.boolean()),
+    importedFileVerified: v.optional(v.boolean()),
     importCopyStartedAt: v.optional(v.number()),
     importItemId: v.optional(v.id("testimonialImportItems")),
     accountId: v.optional(v.id("accounts")),

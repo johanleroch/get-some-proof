@@ -8,6 +8,7 @@ export const importAttestationText =
   "I confirm that I have permission to publish this testimonial and the displayed customer details for this Brand.";
 
 export const importResult = v.object({
+  blocked: v.optional(v.number()),
   processing: v.optional(v.number()),
   failed: v.optional(v.number()),
   imported: v.number(),

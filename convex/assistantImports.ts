@@ -111,6 +111,8 @@ export const status = internalQuery({
       v.object({
         itemId: v.id("testimonialImportItems"),
         authorName: v.string(),
+        blocked: v.optional(v.boolean()),
+        failureMessage: v.optional(v.string()),
         status: v.union(
           v.literal("processing"),
           v.literal("ready"),
@@ -155,7 +157,21 @@ export const status = internalQuery({
             ]
           : [],
       ),
-      videos: [],
+      videos: items.flatMap((item) =>
+        item.videoStatus
+          ? [
+              {
+                itemId: item._id,
+                authorName: item.authorName,
+                status: item.videoStatus,
+                blocked: item.capacityBlocked,
+                failureMessage: item.capacityBlocked
+                  ? "Choose which videos fit your available capacity."
+                  : item.failureReason,
+              },
+            ]
+          : [],
+      ),
     };
   },
 });
@@ -214,6 +230,8 @@ export const activate = mutation({
 });
 
 const assistantRecord = v.object({
+  type: v.optional(v.union(v.literal("text"), v.literal("video"))),
+  videoUrl: v.optional(v.string()),
   sourceId: v.string(),
   authorName: v.string(),
   text: v.string(),
@@ -244,7 +262,7 @@ function normalizedRecord(item: Infer<typeof assistantRecord>) {
     !item.sourceId.trim() ||
     item.sourceId.length > 200 ||
     item.authorName.length > 100 ||
-    !item.text.trim() ||
+    ((item.type ?? "text") === "text" && !item.text.trim()) ||
     item.text.length > 10_000
   )
     throw new ConvexError({ code: "ASSISTANT_SOURCE_IDENTITY" });
@@ -264,7 +282,8 @@ function normalizedRecord(item: Infer<typeof assistantRecord>) {
     sourceId: item.sourceId,
     authorName: item.authorName,
     text: item.text,
-    type: "text" as const,
+    type: item.type ?? "text",
+    videoUrl: item.videoUrl,
     tagline: item.role,
     company: item.company,
     rating: item.rating,
@@ -284,8 +303,9 @@ async function outcomes(
   return items.map((item) => ({
     sourceId: item.sourceId,
     itemId: item._id,
-    status:
-      item.outcome === "imported"
+    status: item.capacityBlocked
+      ? "blocked"
+      : item.outcome === "imported"
         ? "created"
         : item.outcome === "skipped"
           ? "duplicate"
@@ -460,6 +480,7 @@ async function acceptBatch(
     "unavailable",
     "processing",
     "failed",
+    "blocked",
   ] as const)
     aggregate[key] = (aggregate[key] ?? 0) + (result[key] ?? 0);
   await ctx.db.patch(migrationId, {

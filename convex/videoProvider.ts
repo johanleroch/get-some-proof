@@ -1,5 +1,13 @@
 import { env } from "./_generated/server";
 
+export class VideoProviderError extends Error {
+  constructor(readonly transient: boolean) {
+    super(
+      "The video provider is temporarily unavailable or rejected the upload.",
+    );
+  }
+}
+
 export type VideoUploadProvider = "fake" | "mux";
 
 export type DirectUpload = {
@@ -179,10 +187,15 @@ export async function createVideoDirectUpload(input: {
       Authorization: muxAuthorization(),
       "Content-Type": "application/json",
     },
+    signal: AbortSignal.timeout(30_000),
     method: "POST",
+  }).catch(() => {
+    throw new VideoProviderError(true);
   });
   if (!response.ok) {
-    throw new Error(`Mux Direct Upload creation failed (${response.status}).`);
+    throw new VideoProviderError(
+      response.status === 429 || response.status >= 500,
+    );
   }
   const body = (await response.json()) as {
     data?: { id?: unknown; url?: unknown };

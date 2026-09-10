@@ -34,6 +34,58 @@ import { requireVerifiedPrincipal, type Principal } from "./security/principal";
 
 const copyLifetimeMs = 2 * 60 * 60 * 1000;
 
+async function ensureImportedVideoTestimonial(
+  ctx: MutationCtx,
+  job: Doc<"testimonialImportJobs">,
+  item: Doc<"testimonialImportItems">,
+  actorId: string,
+  now: number,
+) {
+  return (
+    item.testimonialId ??
+    (await ctx.db.insert("testimonials", {
+      importJobId: job._id,
+      organizationId: job.organizationId,
+      clientSubmissionId: `import:${item._id}`,
+      submissionType: "video",
+      avatarStorageId: item.identityCorrection?.avatarStorageId ?? undefined,
+      moderationStatus: "pending",
+      submitterName: item.identityCorrection?.authorName ?? item.authorName,
+      text: item.text,
+      richText: item.richText,
+      company: item.company,
+      rating: item.rating,
+      role: item.identityCorrection
+        ? item.identityCorrection.tagline || undefined
+        : item.tagline,
+      importSourceKey: JSON.stringify([
+        job.provider,
+        job.sourceUrl,
+        item.sourceId,
+      ]),
+      importOrigin: {
+        acquisitionFlowId: job.acquisitionFlowId,
+        provider: job.provider,
+        sourceUrl: job.sourceUrl,
+        sourceId: item.sourceId,
+        originalAuthorName: item.authorName,
+        originalText: item.text,
+        originalTagline: item.tagline,
+        originalCompany: item.company,
+        originalRating: item.rating,
+        originalRichText: item.richText,
+        originalType: item.type,
+        originalVideoUrl: item.videoUrl,
+        originalAvatarUrl: item.avatarUrl,
+        importedBy: actorId,
+        importedAt: now,
+      },
+      createdAt: now,
+      updatedAt: now,
+    }))
+  );
+}
+
 /** Called inside the confirmation transaction, so concurrent imports share capacity. */
 export async function queueImportedVideo(
   ctx: MutationCtx,
@@ -55,43 +107,20 @@ export async function queueImportedVideo(
     ctx,
     job.organizationId,
   );
+  if (
+    job.provider === "assistant" &&
+    (entitlement.effectivePlan !== "premium" ||
+      entitlement.state === "past_due")
+  )
+    throw new ConvexError("Pro is required to start an assistant video copy.");
   const now = Date.now();
-  const testimonialId =
-    item.testimonialId ??
-    (await ctx.db.insert("testimonials", {
-      importJobId: job._id,
-      organizationId: job.organizationId,
-      clientSubmissionId: `import:${item._id}`,
-      submissionType: "video",
-      avatarStorageId: item.identityCorrection?.avatarStorageId ?? undefined,
-      moderationStatus: "pending",
-      submitterName: item.identityCorrection?.authorName ?? item.authorName,
-      text: item.text,
-      role: item.identityCorrection
-        ? item.identityCorrection.tagline || undefined
-        : item.tagline,
-      importSourceKey: JSON.stringify([
-        job.provider,
-        job.sourceUrl,
-        item.sourceId,
-      ]),
-      importOrigin: {
-        acquisitionFlowId: job.acquisitionFlowId,
-        provider: job.provider,
-        sourceUrl: job.sourceUrl,
-        sourceId: item.sourceId,
-        originalAuthorName: item.authorName,
-        originalText: item.text,
-        originalTagline: item.tagline,
-        originalType: item.type,
-        originalVideoUrl: item.videoUrl,
-        originalAvatarUrl: item.avatarUrl,
-        importedBy: actorId,
-        importedAt: now,
-      },
-      createdAt: now,
-      updatedAt: now,
-    }));
+  const testimonialId = await ensureImportedVideoTestimonial(
+    ctx,
+    job,
+    item,
+    actorId,
+    now,
+  );
   if (item.videoAssetId) {
     const previousAsset = await ctx.db.get(item.videoAssetId);
     if (previousAsset)
@@ -115,6 +144,7 @@ export async function queueImportedVideo(
     testimonialId,
     importItemId: item._id,
     provider: env.MUX_PROVIDER,
+    assistantImport: job.provider === "assistant" ? true : undefined,
     status: "processing",
     mimeType: "video/mp4",
     captionsStatus: "requested",
@@ -137,6 +167,7 @@ export async function queueImportedVideo(
     videoAssetId: assetId,
     workflowId,
     videoStatus: "processing",
+    capacityBlocked: undefined,
     failureReason: undefined,
   });
   await queueImportedAvatar(ctx, item, testimonialId);
@@ -195,10 +226,35 @@ export async function retryOwnedImportVideo(
   await ctx.db.patch(job._id, {
     result: {
       ...result,
-      failed: Math.max(0, (result.failed ?? 0) - 1),
+      failed: Math.max(
+        0,
+        (result.failed ?? 0) - (item.capacityBlocked ? 0 : 1),
+      ),
+      blocked: Math.max(
+        0,
+        (result.blocked ?? 0) - (item.capacityBlocked ? 1 : 0),
+      ),
       processing: (result.processing ?? 0) + 1,
     },
   });
+  if (job.migrationId) {
+    const migration = await ctx.db.get(job.migrationId);
+    if (migration)
+      await ctx.db.patch(migration._id, {
+        result: {
+          ...migration.result,
+          failed: Math.max(
+            0,
+            (migration.result.failed ?? 0) - (item.capacityBlocked ? 0 : 1),
+          ),
+          blocked: Math.max(
+            0,
+            (migration.result.blocked ?? 0) - (item.capacityBlocked ? 1 : 0),
+          ),
+          processing: (migration.result.processing ?? 0) + 1,
+        },
+      });
+  }
   return null;
 }
 
@@ -252,6 +308,21 @@ export async function settleImportedVideo(
       failed: (result.failed ?? 0) + (asset.status === "failed" ? 1 : 0),
     },
   });
+  if (job.migrationId) {
+    const migration = await ctx.db.get(job.migrationId);
+    if (migration)
+      await ctx.db.patch(migration._id, {
+        result: {
+          ...migration.result,
+          processing: Math.max(0, (migration.result.processing ?? 0) - 1),
+          imported:
+            migration.result.imported + (asset.status === "ready" ? 1 : 0),
+          failed:
+            (migration.result.failed ?? 0) +
+            (asset.status === "failed" ? 1 : 0),
+        },
+      });
+  }
   if (notify && item.workflowId)
     await sendEvent(ctx, components.workflow, {
       workflowId: item.workflowId as WorkflowId,
@@ -280,6 +351,7 @@ export const getCopyContext = internalMutation({
     v.null(),
     v.object({
       url: v.string(),
+      assistantImport: v.boolean(),
       organizationId: v.id("organizations"),
       reservationId: v.id("videoReservations"),
       provider: v.union(v.literal("fake"), v.literal("mux")),
@@ -309,6 +381,7 @@ export const getCopyContext = internalMutation({
     await ctx.db.patch(asset._id, { importCopyStartedAt: Date.now() });
     return {
       url: item.videoUrl,
+      assistantImport: asset.assistantImport === true,
       organizationId: asset.organizationId,
       reservationId: asset.reservationId,
       provider: asset.provider,
@@ -325,6 +398,11 @@ export const copySource = internalAction({
       args,
     );
     if (!context) return false;
+    if (context.assistantImport)
+      return ctx.runAction(internal.assistantImportMedia.copyVideo, {
+        ...args,
+        ...context,
+      });
     let copy;
     try {
       copy = await createVideoAssetFromUrl({
@@ -464,6 +542,140 @@ export const completed = internalMutation({
     if (item?.workflowId === args.workflowId)
       await ctx.db.patch(item._id, { workflowId: undefined });
     await cleanup(ctx, components.workflow, args.workflowId);
+    return null;
+  },
+});
+
+export const attachAssistantUpload = internalMutation({
+  args: { assetId: v.id("videoAssets"), providerUploadId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (
+      !asset?.assistantImport ||
+      asset.status !== "processing" ||
+      asset.providerUploadId
+    )
+      throw new ConvexError("Import unavailable.");
+    const reservation = await ctx.db.get(asset.reservationId);
+    if (
+      !reservation ||
+      reservation.status !== "reserved" ||
+      reservation.expiresAt <= Date.now()
+    )
+      throw new ConvexError("Import unavailable.");
+    await ctx.db.patch(asset._id, { providerUploadId: args.providerUploadId });
+    await ctx.db.patch(reservation._id, {
+      providerUploadId: args.providerUploadId,
+    });
+    return null;
+  },
+});
+
+export const verifyAssistantFile = internalMutation({
+  args: {
+    assetId: v.id("videoAssets"),
+    fileSizeBytes: v.number(),
+    mimeType: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (
+      !asset?.assistantImport ||
+      asset.status !== "processing" ||
+      !asset.providerUploadId ||
+      !Number.isSafeInteger(args.fileSizeBytes) ||
+      args.fileSizeBytes <= 0 ||
+      args.fileSizeBytes > 512 * 1024 * 1024 ||
+      !["video/mp4", "video/quicktime", "video/webm"].includes(args.mimeType)
+    )
+      throw new ConvexError("Import unavailable.");
+    await ctx.db.patch(asset._id, {
+      fileSizeBytes: args.fileSizeBytes,
+      mimeType: args.mimeType,
+      importedFileVerified: true,
+    });
+    return null;
+  },
+});
+
+export async function retainCapacityBlockedVideo(
+  ctx: MutationCtx,
+  job: Doc<"testimonialImportJobs">,
+  item: Doc<"testimonialImportItems">,
+  actorId: string,
+) {
+  const organization = await ctx.db.get(job.organizationId);
+  if (
+    !organization ||
+    (env.MUX_PROVIDER !== "mux" && env.MUX_PROVIDER !== "fake")
+  )
+    throw new ConvexError("Video provider unavailable.");
+  const now = Date.now();
+  const testimonialId = await ensureImportedVideoTestimonial(
+    ctx,
+    job,
+    item,
+    actorId,
+    now,
+  );
+  const reservationId = await ctx.db.insert("videoReservations", {
+    organizationId: organization._id,
+    accountId: organization.accountId,
+    importItemId: item._id,
+    clientSubmissionId: `import:${item._id}`,
+    plan: "premium",
+    status: "released",
+    expiresAt: now,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const videoAssetId = await ctx.db.insert("videoAssets", {
+    organizationId: organization._id,
+    accountId: organization.accountId,
+    reservationId,
+    testimonialId,
+    importItemId: item._id,
+    provider: env.MUX_PROVIDER,
+    assistantImport: true,
+    captionsStatus: "failed",
+    status: "failed",
+    mimeType: "video/mp4",
+    failureReason:
+      "Choose which videos to import within your available storage capacity.",
+    createdAt: now,
+    updatedAt: now,
+  });
+  await ctx.db.patch(item._id, {
+    testimonialId,
+    videoAssetId,
+    videoStatus: "failed",
+    capacityBlocked: true,
+  });
+  await queueImportedAvatar(ctx, item, testimonialId);
+}
+
+/** A cancelled upload is safe to replace; an uncertain final upload is never reset. */
+export const resetAssistantUpload = internalMutation({
+  args: { assetId: v.id("videoAssets") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (
+      !asset?.assistantImport ||
+      asset.status !== "processing" ||
+      asset.importedFileVerified
+    )
+      throw new ConvexError("Import unavailable.");
+    if (asset.providerUploadId)
+      await enqueueAssetCleanup(ctx, {
+        organizationId: asset.organizationId,
+        provider: asset.provider,
+        providerUploadId: asset.providerUploadId,
+      });
+    await ctx.db.patch(asset._id, { providerUploadId: undefined });
+    await ctx.db.patch(asset.reservationId, { providerUploadId: undefined });
     return null;
   },
 });

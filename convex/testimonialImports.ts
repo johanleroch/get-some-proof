@@ -30,7 +30,10 @@ import {
   requireOrganizationPermissionForPrincipal,
 } from "./security/organizationAccess";
 import schema from "./schema";
-import { queueImportedVideo } from "./testimonialImportVideo";
+import {
+  queueImportedVideo,
+  retainCapacityBlockedVideo,
+} from "./testimonialImportVideo";
 import { queueImportedAvatar } from "./testimonialImportAvatar";
 import { isProjectActive } from "./projectActivity";
 
@@ -288,6 +291,32 @@ export async function confirmOwnedImport(
       unavailable: 0,
     }),
   };
+  let blockAssistantVideos = false;
+  if (job.provider === "assistant") {
+    const sourceIds = new Set<string>();
+    for (const id of new Set(args.itemIds)) {
+      const item = await ctx.db.get(id);
+      if (
+        item?.jobId === job._id &&
+        item.type === "video" &&
+        item.videoUrl &&
+        !item.outcome &&
+        !item.videoStatus &&
+        !(await resolveImportSource(
+          ctx,
+          job.organizationId,
+          job.provider,
+          job.sourceUrl,
+          item,
+        ))
+      )
+        sourceIds.add(item.sourceId);
+    }
+    const capacity = await getVideoStorageAvailability(ctx, job.organizationId);
+    blockAssistantVideos =
+      sourceIds.size > 0 &&
+      (!capacity.available || sourceIds.size > capacity.limit - capacity.used);
+  }
   for (const id of new Set(args.itemIds)) {
     const item = await ctx.db.get(id);
     if (!item || item.jobId !== job._id)
@@ -331,6 +360,11 @@ export async function confirmOwnedImport(
       continue;
     }
     if (item.type === "video") {
+      if (blockAssistantVideos) {
+        await retainCapacityBlockedVideo(ctx, job, item, principal.actorId);
+        result.blocked = (result.blocked ?? 0) + 1;
+        continue;
+      }
       if (await queueImportedVideo(ctx, job, item, principal.actorId)) {
         result.processing = (result.processing ?? 0) + 1;
       } else {

@@ -76,6 +76,7 @@ export const savedImportSchema = z.object({
   organizationSlug: z.string(),
   inboxUrl: z.string().url(),
   result: z.object({
+    blocked: z.number().int().nonnegative().optional(),
     imported: z.number().int().nonnegative(),
     skipped: z.number().int().nonnegative(),
     changed: z.number().int().nonnegative(),
@@ -102,6 +103,7 @@ export const importStatusSchema = savedImportSchema.extend({
         itemId: z.string(),
         authorName: z.string(),
         failureMessage: z.string().optional(),
+        blocked: z.boolean().optional(),
         status: z.enum(["processing", "ready", "failed"]),
       }),
     )

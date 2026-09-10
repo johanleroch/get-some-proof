@@ -142,7 +142,15 @@ export const assistantBatchInput = z.object({
       "Announce the total number of testimonials discovered on the supplied page before sending batches.",
     ),
   items: z
-    .array(assistantTextInput.omit({ organizationId: true, sourceUrl: true }))
+    .array(
+      assistantTextInput
+        .omit({ organizationId: true, sourceUrl: true })
+        .extend({
+          type: z.enum(["text", "video"]).default("text"),
+          text: z.string().max(10_000).default(""),
+          videoUrl: z.string().url().max(2048).optional(),
+        }),
+    )
     .min(1)
     .max(50),
 });

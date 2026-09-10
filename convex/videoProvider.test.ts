@@ -9,6 +9,39 @@ import {
 } from "./videoProvider";
 
 describe("video upload provider", () => {
+  it("classifies a temporary direct-upload outage so a later attempt can succeed", async () => {
+    vi.stubEnv("MUX_PROVIDER", "mux");
+    vi.stubEnv("MUX_TOKEN_ID", "test-id");
+    vi.stubEnv("MUX_TOKEN_SECRET", "test-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 503 }))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              data: {
+                id: "upload-retry",
+                url: "https://upload.example/capability",
+              },
+            }),
+          ),
+        ),
+    );
+    const args = {
+      corsOrigin: "https://app.example",
+      passthrough: "reserved-item",
+      organizationId: "project",
+      spokenLanguage: "en" as const,
+    };
+    await expect(createVideoDirectUpload(args)).rejects.toMatchObject({
+      transient: true,
+    });
+    await expect(createVideoDirectUpload(args)).resolves.toMatchObject({
+      uploadId: "upload-retry",
+    });
+  });
   it("keeps the provider reserved for the copy if configuration changes", async () => {
     vi.stubEnv("MUX_PROVIDER", "mux");
     const fetchMock = vi.fn();

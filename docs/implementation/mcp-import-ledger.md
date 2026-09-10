@@ -38,6 +38,20 @@ Open PRs inspected at start: #109 (Senja import metadata/video duration), #108 (
 - Follow-up Spec review verified both P2 fixes and ran 7 tests successfully. No new defect in those corrections.
 - React Doctor changed-scope scan improved 81 to 82 after parallelizing independent activation reads and guarding configured-origin parsing. Remaining diagnostics were inspected: bounded transaction loops preserve order/read-after-write; Inbox complexity predates this work; Zod format notation is a style preference. No rules suppressed or dependencies installed.
 
+## #114 checkpoint in progress
+
+- Assistant batches accept video-only records without generating a quote. The shared video workflow creates Pending records and reservations, then uses a Node action to copy the original public file safely into a Mux direct upload in 8 MiB pieces.
+- Actual bytes are bounded at 512 MiB and persisted before final PUT. A final request with an uncertain result waits for the authoritative webhook; it is not duplicated or cancelled as a proven failure.
+- Assistant assets require verified bytes and a duration at most 600 seconds before Ready. Collection assets retain their 120-second rule.
+- When a batch's new videos exceed available capacity, all those videos receive Pending placeholders with blocked outcomes and released reservations; text proceeds. No arbitrary subset is transferred.
+- Intermediate Spec review found paid-retry bypass, unclassified Mux creation outages, and cancellation webhook races. Fixes now require Pro for new assistant reservations, classify temporary provider failures, and detach retired upload IDs atomically while scheduling cleanup before a retry.
+- Latest targeted validation: TypeScript and 25 tests passed, including public signed-MCP video-only import, 600/601 seconds, unverified completion, blocked batch, retired-upload cancellation interleaving, rejected Free retry, safe chunk limits and uncertain final upload. The full local `pnpm check` passed: formatting, lint, TypeScript, 151 files / 865 tests and build.
+- Real development ingestion is still unverified. No backend deployment has been performed. No #114 delivery claim yet.
+
+## Next slice: #115 local upload implementation approach
+
+Use a scoped expiring capability and binary chunks up to 8 MiB through a Convex HTTP action; its documented request limit is 20 MiB. Keep the private Mux upload URL inside the backend. Each authorized binary request counts actual bytes and advances a persisted offset; an explicit final chunk can only mark measured bytes verified internally before Mux finalization. Do not expose an arbitrary client completion mutation or trust a declared size as proof. Reuse the existing Pending testimonial, reservation and asset lifecycle. Provide a small real command-line transfer path plus browser file input using the same chunk endpoint. This is an implementation direction, not a completed feature.
+
 ## Remaining gates
 
 All issue checkboxes remain unchecked. Implementation, negative/recovery tests, real-client checks, Standards/Spec review, current-commit desktop/mobile evidence, PR creation and remote CI are still in progress. No ticket is delivered yet. Do not infer delivery from passing unit tests.

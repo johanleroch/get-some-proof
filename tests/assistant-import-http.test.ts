@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { api, components } from "../convex/_generated/api";
+import { api, components, internal } from "../convex/_generated/api";
 import { createImportOAuth } from "../convex/importOAuth";
 import { POST } from "../src/app/mcp/route";
 import {
@@ -11,6 +11,7 @@ import {
 beforeEach(() => {
   for (const [key, value] of Object.entries({
     EMAIL_PROVIDER: "test",
+    MUX_PROVIDER: "fake",
     SITE_URL: "http://localhost:3000",
     CHATGPT_IMPORT_ENABLED: "true",
     STRIPE_SECRET_KEY: "sk_test_assistant_http",
@@ -256,6 +257,156 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
   );
   expect(preserved?.submitterName).toBe("");
 
+  for (const [label, duration, verified, expected] of [
+    ["ten-minutes", 600, true, "ready"],
+    ["over-limit", 601, true, "failed"],
+    ["unverified-file", 30, false, "failed"],
+  ] as const) {
+    const video = await call("import_testimonials", {
+      organizationId: project.id,
+      sourceUrl: input.sourceUrl,
+      requestId: label,
+      discoveredCount: 1,
+      items: [
+        {
+          sourceId: label,
+          type: "video",
+          authorName: "Camille Roche",
+          videoUrl: "https://media.example/original.mp4",
+        },
+      ],
+    });
+    expect(video.structuredContent.result.processing).toBe(1);
+    const saved = await t.run(async (ctx) => {
+      const item = await ctx.db
+        .query("testimonialImportItems")
+        .withIndex("by_jobId_and_position", (q) =>
+          q.eq("jobId", video.structuredContent.jobId),
+        )
+        .first();
+      const asset = await ctx.db.get(item!.videoAssetId!);
+      const testimonial = await ctx.db.get(item!.testimonialId!);
+      expect(testimonial?.text).toBe("");
+      expect(testimonial?.moderationStatus).toBe("pending");
+      return asset!;
+    });
+    if (verified) {
+      await t.mutation(internal.testimonialImportVideo.attachAssistantUpload, {
+        assetId: saved._id,
+        providerUploadId: `upload-${label}`,
+      });
+      await t.mutation(internal.testimonialImportVideo.verifyAssistantFile, {
+        assetId: saved._id,
+        fileSizeBytes: 1024,
+        mimeType: "video/mp4",
+      });
+    }
+    await t.mutation(internal.videoWebhooks.applyEvent, {
+      event: {
+        id: `event-${label}`,
+        type: "video.asset.ready",
+        data: {
+          id: `asset-${label}`,
+          passthrough: saved.reservationId,
+          duration,
+          playback_ids: [{ id: `playback-${label}`, policy: "public" }],
+        },
+      },
+      retryTokenHash: "fixture-hash",
+      retryTokenSeed: "fixture-seed",
+    });
+    const progress = await call("read_assistant_import", {
+      jobId: video.structuredContent.jobId,
+    });
+    expect(progress.structuredContent.videos[0].status).toBe(expected);
+  }
+
+  const retriedVideo = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "cancelled-attempt",
+    discoveredCount: 1,
+    items: [
+      {
+        sourceId: "cancelled-attempt",
+        type: "video",
+        videoUrl: "https://media.example/retry.mp4",
+      },
+    ],
+  });
+  const retryAsset = await t.run(async (ctx) => {
+    const item = await ctx.db
+      .query("testimonialImportItems")
+      .withIndex("by_jobId_and_position", (q) =>
+        q.eq("jobId", retriedVideo.structuredContent.jobId),
+      )
+      .first();
+    return (await ctx.db.get(item!.videoAssetId!))!;
+  });
+  await t.mutation(internal.testimonialImportVideo.attachAssistantUpload, {
+    assetId: retryAsset._id,
+    providerUploadId: "retired-upload",
+  });
+  await t.mutation(internal.testimonialImportVideo.resetAssistantUpload, {
+    assetId: retryAsset._id,
+  });
+  await t.mutation(internal.videoWebhooks.applyEvent, {
+    event: {
+      id: "cancelled-retired-event",
+      type: "video.upload.cancelled",
+      data: { id: "retired-upload" },
+    },
+    retryTokenHash: "fixture-hash",
+    retryTokenSeed: "fixture-seed",
+  });
+  await t.mutation(internal.testimonialImportVideo.attachAssistantUpload, {
+    assetId: retryAsset._id,
+    providerUploadId: "replacement-upload",
+  });
+  expect(
+    await t.run(async (ctx) => (await ctx.db.get(retryAsset._id))?.status),
+  ).toBe("processing");
+
+  const overCapacity = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "capacity-selection",
+    discoveredCount: 27,
+    items: [
+      { sourceId: "capacity-text", text: "The text still imports." },
+      ...Array.from({ length: 26 }, (_, i) => ({
+        sourceId: `capacity-video-${i}`,
+        type: "video",
+        videoUrl: `https://media.example/${i}.mp4`,
+      })),
+    ],
+  });
+  expect(overCapacity.structuredContent.result).toMatchObject({
+    imported: 1,
+    blocked: 26,
+  });
+  expect(
+    overCapacity.structuredContent.outcomes.filter(
+      (item: { status: string }) => item.status === "blocked",
+    ),
+  ).toHaveLength(26);
+  await t.run(async (ctx) => {
+    const items = await ctx.db
+      .query("testimonialImportItems")
+      .withIndex("by_jobId_and_position", (q) =>
+        q.eq("jobId", overCapacity.structuredContent.jobId),
+      )
+      .collect();
+    for (const item of items.filter((item) => item.type === "video")) {
+      expect(item.workflowId).toBeUndefined();
+      const asset = await ctx.db.get(item.videoAssetId!);
+      expect((await ctx.db.get(asset!.reservationId))?.status).toBe("released");
+      expect((await ctx.db.get(item.testimonialId!))?.moderationStatus).toBe(
+        "pending",
+      );
+    }
+  });
+
   const other = await authenticatedUser(t, { email: "fern@example.com" });
   const otherProject = await other.client.mutation(api.organizations.create, {
     name: "Fern Studio",
@@ -302,6 +453,18 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       )
     ).isError,
   ).toBe(true);
+  await addStripeSubscription(t, project.id, "canceled", {
+    eventCreated: Math.floor(Date.now() / 1000) + 1,
+  });
+  const blockedItemId = overCapacity.structuredContent.outcomes.find(
+    (item: { status: string }) => item.status === "blocked",
+  ).itemId;
+  await expect(
+    owner.client.mutation(api.testimonialImportVideo.retry, {
+      itemId: blockedItemId,
+    }),
+  ).rejects.toThrow();
+
   await t.mutation(components.betterAuth.adapter.updateOne, {
     input: {
       model: "importOAuthConsent",
