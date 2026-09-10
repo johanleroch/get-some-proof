@@ -117,6 +117,15 @@ export const screenSections: ScreenSection[] = [
         requiresAuth: true,
       },
       {
+        slug: "account-billing-reconciliation",
+        title: "Billing reconciliation",
+        description:
+          "Safe Account Billing state while a legacy Project link is repaired.",
+        fixturePath: "/visual-evidence/account-billing-reconciliation",
+        livePath: "/account/billing",
+        requiresAuth: true,
+      },
+      {
         slug: "account-deletion",
         title: "Delete Account",
         description:

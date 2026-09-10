@@ -158,6 +158,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "account-billing-reconciliation",
+      "title": "Account Billing - reconciliation required",
+      "path": "/account/billing",
+      "fixturePath": "/visual-evidence/account-billing-reconciliation",
+      "heading": "Account billing",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "workspace-billing-downgrade",
       "title": "Workspace Billing - downgrade selection",
       "path": "/org/:organizationSlug/billing",
