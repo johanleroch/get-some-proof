@@ -58,6 +58,49 @@ describe("Public Wall mediated refresh", () => {
     vi.useRealTimers();
   });
 
+  it("keeps testimonials visible when the initial privacy signal cancels a pending refresh", async () => {
+    signal.revision = undefined;
+    const fetch = vi.fn(
+      (_path: string, options: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          options.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const view = render(element());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    signal.revision = page.privacyRevision;
+    await act(async () => {
+      view.rerender(element());
+    });
+    expect(screen.queryByText("No public testimonials yet.")).toBeNull();
+    expect(screen.getByText("Our first customer proof.")).toBeVisible();
+  });
+
+  it("still clears testimonials when the active refresh times out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, options: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            options.signal?.addEventListener("abort", () =>
+              reject(new DOMException("Aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+    render(element());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(screen.queryByText("Our first customer proof.")).toBeNull();
+  });
+
   it("refreshes every loaded page without losing depth or retaining stale second-page content", async () => {
     const second = {
       ...page,
