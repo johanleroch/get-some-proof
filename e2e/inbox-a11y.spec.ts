@@ -61,11 +61,15 @@ async function expectNoWcagViolations(page: Page, context: string) {
 }
 
 /**
- * The theme script honours prefers-color-scheme when nothing is stored, so
- * emulating the media query is enough to get the `.dark` root class.
+ * The product ships light whatever the system prefers (DESIGN.md section 6),
+ * so the dark scheme is reached the way a stored preference reaches it: the
+ * theme script reads it before hydration and sets the `.dark` root class.
  */
 async function openInbox(page: Page, path: string, scheme: Scheme = "light") {
   await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+  await page.addInitScript((theme) => {
+    localStorage.setItem("get-some-proof-theme", theme);
+  }, scheme);
   await page.goto(path);
   // CSS locators on purpose: two fixtures open a modal dialog at load, which
   // aria-hides the page behind it and takes it out of the role tree.

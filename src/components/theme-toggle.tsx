@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   applyThemePreference,
+  defaultThemePreference,
   readThemePreference,
   themeChangeEvent,
   themeStorageKey,
@@ -31,6 +32,11 @@ function applyTheme(preference: ThemePreference) {
   );
 }
 
+/**
+ * Light, Dark or System. Out of the product for now (DESIGN.md section 6:
+ * the app ships light, the dark theme waits in the tokens); the development
+ * pages keep it so both themes stay reviewed.
+ */
 export function ThemeToggle() {
   const theme = useSyncExternalStore(
     (onStoreChange) => {
@@ -49,7 +55,7 @@ export function ThemeToggle() {
       };
     },
     readThemePreference,
-    () => "system",
+    () => defaultThemePreference,
   );
 
   function updateTheme(nextTheme: ThemePreference) {

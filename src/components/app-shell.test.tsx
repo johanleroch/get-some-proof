@@ -36,10 +36,6 @@ vi.mock("@/components/organizations/organization-switcher", () => ({
   ),
 }));
 
-vi.mock("@/components/theme-toggle", () => ({
-  ThemeToggle: () => <div>Theme control</div>,
-}));
-
 describe("AppShell", () => {
   it("shows the Account plan and an English upgrade action beside the user menu", () => {
     render(
@@ -202,11 +198,14 @@ describe("AppShell", () => {
 
     const sidebar = container.querySelector('[data-slot="sidebar"]');
     expect(sidebar).toHaveAttribute("data-state", "expanded");
-    const triggers = screen.getAllByRole("button", {
-      name: "Toggle Sidebar",
-    });
-    expect(triggers).toHaveLength(1);
-    fireEvent.click(triggers[0]);
+    // No bar above the page on desktop: the menu button lives in a bar the
+    // stylesheet hides from 768px, and the keyboard shortcut folds the
+    // sidebar for who wants it.
+    expect(
+      screen.getByRole("button", { name: "Toggle Sidebar" }).closest("header"),
+    ).toHaveClass("md:hidden");
+    expect(screen.queryByRole("button", { name: "Theme" })).toBeNull();
+    fireEvent.keyDown(window, { key: "b", metaKey: true });
     expect(sidebar).toHaveAttribute("data-state", "collapsed");
     expect(screen.getAllByRole("link", { name: "Overview" })).not.toHaveLength(
       0,
