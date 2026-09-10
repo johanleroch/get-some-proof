@@ -54,4 +54,20 @@ Use a scoped expiring capability and binary chunks up to 8 MiB through a Convex 
 
 ## Remaining gates
 
-All issue checkboxes remain unchecked. Implementation, negative/recovery tests, real-client checks, Standards/Spec review, current-commit desktop/mobile evidence, PR creation and remote CI are still in progress. No ticket is delivered yet. Do not infer delivery from passing unit tests.
+All issue checkboxes remain unchecked. Implementation, negative/recovery tests, real-client checks, Standards/Spec review, current-commit desktop/mobile evidence, final PR evidence and remote CI on the delivered head are still in progress. Draft PR #118 is open; its three checks passed on `4f1223f`. No ticket is delivered yet. Do not infer delivery from passing unit tests.
+
+## #115 checkpoint in progress
+
+- Local-video placeholders remain Pending. An authenticated MCP tool or the signed-in Owner obtains a 15-minute upload capability scoped to that item and its current asset. The private provider URL stays in Convex.
+- Binary HTTP pieces validate actual length, range and digest, persist progress, and permit exact acknowledgement replay. Finalization is claimed atomically once; an ambiguous provider response returns 202 and preserves the reservation for a late webhook. Expiration scrubs capability secrets. Permanent provider rejection releases capacity and permits a new file.
+- Behavioral coverage includes wrong tokens, out-of-order and changed bytes, same-request resumption, completed acknowledgement recovery, expiration, a late Ready webhook after uncertain finalization, and website-authenticated replacement without changing identity or Pending status.
+- `scripts/upload-assistant-video.mjs` and the Inbox picker share `transferAssistantVideo`. The command reads capability JSON from stdin, streams file slices with Node 24, and never prints tokens. Ordinary Claude/Codex execution against the live MCP endpoint remains unverified.
+- The filtered Inbox now exposes private source/date, aggregate outcomes and per-media state with a local file fallback. This begins #116; selection, retry controls and broader import navigation still need completion.
+- New gallery fixture `assistant-import-recovery` has light/dark desktop/mobile captures. Light desktop/mobile inspected; final current-head captures and gh-image publication remain required.
+- Local WebKit exposed an existing September date hydration mismatch (Node `Sept` vs Safari `Sep`). UTC month formatting now produces identical markup. Safari Option-Tab also exposed Radix's Alt-Tab loop omission; shared dialogs now wrap this native shortcut at their edges. All 36 WebKit keyboard checks passed on desktop/mobile after the correction. Full browser gate still needs a fresh run.
+- Intermediate Standards/Spec review verified finalization and acknowledgement fixes; Spec's permanent-refusal follow-up is implemented and tested. Final slice review is pending.
+
+- Final local check for the slice passed formatting, lint, types, 153 files / 873 tests and build. Subsequent presentational/type-schema edits received focused validation and require remote CI on the pushed head.
+- The full local browser run had 786 passes, 4 existing skips and one intermittent existing managed-video loader assertion on desktop Chromium. Its unchanged test then passed on all five browser configurations; the new recovery accessibility/theme/target-size checks also passed (15 combined tests). This is recorded as a flaky first run, not hidden as an all-green run.
+- Current React Doctor comparison was re-run with the same installed tool on isolated `4f1223f`: baseline 79/8 warnings, current 80/3 warnings. Remaining diagnostics are the previously reviewed atomic source-tracking loops and existing Inbox complexity. No regression and no suppressions.
+- Standards and Spec closed the Ready-state, accepted-transfer-after-Pro, permanent-refusal and stable-loading-label findings. Spec independently ran four tests successfully. Real assistant and provider compatibility gates remain open.

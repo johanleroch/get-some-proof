@@ -42,7 +42,7 @@ function failure(error: unknown, gateway: AssistantGateway) {
 
 export const assistantTextInput = z.object({
   organizationId: z.string().min(1).max(128).optional(),
-  sourceUrl: z.string().url().max(2048),
+  sourceUrl: z.url().max(2048),
   sourceId: z.string().min(1).max(200),
   authorName: z
     .string()
@@ -55,7 +55,6 @@ export const assistantTextInput = z.object({
   role: z.string().max(200).optional(),
   company: z.string().max(200).optional(),
   portraitUrl: z
-    .string()
     .url()
     .max(2048)
     .optional()
@@ -92,6 +91,9 @@ export const assistantTextInput = z.object({
 });
 
 export type AssistantGateway = {
+  upload?(
+    input: z.infer<typeof assistantUploadInput>,
+  ): Promise<Record<string, unknown>>;
   submitBatch?(
     input: z.infer<typeof assistantBatchInput>,
   ): Promise<Record<string, unknown>>;
@@ -110,6 +112,18 @@ export type AssistantGateway = {
   }): Promise<Record<string, unknown>>;
 };
 
+export const assistantUploadInput = z.object({
+  jobId: z.string().min(1).max(128),
+  itemId: z.string().min(1).max(128),
+  requestId: z.string().min(1).max(128),
+  totalBytes: z
+    .number()
+    .int()
+    .min(1)
+    .max(512 * 1024 * 1024),
+  mimeType: z.enum(["video/mp4", "video/quicktime", "video/webm"]),
+});
+
 export const assistantMigrationInput = z.object({
   organizationId: z.string().min(1).max(128),
   migrationId: z.string().min(1).max(128),
@@ -126,7 +140,7 @@ export const assistantBatchInput = z.object({
       "Use the same migration ID for every batch from this page. Keep it to recover overall progress after interruption.",
     ),
   organizationId: z.string().min(1).max(128).optional(),
-  sourceUrl: z.string().url().max(2048),
+  sourceUrl: z.url().max(2048),
   requestId: z
     .string()
     .min(1)
@@ -148,7 +162,7 @@ export const assistantBatchInput = z.object({
         .extend({
           type: z.enum(["text", "video"]).default("text"),
           text: z.string().max(10_000).default(""),
-          videoUrl: z.string().url().max(2048).optional(),
+          videoUrl: z.url().max(2048).optional(),
         }),
     )
     .min(1)
@@ -159,6 +173,37 @@ export function registerAssistantTools(
   server: McpServer,
   gateway: AssistantGateway,
 ) {
+  if (gateway.upload)
+    server.registerTool(
+      "create_assistant_video_upload",
+      {
+        description:
+          "Get an expiring file-upload capability for your own missing or failed Pending video. Preserve the same request ID on retries. Transfer actual binary file pieces of at most chunkSize bytes with POST, Authorization: Bearer uploadToken and Content-Range: bytes START-END/TOTAL to uploadUrl. When capability status is uploading, begin at the returned offset. HTTP 202 or status finalizing means the final transfer is awaiting confirmation: stop sending and poll read_assistant_import. Status complete confirms the bytes only, not video readiness. Never put local paths or base64 file bytes into MCP JSON. Keep the token private. A complete upload remains processing until the provider validates it; only read_assistant_import can report Ready. Maximum 512 MB and 10 minutes. If you cannot execute file commands, use the Inbox file picker.",
+        inputSchema: assistantUploadInput.shape,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: true,
+          idempotentHint: true,
+        },
+        _meta: {
+          securitySchemes: [
+            { type: "oauth2", scopes: ["testimonials:import"] },
+          ],
+        },
+      },
+      async (args) => {
+        try {
+          const result = await gateway.upload!(args);
+          return {
+            structuredContent: result,
+            content: [{ type: "text" as const, text: JSON.stringify(result) }],
+          };
+        } catch (error) {
+          return failure(error, gateway);
+        }
+      },
+    );
   if (gateway.migrationStatus)
     server.registerTool(
       "read_assistant_import_migration",

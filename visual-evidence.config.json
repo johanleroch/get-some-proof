@@ -571,6 +571,20 @@
       "path": "/visual-evidence/mcp-setup-free",
       "heading": "Import with your assistant",
       "theme": "light"
+    },
+    {
+      "slug": "assistant-import-recovery",
+      "title": "Assistant import recovery light",
+      "path": "/visual-evidence/assistant-import-recovery",
+      "heading": "Inbox",
+      "theme": "light"
+    },
+    {
+      "slug": "assistant-import-recovery-dark",
+      "title": "Assistant import recovery dark",
+      "path": "/visual-evidence/assistant-import-recovery",
+      "heading": "Inbox",
+      "theme": "dark"
     }
   ]
 }

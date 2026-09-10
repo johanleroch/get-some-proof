@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -64,7 +65,7 @@ export function McpSetupView({
                 Assistant imports are included with Pro.
               </p>
               <Button asChild>
-                <a href="/account/billing">Upgrade to Pro</a>
+                <Link href="/account/billing">Upgrade to Pro</Link>
               </Button>
             </div>
           ) : activated ? (

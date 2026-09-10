@@ -1,3 +1,4 @@
+import { AssistantImportRecoveryFixture } from "@/components/visual-evidence/assistant-import-recovery-fixture";
 import { AccountSecurity } from "@/components/account/account-security";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import {
@@ -50,6 +51,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "assistant-import-recovery": AssistantImportRecoveryFixture,
   "mcp-setup": McpSetupFixture,
   "mcp-setup-free": McpFreeSetupFixture,
   "testimonial-import": TestimonialImportFixture,

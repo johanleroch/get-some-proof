@@ -1,3 +1,4 @@
+import { assistantUploadCapabilitySchema } from "@/lib/chatgpt/import-wire";
 import { assistantMigrationStatusSchema } from "@/lib/chatgpt/import-wire";
 import {
   AssistantAuthenticationRequired,
@@ -114,6 +115,8 @@ export async function POST(request: Request) {
     if (!response.ok) throw new Error("Import unavailable.");
     const body: unknown = await response.json();
     if (command === "projects") return importProjectsSchema.parse(body);
+    if (command === "upload")
+      return assistantUploadCapabilitySchema.parse(body);
     if (command === "migration")
       return assistantMigrationStatusSchema.parse(body);
     const saved = (
@@ -289,6 +292,7 @@ export async function POST(request: Request) {
       submitText: (args) => assistantRequest("text", args),
       submitBatch: (args) => assistantRequest("batch", args),
       migrationStatus: (args) => assistantRequest("migration", args),
+      upload: (args) => assistantRequest("upload", args),
     },
   );
   const transport = new WebStandardStreamableHTTPServerTransport({

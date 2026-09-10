@@ -78,8 +78,19 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       });
     });
   const { token } = await sign(owner.actorId);
+  let loseFinalResponse = false;
+  let providerReject = false;
+  let providerWrites = 0;
   vi.stubGlobal("fetch", async (url: string | URL, init?: RequestInit) => {
     const target = new URL(url);
+    if (target.hostname === "fake-mux.invalid") {
+      providerWrites += 1;
+      if (providerReject) return new Response(null, { status: 400 });
+      if (loseFinalResponse)
+        throw new TypeError("Final response lost after acceptance");
+      const range = new Headers(init?.headers).get("content-range") ?? "";
+      return new Response(null, { status: range.endsWith("/*") ? 308 : 200 });
+    }
     if (target.origin !== "https://fixture.convex.site")
       throw new Error("Unexpected test destination");
     return t.fetch(target.pathname + target.search, init);
@@ -256,6 +267,255 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       .unique(),
   );
   expect(preserved?.submitterName).toBe("");
+
+  const local = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "local-video",
+    discoveredCount: 1,
+    items: [
+      { sourceId: "local-video", type: "video", authorName: "Camille Roche" },
+    ],
+  });
+  expect(local.structuredContent.result.failed).toBe(1);
+  const uploadInput = {
+    jobId: local.structuredContent.jobId,
+    itemId: local.structuredContent.outcomes[0].itemId,
+    requestId: "local-upload-1",
+    totalBytes: 4,
+    mimeType: "video/mp4",
+  };
+  const upload = await call("create_assistant_video_upload", uploadInput);
+  expect(upload.isError).not.toBe(true);
+  const cap = upload.structuredContent;
+  expect(
+    (await call("create_assistant_video_upload", uploadInput)).structuredContent
+      .uploadToken,
+  ).toBe(cap.uploadToken);
+  const sendPart = (range: string, bytes: number[], token = cap.uploadToken) =>
+    t.fetch("/api/import-mcp/upload", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "video/mp4",
+        "content-range": range,
+      },
+      body: new Uint8Array(bytes),
+    });
+  expect((await sendPart("bytes 0-1/4", [0, 1], "a".repeat(64))).status).toBe(
+    409,
+  );
+  expect((await sendPart("bytes 2-3/4", [2, 3])).status).toBe(409);
+  expect((await sendPart("bytes 0-1/4", [0, 1])).status).toBe(200);
+  expect((await sendPart("bytes 0-1/4", [0, 1])).status).toBe(200);
+  expect((await sendPart("bytes 0-1/4", [8, 9])).status).toBe(409);
+  expect(
+    (await call("create_assistant_video_upload", uploadInput)).structuredContent
+      .offset,
+  ).toBe(2);
+  expect((await sendPart("bytes 2-3/4", [2, 3])).status).toBe(200);
+  expect((await sendPart("bytes 2-3/4", [2, 3])).status).toBe(200);
+  expect((await sendPart("bytes 2-3/4", [8, 9])).status).toBe(409);
+  expect(
+    (await call("create_assistant_video_upload", uploadInput))
+      .structuredContent,
+  ).toMatchObject({
+    status: "complete",
+    offset: 4,
+    uploadToken: cap.uploadToken,
+  });
+  const uploadedAsset = await t.run(async (ctx) => {
+    const item = await ctx.db.get(uploadInput.itemId);
+    return (await ctx.db.get(item!.videoAssetId!))!;
+  });
+  expect(uploadedAsset).toMatchObject({
+    status: "processing",
+    fileSizeBytes: 4,
+    importedFileVerified: true,
+  });
+  expect(
+    (await call("read_assistant_import", { jobId: uploadInput.jobId }))
+      .structuredContent.videos[0].status,
+  ).toBe("processing");
+
+  const interrupted = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "expired-local-video",
+    discoveredCount: 1,
+    items: [{ sourceId: "expired-local-video", type: "video" }],
+  });
+  const expiryInput = {
+    ...uploadInput,
+    jobId: interrupted.structuredContent.jobId,
+    itemId: interrupted.structuredContent.outcomes[0].itemId,
+    requestId: "expiring-upload",
+  };
+  const expiring = (await call("create_assistant_video_upload", expiryInput))
+    .structuredContent;
+  expect(
+    (await sendPart("bytes 0-1/4", [0, 1], expiring.uploadToken)).status,
+  ).toBe(200);
+  const expiredRecord = await t.run(async (ctx) => {
+    const upload = await ctx.db
+      .query("assistantImportUploads")
+      .withIndex("by_itemId_and_requestId", (q) =>
+        q
+          .eq("itemId", expiryInput.itemId)
+          .eq("requestId", expiryInput.requestId),
+      )
+      .unique();
+    await ctx.db.patch(upload!._id, { expiresAt: Date.now() - 1 });
+    return upload!;
+  });
+  expect(
+    (await sendPart("bytes 2-3/4", [2, 3], expiring.uploadToken)).status,
+  ).toBe(409);
+  await t.mutation(internal.assistantUploads.expire, { id: expiredRecord._id });
+  await t.run(async (ctx) => {
+    const asset = (await ctx.db.get(expiredRecord.assetId))!;
+    expect(asset.status).toBe("failed");
+    expect((await ctx.db.get(asset.reservationId))?.status).toBe("released");
+    expect((await ctx.db.get(asset.testimonialId!))?.moderationStatus).toBe(
+      "pending",
+    );
+  });
+
+  const uncertain = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "uncertain-local-video",
+    discoveredCount: 1,
+    items: [{ sourceId: "uncertain-local-video", type: "video" }],
+  });
+  const uncertainInput = {
+    ...uploadInput,
+    jobId: uncertain.structuredContent.jobId,
+    itemId: uncertain.structuredContent.outcomes[0].itemId,
+    requestId: "uncertain-upload",
+  };
+  const uncertainCap = (
+    await call("create_assistant_video_upload", uncertainInput)
+  ).structuredContent;
+  loseFinalResponse = true;
+  const beforeFinal = providerWrites;
+  expect(
+    (await sendPart("bytes 0-3/4", [0, 1, 2, 3], uncertainCap.uploadToken))
+      .status,
+  ).toBe(202);
+  expect(
+    (await sendPart("bytes 0-3/4", [0, 1, 2, 3], uncertainCap.uploadToken))
+      .status,
+  ).toBe(202);
+  expect(providerWrites).toBe(beforeFinal + 1);
+  expect(
+    (await call("create_assistant_video_upload", uncertainInput))
+      .structuredContent.status,
+  ).toBe("finalizing");
+  loseFinalResponse = false;
+  const uncertainRecord = await t.run(async (ctx) => {
+    const upload = (await ctx.db
+      .query("assistantImportUploads")
+      .withIndex("by_itemId_and_requestId", (q) =>
+        q
+          .eq("itemId", uncertainInput.itemId)
+          .eq("requestId", uncertainInput.requestId),
+      )
+      .unique())!;
+    await ctx.db.patch(upload._id, { expiresAt: Date.now() - 1 });
+    return upload;
+  });
+  await t.mutation(internal.assistantUploads.expire, {
+    id: uncertainRecord._id,
+  });
+  const uncertainAsset = await t.run(async (ctx) => {
+    const asset = (await ctx.db.get(uncertainRecord.assetId))!;
+    expect(asset.status).toBe("processing");
+    expect((await ctx.db.get(asset.reservationId))?.status).not.toBe(
+      "released",
+    );
+    expect((await ctx.db.get(uncertainRecord._id))?.token).toBe("");
+    return asset;
+  });
+  await t.mutation(internal.videoWebhooks.applyEvent, {
+    event: {
+      id: "late-local-ready",
+      type: "video.asset.ready",
+      data: {
+        id: "late-local-asset",
+        passthrough: uncertainAsset.reservationId,
+        duration: 20,
+        playback_ids: [{ id: "late-local-playback", policy: "public" }],
+      },
+    },
+    retryTokenHash: "fixture-hash",
+    retryTokenSeed: "fixture-seed",
+  });
+  expect(
+    (await call("read_assistant_import", { jobId: uncertainInput.jobId }))
+      .structuredContent.videos[0].status,
+  ).toBe("ready");
+
+  const rejected = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "rejected-local",
+    discoveredCount: 1,
+    items: [
+      {
+        sourceId: "rejected-local",
+        type: "video",
+        authorName: "Lina Moreau",
+        text: "A lovely experience.",
+      },
+    ],
+  });
+  const rejectedInput = {
+    ...uploadInput,
+    jobId: rejected.structuredContent.jobId,
+    itemId: rejected.structuredContent.outcomes[0].itemId,
+    requestId: "rejected-upload",
+  };
+  const rejectedCap = await owner.client.action(
+    api.assistantUploads.issueFromInbox,
+    rejectedInput,
+  );
+  providerReject = true;
+  expect(
+    (await sendPart("bytes 0-3/4", [0, 1, 2, 3], rejectedCap.uploadToken))
+      .status,
+  ).toBe(422);
+  providerReject = false;
+  const websiteProgress = await owner.client.query(
+    api.assistantImports.inboxStatus,
+    { organizationId: project.id, jobId: rejectedInput.jobId },
+  );
+  expect(websiteProgress).toMatchObject({
+    canUpload: true,
+    items: [{ authorName: "Lina Moreau", videoStatus: "failed" }],
+  });
+  const replacementCap = await owner.client.action(
+    api.assistantUploads.issueFromInbox,
+    { ...rejectedInput, requestId: "replacement-upload" },
+  );
+  expect(replacementCap.uploadToken).not.toBe(rejectedCap.uploadToken);
+  expect(
+    (await sendPart("bytes 0-3/4", [0, 1, 2, 3], rejectedCap.uploadToken))
+      .status,
+  ).toBe(409);
+  expect(
+    (await sendPart("bytes 0-3/4", [0, 1, 2, 3], replacementCap.uploadToken))
+      .status,
+  ).toBe(200);
+  await t.run(async (ctx) => {
+    const item = (await ctx.db.get(rejectedInput.itemId))!;
+    const testimonial = (await ctx.db.get(item.testimonialId!))!;
+    expect(testimonial).toMatchObject({
+      submitterName: "Lina Moreau",
+      text: "A lovely experience.",
+      moderationStatus: "pending",
+    });
+  });
 
   for (const [label, duration, verified, expected] of [
     ["ten-minutes", 600, true, "ready"],
@@ -436,6 +696,14 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
   ).toBe(true);
   await addStripeSubscription(t, otherProject.id, "active");
   expect(
+    (await call("create_assistant_video_upload", uploadInput, otherToken))
+      .isError,
+  ).toBe(true);
+  await expect(
+    other.client.action(api.assistantUploads.issueFromInbox, expiryInput),
+  ).rejects.toThrow();
+
+  expect(
     (
       await call(
         "read_assistant_import",
@@ -453,9 +721,55 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
       )
     ).isError,
   ).toBe(true);
+  const resumableJob = await call("import_testimonials", {
+    organizationId: project.id,
+    sourceUrl: input.sourceUrl,
+    requestId: "resume-after-pro",
+    discoveredCount: 1,
+    items: [{ sourceId: "resume-after-pro", type: "video" }],
+  });
+  const resumableInput = {
+    ...uploadInput,
+    jobId: resumableJob.structuredContent.jobId,
+    itemId: resumableJob.structuredContent.outcomes[0].itemId,
+    requestId: "accepted-before-expiry",
+  };
+  const resumableCap = (
+    await call("create_assistant_video_upload", resumableInput)
+  ).structuredContent;
+  expect(
+    (await sendPart("bytes 0-1/4", [0, 1], resumableCap.uploadToken)).status,
+  ).toBe(200);
   await addStripeSubscription(t, project.id, "canceled", {
     eventCreated: Math.floor(Date.now() / 1000) + 1,
   });
+  expect(
+    (await call("create_assistant_video_upload", resumableInput))
+      .structuredContent,
+  ).toMatchObject({ offset: 2, uploadToken: resumableCap.uploadToken });
+  expect(
+    await owner.client.action(
+      api.assistantUploads.issueFromInbox,
+      resumableInput,
+    ),
+  ).toMatchObject({ offset: 2, uploadToken: resumableCap.uploadToken });
+  expect(
+    (await sendPart("bytes 2-3/4", [2, 3], resumableCap.uploadToken)).status,
+  ).toBe(200);
+  expect(
+    (
+      await owner.client.query(api.assistantImports.inboxStatus, {
+        organizationId: project.id,
+        jobId: resumableInput.jobId,
+      })
+    )?.canUpload,
+  ).toBe(false);
+  await expect(
+    owner.client.action(api.assistantUploads.issueFromInbox, {
+      ...resumableInput,
+      requestId: "new-after-expiry",
+    }),
+  ).rejects.toThrow();
   const blockedItemId = overCapacity.structuredContent.outcomes.find(
     (item: { status: string }) => item.status === "blocked",
   ).itemId;

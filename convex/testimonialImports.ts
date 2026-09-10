@@ -326,7 +326,10 @@ export async function confirmOwnedImport(
       });
     if (item.outcome || item.videoStatus) continue;
     requireStableTextIdentity(job.provider, item);
-    if (item.unavailableReason || (item.type === "video" && !item.videoUrl)) {
+    if (
+      item.unavailableReason ||
+      (job.provider !== "assistant" && item.type === "video" && !item.videoUrl)
+    ) {
       result.unavailable++;
       await ctx.db.patch(item._id, { outcome: "unavailable" });
       continue;
@@ -360,6 +363,17 @@ export async function confirmOwnedImport(
       continue;
     }
     if (item.type === "video") {
+      if (job.provider === "assistant" && !item.videoUrl) {
+        await retainCapacityBlockedVideo(
+          ctx,
+          job,
+          item,
+          principal.actorId,
+          false,
+        );
+        result.failed = (result.failed ?? 0) + 1;
+        continue;
+      }
       if (blockAssistantVideos) {
         await retainCapacityBlockedVideo(ctx, job, item, principal.actorId);
         result.blocked = (result.blocked ?? 0) + 1;

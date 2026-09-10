@@ -74,7 +74,7 @@ export const savedImportSchema = z.object({
     .optional(),
   jobId: z.string(),
   organizationSlug: z.string(),
-  inboxUrl: z.string().url(),
+  inboxUrl: z.url(),
   result: z.object({
     blocked: z.number().int().nonnegative().optional(),
     imported: z.number().int().nonnegative(),
@@ -141,4 +141,14 @@ export const assistantMigrationStatusSchema = z.object({
     .max(20),
   isDone: z.boolean(),
   continueCursor: z.string(),
+});
+
+export const assistantUploadCapabilitySchema = z.object({
+  status: z.enum(["uploading", "finalizing", "complete"]),
+  uploadUrl: z.url(),
+  uploadToken: z.string().regex(/^[a-f0-9]{64}$/),
+  expiresAt: z.number(),
+  offset: z.number().int().nonnegative(),
+  totalBytes: z.number().int().positive(),
+  chunkSize: z.number().int().positive(),
 });

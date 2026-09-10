@@ -11,6 +11,50 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  assistantImportUploads: defineTable({
+    actorId: v.string(),
+    jobId: v.id("testimonialImportJobs"),
+    itemId: v.id("testimonialImportItems"),
+    assetId: v.id("videoAssets"),
+    requestId: v.string(),
+    token: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    grant: v.optional(
+      v.object({
+        actorId: v.string(),
+        clientId: v.string(),
+        issuedAt: v.number(),
+        verifiedAt: v.number(),
+        expiresAt: v.number(),
+      }),
+    ),
+    totalBytes: v.number(),
+    mimeType: v.string(),
+    offset: v.number(),
+    status: v.union(
+      v.literal("preparing"),
+      v.literal("uploading"),
+      v.literal("finalizing"),
+      v.literal("complete"),
+      v.literal("failed"),
+    ),
+    providerUploadUrl: v.optional(v.string()),
+    creationStartedAt: v.number(),
+    pending: v.optional(
+      v.object({
+        offset: v.number(),
+        length: v.number(),
+        digest: v.string(),
+        final: v.boolean(),
+      }),
+    ),
+    previous: v.optional(
+      v.object({ offset: v.number(), length: v.number(), digest: v.string() }),
+    ),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_itemId_and_requestId", ["itemId", "requestId"]),
   assistantImportMigrations: defineTable({
     organizationId: v.id("organizations"),
     actorId: v.string(),

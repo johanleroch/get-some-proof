@@ -1,3 +1,4 @@
+import { receivePart } from "./assistantUploads";
 import { httpRouter } from "convex/server";
 import { registerRoutes } from "@convex-dev/stripe";
 
@@ -10,6 +11,7 @@ import {
   assistantTextHttp,
   assistantBatchHttp,
   assistantMigrationHttp,
+  assistantUploadHttp,
   assistantProjectsHttp,
   assistantStatusHttp,
   assistantPortraitRetryHttp,
@@ -142,4 +144,21 @@ http.route({
   method: "POST",
   path: "/api/import-mcp/assistant-migration",
   handler: assistantMigrationHttp,
+});
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/upload",
+  handler: receivePart,
+});
+http.route({
+  method: "OPTIONS",
+  path: "/api/import-mcp/upload",
+  handler: receivePart,
+});
+
+http.route({
+  method: "POST",
+  path: "/api/import-mcp/assistant-upload",
+  handler: assistantUploadHttp,
 });

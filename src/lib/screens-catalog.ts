@@ -200,6 +200,13 @@ export const screenSections: ScreenSection[] = [
     title: "Brand workspace",
     screens: [
       {
+        slug: "assistant-import-recovery",
+        title: "Assistant import recovery",
+        description: "Mixed media outcomes and local video file fallback.",
+        fixturePath: "/visual-evidence/assistant-import-recovery",
+        requiresAuth: true,
+      },
+      {
         slug: "mcp-setup",
         title: "Assistant import setup",
         description: "Paid import activation and reuse-rights attestation.",

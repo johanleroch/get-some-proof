@@ -3,6 +3,7 @@
   "account-free-project": "ok",
   "account-inactive-project": "ok",
   "account-pro-projects": "ok",
+  "assistant-import-recovery": "todo",
   "billing": "ok",
   "billing-downgrade": "ok",
   "collection-form": "todo",
@@ -12,6 +13,8 @@
   "dashboard": "todo",
   "forgot-password": "ok",
   "inbox": "todo",
+  "mcp-setup": "todo",
+  "mcp-setup-free": "todo",
   "onboarding": "ok",
   "privacy-notice": "ok",
   "profile": "ok",
@@ -33,7 +36,5 @@
   "two-factor": "ok",
   "video-upload-progress": "todo",
   "workspace-delete": "todo",
-  "workspace-delete-progress": "ok",
-  "mcp-setup": "todo",
-  "mcp-setup-free": "todo"
+  "workspace-delete-progress": "ok"
 }

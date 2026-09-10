@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
+import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
 import {
   IconAlertTriangle,
@@ -1256,18 +1257,11 @@ export function TestimonialInbox({
         title="Inbox"
       />
 
-      {importJobId !== undefined && (
-        <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-          <p className="type-body text-ink-2">
-            Showing testimonials from this import.
-          </p>
-          <Button asChild variant="ghost">
-            <Link href={`/org/${slug}/inbox` as Route}>
-              Show all testimonials
-            </Link>
-          </Button>
-        </div>
-      )}
+      <AssistantImportNotice
+        organizationId={organization.id}
+        jobId={importJobId}
+        slug={slug}
+      />
       <InboxFeedback error={error} message={message} />
 
       <InboxCategoryTabs

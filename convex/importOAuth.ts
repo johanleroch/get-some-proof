@@ -3,6 +3,7 @@ import {
   assistantTextInput,
   assistantBatchInput,
   assistantMigrationInput,
+  assistantUploadInput,
 } from "../src/lib/chatgpt/assistant-tools";
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth/minimal";
@@ -205,6 +206,7 @@ function importCommandHttp(
     | "retry-photo"
     | "eligibility"
     | "assistant-text"
+    | "assistant-upload"
     | "assistant-migration"
     | "assistant-batch"
     | "assistant-projects"
@@ -256,7 +258,20 @@ function importCommandHttp(
       if (!args || typeof args !== "object")
         return new Response(null, { status: 400, headers });
       let result: unknown;
-      if (command === "assistant-migration") {
+      if (command === "assistant-upload") {
+        const input = assistantUploadInput.parse(args);
+        result = await ctx.runAction(
+          internal.assistantUploads.issueForAssistant,
+          {
+            ...input,
+            grant,
+            jobId:
+              input.jobId as import("./_generated/dataModel").Id<"testimonialImportJobs">,
+            itemId:
+              input.itemId as import("./_generated/dataModel").Id<"testimonialImportItems">,
+          },
+        );
+      } else if (command === "assistant-migration") {
         const input = assistantMigrationInput.parse(args);
         result = await ctx.runQuery(internal.assistantImports.migrationStatus, {
           ...input,
@@ -399,3 +414,5 @@ export const assistantPortraitRetryHttp = importCommandHttp(
 );
 
 export const assistantMigrationHttp = importCommandHttp("assistant-migration");
+
+export const assistantUploadHttp = importCommandHttp("assistant-upload");

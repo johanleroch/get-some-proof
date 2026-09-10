@@ -58,7 +58,7 @@ export const activation = query({
   },
 });
 
-async function requirePaidAssistant(
+export async function requirePaidAssistant(
   ctx: QueryCtx | MutationCtx,
   grant: ImportAccessGrant,
 ) {
@@ -67,10 +67,13 @@ async function requirePaidAssistant(
     .query("accounts")
     .withIndex("by_owner", (q) => q.eq("ownerUserId", principal.actorId))
     .unique();
+  const entitlement = account
+    ? await getAccountBillingEntitlement(ctx, account._id)
+    : null;
   if (
-    !account ||
-    (await getAccountBillingEntitlement(ctx, account._id)).effectivePlan !==
-      "premium"
+    !entitlement ||
+    entitlement.effectivePlan !== "premium" ||
+    entitlement.state === "past_due"
   )
     throw new ConvexError("Pro is required for assistant imports.");
   return principal;
@@ -581,6 +584,87 @@ export const migrationStatus = internalQuery({
       page: jobs.page.map((job) => ({ jobId: job._id, result: job.result })),
       isDone: jobs.isDone,
       continueCursor: jobs.continueCursor,
+    };
+  },
+});
+
+const mediaProgress = v.union(
+  v.literal("processing"),
+  v.literal("ready"),
+  v.literal("failed"),
+);
+export const inboxStatus = query({
+  args: { organizationId: v.id("organizations"), jobId: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      jobId: v.id("testimonialImportJobs"),
+      sourceUrl: v.string(),
+      createdAt: v.number(),
+      result: importResult,
+      createdCount: v.number(),
+      readyCount: v.number(),
+      canUpload: v.boolean(),
+      items: v.array(
+        v.object({
+          itemId: v.id("testimonialImportItems"),
+          authorName: v.string(),
+          videoStatus: v.optional(mediaProgress),
+          portraitStatus: v.optional(mediaProgress),
+          blocked: v.boolean(),
+          failureMessage: v.optional(v.string()),
+          hasVideoUrl: v.boolean(),
+        }),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const { principal } = await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const id = ctx.db.normalizeId("testimonialImportJobs", args.jobId);
+    const job = id ? await ctx.db.get(id) : null;
+    if (
+      !job ||
+      job.organizationId !== args.organizationId ||
+      job.createdBy !== principal.actorId ||
+      job.provider !== "assistant" ||
+      !job.result
+    )
+      return null;
+    const [entitlement, items] = await Promise.all([
+      getOrganizationBillingEntitlement(ctx, job.organizationId),
+      ctx.db
+        .query("testimonialImportItems")
+        .withIndex("by_jobId_and_position", (q) => q.eq("jobId", job._id))
+        .take(50),
+    ]);
+    return {
+      jobId: job._id,
+      sourceUrl: job.sourceUrl,
+      createdAt: job.createdAt,
+      result: job.result,
+      createdCount: items.filter(
+        (item) =>
+          item.testimonialId &&
+          item.outcome !== "skipped" &&
+          item.outcome !== "changed",
+      ).length,
+      readyCount: items.filter((item) => item.videoStatus === "ready").length,
+      canUpload:
+        entitlement.effectivePlan === "premium" &&
+        entitlement.state !== "past_due",
+      items: items.map((item) => ({
+        itemId: item._id,
+        authorName: item.authorName,
+        videoStatus: item.videoStatus,
+        portraitStatus: item.avatarStatus,
+        blocked: item.capacityBlocked ?? false,
+        failureMessage: item.failureReason,
+        hasVideoUrl: !!item.videoUrl,
+      })),
     };
   },
 });

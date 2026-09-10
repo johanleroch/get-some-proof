@@ -92,6 +92,7 @@ export async function queueImportedVideo(
   job: Doc<"testimonialImportJobs">,
   item: Doc<"testimonialImportItems">,
   actorId: string,
+  localUpload = false,
 ): Promise<boolean> {
   const organization = await ctx.db.get(job.organizationId);
   const capacity = await getVideoStorageAvailability(ctx, job.organizationId);
@@ -99,7 +100,7 @@ export async function queueImportedVideo(
     !organization ||
     !(await isProjectActive(ctx, organization)) ||
     !capacity.available ||
-    !item.videoUrl ||
+    (!item.videoUrl && !localUpload) ||
     (env.MUX_PROVIDER !== "mux" && env.MUX_PROVIDER !== "fake")
   )
     return false;
@@ -152,16 +153,18 @@ export async function queueImportedVideo(
     updatedAt: now,
   });
   await retainAccountVideo(ctx, (await ctx.db.get(assetId))!);
-  const workflowId = await start(
-    ctx,
-    internal.testimonialImportVideo.copyWorkflow,
-    { assetId },
-    {
-      startAsync: true,
-      onComplete: internal.testimonialImportVideo.completed,
-      context: { assetId },
-    },
-  );
+  const workflowId = localUpload
+    ? undefined
+    : await start(
+        ctx,
+        internal.testimonialImportVideo.copyWorkflow,
+        { assetId },
+        {
+          startAsync: true,
+          onComplete: internal.testimonialImportVideo.completed,
+          context: { assetId },
+        },
+      );
   await ctx.db.patch(item._id, {
     testimonialId,
     videoAssetId: assetId,
@@ -185,6 +188,7 @@ export async function retryOwnedImportVideo(
   itemId: Id<"testimonialImportItems">,
   verifiedPrincipal: Principal,
   expectedJobId?: Id<"testimonialImportJobs">,
+  localUpload = false,
 ) {
   const item = await ctx.db.get(itemId);
   const job = item ? await ctx.db.get(item.jobId) : null;
@@ -211,7 +215,9 @@ export async function retryOwnedImportVideo(
     });
   if (item.workflowId)
     await cancel(ctx, components.workflow, item.workflowId as WorkflowId);
-  if (!(await queueImportedVideo(ctx, job, item, principal.actorId)))
+  if (
+    !(await queueImportedVideo(ctx, job, item, principal.actorId, localUpload))
+  )
     throw new ConvexError({
       code: "VIDEO_CAPACITY_REACHED",
       message:
@@ -465,7 +471,7 @@ export const attachCopy = internalMutation({
   },
 });
 
-async function failCopyRecord(
+export async function failCopyRecord(
   ctx: MutationCtx,
   assetId: Id<"videoAssets">,
   reason: string,
@@ -605,6 +611,7 @@ export async function retainCapacityBlockedVideo(
   job: Doc<"testimonialImportJobs">,
   item: Doc<"testimonialImportItems">,
   actorId: string,
+  capacityBlocked = true,
 ) {
   const organization = await ctx.db.get(job.organizationId);
   if (
@@ -642,8 +649,9 @@ export async function retainCapacityBlockedVideo(
     captionsStatus: "failed",
     status: "failed",
     mimeType: "video/mp4",
-    failureReason:
-      "Choose which videos to import within your available storage capacity.",
+    failureReason: capacityBlocked
+      ? "Choose which videos to import within your available storage capacity."
+      : "Choose the original video file to finish this import.",
     createdAt: now,
     updatedAt: now,
   });
@@ -651,7 +659,7 @@ export async function retainCapacityBlockedVideo(
     testimonialId,
     videoAssetId,
     videoStatus: "failed",
-    capacityBlocked: true,
+    capacityBlocked,
   });
   await queueImportedAvatar(ctx, item, testimonialId);
 }
