@@ -1,6 +1,6 @@
 import { projectionIsPublic } from "./publicProjection";
 import { isProjectActive } from "./projectActivity";
-import { resolveTestimonialImages } from "./testimonialImages";
+import { hydratePublicProjection } from "./publicProjectionHydration";
 import { ConvexError, v } from "convex/values";
 import {
   requirePublicWallServer,
@@ -10,8 +10,6 @@ import {
 import { query } from "./_generated/server";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { accentInk } from "./domain/colorContrast";
-import { organizationPublicVisibility } from "./publicProjection";
-import { testimonialCardValue } from "./testimonialCardValue";
 
 export const getBrand = query({
   args: { publicSlug: v.string(), secret: v.optional(v.string()) },
@@ -121,48 +119,7 @@ export const list = query({
       page.page
         .filter((projection) => projectionIsPublic(account, projection))
         .map(async (projection) => {
-          const defaults = organizationPublicVisibility(brand);
-          const visible = {
-            avatar: projection.visibilityOverrides?.avatar ?? defaults.avatar,
-            company:
-              projection.visibilityOverrides?.company ?? defaults.company,
-            rating: projection.visibilityOverrides?.rating ?? defaults.rating,
-            role: projection.visibilityOverrides?.role ?? defaults.role,
-          };
-          const identity = {
-            avatarUrl: projection.avatarStorageId
-              ? visible.avatar
-                ? await ctx.storage.getUrl(projection.avatarStorageId)
-                : null
-              : null,
-            avatarVisible: visible.avatar,
-            company: visible.company ? projection.company : undefined,
-            id: projection._id,
-            name: projection.name,
-            publishedAt: projection.publishedAt,
-            rating: visible.rating ? projection.rating : undefined,
-            role: visible.role ? projection.role : undefined,
-          };
-          return projection.type === "video"
-            ? testimonialCardValue(identity, {
-                aspectRatio: projection.aspectRatio,
-                captionsAvailable: projection.captionsAvailable,
-                playbackId: projection.playbackId,
-                posterTimeSeconds: projection.posterTimeSeconds,
-                posterUrl: projection.posterStorageId
-                  ? ((await ctx.storage.getUrl(projection.posterStorageId)) ??
-                    undefined)
-                  : undefined,
-                type: "video" as const,
-              })
-            : testimonialCardValue(identity, {
-                text: projection.text,
-                richText: projection.richText,
-                images: projection.imageIds?.length
-                  ? await resolveTestimonialImages(ctx, projection.imageIds)
-                  : undefined,
-                type: "text" as const,
-              });
+          return hydratePublicProjection(ctx, brand, projection);
         }),
     );
     return { ...page, page: testimonials };

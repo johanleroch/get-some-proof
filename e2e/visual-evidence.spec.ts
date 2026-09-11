@@ -275,6 +275,35 @@ for (const screen of config.screens) {
         .getByRole("heading", { name: "Invoices", exact: true })
         .scrollIntoViewIfNeeded();
     }
+    if (
+      screen.slug === "studio-preview" ||
+      (screen.slug === "studio-editor" &&
+        !testInfo.project.name.startsWith("mobile"))
+    ) {
+      await expect(
+        page.locator("[data-widget-preview] .card").first(),
+      ).toBeVisible();
+    }
+    if (screen.slug.startsWith("studio-selection")) {
+      await page
+        .getByRole("button", { name: "Manage selection", exact: true })
+        .click();
+      if (screen.slug === "studio-selection-order") {
+        await page
+          .getByRole("tab", { name: "Selected (3)", exact: true })
+          .click();
+      }
+      await expect(
+        page.getByRole("dialog", { name: "Manage testimonials" }),
+      ).toBeVisible();
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll<HTMLImageElement>('[role="dialog"] img')]
+          .filter(
+            (image) => image.getBoundingClientRect().top < window.innerHeight,
+          )
+          .every((image) => image.complete && image.naturalWidth > 0),
+      );
+    }
     if (fixtureMode && screen.slug.startsWith("testimonial-inbox-bulk")) {
       await page
         .getByRole("checkbox", { name: "Select displayed testimonials" })
@@ -321,6 +350,7 @@ for (const screen of config.screens) {
       fullPage:
         !screen.slug.startsWith("testimonial-inbox-bulk") &&
         screen.slug !== "rich-testimonial-highlight" &&
+        !screen.slug.startsWith("studio-selection") &&
         !screen.slug.startsWith("testimonial-import-identity"),
       animations: "disabled",
       caret: "initial",

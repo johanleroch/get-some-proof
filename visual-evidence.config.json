@@ -631,6 +631,46 @@
       "theme": "light"
     },
     {
+      "slug": "studio",
+      "title": "Studio widgets",
+      "path": "/visual-evidence/studio",
+      "heading": "Studio",
+      "theme": "light"
+    },
+    {
+      "slug": "studio-editor",
+      "title": "Studio editor",
+      "path": "/visual-evidence/studio-editor",
+      "heading": "Homepage proof",
+      "theme": "light"
+    },
+    {
+      "slug": "studio-templates",
+      "title": "Studio templates",
+      "path": "/visual-evidence/studio-templates",
+      "heading": "Choose a template",
+      "theme": "light"
+    },
+    {
+      "slug": "studio-preview",
+      "title": "Studio preview",
+      "path": "/visual-evidence/studio-preview",
+      "heading": "Homepage proof",
+      "theme": "light"
+    },
+    {
+      "slug": "studio-selection",
+      "title": "Studio selection",
+      "path": "/visual-evidence/studio-editor",
+      "heading": "Homepage proof"
+    },
+    {
+      "slug": "studio-selection-order",
+      "title": "Studio selection order",
+      "path": "/visual-evidence/studio-editor",
+      "heading": "Homepage proof"
+    },
+    {
       "slug": "testimonial-deletion-progress",
       "title": "Testimonial media cleanup",
       "path": "/org/:organizationSlug/testimonials",

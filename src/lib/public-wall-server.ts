@@ -65,7 +65,7 @@ function projectionEtag(body: unknown) {
   return `"${createHash("sha256").update(JSON.stringify(body)).digest("hex")}"`;
 }
 
-function authorizedGateway(request: Request) {
+export function authorizedGateway(request: Request) {
   const expected = process.env.PUBLIC_WALL_ORIGIN_GATEWAY_SECRET;
   if (!expected || expected.length < 32) return false;
   const actual = request.headers.get("x-gsp-origin-secret") ?? "";
@@ -76,7 +76,7 @@ function authorizedGateway(request: Request) {
   );
 }
 
-function requesterKey(request: Request, secret: string) {
+export function requesterKey(request: Request, secret: string) {
   // Only Vercel's overwritten header is authoritative on its managed ingress.
   // Other hosting environments share a fallback bucket until an authenticated adapter exists.
   const forwardedFor = authorizedGateway(request)
