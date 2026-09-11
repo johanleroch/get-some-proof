@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => {
     } as Record<string, ReturnType<typeof vi.fn>>,
     lists: {} as Record<string, unknown[]>,
     loadMore: vi.fn(),
+    query: vi.fn(),
     paginationStatus: "Exhausted",
     queries: {} as Record<string, unknown>,
     useAction: vi.fn(),
@@ -90,6 +91,7 @@ vi.mock("convex/react", async () => {
           },
   );
   return {
+    useConvex: () => ({ query: mocks.query }),
     useConvexConnectionState: () => ({ isWebSocketConnected: true }),
     useAction: mocks.useAction,
     useMutation: mocks.useMutation,
@@ -981,5 +983,72 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(
       screen.queryByRole("button", { name: /Move.*up/i }),
     ).not.toBeInTheDocument();
+  });
+  it("wires bulk status updates and resets selection when the tab or import changes", async () => {
+    const { rerender } = render(<TestimonialInbox slug="fernhill" />);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Archive", exact: true })[0]!,
+    );
+    await waitFor(() =>
+      expect(
+        mocks.functions["testimonialModeration:setStatus"],
+      ).toHaveBeenCalledWith({
+        organizationId,
+        testimonialId: alice.testimonialId,
+        status: "archived",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    goTo(/^Published/);
+    expect(screen.queryByText(/ selected$/)).toBeNull();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    rerender(
+      <TestimonialInbox slug="fernhill" importJobId="different-import" />,
+    );
+    expect(screen.queryByText(/ selected$/)).toBeNull();
+  });
+
+  it("select-all fetches pages from the exact import, project and tab scope", async () => {
+    mocks.paginationStatus = "CanLoadMore";
+    mocks.query.mockResolvedValueOnce({
+      page: [alice, remy],
+      isDone: true,
+      continueCursor: "",
+    });
+    render(<TestimonialInbox slug="fernhill" importJobId="job-june" />);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Select all .* testimonials in this tab/,
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.query).toHaveBeenCalledWith(expect.anything(), {
+        organizationId,
+        importJobId: "job-june",
+        status: "pending",
+        sort: "newest",
+        paginationOpts: { cursor: null, numItems: 20 },
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+      ).toBeEnabled(),
+    );
   });
 });

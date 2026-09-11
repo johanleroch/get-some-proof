@@ -273,7 +273,7 @@ export const screenSections: ScreenSection[] = [
         slug: "inbox",
         title: "Testimonial inbox",
         description:
-          "Pending first: one list of rows, each with its decision. Publish, Archive, preview a video, and reach the tools from the menu.",
+          "Pending first: row checkboxes and a contextual bulk toolbar. Select all, publish or archive a batch, and confirm permanent deletion.",
         fixturePath: "/visual-evidence/testimonial-inbox",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,

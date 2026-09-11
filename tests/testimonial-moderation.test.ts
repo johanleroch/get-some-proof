@@ -20,10 +20,10 @@ async function createPendingTestimonial(
   t: ReturnType<typeof createConvexTest>,
   publicSlug: string,
   clientSubmissionId: string,
+  brand = { brandName: "Acme Studio", privacyContact: "privacy@acme.example" },
 ) {
   const consent = buildPublicationConsent({
-    brandName: "Acme Studio",
-    privacyContact: "privacy@acme.example",
+    ...brand,
     suppliedIdentity: {
       avatarSupplied: false,
       company: "Example Studio",
@@ -1092,6 +1092,60 @@ describe("Testimonial moderation and Public Projection", () => {
     await expect(
       t.run((ctx) => ctx.db.query("publicTestimonialProjections").unique()),
     ).resolves.toMatchObject({ publishedAt: originalProjection!.publishedAt });
+  });
+
+  it("deletes quarantined text immediately without resetting restored credits or Spam history", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const outsider = await authenticatedUser(t, {
+      email: "bulk-outsider@example.invalid",
+      name: "Nina Laurent",
+    });
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Fernhill Studio",
+      publicSlug: "bulk-spam",
+      privacyContact: "privacy@fernhill.example",
+    });
+    const created = await createPendingTestimonial(
+      t,
+      "bulk-spam",
+      "bulk-delete-spam",
+      {
+        brandName: "Fernhill Studio",
+        privacyContact: "privacy@fernhill.example",
+      },
+    );
+    const target = {
+      organizationId: brand.id,
+      testimonialId: created.testimonialId,
+    };
+    await owner.client.mutation(api.testimonialModeration.markSpam, target);
+    await expect(
+      outsider.client.mutation(api.testimonialModeration.remove, target),
+    ).rejects.toThrow();
+    const quarantine = await t.run((ctx) =>
+      ctx.db.query("spamQuarantines").unique(),
+    );
+    await owner.client.mutation(api.testimonialModeration.remove, target);
+    await expect(
+      owner.client.mutation(api.testimonialModeration.remove, target),
+    ).resolves.toEqual({ deleted: true });
+    const stored = await t.run(async (ctx) => ({
+      testimonial: await ctx.db.get(created.testimonialId),
+      credit: await ctx.db.query("collectionCredits").unique(),
+      quarantine: await ctx.db.get(quarantine!._id),
+    }));
+    expect(stored.testimonial).toBeNull();
+    expect(stored.credit?.restoredAt).toBeGreaterThan(0);
+    expect(stored.quarantine?.creditRestored).toBe(true);
+    await t.run((ctx) =>
+      ctx.db.patch(quarantine!._id, { expiresAt: Date.now() - 1 }),
+    );
+    await expect(
+      t.mutation(internal.testimonialModeration.expireSpamQuarantine, {
+        quarantineId: quarantine!._id,
+      }),
+    ).resolves.toEqual({ expired: true });
   });
 
   it("permanently removes expired Spam while preserving its restored lifetime credit", async () => {

@@ -203,7 +203,6 @@ export const prepareRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     const asset = await ctx.db
       .query("videoAssets")
       .withIndex("by_testimonial", (index) =>

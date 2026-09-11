@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
 import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
+import { useBulkInboxActions } from "./use-bulk-inbox-actions";
+import { BulkTestimonialInbox } from "./bulk-testimonial-inbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useInboxPages } from "./use-inbox-pages";
 import { InboxSyncIndicator } from "./inbox-sync-indicator";
 import {
@@ -373,6 +376,7 @@ function InboxRow({
   onMove,
   position,
   registerControl,
+  selection,
   testimonial,
 }: {
   accentColor: string;
@@ -393,6 +397,7 @@ function InboxRow({
     control: InboxRowControl,
     element: HTMLButtonElement | null,
   ) => void;
+  selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -412,7 +417,10 @@ function InboxRow({
   return (
     <li
       aria-busy={busy || undefined}
-      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]"
+      className={cn(
+        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
+        selection?.checked ? "bg-brand-soft" : "hover:bg-surface-2",
+      )}
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
       draggable={ordering && !disabled ? true : undefined}
       onDragEnd={drag?.onEnd}
@@ -427,6 +435,16 @@ function InboxRow({
         wide, so the words start on the same line from one row to the next.
       */}
       <div className="flex items-center gap-2 md:gap-3">
+        {selection && (
+          <label className="flex min-h-11 min-w-6 cursor-pointer items-center justify-center">
+            <Checkbox
+              aria-label={`Select ${testimonial.submitterName}'s testimonial`}
+              checked={selection.checked}
+              disabled={selection.disabled}
+              onCheckedChange={selection.onToggle}
+            />
+          </label>
+        )}
         {ordering ? (
           <IconGripVertical
             aria-hidden="true"
@@ -604,6 +622,7 @@ export function TestimonialInboxView({
   onAction,
   onMove,
   pendingId,
+  selection,
   testimonials,
 }: {
   accentColor?: string;
@@ -620,6 +639,11 @@ export function TestimonialInboxView({
   /** Present in Published, where the list is the Public Wall's order. */
   onMove?: InboxMove;
   pendingId: Id<"testimonials"> | null;
+  selection?: {
+    ids: ReadonlySet<string>;
+    disabled: boolean;
+    onToggle: (item: InboxTestimonial) => void;
+  };
   testimonials: InboxTestimonial[];
 }) {
   const draggedId = useRef<string | undefined>(undefined);
@@ -721,6 +745,15 @@ export function TestimonialInboxView({
                       onStart: () => {
                         draggedId.current = String(testimonial.testimonialId);
                       },
+                    }
+                  : undefined
+              }
+              selection={
+                selection
+                  ? {
+                      checked: selection.ids.has(testimonial.testimonialId),
+                      disabled: selection.disabled,
+                      onToggle: () => selection.onToggle(testimonial),
                     }
                   : undefined
               }
@@ -1033,6 +1066,11 @@ export function TestimonialInbox({
     wallSettings,
   } = useInboxData(slug, importJobId, moderationStatus);
 
+  const bulkActions = useBulkInboxActions({
+    organizationId: organization?.id,
+    importJobId,
+    category: moderationStatus,
+  });
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -1305,7 +1343,11 @@ export function TestimonialInbox({
             showLabel
           />
         ) : (
-          <TestimonialInboxView
+          <BulkTestimonialInbox
+            key={`${organization.id}:${importJobId ?? ""}:${moderationStatus}`}
+            totalCount={counts?.[moderationStatus] ?? testimonials.length}
+            hasMore={paginationStatus !== "Exhausted"}
+            {...bulkActions}
             accentColor={wallSettings?.accentColor}
             actionsDisabled={pendingId !== null}
             category={moderationStatus}

@@ -290,7 +290,8 @@ export async function deleteTestimonialRecords(
     testimonial.organizationId,
     testimonial._id,
     testimonial.submissionType === "video",
-    reason !== "permanentDeletion",
+    // Retain Spam history until quarantine expiry, including legacy credit accounting.
+    reason !== "permanentDeletion" || testimonial.moderationStatus === "spam",
   );
   await deleteTestimonialImages(ctx, testimonial._id);
   if (testimonial.avatarStorageId)
