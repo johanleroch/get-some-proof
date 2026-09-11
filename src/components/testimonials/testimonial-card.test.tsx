@@ -340,6 +340,7 @@ describe("TestimonialCard", () => {
 });
 
 it("renders safe inline links and drops unsafe destinations without treating text as HTML", () => {
+  cleanup();
   render(
     <TestimonialCard
       accentColor="#b86a08"
