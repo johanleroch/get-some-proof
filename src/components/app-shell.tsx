@@ -8,11 +8,13 @@ import {
   type Icon,
   IconArrowLeft,
   IconArrowUpRight,
+  IconBolt,
   IconCreditCard,
   IconDashboard,
   IconInbox,
   IconLayoutGrid,
   IconLock,
+  IconSparkles,
   IconSettings,
   IconUserCircle,
   IconWorld,
@@ -47,8 +49,8 @@ type NavigationItem = {
   label: string;
   icon: Icon;
   href: Route;
-  visible: boolean;
   newTab?: boolean;
+  requiresPlan?: "premium";
 };
 
 type NavigationSection = {
@@ -61,19 +63,16 @@ const accountNavigation: NavigationItem[] = [
     label: "Profile",
     icon: IconUserCircle,
     href: "/account/profile" as Route,
-    visible: true,
   },
   {
     label: "Security",
     icon: IconLock,
     href: "/account/security" as Route,
-    visible: true,
   },
   {
     label: "Billing",
     icon: IconCreditCard,
     href: "/account/billing",
-    visible: true,
   },
 ];
 
@@ -103,10 +102,12 @@ function isActiveHref(pathname: string, href: string) {
 function Navigation({
   inboxCount,
   pathname,
+  plan,
   sections,
 }: {
   inboxCount?: number;
   pathname: string;
+  plan?: "free" | "premium";
   sections: NavigationSection[];
 }) {
   const [pendingHref, setPendingHref] = useState<Route | null>(null);
@@ -118,17 +119,16 @@ function Navigation({
     setPendingHref(null);
   }
   return sections.map((section) => {
-    const items = section.items.filter(({ visible }) => visible);
-    if (items.length === 0) return null;
     return (
       <SidebarGroup className="pt-1" key={section.label}>
         <SidebarGroupContent>
           <NavigationList
             inboxCount={inboxCount}
-            items={items}
+            items={section.items}
             onNavigate={setPendingHref}
             pathname={pathname}
             pendingHref={pendingHref}
+            plan={plan}
           />
         </SidebarGroupContent>
       </SidebarGroup>
@@ -142,19 +142,28 @@ function NavigationList({
   onNavigate,
   pathname,
   pendingHref,
+  plan,
 }: {
   inboxCount?: number;
   items: NavigationItem[];
   onNavigate: (href: Route) => void;
   pathname: string;
   pendingHref: Route | null;
+  plan?: "free" | "premium";
 }) {
   const { setOpenMobile } = useSidebar();
-  const routeIndex = items.findIndex(({ href }) =>
-    isActiveHref(pathname, href),
+  const destinationFor = (href: Route, requiresPlan?: "premium") =>
+    requiresPlan === "premium" && plan !== "premium"
+      ? ("/account/billing" as Route)
+      : href;
+  const routeIndex = items.findIndex(({ href, requiresPlan }) =>
+    isActiveHref(pathname, destinationFor(href, requiresPlan)),
   );
   const pendingIndex = pendingHref
-    ? items.findIndex(({ href }) => href === pendingHref)
+    ? items.findIndex(
+        ({ href, requiresPlan }) =>
+          destinationFor(href, requiresPlan) === pendingHref,
+      )
     : -1;
   const activeIndex = pendingIndex >= 0 ? pendingIndex : routeIndex;
   // Which way the rail travels decides which of its edges leads. The move it
@@ -181,95 +190,126 @@ function NavigationList({
           }}
         />
       ) : null}
-      {items.map(({ href, icon: IconComponent, label, newTab }, index) => {
-        const active = index === activeIndex;
-        const count = label === "Inbox" && inboxCount ? inboxCount : null;
-        const shownCount = count
-          ? count > inboxCountCeiling
-            ? `${inboxCountCeiling}+`
-            : String(count)
-          : null;
-        return (
-          <SidebarMenuItem key={href}>
-            <span
-              aria-hidden="true"
-              className={cn(
-                "bg-brand-soft pointer-events-none absolute inset-0 rounded-md transition-opacity motion-reduce:transition-none",
-                active
-                  ? "opacity-100 duration-[var(--motion-base)] ease-[var(--ease-out-soft)]"
-                  : "opacity-0 duration-[var(--motion-exit)] ease-[var(--ease-exit)]",
-              )}
-              data-slot="sidebar-active-pill"
-            />
-            <SidebarMenuButton
-              asChild
-              className="h-9 gap-3 px-3 data-[active=true]:bg-transparent data-[active=true]:hover:bg-transparent [&>svg]:size-[18px]"
-              isActive={active}
-              tooltip={label}
-            >
-              <Link
-                aria-current={index === routeIndex ? "page" : undefined}
-                aria-label={
-                  shownCount ? `${label}, ${shownCount} to review` : undefined
-                }
-                href={href}
-                onClick={(event) => {
-                  if (newTab) return;
-                  // A modified click opens elsewhere: this route stays.
-                  if (
-                    event.metaKey ||
-                    event.ctrlKey ||
-                    event.shiftKey ||
-                    event.altKey ||
-                    event.button !== 0
-                  ) {
-                    return;
-                  }
-                  onNavigate(href);
-                  setOpenMobile(false);
-                }}
-                rel={newTab ? "noopener noreferrer" : undefined}
-                target={newTab ? "_blank" : undefined}
+      {items.map(
+        ({ href, icon: IconComponent, label, newTab, requiresPlan }, index) => {
+          const active = index === activeIndex;
+          const upgradeRequired = requiresPlan === "premium" && plan === "free";
+          const planUnavailable =
+            requiresPlan === "premium" && plan !== "premium";
+          const destination = destinationFor(href, requiresPlan);
+          const count = label === "Inbox" && inboxCount ? inboxCount : null;
+          const shownCount = count
+            ? count > inboxCountCeiling
+              ? `${inboxCountCeiling}+`
+              : String(count)
+            : null;
+          return (
+            <SidebarMenuItem key={href}>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "bg-brand-soft pointer-events-none absolute inset-0 rounded-md transition-opacity motion-reduce:transition-none",
+                  active
+                    ? "opacity-100 duration-[var(--motion-base)] ease-[var(--ease-out-soft)]"
+                    : "opacity-0 duration-[var(--motion-exit)] ease-[var(--ease-exit)]",
+                )}
+                data-slot="sidebar-active-pill"
+              />
+              <SidebarMenuButton
+                asChild
+                className="h-9 gap-3 px-3 data-[active=true]:bg-transparent data-[active=true]:hover:bg-transparent [&>svg]:size-[18px]"
+                isActive={active}
+                tooltip={label}
               >
-                <IconComponent
-                  aria-hidden="true"
-                  className={cn(
-                    "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
-                    active ? "text-ink" : "text-ink-2",
-                  )}
-                  stroke={1.75}
-                />
-                <span className="nav-item-label min-w-0 flex-1 truncate">
-                  {label}
-                </span>
-                {shownCount ? (
-                  <span
-                    className={cn(
-                      "type-small grid h-5 min-w-5 shrink-0 place-items-center rounded-md px-2 font-semibold tabular-nums",
-                      "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
-                      active
-                        ? "bg-surface text-ink"
-                        : "bg-surface-2 text-ink-2",
-                    )}
-                  >
-                    {shownCount}
-                  </span>
-                ) : newTab ? (
-                  <span
+                <Link
+                  aria-current={index === routeIndex ? "page" : undefined}
+                  aria-label={
+                    shownCount
+                      ? `${label}, ${shownCount} to review`
+                      : upgradeRequired
+                        ? `${label}, Pro`
+                        : undefined
+                  }
+                  data-plan-access={
+                    upgradeRequired ? "upgrade-required" : undefined
+                  }
+                  href={destination}
+                  onClick={(event) => {
+                    if (newTab) return;
+                    // A modified click opens elsewhere: this route stays.
+                    if (
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey ||
+                      event.button !== 0
+                    ) {
+                      return;
+                    }
+                    onNavigate(destination);
+                    setOpenMobile(false);
+                  }}
+                  rel={newTab ? "noopener noreferrer" : undefined}
+                  target={newTab ? "_blank" : undefined}
+                >
+                  <IconComponent
                     aria-hidden="true"
                     className={cn(
-                      "shrink-0 transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
-                      active ? "text-ink-2" : "text-ink-3",
+                      "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
+                      planUnavailable
+                        ? "text-ink-3"
+                        : active
+                          ? "text-ink"
+                          : "text-ink-2",
+                    )}
+                    stroke={1.75}
+                  />
+                  <span
+                    className={cn(
+                      "nav-item-label min-w-0 flex-1 truncate",
+                      planUnavailable && "text-ink-2",
                     )}
                   >
-                    <IconArrowUpRight className="size-4" />
+                    {label}
                   </span>
-                ) : null}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
+                  {shownCount ? (
+                    <span
+                      className={cn(
+                        "type-small grid h-5 min-w-5 shrink-0 place-items-center rounded-md px-2 font-semibold tabular-nums",
+                        "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
+                        active
+                          ? "bg-surface text-ink"
+                          : "bg-surface-2 text-ink-2",
+                      )}
+                    >
+                      {shownCount}
+                    </span>
+                  ) : requiresPlan ? (
+                    <span
+                      aria-hidden="true"
+                      className="grid size-4 shrink-0 place-items-center"
+                    >
+                      {upgradeRequired ? (
+                        <IconBolt className="text-ink-3 size-4" stroke={1.75} />
+                      ) : null}
+                    </span>
+                  ) : newTab ? (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "shrink-0 transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
+                        active ? "text-ink-2" : "text-ink-3",
+                      )}
+                    >
+                      <IconArrowUpRight className="size-4" />
+                    </span>
+                  ) : null}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        },
+      )}
     </SidebarMenu>
   );
 }
@@ -320,7 +360,6 @@ export function AppShell(props: AppShellProps) {
       pathname={pathname}
       account={account}
       inboxCount={inbox?.pending}
-      authorization={authorization}
       connected={health?.status === "ok"}
       userMenu={<NavUser />}
       projectSwitcher={
@@ -346,7 +385,6 @@ export function AppShellView({
   organizationSlug,
   pathname,
   account,
-  authorization,
   connected,
   inboxCount,
   userMenu,
@@ -358,9 +396,6 @@ export function AppShellView({
     effectivePlan: "free" | "premium";
     freeProjectId: Id<"organizations"> | null;
   } | null;
-  authorization?: {
-    can: { manageOwnership: boolean; updateOrganization: boolean };
-  } | null;
   connected: boolean;
   userMenu: ReactNode;
   projectSwitcher: ReactNode;
@@ -371,32 +406,33 @@ export function AppShellView({
       label: "Overview",
       icon: IconDashboard,
       href: `/org/${organizationSlug}/dashboard` as Route,
-      visible: true,
     },
     {
       label: "Inbox",
       icon: IconInbox,
       href: `/org/${organizationSlug}/inbox` as Route,
-      visible: authorization?.can.manageOwnership ?? false,
     },
     {
       label: "Studio",
       icon: IconLayoutGrid,
       href: `/org/${organizationSlug}/studio` as Route,
-      visible: authorization?.can.manageOwnership ?? false,
+    },
+    {
+      label: "Assistant import",
+      icon: IconSparkles,
+      href: `/org/${organizationSlug}/mcp` as Route,
+      requiresPlan: "premium",
     },
     {
       label: "Public Wall",
       newTab: true,
       icon: IconWorld,
       href: `/w/${organizationPublicSlug}` as Route,
-      visible: true,
     },
     {
       label: "Project settings",
       icon: IconSettings,
       href: `/org/${organizationSlug}/settings` as Route,
-      visible: authorization?.can.updateOrganization ?? false,
     },
   ];
 
@@ -409,7 +445,6 @@ export function AppShellView({
               label: "Back to project",
               icon: IconArrowLeft,
               href: `/org/${organizationSlug}/dashboard` as Route,
-              visible: true,
             },
             ...accountNavigation,
           ],
@@ -442,6 +477,7 @@ export function AppShellView({
             <Navigation
               inboxCount={inboxCount}
               pathname={pathname}
+              plan={account?.effectivePlan}
               sections={navigationSections}
             />
           </SidebarContent>

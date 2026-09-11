@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppShell } from "./app-shell";
+import { AppShell, AppShellView } from "./app-shell";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/org/acme-1234/dashboard",
@@ -209,20 +209,96 @@ describe("AppShell", () => {
     ).toHaveTextContent("500+");
   });
 
-  it("keeps the Inbox out of the navigation for accounts that cannot manage ownership", () => {
-    mocks.manageOwnership = false;
-    mocks.pending = 3;
+  it("keeps the complete Owner navigation visible while plan and permissions load", () => {
     render(
-      <AppShell
+      <AppShellView
         organizationId={"organization-1" as never}
         organizationName="Acme"
         organizationPublicSlug="acme"
         organizationSlug="acme-1234"
+        pathname="/org/acme-1234/dashboard"
+        connected
+        userMenu={<div>User menu</div>}
+        projectSwitcher={<div>Project switcher</div>}
       >
         Dashboard
-      </AppShell>,
+      </AppShellView>,
     );
-    expect(screen.queryByRole("link", { name: /inbox/i })).toBeNull();
+
+    expect(screen.getByRole("link", { name: "Overview" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Inbox" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Studio" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Public Wall" })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Project settings" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Assistant import" }),
+    ).toHaveAttribute("href", "/account/billing");
+  });
+
+  it("shows Assistant import as a Pro upgrade on Free and opens it on Pro", () => {
+    const view = render(
+      <AppShellView
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+        pathname="/org/acme-1234/dashboard"
+        account={{ effectivePlan: "free", freeProjectId: null }}
+        connected
+        userMenu={<div>User menu</div>}
+        projectSwitcher={<div>Project switcher</div>}
+      >
+        Dashboard
+      </AppShellView>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Assistant import, Pro" }),
+    ).toHaveAttribute("href", "/account/billing");
+
+    view.rerender(
+      <AppShellView
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+        pathname="/org/acme-1234/mcp"
+        account={{ effectivePlan: "free", freeProjectId: null }}
+        connected
+        userMenu={<div>User menu</div>}
+        projectSwitcher={<div>Project switcher</div>}
+      >
+        Dashboard
+      </AppShellView>,
+    );
+
+    const freeImportLink = screen.getByRole("link", {
+      name: "Assistant import, Pro",
+    });
+    expect(freeImportLink).not.toHaveAttribute("aria-current");
+    expect(freeImportLink.querySelector("svg")).toHaveClass("text-ink-3");
+
+    view.rerender(
+      <AppShellView
+        organizationId={"organization-1" as never}
+        organizationName="Acme"
+        organizationPublicSlug="acme"
+        organizationSlug="acme-1234"
+        pathname="/org/acme-1234/dashboard"
+        account={{ effectivePlan: "premium", freeProjectId: null }}
+        connected
+        userMenu={<div>User menu</div>}
+        projectSwitcher={<div>Project switcher</div>}
+      >
+        Dashboard
+      </AppShellView>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Assistant import" }),
+    ).toHaveAttribute("href", "/org/acme-1234/mcp");
   });
 
   it("shows one Brand without multi-Organization or collaboration navigation", () => {
@@ -318,7 +394,7 @@ describe("AppShell", () => {
     },
   );
 
-  it("hides privileged destinations for lower roles", () => {
+  it("keeps product destinations visible independently from legacy roles", () => {
     mocks.pathname = "/org/acme-1234/settings";
     mocks.readAudit = false;
     mocks.readBilling = false;
@@ -336,7 +412,11 @@ describe("AppShell", () => {
 
     expect(screen.queryByRole("link", { name: "Audit Log" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Billing" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Project settings" })).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Project settings" }),
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Inbox" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Studio" })).toBeVisible();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });
 
