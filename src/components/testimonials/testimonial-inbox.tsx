@@ -1,10 +1,18 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import {
+  MediaDeletionProgress,
+  type MediaDeletionCounts,
+} from "@/components/ui/media-deletion-progress";
+
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
 import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
+import { useBulkInboxActions } from "./use-bulk-inbox-actions";
+import { BulkTestimonialInbox } from "./bulk-testimonial-inbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useInboxPages } from "./use-inbox-pages";
 import { InboxSyncIndicator } from "./inbox-sync-indicator";
 import {
@@ -279,6 +287,8 @@ function InboxRow({
   onMove,
   position,
   registerControl,
+  hideActions,
+  selection,
   testimonial,
 }: {
   accentColor: string;
@@ -299,6 +309,8 @@ function InboxRow({
     control: InboxRowControl,
     element: HTMLButtonElement | null,
   ) => void;
+  hideActions?: boolean;
+  selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -312,7 +324,10 @@ function InboxRow({
   return (
     <li
       aria-busy={busy || undefined}
-      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]"
+      className={cn(
+        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
+        selection?.checked ? "bg-brand-soft" : "hover:bg-surface-2",
+      )}
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
       draggable={ordering && !disabled ? true : undefined}
       onDragEnd={drag?.onEnd}
@@ -327,6 +342,16 @@ function InboxRow({
         wide, so the words start on the same line from one row to the next.
       */}
       <div className="flex items-center gap-2 md:gap-3">
+        {selection && (
+          <label className="flex min-h-11 min-w-6 cursor-pointer items-center justify-center">
+            <Checkbox
+              aria-label={`Select ${testimonial.submitterName}'s testimonial`}
+              checked={selection.checked}
+              disabled={selection.disabled}
+              onCheckedChange={selection.onToggle}
+            />
+          </label>
+        )}
         {ordering ? (
           <IconGripVertical
             aria-hidden="true"
@@ -382,7 +407,12 @@ function InboxRow({
         </p>
       </div>
 
-      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center">
+      <div
+        className={cn(
+          "col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center",
+          hideActions && "hidden",
+        )}
+      >
         {ordering && onMove && position ? (
           <>
             <Button
@@ -494,6 +524,7 @@ export function TestimonialInboxView({
   onAction,
   onMove,
   pendingId,
+  selection,
   testimonials,
 }: {
   accentColor?: string;
@@ -510,6 +541,11 @@ export function TestimonialInboxView({
   /** Present in Published, where the list is the Public Wall's order. */
   onMove?: InboxMove;
   pendingId: Id<"testimonials"> | null;
+  selection?: {
+    ids: ReadonlySet<string>;
+    disabled: boolean;
+    onToggle: (item: InboxTestimonial) => void;
+  };
   testimonials: InboxTestimonial[];
 }) {
   const draggedId = useRef<string | undefined>(undefined);
@@ -592,6 +628,7 @@ export function TestimonialInboxView({
           {testimonials.map((testimonial, index) => (
             <InboxRow
               accentColor={accentColor}
+              hideActions={selection !== undefined && selection.ids.size > 0}
               busy={pendingId === testimonial.testimonialId}
               disabled={actionsDisabled}
               drag={
@@ -611,6 +648,15 @@ export function TestimonialInboxView({
                       onStart: () => {
                         draggedId.current = String(testimonial.testimonialId);
                       },
+                    }
+                  : undefined
+              }
+              selection={
+                selection
+                  ? {
+                      checked: selection.ids.has(testimonial.testimonialId),
+                      disabled: selection.disabled,
+                      onToggle: () => selection.onToggle(testimonial),
                     }
                   : undefined
               }
@@ -650,6 +696,8 @@ export function TestimonialDeleteDialog({
   onDelete,
   onOpenChange,
   pending,
+  progress,
+  deletionStatus,
   target,
 }: {
   /** Where focus goes when the confirmation closes; the opener by default. */
@@ -657,10 +705,17 @@ export function TestimonialDeleteDialog({
   onDelete: () => void;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
+  progress?: MediaDeletionCounts;
+  deletionStatus?: "requested" | "failed" | "deleted";
   target: InboxTestimonial | null;
 }) {
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!pending) onOpenChange(open);
+      }}
+      open={target !== null}
+    >
       <AlertDialogContent
         className="max-w-[480px]"
         onCloseAutoFocus={onCloseAutoFocus}
@@ -673,7 +728,9 @@ export function TestimonialDeleteDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {target
-                  ? `Delete ${target.submitterName}'s Testimonial?`
+                  ? pending
+                    ? `Deleting ${target.submitterName}'s Testimonial`
+                    : `Delete ${target.submitterName}'s Testimonial?`
                   : "Delete Testimonial"}
               </AlertDialogTitle>
               <AlertDialogDescription className="type-body">
@@ -681,6 +738,14 @@ export function TestimonialDeleteDialog({
                 no undo.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {pending || deletionStatus ? (
+              <div className="mt-5">
+                <MediaDeletionProgress
+                  progress={progress}
+                  status={deletionStatus ?? "requested"}
+                />
+              </div>
+            ) : null}
             <AlertDialogFooter className="mt-6">
               <AlertDialogCancel asChild>
                 <Button disabled={pending} variant="outline">
@@ -690,7 +755,10 @@ export function TestimonialDeleteDialog({
               <AlertDialogAction asChild>
                 <Button
                   loading={pending}
-                  onClick={onDelete}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onDelete();
+                  }}
                   variant="destructive"
                 >
                   Delete
@@ -923,6 +991,11 @@ export function TestimonialInbox({
     wallSettings,
   } = useInboxData(slug, importJobId, moderationStatus);
 
+  const bulkActions = useBulkInboxActions({
+    organizationId: organization?.id,
+    importJobId,
+    category: moderationStatus,
+  });
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -946,10 +1019,18 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
-  const removeText = useMutation(api.testimonialModeration.remove);
-  const removeVideo = useAction(api.videoMedia.remove);
+  const remove = useAction(api.videoMedia.remove);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
+  );
+  const removalStatus = useQuery(
+    api.videoMedia.getRemovalStatus,
+    organization && deleteTarget
+      ? {
+          organizationId: organization.id,
+          testimonialId: deleteTarget.testimonialId,
+        }
+      : "skip",
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1040,8 +1121,6 @@ export function TestimonialInbox({
       organizationId: activeOrganization.id,
       testimonialId: deleteTarget.testimonialId,
     };
-    const remove =
-      deleteTarget.submissionType === "video" ? removeVideo : removeText;
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
@@ -1195,7 +1274,11 @@ export function TestimonialInbox({
             showLabel
           />
         ) : (
-          <TestimonialInboxView
+          <BulkTestimonialInbox
+            key={`${organization.id}:${importJobId ?? ""}:${moderationStatus}`}
+            totalCount={counts?.[moderationStatus] ?? testimonials.length}
+            hasMore={paginationStatus !== "Exhausted"}
+            {...bulkActions}
             accentColor={wallSettings?.accentColor}
             actionsDisabled={pendingId !== null}
             category={moderationStatus}
@@ -1338,6 +1421,8 @@ export function TestimonialInbox({
       ) : null}
 
       <TestimonialDeleteDialog
+        progress={removalStatus?.mediaProgress}
+        deletionStatus={removalStatus?.status}
         onCloseAutoFocus={returnFocus}
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}

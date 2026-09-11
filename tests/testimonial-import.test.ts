@@ -994,7 +994,7 @@ it("persists a source preview for its Project owner and denies another owner", a
   });
   expect(JSON.stringify(wall.page)).not.toContain("importOrigin");
   expect(JSON.stringify(wall.page)).not.toContain("acceptedBy");
-  await owner.client.mutation(api.testimonialModeration.remove, {
+  await owner.client.action(api.videoMedia.remove, {
     organizationId: project.id,
     testimonialId,
   });

@@ -154,7 +154,7 @@ describe("text Submission collection", () => {
         )
         .first(),
     );
-    await owner.client.mutation(api.testimonialModeration.remove, {
+    await owner.client.action(api.videoMedia.remove, {
       organizationId: brand.id,
       testimonialId: first!._id,
     });

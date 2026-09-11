@@ -44,5 +44,7 @@
   "studio": "ok",
   "studio-templates": "ok",
   "studio-editor": "ok",
-  "studio-preview": "ok"
+  "studio-preview": "ok",
+  "testimonial-deletion-progress": "ok",
+  "account-deletion-progress": "ok"
 }

@@ -391,6 +391,13 @@ describe("Studio widgets", () => {
         updatedAt: now,
       });
     });
+    let inventoryComplete = false;
+    for (let i = 0; i < 20 && !inventoryComplete; i++)
+      inventoryComplete = await s.t.mutation(
+        internal.workspaceDeletionInventory.advance,
+        { deletionId },
+      );
+    expect(inventoryComplete).toBe(true);
     for (let i = 0; i < 10; i++)
       await s.t.mutation(internal.workspaceDeletion.purgeBatch, { deletionId });
     expect(await s.t.run((ctx) => ctx.db.get(s.widgetId))).toBeNull();

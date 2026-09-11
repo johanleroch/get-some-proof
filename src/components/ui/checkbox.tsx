@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconMinus } from "@tabler/icons-react";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -23,7 +23,11 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="animate-in zoom-in-50 grid place-items-center text-current duration-[var(--motion-base)] ease-[var(--ease-settle)]"
       >
-        <IconCheck aria-hidden="true" className="size-3.5" stroke={3} />
+        {props.checked === "indeterminate" ? (
+          <IconMinus aria-hidden="true" className="size-3.5" stroke={3} />
+        ) : (
+          <IconCheck aria-hidden="true" className="size-3.5" stroke={3} />
+        )}
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );

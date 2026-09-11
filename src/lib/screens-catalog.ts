@@ -300,7 +300,7 @@ export const screenSections: ScreenSection[] = [
         slug: "inbox",
         title: "Testimonial inbox",
         description:
-          "Pending first: one list of rows, each with its decision. Publish, Archive, preview a video, and reach the tools from the menu.",
+          "Pending first: row checkboxes and a contextual bulk toolbar. Select all, publish or archive a batch, and confirm permanent deletion.",
         fixturePath: "/visual-evidence/testimonial-inbox",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,
@@ -386,6 +386,20 @@ export const screenSections: ScreenSection[] = [
     id: "dialogs-feedback",
     title: "Dialogs and feedback",
     screens: [
+      {
+        slug: "testimonial-deletion-progress",
+        title: "Testimonial media cleanup",
+        description:
+          "Confirmed image and video cleanup before Testimonial deletion.",
+        fixturePath: "/visual-evidence/testimonial-deletion-progress",
+      },
+      {
+        slug: "account-deletion-progress",
+        title: "Account media cleanup",
+        description:
+          "Media cleanup across every Project before Account deletion.",
+        fixturePath: "/visual-evidence/account-deletion-progress",
+      },
       {
         slug: "testimonial-details",
         title: "Details shown on the Wall",

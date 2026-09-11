@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => {
     } as Record<string, ReturnType<typeof vi.fn>>,
     lists: {} as Record<string, unknown[]>,
     loadMore: vi.fn(),
+    query: vi.fn(),
     paginationStatus: "Exhausted",
     queries: {} as Record<string, unknown>,
     useAction: vi.fn(),
@@ -90,6 +91,7 @@ vi.mock("convex/react", async () => {
           },
   );
   return {
+    useConvex: () => ({ query: mocks.query }),
     useConvexConnectionState: () => ({ isWebSocketConnected: true }),
     useAction: mocks.useAction,
     useMutation: mocks.useMutation,
@@ -599,8 +601,8 @@ describe("TestimonialInbox (live wiring)", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it("Delete asks first, removes text by the mutation and video by the action", async () => {
-    const removeText = mocks.functions["testimonialModeration:remove"]!;
+  it("Delete asks first and uses the media cleanup action for text and video", async () => {
+    const removeText = mocks.functions["videoMedia:remove"]!;
     const removeVideo = mocks.functions["videoMedia:remove"]!;
     render(<TestimonialInbox slug="fernhill" />);
 
@@ -628,7 +630,7 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(successToast()).toHaveTextContent(
       "Testimonial permanently deleted.",
     );
-    expect(removeVideo).not.toHaveBeenCalled();
+    expect(removeVideo).toHaveBeenCalledTimes(1);
 
     await chooseMenuItem("Remy Jupille", "Delete permanently");
     fireEvent.click(
@@ -645,13 +647,13 @@ describe("TestimonialInbox (live wiring)", () => {
       }),
     );
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
-    expect(removeText).toHaveBeenCalledTimes(1);
-    // The action came from useAction, the mutation from useMutation.
+    expect(removeText).toHaveBeenCalledTimes(2);
+    // Both kinds use the action that confirms media cleanup first.
     expect(calledFunctions(mocks.useAction)).toContainEqual([
       "videoMedia:remove",
       undefined,
     ]);
-    expect(calledFunctions(mocks.useMutation)).toContainEqual([
+    expect(calledFunctions(mocks.useMutation)).not.toContainEqual([
       "testimonialModeration:remove",
       undefined,
     ]);
@@ -981,5 +983,70 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(
       screen.queryByRole("button", { name: /Move.*up/i }),
     ).not.toBeInTheDocument();
+  });
+  it("wires bulk status updates and resets selection when the tab or import changes", async () => {
+    const { rerender } = render(<TestimonialInbox slug="fernhill" />);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Archive" })[0]!);
+    await waitFor(() =>
+      expect(
+        mocks.functions["testimonialModeration:setStatus"],
+      ).toHaveBeenCalledWith({
+        organizationId,
+        testimonialId: alice.testimonialId,
+        status: "archived",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    goTo(/^Published/);
+    expect(screen.queryByText(/ selected$/)).toBeNull();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    rerender(
+      <TestimonialInbox slug="fernhill" importJobId="different-import" />,
+    );
+    expect(screen.queryByText(/ selected$/)).toBeNull();
+  });
+
+  it("select-all fetches pages from the exact import, project and tab scope", async () => {
+    mocks.paginationStatus = "CanLoadMore";
+    mocks.query.mockResolvedValueOnce({
+      page: [alice, remy],
+      isDone: true,
+      continueCursor: "",
+    });
+    render(<TestimonialInbox slug="fernhill" importJobId="job-june" />);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Select all .* testimonials in this tab/,
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.query).toHaveBeenCalledWith(expect.anything(), {
+        organizationId,
+        importJobId: "job-june",
+        status: "pending",
+        sort: "newest",
+        paginationOpts: { cursor: null, numItems: 20 },
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
+      ).toBeEnabled(),
+    );
   });
 });

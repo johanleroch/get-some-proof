@@ -11,6 +11,7 @@ import {
   IconTemplate,
 } from "@tabler/icons-react";
 
+import { MediaDeletionProgress } from "@/components/ui/media-deletion-progress";
 import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { blobToast } from "@/components/brand/blob-toast";
@@ -1039,6 +1040,26 @@ export function KitPage() {
             <MotionShowcase />
           </KitSection>
 
+          <KitSection
+            id="media-cleanup"
+            title="Media cleanup"
+            description="Confirmed image and video cleanup, shared by Testimonial, Project and Account deletion."
+          >
+            <div className="bg-surface max-w-md rounded-lg border p-5">
+              <MediaDeletionProgress
+                status="requested"
+                progress={{
+                  imagesTotal: 12,
+                  imagesDeleted: 8,
+                  videosTotal: 4,
+                  videosDeleted: 1,
+                  uploadsTotal: 0,
+                  uploadsDeleted: 0,
+                  inventoryComplete: true,
+                }}
+              />
+            </div>
+          </KitSection>
           <KitSection
             description="Toasts, skeletons and separators."
             id="feedback"

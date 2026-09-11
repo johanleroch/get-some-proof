@@ -1,5 +1,7 @@
 "use client";
 
+import { BulkTestimonialInbox } from "@/components/testimonials/bulk-testimonial-inbox";
+
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -32,7 +34,6 @@ import {
   InboxImportActions,
   InboxCategoryTabs,
   TestimonialDeleteDialog,
-  TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
 import { VideoPreviewDialog } from "@/components/testimonials/video-preview-dialog";
 import { WallDisplayDialog } from "@/components/testimonials/wall-display-dialog";
@@ -475,7 +476,16 @@ export function TestimonialInboxScreenFixture({
         moderationStatus={category}
         onModerationStatusChange={setCategory}
       >
-        <TestimonialInboxView
+        <BulkTestimonialInbox
+          key={category}
+          totalCount={lists[category].length}
+          hasMore={false}
+          loadPage={async () => ({
+            page: lists[category],
+            isDone: true,
+            continueCursor: "",
+          })}
+          perform={async () => {}}
           accentColor={collectionFormFixtureBrand.primaryColor}
           category={category}
           emptyAction={
@@ -683,7 +693,16 @@ export function WorkspaceDeletionProgressScreenFixture() {
       brandName="Fernhill Studio"
       lastError="Mux asset deletion failed (503)"
       onRetry={async () => undefined}
-      phase="providerCleanup"
+      phase="deleteMedia"
+      mediaProgress={{
+        imagesTotal: 12,
+        imagesDeleted: 12,
+        videosTotal: 4,
+        videosDeleted: 2,
+        uploadsTotal: 0,
+        uploadsDeleted: 0,
+        inventoryComplete: true,
+      }}
       status="failed"
     />
   );
@@ -865,5 +884,48 @@ export function ProjectSettingsShellFixture() {
     >
       <OrganizationSettingsScreenFixture />
     </AppShellView>
+  );
+}
+
+export function TestimonialDeletionProgressScreenFixture() {
+  return (
+    <>
+      <TestimonialInboxScreenFixture />
+      <TestimonialDeleteDialog
+        onDelete={() => undefined}
+        onOpenChange={() => undefined}
+        pending
+        target={videoTestimonialFixture}
+        deletionStatus="requested"
+        progress={{
+          imagesTotal: 2,
+          imagesDeleted: 2,
+          videosTotal: 3,
+          videosDeleted: 1,
+          uploadsTotal: 1,
+          uploadsDeleted: 0,
+          inventoryComplete: true,
+        }}
+      />
+    </>
+  );
+}
+export function AccountDeletionProgressScreenFixture() {
+  return (
+    <AccountDeletionSection
+      onDelete={async () => undefined}
+      status={{
+        status: "requested",
+        mediaProgress: {
+          imagesTotal: 32,
+          imagesDeleted: 24,
+          videosTotal: 8,
+          videosDeleted: 3,
+          uploadsTotal: 2,
+          uploadsDeleted: 1,
+          inventoryComplete: true,
+        },
+      }}
+    />
   );
 }

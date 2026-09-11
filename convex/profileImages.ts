@@ -1,14 +1,28 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
-import { mutation } from "./_generated/server";
+import { mutation, type MutationCtx } from "./_generated/server";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
 import { requireVerifiedPrincipal } from "./security/principal";
+
+async function requireOpenAccount(ctx: MutationCtx) {
+  const principal = await requireVerifiedPrincipal(ctx);
+  const account = await ctx.db
+    .query("accounts")
+    .withIndex("by_owner", (q) => q.eq("ownerUserId", principal.actorId))
+    .unique();
+  if (account?.deletionStartedAt !== undefined)
+    throw new ConvexError({
+      code: "ACCOUNT_UNAVAILABLE",
+      message: "Account unavailable.",
+    });
+  return principal;
+}
 
 export const generateAvatarUploadUrl = mutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
-    await requireVerifiedPrincipal(ctx);
+    await requireOpenAccount(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -17,7 +31,7 @@ export const setMyAvatar = mutation({
   args: { storageId: v.id("_storage") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const principal = await requireVerifiedPrincipal(ctx);
+    const principal = await requireOpenAccount(ctx);
     await validateExclusiveStoredImage(ctx, args.storageId, {
       kind: "user",
       userId: principal.actorId,
@@ -52,7 +66,7 @@ export const removeMyAvatar = mutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const principal = await requireVerifiedPrincipal(ctx);
+    const principal = await requireOpenAccount(ctx);
     const profile = await ctx.db
       .query("userProfiles")
       .withIndex("by_user_id", (index) => index.eq("userId", principal.actorId))
