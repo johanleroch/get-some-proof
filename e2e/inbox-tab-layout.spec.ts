@@ -33,6 +33,29 @@ test("Inbox tabs keep the full phone width without losing width to the sync indi
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.available);
 });
 
+test("Inbox tabs still fit when the UI font falls back", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/visual-evidence/testimonial-inbox");
+  await page.addStyleTag({
+    content: "html, body { --font-figtree: system-ui !important; }",
+  });
+  const tabs = page.getByRole("tablist", { name: "Testimonial categories" });
+  await expect(tabs).toBeVisible();
+  await expect
+    .poll(() =>
+      tabs
+        .getByRole("tab")
+        .first()
+        .evaluate((tab) => getComputedStyle(tab).fontFamily),
+    )
+    .toMatch(/^system-ui/);
+  const dimensions = await tabs.evaluate((element) => ({
+    content: element.scrollWidth,
+    available: element.clientWidth,
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.available);
+});
+
 test("Inbox tabs keep the same geometry while their counts load", async ({
   page,
 }) => {

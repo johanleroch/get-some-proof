@@ -53,7 +53,7 @@ export function InboxCategoryTabs({
             const count = counts?.[category.key] ?? 0;
             return (
               <TabsTrigger
-                className="gap-0 sm:gap-1.5"
+                className="type-ui! gap-0 px-0 sm:gap-1.5 sm:px-0.5"
                 key={category.key}
                 value={category.key}
               >
