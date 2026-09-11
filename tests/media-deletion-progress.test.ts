@@ -173,8 +173,10 @@ describe("confirmed media deletion progress", () => {
     await t.run((ctx) => ctx.db.patch(deletionId, { phase: "organization" }));
     await expect(
       t.mutation(internal.workspaceDeletion.purgeBatch, { deletionId }),
-    ).rejects.toThrow("Media cleanup is not complete");
-    await t.run((ctx) => ctx.db.patch(deletionId, { phase: "deleteMedia" }));
+    ).resolves.toBe(false);
+    expect((await t.run((ctx) => ctx.db.get(deletionId)))?.phase).toBe(
+      "deleteMedia",
+    );
     for (let step = 0; step < 100; step++) {
       await t.action(internal.workspaceDeletion.processDeletion, {
         deletionId,

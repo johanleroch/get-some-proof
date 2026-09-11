@@ -449,7 +449,16 @@ async function deletePhaseBatch(
   if (phaseIndex === -1) deletionUnavailable();
   const phase = purgePhases[phaseIndex] ?? "organization";
   const organizationId = deletion.organizationId;
-  await assertMediaDeleted(ctx, deletion._id);
+  const pendingTarget = await ctx.db
+    .query("deletionMediaTargets")
+    .withIndex("by_deletion_pending", (q) =>
+      q.eq("deletionId", deletionId).eq("deletedAt", undefined),
+    )
+    .first();
+  if (pendingTarget) {
+    await ctx.db.patch(deletionId, { phase: "deleteMedia" });
+    return false;
+  }
   const unresolved = await ctx.db
     .query("videoImportCleanupIntents")
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
@@ -466,6 +475,7 @@ async function deletePhaseBatch(
     await ctx.db.patch(deletionId, { phase: "providerCleanup" });
     return false;
   }
+  await assertMediaDeleted(ctx, deletion._id);
   let records: Array<{
     _id: Id<TableNames>;
     [key: string]: unknown;

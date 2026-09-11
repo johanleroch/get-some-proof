@@ -419,4 +419,34 @@ it("keeps Project testimonials while an imported copy is unresolved", async () =
   expect((await t.run((ctx) => ctx.db.get(deletionId)))?.status).toBe("failed");
   expect(await t.run((ctx) => ctx.db.get(testimonialId))).not.toBeNull();
   expect(await t.run((ctx) => ctx.db.get(project.id))).not.toBeNull();
+  // Reconciliation can discover the asset after the workflow reached record purge.
+  const intent = await t.run((ctx) =>
+    ctx.db.query("videoImportCleanupIntents").first(),
+  );
+  await t.run((ctx) => ctx.db.patch(intent!._id, { probe: 1 }));
+  await t.mutation(internal.videoImportCleanup.finishProbe, {
+    intentId: intent!._id,
+    probe: 1,
+    matches: [
+      { id: "late-project-copy", passthrough: String(intent!.reservationId) },
+    ],
+    nextCursor: null,
+    failed: false,
+  });
+  const cleanup = await t.run((ctx) =>
+    ctx.db.query("videoProviderCleanupJobs").first(),
+  );
+  await t.action(internal.videoMedia.processProviderCleanup, {
+    cleanupJobId: cleanup!._id,
+  });
+  for (let step = 0; step < 100; step++) {
+    await t.action(internal.workspaceDeletion.processDeletion, { deletionId });
+    if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "deleted")
+      break;
+  }
+  expect((await t.run((ctx) => ctx.db.get(deletionId)))?.status).toBe(
+    "deleted",
+  );
+  expect(await t.run((ctx) => ctx.db.get(project.id))).toBeNull();
+  expect(await t.run((ctx) => ctx.db.get(testimonialId))).toBeNull();
 });
