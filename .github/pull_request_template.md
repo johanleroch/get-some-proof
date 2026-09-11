@@ -18,5 +18,8 @@ Closes #
 
 ## Visual evidence
 
+<!-- Replace `none` with comma-separated slugs from visual-evidence.config.json. Use `all` only for an explicitly requested full visual audit. -->
+<!-- visual-evidence-screens: none -->
+
 - [ ] Not applicable: no user-visible behavior changed
 - [ ] Automatic desktop and mobile captures are published in the `Visual evidence` comment for the current commit

@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 import { installRecorderCamera } from "./helpers/recorder-camera";
+import { resolveVisualEvidenceSlugs } from "../scripts/visual-evidence/select.mjs";
 
 type VisualEvidenceConfig = {
   project: string;
@@ -25,7 +26,15 @@ const config = JSON.parse(
   ),
 ) as VisualEvidenceConfig;
 
-for (const screen of config.screens) {
+const requestedSlugs = process.env.VISUAL_EVIDENCE_SLUGS;
+const selectedSlugs = new Set(
+  requestedSlugs ? resolveVisualEvidenceSlugs(requestedSlugs, config) : [],
+);
+const selectedScreens = config.screens.filter((screen) =>
+  selectedSlugs.has(screen.slug),
+);
+
+for (const screen of selectedScreens) {
   test(`captures ${screen.title}`, async ({ page }, testInfo) => {
     const fixtureMode = process.env.VISUAL_EVIDENCE_FIXTURES === "true";
     test.skip(
