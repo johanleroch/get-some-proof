@@ -273,14 +273,18 @@ test.describe("keyboard", () => {
       "a: Open Public Wall",
       "tab: Pending 3",
       "tabpanel: Pending 3",
+      "checkbox: Select displayed testimonials",
+      "checkbox: Select Nora Lewis's testimonial",
       // Nora Lewis: video processing, so Publish is disabled and skipped.
       "button: Archive",
       "button: More actions for Nora Lewis's Testimonial",
       // Alice Martin: text.
+      "checkbox: Select Alice Martin's testimonial",
       "button: Publish",
       "button: Archive",
       "button: More actions for Alice Martin's Testimonial",
-      // Remy Jupille: Ready video, the still comes first.
+      // Remy Jupille: selection, then the Ready video still.
+      "checkbox: Select Remy Jupille's testimonial",
       "button: Preview Remy Jupille's video",
       "button: Publish",
       "button: Archive",
@@ -315,10 +319,13 @@ test.describe("keyboard", () => {
       "a: Open Public Wall",
       "tab: Published 2",
       "tabpanel: Published 2",
+      "checkbox: Select displayed testimonials",
+      "checkbox: Select Remy Jupille's testimonial",
       "button: Preview Remy Jupille's video",
       "button: Move Remy Jupille down",
       "button: Unpublish",
       "button: More actions for Remy Jupille's Testimonial",
+      "checkbox: Select Alice Martin's testimonial",
       "button: Move Alice Martin up",
       "button: Unpublish",
       "button: More actions for Alice Martin's Testimonial",
@@ -342,6 +349,8 @@ test.describe("keyboard", () => {
       "a: Open Public Wall",
       "tab: Spam 1",
       "tabpanel: Spam 1",
+      "checkbox: Select displayed testimonials",
+      "checkbox: Select Suspicious Submission's testimonial",
       "button: Not Spam",
       "button: More actions for Suspicious Submission's Testimonial",
     ]);
@@ -813,6 +822,10 @@ test.describe("keyboard", () => {
       })
       .focus();
     await navigationTab(page);
+    await expect(
+      page.getByRole("checkbox", { name: "Select Remy Jupille's testimonial" }),
+    ).toBeFocused();
+    await navigationTab(page);
     const still = page.getByRole("button", {
       name: "Preview Remy Jupille's video",
     });
@@ -926,6 +939,11 @@ test.describe("keyboard", () => {
       .evaluateAll(
         (elements, floor) =>
           elements
+            .map((element) =>
+              element.getAttribute("role") === "checkbox"
+                ? element.closest("label")!
+                : element,
+            )
             .map((element) => ({
               height: element.getBoundingClientRect().height,
               name:

@@ -1,3 +1,4 @@
+import { finishSpamQuarantineForDeletion } from "./testimonialDeletion";
 import { removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 
@@ -203,7 +204,6 @@ export const prepareRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     const asset = await ctx.db
       .query("videoAssets")
       .withIndex("by_testimonial", (index) =>
@@ -211,6 +211,7 @@ export const prepareRemoval = internalMutation({
       )
       .unique();
     if (!asset) testimonialUnavailable();
+    await finishSpamQuarantineForDeletion(ctx, testimonial);
 
     const [cleanupJobs, projection, retryLink, activeRevision] =
       await Promise.all([
