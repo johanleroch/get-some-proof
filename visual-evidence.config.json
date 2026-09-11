@@ -647,6 +647,20 @@
       "heading": "Inbox",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "recorder-landscape",
+      "title": "Recorder landscape source",
+      "path": "/visual-evidence/collection-form",
+      "heading": "Share your Fernhill Studio story",
+      "theme": "light"
+    },
+    {
+      "slug": "recorder-portrait",
+      "title": "Recorder portrait source",
+      "path": "/visual-evidence/collection-form",
+      "heading": "Share your Fernhill Studio story",
+      "theme": "light"
     }
   ]
 }
