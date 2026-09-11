@@ -428,6 +428,7 @@ export function WidgetEditor(
         candidates={props.candidates}
         hasMore={props.hasMore}
         loadingMore={props.loadingMore}
+        loadingCandidates={props.loadingCandidates}
         onLoadMore={props.onLoadMore}
         inboxHref={props.inboxHref}
         onChange={(testimonialIds) => {

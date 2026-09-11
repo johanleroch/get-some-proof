@@ -1,5 +1,5 @@
-import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import { OverviewRouteLoading } from "@/components/organizations/overview-route-loading";
 
 export default function Loading() {
-  return <OverviewPageSkeleton />;
+  return <OverviewRouteLoading />;
 }

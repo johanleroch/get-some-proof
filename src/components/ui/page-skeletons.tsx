@@ -1,3 +1,14 @@
+import {
+  IconArrowLeft,
+  IconCode,
+  IconCopy,
+  IconExternalLink,
+  IconPlus,
+} from "@tabler/icons-react";
+
+import { WallFrames } from "@/components/doodles";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -98,36 +109,286 @@ function DirectoryLoadingSkeleton() {
   );
 }
 
-function OverviewPageSkeleton() {
+function OverviewContentSkeleton() {
   return (
     <div
-      aria-label="Loading Organization overview"
-      className="space-y-6"
+      aria-label="Loading Overview content"
+      className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)] lg:items-start"
       role="status"
     >
-      <PageHeaderSkeleton action />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div className="dashboard-panel space-y-5 p-5" key={index}>
-            <div className="flex justify-between gap-4">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="size-4" />
+      <section aria-label="Brand overview" className="space-y-6">
+        <div className="border-line bg-surface rounded-xl border p-6 sm:p-8">
+          <p className="type-micro text-ink-2">Your Collection Form</p>
+          <Skeleton className="mt-2 h-7 w-[min(34rem,85%)]" />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button disabled type="button">
+              <IconCopy aria-hidden="true" />
+              Copy link
+            </Button>
+            <Button disabled type="button" variant="outline">
+              Open Collection Form
+              <IconExternalLink aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+
+        <section
+          aria-label="Public Wall"
+          className="border-line bg-surface grid gap-6 rounded-lg border p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-8"
+        >
+          <WallFrames
+            aria-hidden="true"
+            className="text-ink mx-auto h-28 lg:h-32"
+          />
+          <div className="min-w-0">
+            <p className="type-micro text-ink-2">Your Public Wall</p>
+            <h2 className="type-heading mt-1">
+              Only what you publish reaches it
+            </h2>
+            <Skeleton className="mt-2 h-6 w-[min(30rem,80%)]" />
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button disabled type="button" variant="outline">
+                Open Wall
+                <IconExternalLink aria-hidden="true" />
+              </Button>
+              <Button disabled type="button" variant="ghost">
+                Embed on your site
+                <IconCode aria-hidden="true" />
+              </Button>
             </div>
-            <Skeleton className="h-9 w-20" />
+          </div>
+        </section>
+      </section>
+
+      <AccountPlanSkeleton announce={false} />
+      <span className="sr-only">Loading Overview content</span>
+    </div>
+  );
+}
+
+function AccountPlanSkeleton({ announce = true }: { announce?: boolean }) {
+  return (
+    <section
+      aria-label={announce ? "Loading Account plan and usage" : undefined}
+      className="border-line bg-surface space-y-4 rounded-lg border p-5 lg:sticky lg:top-6"
+      role={announce ? "status" : undefined}
+    >
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-6 w-28" />
+      <Skeleton className="h-4 w-44 max-w-full" />
+      <div className="space-y-4 pt-1">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div className="space-y-2" key={index}>
+            <div className="flex justify-between gap-4">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-9 w-full" />
+      {announce ? (
+        <span className="sr-only">Loading Account plan and usage</span>
+      ) : null}
+    </section>
+  );
+}
+
+function OverviewPageSkeleton({ name }: { name?: string }) {
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        description="Share your Collection Form, read what comes in, publish what you choose."
+        eyebrow="Overview"
+        title={
+          name ?? (
+            <span
+              aria-label="Loading Brand name"
+              className="dashboard-skeleton inline-block h-9 w-40 rounded-md align-middle"
+            />
+          )
+        }
+      />
+      <OverviewContentSkeleton />
+    </div>
+  );
+}
+
+function InboxListSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <section
+      aria-label="Loading testimonials"
+      className="border-line bg-surface overflow-hidden rounded-lg border"
+      role="status"
+    >
+      <div className="divide-line divide-y">
+        {Array.from({ length: rows }).map((_, index) => (
+          <div
+            className="grid min-h-28 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-4 sm:p-5"
+            key={index}
+          >
+            <Skeleton className="size-14 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-36 max-w-full" />
+              <Skeleton className="h-3 w-[min(28rem,85%)]" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="size-9" />
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Loading testimonials</span>
+    </section>
+  );
+}
+
+function InboxPageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        actions={
+          <>
+            <Button disabled type="button">
+              Import testimonials
+            </Button>
+            <Button disabled type="button" variant="outline">
+              Open Public Wall
+              <IconExternalLink aria-hidden="true" />
+            </Button>
+          </>
+        }
+        description="Review private Submissions and choose what becomes public."
+        eyebrow="Workspace"
+        title="Inbox"
+      />
+      <div
+        className="flex gap-7 overflow-hidden border-b"
+        role="tablist"
+        aria-label="Testimonial categories"
+      >
+        {["Pending", "Published", "Archived", "Spam"].map((label) => (
+          <div
+            className="flex h-10 shrink-0 items-center gap-2"
+            key={label}
+            role="tab"
+            aria-selected={label === "Pending"}
+          >
+            <span className="type-ui font-semibold">{label}</span>
+            <Skeleton aria-hidden="true" className="h-3 w-4" />
+          </div>
+        ))}
+      </div>
+      <InboxListSkeleton />
+    </div>
+  );
+}
+
+function StudioWidgetListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <section
+      aria-label="Loading widgets"
+      className="border-line bg-surface divide-line divide-y rounded-lg border"
+      role="status"
+    >
+      {Array.from({ length: rows }).map((_, index) => (
+        <div
+          className="flex min-h-20 items-center gap-3 p-4 sm:p-5"
+          key={index}
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-44 max-w-full" />
             <Skeleton className="h-3 w-32" />
           </div>
-        ))}
+          <Skeleton className="h-6 w-20 rounded-md" />
+          <Skeleton className="size-9" />
+        </div>
+      ))}
+      <span className="sr-only">Loading widgets</span>
+    </section>
+  );
+}
+
+function StudioPageSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
+      <PageHeader
+        actions={
+          <Button disabled type="button">
+            <IconPlus aria-hidden="true" className="size-4" />
+            Create widget
+          </Button>
+        }
+        description="Your best proof, ready for every page."
+        title="Studio"
+      />
+      <StudioWidgetListSkeleton />
+    </div>
+  );
+}
+
+function StudioEditorSkeleton() {
+  return (
+    <div
+      aria-label="Opening widget"
+      className="mx-auto w-full max-w-7xl p-5 sm:p-8"
+      role="status"
+    >
+      <header className="border-line mb-6 space-y-4 border-b pb-5">
+        <div className="flex items-center gap-3">
+          <Button
+            aria-label="Back to Studio"
+            disabled
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <IconArrowLeft aria-hidden="true" className="size-5" />
+          </Button>
+          <Skeleton className="h-9 max-w-80 min-w-0 flex-1" />
+          <Skeleton className="h-6 w-20 rounded-md" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+      </header>
+      <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="space-y-5">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div className="space-y-2" key={index}>
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="min-h-[32rem] w-full" />
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, index) => (
-          <div className="dashboard-panel space-y-5 p-6" key={index}>
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-56 w-full" />
+      <span className="sr-only">Opening widget</span>
+    </div>
+  );
+}
+
+function StudioCandidateListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div
+      aria-label="Loading published testimonials"
+      className="border-line divide-line divide-y overflow-hidden rounded-lg border"
+      role="status"
+    >
+      {Array.from({ length: rows }).map((_, index) => (
+        <div
+          className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 p-4"
+          key={index}
+        >
+          <Skeleton className="size-14 rounded-lg" />
+          <div className="space-y-2 self-center">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-[min(24rem,80%)]" />
           </div>
-        ))}
-      </div>
-      <span className="sr-only">Loading Organization overview</span>
+        </div>
+      ))}
+      <span className="sr-only">Loading published testimonials</span>
     </div>
   );
 }
@@ -203,12 +464,20 @@ function AuditListSkeleton() {
 }
 
 export {
+  AccountPlanSkeleton,
   AuditListSkeleton,
   AuditPageSkeleton,
   DirectoryLoadingSkeleton,
   InvitationsLoadingSkeleton,
+  InboxListSkeleton,
+  InboxPageSkeleton,
   MembersPageSkeleton,
+  OverviewContentSkeleton,
   OverviewPageSkeleton,
   PageHeaderSkeleton,
   ProjectsPageSkeleton,
+  StudioCandidateListSkeleton,
+  StudioEditorSkeleton,
+  StudioPageSkeleton,
+  StudioWidgetListSkeleton,
 };

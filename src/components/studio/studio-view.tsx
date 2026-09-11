@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
+  StudioEditorSkeleton,
+  StudioWidgetListSkeleton,
+} from "@/components/ui/page-skeletons";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -50,6 +54,8 @@ export type StudioViewProps = {
   candidates: StudioCandidate[];
   hasMore: boolean;
   loadingMore: boolean;
+  loading?: boolean;
+  loadingCandidates?: boolean;
   onLoadMore: () => void;
   onCreate: (name: string, config: WidgetConfig) => Promise<string>;
   onSave: (
@@ -168,6 +174,7 @@ export function StudioView(props: StudioViewProps) {
     return (
       <WidgetEditor key={props.active._id} {...props} widget={props.active} />
     );
+  if (props.loadingActive) return <StudioEditorSkeleton />;
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
       <PageHeader
@@ -196,14 +203,12 @@ export function StudioView(props: StudioViewProps) {
           {error}
         </p>
       ) : null}
-      {props.loadingActive ? (
-        <p role="status">Opening widget…</p>
-      ) : choosing ? (
+      {choosing ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {widgetTemplates.map((template) => (
             <button
               key={template.layout}
-              disabled={busy}
+              disabled={busy || props.loading}
               className="border-line bg-surface hover:border-line-2 focus-visible:ring-brand-ring overflow-hidden rounded-lg border text-left transition-colors focus-visible:ring-3 disabled:opacity-50"
               onClick={() => void performAction(template)}
             >
@@ -215,6 +220,8 @@ export function StudioView(props: StudioViewProps) {
             </button>
           ))}
         </div>
+      ) : props.loading ? (
+        <StudioWidgetListSkeleton />
       ) : props.widgets.length ? (
         <div className="border-line bg-surface divide-line divide-y rounded-lg border">
           {props.widgets.map((widget) => (

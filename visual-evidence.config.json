@@ -140,6 +140,13 @@
       "requiresAuth": true
     },
     {
+      "slug": "overview-loading",
+      "title": "Overview loading shell",
+      "path": "/visual-evidence/overview-loading",
+      "heading": "Atrakt",
+      "theme": "light"
+    },
+    {
       "slug": "workspace-billing",
       "title": "Workspace Billing",
       "path": "/org/:organizationSlug/billing",
@@ -273,6 +280,13 @@
       "heading": "Inbox",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "inbox-loading",
+      "title": "Inbox loading shell",
+      "path": "/visual-evidence/inbox-loading",
+      "heading": "Inbox",
+      "theme": "light"
     },
     {
       "slug": "testimonial-inbox-player",
@@ -678,6 +692,13 @@
       "heading": "Deleting Remy Jupille's Testimonial",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "studio-loading",
+      "title": "Studio loading shell",
+      "path": "/visual-evidence/studio-loading",
+      "heading": "Studio",
+      "theme": "light"
     },
     {
       "slug": "account-deletion-progress",

@@ -3,13 +3,25 @@ import { useState } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { BlobLoader } from "@/components/brand/blob-loader";
+import { defaultPrimaryColor } from "@convex/domain/brand";
+import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { getPublicEnvironment } from "@/lib/env/public-env";
 import { StudioView } from "./studio-view";
 
 export function Studio({ slug }: { slug: string }) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const organization = useQuery(api.organizations.getBySlug, { slug });
+  const projectShell = useProjectShell();
+  const shellProject = projectShell?.slug === slug ? projectShell : null;
+  const queriedOrganization = useQuery(
+    api.organizations.getBySlug,
+    shellProject ? "skip" : { slug },
+  );
+  const organization = shellProject
+    ? {
+        id: shellProject.organizationId,
+        name: shellProject.brandName,
+      }
+    : queriedOrganization;
   const scope = organization ? { organizationId: organization.id } : null;
   const widgets = useQuery(api.widgets.list, scope ?? "skip");
   const active = useQuery(
@@ -30,12 +42,11 @@ export function Studio({ slug }: { slug: string }) {
   const remove = useMutation(api.widgets.remove);
   const env = getPublicEnvironment();
   if (organization === null) return <p className="p-8">Project unavailable.</p>;
-  if (!organization || !scope || !widgets || !settings)
-    return (
-      <div className="grid min-h-80 place-items-center">
-        <BlobLoader />
-      </div>
-    );
+  const loading =
+    organization === undefined ||
+    scope === null ||
+    widgets === undefined ||
+    settings === undefined;
   const candidates = [
     ...new Map(
       [...results, ...(active?.draftTestimonials ?? [])].map((item) => [
@@ -46,12 +57,14 @@ export function Studio({ slug }: { slug: string }) {
   ];
   return (
     <StudioView
-      brandName={organization.name}
-      accentColor={settings.accentColor}
-      attributionRequired={!settings.canHideAttribution}
-      widgets={widgets}
+      brandName={organization?.name ?? ""}
+      accentColor={settings?.accentColor ?? defaultPrimaryColor}
+      attributionRequired={settings ? !settings.canHideAttribution : true}
+      widgets={widgets ?? []}
       active={active ?? null}
       loadingActive={!!activeId && !active}
+      loading={loading}
+      loadingCandidates={status === "LoadingFirstPage"}
       candidates={candidates}
       hasMore={status === "CanLoadMore"}
       loadingMore={status === "LoadingMore"}
@@ -59,8 +72,12 @@ export function Studio({ slug }: { slug: string }) {
       onOpen={setActiveId}
       origin={env.configured ? env.siteUrl.replace(/\/$/, "") : ""}
       inboxHref={`/org/${slug}/inbox`}
-      onCreate={(name, config) => create({ ...scope, name, config })}
+      onCreate={(name, config) => {
+        if (!scope) throw new Error("Studio is still loading.");
+        return create({ ...scope, name, config });
+      }}
       onSave={async (id, draft, expectedRevision, shouldPublish) => {
+        if (!scope) throw new Error("Studio is still loading.");
         await save({
           ...scope,
           widgetId: id as Id<"widgets">,
@@ -71,9 +88,11 @@ export function Studio({ slug }: { slug: string }) {
         });
       }}
       onUnpublish={async (id) => {
+        if (!scope) throw new Error("Studio is still loading.");
         return await unpublish({ ...scope, widgetId: id as Id<"widgets"> });
       }}
       onRemove={async (id) => {
+        if (!scope) throw new Error("Studio is still loading.");
         await remove({ ...scope, widgetId: id as Id<"widgets"> });
       }}
     />

@@ -14,6 +14,7 @@
   "dashboard": "todo",
   "forgot-password": "ok",
   "inbox": "ok",
+  "inbox-loading": "ok",
   "mcp-setup": "ok",
   "mcp-setup-free": "ok",
   "onboarding": "ok",
@@ -42,11 +43,13 @@
   "assistant-import-consent": "ok",
   "assistant-import-consent-free": "ok",
   "studio": "ok",
+  "studio-loading": "ok",
   "studio-templates": "ok",
   "studio-editor": "ok",
   "studio-preview": "ok",
   "testimonial-deletion-progress": "ok",
   "account-deletion-progress": "ok",
   "testimonial-links": "ok",
-  "testimonial-sources": "ok"
+  "testimonial-sources": "ok",
+  "overview-loading": "ok"
 }

@@ -65,8 +65,13 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { cn } from "@/lib/utils";
-import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import {
+  InboxListSkeleton,
+  InboxPageSkeleton,
+} from "@/components/ui/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -806,7 +811,9 @@ export function InboxCategoryTabs({
             return (
               <TabsTrigger key={category.key} value={category.key}>
                 {category.label}{" "}
-                {count > 0 ? (
+                {counts === undefined ? (
+                  <Skeleton aria-hidden="true" className="h-3 w-4" />
+                ) : count > 0 ? (
                   // Inherits the tab's colour so an inactive count keeps AA
                   // contrast; weight alone separates it from the label.
                   <span className="font-medium tabular-nums">
@@ -935,8 +942,18 @@ function useInboxData(
   slug: string,
   importJobId: string | undefined,
   moderationStatus: InboxCategory,
+  shellProject: ReturnType<typeof useProjectShell>,
 ) {
-  const organization = useQuery(api.organizations.getBySlug, { slug });
+  const queriedOrganization = useQuery(
+    api.organizations.getBySlug,
+    shellProject ? "skip" : { slug },
+  );
+  const organization = shellProject
+    ? {
+        id: shellProject.organizationId,
+        publicSlug: shellProject.publicSlug,
+      }
+    : queriedOrganization;
 
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
@@ -974,6 +991,8 @@ export function TestimonialInbox({
   slug: string;
   importJobId?: string;
 }) {
+  const projectShell = useProjectShell();
+  const shellProject = projectShell?.slug === slug ? projectShell : null;
   const searchParams = useSearchParams();
   const moderationStatus = inboxCategoryFromUrl(searchParams);
   const {
@@ -983,7 +1002,7 @@ export function TestimonialInbox({
     testimonials,
     paginationStatus,
     wallSettings,
-  } = useInboxData(slug, importJobId, moderationStatus);
+  } = useInboxData(slug, importJobId, moderationStatus, shellProject);
 
   const bulkActions = useBulkInboxActions({
     organizationId: organization?.id,
@@ -1063,7 +1082,7 @@ export function TestimonialInbox({
   }
 
   if (organization === undefined) {
-    return <OverviewPageSkeleton />;
+    return <InboxPageSkeleton />;
   }
   if (organization === null) {
     // Checked before the list's own loading state: with no Brand the list
@@ -1261,11 +1280,7 @@ export function TestimonialInbox({
         }
       >
         {paginationStatus === "LoadingFirstPage" ? (
-          <BlobLoader
-            className="bg-surface border-line min-h-96 rounded-lg border"
-            label="Loading testimonials"
-            showLabel
-          />
+          <InboxListSkeleton />
         ) : (
           <BulkTestimonialInbox
             key={`${organization.id}:${importJobId ?? ""}:${moderationStatus}`}
