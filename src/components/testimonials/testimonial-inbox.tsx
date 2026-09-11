@@ -914,7 +914,7 @@ async function runInboxAction({
   }
 }
 
-function inboxCategoryFromUrl(searchParams: {
+export function inboxCategoryFromUrl(searchParams: {
   getAll: (name: string) => string[];
 }): InboxCategory {
   const requestedCategory = searchParams.getAll("tab");
@@ -927,7 +927,7 @@ function inboxCategoryFromUrl(searchParams: {
   );
 }
 
-function setModerationStatusFilter(category: InboxCategory) {
+export function setModerationStatusFilter(category: InboxCategory) {
   const url = new URL(window.location.href);
   if (
     url.searchParams.getAll("tab").length === 1 &&

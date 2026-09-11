@@ -46,13 +46,14 @@ function ReviewQueue({
   inboxPath: Route;
   pendingCount: number;
 }) {
+  const displayedCount = pendingCount > 500 ? "500+" : pendingCount;
   return (
     <Link
       className="border-line bg-surface hover:bg-surface-2 focus-visible:ring-ring group flex items-center gap-5 rounded-lg border p-5 transition-colors duration-150 outline-none focus-visible:ring-[3px]"
       href={inboxPath}
     >
       <span className="type-kpi text-ink shrink-0 tabular-nums">
-        {pendingCount}
+        {displayedCount}
       </span>
       <span className="min-w-0 flex-1">
         <span className="type-subheading block">
@@ -333,19 +334,12 @@ export function BrandDashboardView({
                 <IconCopy aria-hidden="true" />
                 Copy link
               </Button>
-              {addressesLoading ? (
-                <Button disabled type="button" variant="outline">
+              <Button asChild variant="outline">
+                <Link href={collectionPath} target="_blank">
                   Open Collection Form
                   <IconExternalLink aria-hidden="true" />
-                </Button>
-              ) : (
-                <Button asChild variant="outline">
-                  <Link href={collectionPath} target="_blank">
-                    Open Collection Form
-                    <IconExternalLink aria-hidden="true" />
-                  </Link>
-                </Button>
-              )}
+                </Link>
+              </Button>
               {/* On the buttons' row, 24px to their right, its arrow climbing
                   back to the address. The stroke is out of flow, so the note
                   adds no height and opens no gap; shown in both states so the
@@ -386,33 +380,18 @@ export function BrandDashboardView({
                 <Skeleton className="mt-2 h-6 w-[min(30rem,80%)]" />
               )}
               <div className="mt-5 flex flex-wrap gap-2">
-                {addressesLoading ? (
-                  <>
-                    <Button disabled type="button" variant="outline">
-                      Open Wall
-                      <IconExternalLink aria-hidden="true" />
-                    </Button>
-                    <Button disabled type="button" variant="ghost">
-                      Embed on your site
-                      <IconCode aria-hidden="true" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button asChild variant="outline">
-                      <Link href={wallPath} target="_blank">
-                        Open Wall
-                        <IconExternalLink aria-hidden="true" />
-                      </Link>
-                    </Button>
-                    <Button asChild variant="ghost">
-                      <Link href={embedPath}>
-                        Embed on your site
-                        <IconCode aria-hidden="true" />
-                      </Link>
-                    </Button>
-                  </>
-                )}
+                <Button asChild variant="outline">
+                  <Link href={wallPath} target="_blank">
+                    Open Wall
+                    <IconExternalLink aria-hidden="true" />
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href={embedPath}>
+                    Embed on your site
+                    <IconCode aria-hidden="true" />
+                  </Link>
+                </Button>
               </div>
             </div>
           </section>

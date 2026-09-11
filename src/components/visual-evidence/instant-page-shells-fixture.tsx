@@ -2,17 +2,17 @@ import type { ReactNode } from "react";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { AppShellView } from "@/components/app-shell";
-import {
-  InboxPageSkeleton,
-  OverviewPageSkeleton,
-  StudioPageSkeleton,
-} from "@/components/ui/page-skeletons";
+import { OverviewRouteLoading } from "@/components/organizations/overview-route-loading";
+import { StudioRouteLoading } from "@/components/studio/studio-route-loading";
+import { InboxRouteLoading } from "@/components/testimonials/inbox-route-loading";
 
 function LoadingPageShell({
   children,
+  inboxCount,
   pathname,
 }: {
   children: ReactNode;
+  inboxCount?: number;
   pathname: string;
 }) {
   return (
@@ -25,7 +25,7 @@ function LoadingPageShell({
         can: { manageOwnership: true, updateOrganization: true },
       }}
       connected
-      inboxCount={undefined}
+      inboxCount={inboxCount}
       organizationId={"fixture-atrakt" as Id<"organizations">}
       organizationName="Atrakt"
       organizationPublicSlug="atrakt"
@@ -45,8 +45,8 @@ function LoadingPageShell({
 
 export function OverviewLoadingFixture() {
   return (
-    <LoadingPageShell pathname="/org/atrakt/dashboard">
-      <OverviewPageSkeleton name="Atrakt" />
+    <LoadingPageShell inboxCount={3} pathname="/org/atrakt/dashboard">
+      <OverviewRouteLoading />
     </LoadingPageShell>
   );
 }
@@ -54,7 +54,7 @@ export function OverviewLoadingFixture() {
 export function InboxLoadingFixture() {
   return (
     <LoadingPageShell pathname="/org/atrakt/inbox">
-      <InboxPageSkeleton />
+      <InboxRouteLoading />
     </LoadingPageShell>
   );
 }
@@ -62,7 +62,7 @@ export function InboxLoadingFixture() {
 export function StudioLoadingFixture() {
   return (
     <LoadingPageShell pathname="/org/atrakt/studio">
-      <StudioPageSkeleton />
+      <StudioRouteLoading />
     </LoadingPageShell>
   );
 }

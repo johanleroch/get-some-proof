@@ -54,5 +54,9 @@ describe("StudioView loading shells", () => {
       screen.getByRole("status", { name: "Opening widget" }),
     ).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Studio" })).toBeNull();
+    const back = screen.getByRole("button", { name: "Back to Studio" });
+    expect(back).toBeEnabled();
+    fireEvent.click(back);
+    expect(base.onOpen).toHaveBeenCalledWith(null);
   });
 });

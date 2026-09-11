@@ -62,7 +62,7 @@ export function Studio({ slug }: { slug: string }) {
       attributionRequired={settings ? !settings.canHideAttribution : true}
       widgets={widgets ?? []}
       active={active ?? null}
-      loadingActive={!!activeId && !active}
+      loadingActive={!!activeId && active === undefined}
       loading={loading}
       loadingCandidates={status === "LoadingFirstPage"}
       candidates={candidates}

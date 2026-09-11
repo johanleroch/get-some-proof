@@ -144,7 +144,7 @@ describe("BrandDashboardView", () => {
     ).toHaveTextContent("Collection link copied.");
   });
 
-  it("keeps the real header above address placeholders and disabled actions", () => {
+  it("keeps the real header and relative links above address placeholders", () => {
     render(
       <BrandDashboardView
         {...base}
@@ -161,12 +161,15 @@ describe("BrandDashboardView", () => {
     );
     expect(screen.getByRole("button", { name: "Copy link" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "Open Collection Form" }),
-    ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Open Wall" })).toBeDisabled();
+      screen.getByRole("link", { name: "Open Collection Form" }),
+    ).toHaveAttribute("href", "/c/acme-studio");
+    expect(screen.getByRole("link", { name: "Open Wall" })).toHaveAttribute(
+      "href",
+      "/w/acme-studio",
+    );
     expect(
-      screen.getByRole("button", { name: "Embed on your site" }),
-    ).toBeDisabled();
+      screen.getByRole("link", { name: "Embed on your site" }),
+    ).toHaveAttribute("href", "/org/acme-studio-ab12/settings#embed");
     expect(
       screen.getByRole("status", { name: "Loading Account plan and usage" }),
     ).toBeVisible();

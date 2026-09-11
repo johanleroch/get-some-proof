@@ -1,5 +1,5 @@
-import { StudioPageSkeleton } from "@/components/ui/page-skeletons";
+import { StudioRouteLoading } from "@/components/studio/studio-route-loading";
 
 export default function Loading() {
-  return <StudioPageSkeleton />;
+  return <StudioRouteLoading />;
 }

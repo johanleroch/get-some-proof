@@ -1,5 +1,5 @@
-import { InboxPageSkeleton } from "@/components/ui/page-skeletons";
+import { InboxRouteLoading } from "@/components/testimonials/inbox-route-loading";
 
 export default function Loading() {
-  return <InboxPageSkeleton />;
+  return <InboxRouteLoading />;
 }

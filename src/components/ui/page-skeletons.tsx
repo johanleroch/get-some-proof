@@ -3,13 +3,13 @@ import {
   IconCode,
   IconCopy,
   IconExternalLink,
-  IconPlus,
 } from "@tabler/icons-react";
 
 import { WallFrames } from "@/components/doodles";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 function PageHeaderSkeleton({ action = false }: { action?: boolean }) {
@@ -262,24 +262,21 @@ function InboxPageSkeleton() {
         eyebrow="Workspace"
         title="Inbox"
       />
-      <div
-        className="flex gap-7 overflow-hidden border-b"
-        role="tablist"
-        aria-label="Testimonial categories"
-      >
-        {["Pending", "Published", "Archived", "Spam"].map((label) => (
-          <div
-            className="flex h-10 shrink-0 items-center gap-2"
-            key={label}
-            role="tab"
-            aria-selected={label === "Pending"}
-          >
-            <span className="type-ui font-semibold">{label}</span>
-            <Skeleton aria-hidden="true" className="h-3 w-4" />
-          </div>
+      <Tabs defaultValue="pending">
+        <TabsList aria-label="Testimonial categories">
+          {["Pending", "Published", "Archived", "Spam"].map((label) => (
+            <TabsTrigger key={label} value={label.toLowerCase()}>
+              {label}
+              <Skeleton aria-hidden="true" className="h-3 w-4" />
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {["pending", "published", "archived", "spam"].map((category) => (
+          <TabsContent key={category} value={category}>
+            <InboxListSkeleton />
+          </TabsContent>
         ))}
-      </div>
-      <InboxListSkeleton />
+      </Tabs>
     </div>
   );
 }
@@ -309,25 +306,7 @@ function StudioWidgetListSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
-function StudioPageSkeleton() {
-  return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
-      <PageHeader
-        actions={
-          <Button disabled type="button">
-            <IconPlus aria-hidden="true" className="size-4" />
-            Create widget
-          </Button>
-        }
-        description="Your best proof, ready for every page."
-        title="Studio"
-      />
-      <StudioWidgetListSkeleton />
-    </div>
-  );
-}
-
-function StudioEditorSkeleton() {
+function StudioEditorSkeleton({ onBack }: { onBack?: () => void }) {
   return (
     <div
       aria-label="Opening widget"
@@ -338,7 +317,8 @@ function StudioEditorSkeleton() {
         <div className="flex items-center gap-3">
           <Button
             aria-label="Back to Studio"
-            disabled
+            disabled={!onBack}
+            onClick={onBack}
             size="icon"
             type="button"
             variant="ghost"
@@ -478,6 +458,5 @@ export {
   ProjectsPageSkeleton,
   StudioCandidateListSkeleton,
   StudioEditorSkeleton,
-  StudioPageSkeleton,
   StudioWidgetListSkeleton,
 };

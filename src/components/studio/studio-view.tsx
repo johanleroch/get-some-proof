@@ -174,7 +174,8 @@ export function StudioView(props: StudioViewProps) {
     return (
       <WidgetEditor key={props.active._id} {...props} widget={props.active} />
     );
-  if (props.loadingActive) return <StudioEditorSkeleton />;
+  if (props.loadingActive)
+    return <StudioEditorSkeleton onBack={() => props.onOpen(null)} />;
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
       <PageHeader
