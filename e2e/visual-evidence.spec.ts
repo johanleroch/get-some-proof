@@ -269,6 +269,30 @@ for (const screen of config.screens) {
       await page.getByRole("button", { name: "Dismiss", exact: true }).click();
       await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
     }
+    if (fixtureMode && screen.slug.startsWith("testimonial-inbox-bulk")) {
+      await page
+        .getByRole("checkbox", { name: "Select displayed testimonials" })
+        .check();
+      await expect(page.getByText("3 selected", { exact: true })).toBeVisible();
+      if (screen.slug.endsWith("-delete")) {
+        await page
+          .getByRole("button", {
+            name: testInfo.project.name.startsWith("mobile")
+              ? "Actions (3)"
+              : "More bulk actions",
+            exact: true,
+          })
+          .click();
+        await page
+          .getByRole("menuitem", { name: "Delete permanently" })
+          .click();
+        await expect(
+          page.getByRole("dialog", {
+            name: "Permanently delete 3 testimonials?",
+          }),
+        ).toBeVisible();
+      }
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
@@ -278,6 +302,7 @@ for (const screen of config.screens) {
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
       fullPage:
+        !screen.slug.startsWith("testimonial-inbox-bulk") &&
         screen.slug !== "rich-testimonial-highlight" &&
         !screen.slug.startsWith("testimonial-import-identity"),
       animations: "disabled",

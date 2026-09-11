@@ -123,6 +123,31 @@ describe("Video media ownership", () => {
     ).resolves.not.toBeNull();
   });
 
+  it("removes quarantined video through the provider workflow before deleting records", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const brand = await owner.client.mutation(api.organizations.create, {
+      name: "Fernhill Studio",
+      publicSlug: "bulk-video-spam",
+    });
+    const testimonialId = await createReadyVideo(t, brand.id, "bulk-spam");
+    const target = { organizationId: brand.id, testimonialId };
+    await owner.client.mutation(api.testimonialModeration.markSpam, target);
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetch);
+    await owner.client.action(api.videoMedia.remove, target);
+    expect(fetch).toHaveBeenCalled();
+    await expect(t.run((ctx) => ctx.db.get(testimonialId))).resolves.toBeNull();
+    await expect(
+      t.run((ctx) => ctx.db.query("videoAssets").unique()),
+    ).resolves.toBeNull();
+    await expect(
+      t.run((ctx) => ctx.db.query("spamQuarantines").unique()),
+    ).resolves.not.toBeNull();
+  });
+
   it("rejects video deletion through the legacy text-only mutation", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);

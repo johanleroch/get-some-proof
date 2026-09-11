@@ -1,5 +1,6 @@
 {
   "account-deletion": "ok",
+  "account-billing-reconciliation": "ok",
   "account-free-project": "ok",
   "account-inactive-project": "ok",
   "account-pro-projects": "ok",

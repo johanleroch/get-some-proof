@@ -447,6 +447,19 @@ pages still start at the top and scroll normally.
   its Curated Order: a grip, arrows, and no separate "wall order" screen.
   Buttons in a row are 36px on desktop and 40px on touch widths; below
   768px the actions wrap under the words.
+  Bulk moderation adds a primitive checkbox before each face. Selected rows
+  use `--brand-soft`. A sticky surface toolbar above the list shows the count,
+  the current category's decisions and a quiet clear-selection action; Spam
+  and permanent deletion remain in its overflow menu. Below 768px decisions
+  collapse into one "Actions (N)" menu. The header checkbox selects displayed
+  rows, then an explicit link selects every matching Testimonial across pages.
+  Selection belongs to the current Project, import filter and category; newly
+  arriving proof never joins an already selected batch. Deletion has one
+  count-specific confirmation; imported publication has one permission
+  attestation for the batch. Show progress and individual failures, keeping
+  failed and non-ready Testimonials selected for retry. Refreshing selection
+  updates off-page video readiness without reselecting excluded Testimonials.
+  During selection, row actions give way to the shared toolbar.
 - Authentication: split screen from 1024px, form first. Left column holds the
   product name, the form and the footer line in one 400px block centered in
   the column, so wide screens never leave the form stuck to the edge; right panel on

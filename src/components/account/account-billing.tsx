@@ -5,43 +5,54 @@ import { AccountClosure } from "./account-closure";
 import { OrganizationBilling } from "@/components/billing/organization-billing";
 import Link from "next/link";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import type { ReactNode } from "react";
 import { api } from "@convex/_generated/api";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { BlobLoader } from "@/components/brand/blob-loader";
 
-export function AccountBilling() {
-  const account = useQuery(api.accounts.getMine, {});
-  const projects = useQuery(api.organizations.listMine, {});
-  if (account === undefined || projects === undefined)
-    return <BlobLoader label="Loading account…" showLabel />;
-  const pro = account?.effectivePlan === "premium";
-  if (account?.deletionStartedAt !== undefined)
-    return (
-      <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
-        <AccountClosure />
-      </main>
-    );
-  const accountControls = account ? (
-    <>
-      <AccountInvoices
-        key={account.id}
-        canManageBilling={account.canManageSubscription}
+export function AccountBillingReconciliationView() {
+  return (
+    <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
+      <PageHeader
+        title="Account billing"
+        description="One plan. Quotas shared across all your projects."
       />
-      <AccountClosure />
-    </>
-  ) : null;
-  const billingProject = projects.find(
-    ({ id }) => id === account?.freeProjectId,
+      <section
+        aria-labelledby="billing-setup-heading"
+        className="bg-card space-y-4 rounded-lg border p-5"
+        role="alert"
+      >
+        <h2 className="type-subheading" id="billing-setup-heading">
+          Billing setup needs attention
+        </h2>
+        <p className="text-ink-2 text-sm">
+          This Project is not connected to its Account billing record. Your
+          Stripe subscription has not been changed.
+        </p>
+        <p className="text-ink-2 text-sm">
+          Billing controls, invoices, and plan status will return after the
+          Account record is restored.
+        </p>
+        <Button asChild variant="ghost">
+          <Link href="/account/profile">Account profile</Link>
+        </Button>
+      </section>
+    </main>
   );
-  if (billingProject) {
-    return (
-      <div className="mx-auto w-full max-w-5xl space-y-6">
-        <OrganizationBilling slug={billingProject.slug} />
-        {accountControls}
-      </div>
-    );
-  }
+}
+
+function AccountBillingPlanSummary({
+  account,
+  accountControls,
+  projects,
+}: {
+  account: NonNullable<FunctionReturnType<typeof api.accounts.getMine>> | null;
+  accountControls: ReactNode;
+  projects: FunctionReturnType<typeof api.organizations.listMine>;
+}) {
+  const pro = account?.effectivePlan === "premium";
   return (
     <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <PageHeader
@@ -81,5 +92,48 @@ export function AccountBilling() {
       </section>
       {accountControls}
     </main>
+  );
+}
+
+export function AccountBilling() {
+  const account = useQuery(api.accounts.getMine, {});
+  const projects = useQuery(api.organizations.listMine, {});
+  if (account === undefined || projects === undefined)
+    return <BlobLoader label="Loading account…" showLabel />;
+  if (account?.deletionStartedAt !== undefined)
+    return (
+      <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
+        <AccountClosure />
+      </main>
+    );
+  const accountControls = account ? (
+    <>
+      <AccountInvoices
+        key={account.id}
+        canManageBilling={account.canManageSubscription}
+      />
+      <AccountClosure />
+    </>
+  ) : null;
+  const billingProject = projects.find(
+    ({ id }) => id === account?.freeProjectId,
+  );
+  if (billingProject) {
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-6">
+        <OrganizationBilling slug={billingProject.slug} />
+        {accountControls}
+      </div>
+    );
+  }
+  if (!account && projects.length > 0) {
+    return <AccountBillingReconciliationView />;
+  }
+  return (
+    <AccountBillingPlanSummary
+      account={account}
+      accountControls={accountControls}
+      projects={projects}
+    />
   );
 }
