@@ -5,15 +5,43 @@ for (const [name, width, height] of [
   ["landscape", 1280, 720],
   ["portrait", 720, 1280],
   ["standard", 640, 480],
+  ["unsupported", 640, 480],
 ] as const) {
-  test(`recorder preserves ${name} framing through recording and playback`, async ({
+  test(`recorder handles ${name} source with native recording or upload fallback`, async ({
     page,
   }) => {
     await installRecorderCamera(page, width, height);
+    if (name === "unsupported") {
+      await page.addInitScript(() => {
+        Object.defineProperty(window, "MediaRecorder", {
+          configurable: true,
+          value: undefined,
+        });
+      });
+    }
     await page.goto("/visual-evidence/collection-form");
     await page
       .getByRole("button", { name: /Record or upload a video/ })
       .click();
+    // Linux WebKit can omit MediaRecorder. Exercise the real upload fallback
+    // there; never replace the encoder with a mock to claim recording coverage.
+    if (!(await page.evaluate(() => typeof MediaRecorder !== "undefined"))) {
+      await expect(
+        page.getByText("Recording isn't supported here.", { exact: false }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Choose a video" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Open camera" }),
+      ).toHaveCount(0);
+      test.info().annotations.push({
+        type: "coverage",
+        description:
+          "Native MediaRecorder unavailable: verified upload fallback; real encoding is tested on supported runtimes.",
+      });
+      return;
+    }
     await page.getByRole("button", { name: "Open camera" }).click();
     const assertRatio = async (label: string) => {
       const video = page.getByLabel(label);
