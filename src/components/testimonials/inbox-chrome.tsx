@@ -13,6 +13,15 @@ import {
 } from "@/lib/inbox-route-state";
 
 const inboxCountCeiling = 500;
+const inboxCountColors: Record<
+  InboxRouteCategory,
+  "text-danger" | "text-info" | "text-success" | "text-warning"
+> = {
+  archived: "text-info",
+  pending: "text-warning",
+  published: "text-success",
+  spam: "text-danger",
+};
 
 export function InboxCategoryTabs({
   children,
@@ -36,21 +45,36 @@ export function InboxCategoryTabs({
       value={moderationStatus}
     >
       <div className="relative">
-        <TabsList aria-label="Testimonial categories">
+        <TabsList
+          aria-label="Testimonial categories"
+          className="gap-0 sm:gap-5"
+        >
           {inboxCategoryDefinitions.map((category) => {
             const count = counts?.[category.key] ?? 0;
             return (
-              <TabsTrigger key={category.key} value={category.key}>
+              <TabsTrigger
+                className="gap-0 sm:gap-1.5"
+                key={category.key}
+                value={category.key}
+              >
                 {category.label}{" "}
-                {counts === undefined ? (
-                  <Skeleton aria-hidden="true" className="h-3 w-4" />
-                ) : count > 0 ? (
-                  <span className="font-medium tabular-nums">
-                    {count > inboxCountCeiling
-                      ? `${inboxCountCeiling}+`
-                      : count}
-                  </span>
-                ) : null}
+                <span
+                  className="inline-flex h-6 w-8 shrink-0 items-center justify-center sm:w-9"
+                  data-slot="inbox-category-count"
+                >
+                  {counts === undefined ? (
+                    <Skeleton aria-hidden="true" className="size-full" />
+                  ) : count > 0 ? (
+                    <span
+                      className={`${inboxCountColors[category.key]} type-small tabular-nums`}
+                      data-slot="inbox-category-count-value"
+                    >
+                      {count > inboxCountCeiling
+                        ? `${inboxCountCeiling}+`
+                        : count}
+                    </span>
+                  ) : null}
+                </span>
               </TabsTrigger>
             );
           })}
