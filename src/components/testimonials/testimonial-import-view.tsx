@@ -461,7 +461,9 @@ export function TestimonialImportView({
                 </p>
               </div>
               <Button asChild variant="outline">
-                <a href={`/org/${slug}/mcp`}>Import with an assistant</a>
+                <Link href={`/org/${slug}/mcp` as Route}>
+                  Import with an assistant
+                </Link>
               </Button>
             </div>
           )}
