@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { IconDots, IconChevronDown, IconX } from "@tabler/icons-react";
 import { importAttestationText } from "@convex/domain/testimonialImport";
 import { Button } from "@/components/ui/button";
@@ -20,72 +19,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { convexErrorMessage } from "@/lib/convex-error-message";
+import { TestimonialInboxView } from "./testimonial-inbox";
+import { useInboxSelection, type BulkInboxProps } from "./use-inbox-selection";
 import {
-  TestimonialInboxView,
-  type InboxCategory,
-  type InboxTestimonial,
-} from "./testimonial-inbox";
-
-export type BulkInboxAction =
-  "publish" | "archive" | "unpublish" | "spam" | "undo-spam" | "delete";
-const actionLabels: Record<BulkInboxAction, string> = {
-  publish: "Publish",
-  archive: "Archive",
-  unpublish: "Unpublish",
-  spam: "Mark as Spam",
-  "undo-spam": "Not Spam",
-  delete: "Delete permanently",
-};
-const resultLabels: Record<BulkInboxAction, string> = {
-  publish: "published",
-  archive: "archived",
-  unpublish: "unpublished",
-  spam: "marked as Spam",
-  "undo-spam": "restored",
-  delete: "deleted",
-};
-const primaryActions: Record<InboxCategory, BulkInboxAction[]> = {
-  pending: ["publish", "archive"],
-  published: ["unpublish"],
-  archived: ["publish"],
-  spam: ["undo-spam"],
-};
-type InboxPage = {
-  page: InboxTestimonial[];
-  isDone: boolean;
-  continueCursor: string;
-};
-type Failure = { item: InboxTestimonial; message: string };
-
-/** Freeze the explicit selection before writes. Never mutate a status index while paging it. */
-export async function collectInboxSelection(
-  loadPage: (cursor: string | null) => Promise<InboxPage>,
-  cancelled: () => boolean,
-) {
-  const items = new Map<string, InboxTestimonial>();
-  let cursor: string | null = null;
-  const startedAt = Date.now();
-  do {
-    if (cancelled()) return null;
-    const result = await loadPage(cursor);
-    if (cancelled()) return null;
-    for (const item of result.page) {
-      if (item.createdAt <= startedAt) items.set(item.testimonialId, item);
-    }
-    if (result.isDone) return items;
-    if (result.continueCursor === cursor)
-      throw new Error("The list changed. Please select all again.");
-    cursor = result.continueCursor;
-  } while (true);
-}
-
-function canPublish(item: InboxTestimonial) {
-  return (
-    item.submissionType === "text" ||
-    (item.videoStatus === "ready" && item.card !== null)
-  );
-}
+  actionLabels,
+  primaryActions,
+  type BulkInboxAction,
+} from "./inbox-bulk";
 
 /** Shared by the live Inbox and interactive synthetic fixtures. Key by project/import/category. */
 export function BulkTestimonialInbox({
@@ -94,164 +34,33 @@ export function BulkTestimonialInbox({
   loadPage,
   perform,
   ...view
-}: Omit<ComponentProps<typeof TestimonialInboxView>, "selection"> & {
-  totalCount: number;
-  hasMore: boolean;
-  loadPage: (cursor: string | null) => Promise<InboxPage>;
-  perform: (
-    item: InboxTestimonial,
-    action: BulkInboxAction,
-    attested: boolean,
-  ) => Promise<void>;
-}) {
-  const [selected, setSelected] = useState(new Map<string, InboxTestimonial>());
-  const [phase, setPhase] = useState<"idle" | "selecting" | "running">("idle");
-  const [confirmation, setConfirmation] = useState<BulkInboxAction | null>(
-    null,
-  );
-  const [attested, setAttested] = useState(false);
-  const [outcome, setOutcome] = useState("");
-  const [failures, setFailures] = useState<Failure[]>([]);
-  const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const operation = useRef(0);
-  const locked = useRef(false);
-  const toolbar = useRef<HTMLDivElement>(null);
-  useEffect(
-    () => () => {
-      operation.current++;
-    },
-    [],
-  );
-  // Refresh visible selected records (e.g. a video finishes processing).
-  const visible = new Map(
-    view.testimonials.map((item) => [String(item.testimonialId), item]),
-  );
-  const items = [...selected].map(([id, item]) => visible.get(id) ?? item);
-  const ready = items.filter(canPublish);
-  const imports = ready.filter((item) => item.requiresImportAttestation).length;
-  const blocked = phase !== "idle" || Boolean(view.actionsDisabled);
-  const displayedSelected = view.testimonials.filter((item) =>
-    selected.has(item.testimonialId),
-  ).length;
-  const checked =
-    displayedSelected === 0
-      ? false
-      : displayedSelected === view.testimonials.length
-        ? true
-        : "indeterminate";
-  const countLabel =
-    totalCount > 500
-      ? "all testimonials in this tab"
-      : `all ${totalCount} testimonials in this tab`;
-
-  function clear() {
-    operation.current++;
-    locked.current = false;
-    setSelected(new Map());
-    setPhase("idle");
-    setFailures([]);
-    setOutcome("");
-  }
-  function toggle(item: InboxTestimonial) {
-    setSelected((previous) => {
-      const next = new Map(previous);
-      if (next.has(item.testimonialId)) next.delete(item.testimonialId);
-      else next.set(item.testimonialId, item);
-      return next;
-    });
-    setOutcome("");
-    setFailures([]);
-  }
-  async function selectAll(onlySelected = false) {
-    if (locked.current || blocked) return;
-    locked.current = true;
-    const token = ++operation.current;
-    setPhase("selecting");
-    setOutcome("");
-    setFailures([]);
-    try {
-      const all = await collectInboxSelection(
-        loadPage,
-        () => operation.current !== token,
-      );
-      if (all) {
-        setSelected((previous) =>
-          onlySelected
-            ? new Map(
-                [...previous].map(([id, item]) => [id, all.get(id) ?? item]),
-              )
-            : all,
-        );
-        if (onlySelected) setOutcome("Selection refreshed.");
-      }
-    } catch (error) {
-      if (operation.current === token)
-        setOutcome(
-          convexErrorMessage(
-            error,
-            "Could not select every testimonial. Your previous selection is unchanged.",
-          ),
-        );
-    } finally {
-      if (operation.current === token) {
-        locked.current = false;
-        setPhase("idle");
-      }
-    }
-  }
-  async function run(action: BulkInboxAction) {
-    if (locked.current || blocked) return;
-    locked.current = true;
-    const token = ++operation.current;
-    const batch = action === "publish" ? ready : items;
-    const accepted = attested;
-    setConfirmation(null);
-    setPhase("running");
-    setOutcome("");
-    setFailures([]);
-    setProgress({ done: 0, total: batch.length });
-    let successes = 0;
-    const errors: Failure[] = [];
-    for (const item of batch) {
-      // Leaving this scope stops the unsent remainder, never acts in the next project.
-      if (operation.current !== token) return;
-      try {
-        await perform(item, action, accepted);
-        successes++;
-        if (operation.current === token)
-          setSelected((previous) => {
-            const next = new Map(previous);
-            next.delete(item.testimonialId);
-            return next;
-          });
-      } catch (error) {
-        errors.push({
-          item,
-          message: convexErrorMessage(
-            error,
-            "Could not update this testimonial. Please try again.",
-          ),
-        });
-      }
-      if (operation.current === token)
-        setProgress({ done: successes + errors.length, total: batch.length });
-    }
-    if (operation.current !== token) return;
-    const skipped = items.length - batch.length;
-    setOutcome(
-      `${successes} ${resultLabels[action]}${errors.length ? ` · ${errors.length} failed` : ""}${skipped ? ` · ${skipped} videos not ready` : ""}.`,
-    );
-    setFailures(errors);
-    setPhase("idle");
-    locked.current = false;
-    toolbar.current?.focus();
-  }
-  function request(action: BulkInboxAction) {
-    setAttested(false);
-    if (action === "delete" || (action === "publish" && imports > 0))
-      setConfirmation(action);
-    else void run(action);
-  }
+}: BulkInboxProps) {
+  const {
+    selected,
+    setSelected,
+    phase,
+    confirmation,
+    setConfirmation,
+    attested,
+    setAttested,
+    outcome,
+    failures,
+    setFailures,
+    setOutcome,
+    progress,
+    toolbar,
+    items,
+    ready,
+    imports,
+    blocked,
+    checked,
+    countLabel,
+    clear,
+    selectAll,
+    run,
+    request,
+    toggle,
+  } = useInboxSelection({ totalCount, hasMore, loadPage, perform, ...view });
   function actionItem(action: BulkInboxAction) {
     return (
       <DropdownMenuItem

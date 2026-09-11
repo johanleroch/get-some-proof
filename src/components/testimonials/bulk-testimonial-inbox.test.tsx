@@ -1,3 +1,4 @@
+import { collectInboxSelection } from "./inbox-bulk";
 import {
   act,
   cleanup,
@@ -8,10 +9,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Id } from "@convex/_generated/dataModel";
-import {
-  BulkTestimonialInbox,
-  collectInboxSelection,
-} from "./bulk-testimonial-inbox";
+import { BulkTestimonialInbox } from "./bulk-testimonial-inbox";
 import type { InboxTestimonial } from "./testimonial-inbox";
 
 const text = (name: string): InboxTestimonial => ({

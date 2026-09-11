@@ -4,7 +4,7 @@ import { useAction, useConvex, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
-import type { BulkInboxAction } from "./bulk-testimonial-inbox";
+import type { BulkInboxAction } from "./inbox-bulk";
 import type { InboxCategory, InboxTestimonial } from "./testimonial-inbox";
 
 /** Keep batch writes on the same authenticated, audited paths as single-row actions. */
