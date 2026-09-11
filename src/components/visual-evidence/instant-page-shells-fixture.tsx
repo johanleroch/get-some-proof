@@ -21,9 +21,6 @@ function LoadingPageShell({
         effectivePlan: "free",
         freeProjectId: "fixture-atrakt" as Id<"organizations">,
       }}
-      authorization={{
-        can: { manageOwnership: true, updateOrganization: true },
-      }}
       connected
       inboxCount={inboxCount}
       organizationId={"fixture-atrakt" as Id<"organizations">}

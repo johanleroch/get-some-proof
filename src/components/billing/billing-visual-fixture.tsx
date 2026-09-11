@@ -34,12 +34,6 @@ export function BillingVisualFixture({
         effectivePlan: premium ? "premium" : "free",
         freeProjectId: "fixture-billing" as Id<"organizations">,
       }}
-      authorization={{
-        can: {
-          manageOwnership: role === "owner",
-          updateOrganization: role === "owner",
-        },
-      }}
       connected
       userMenu={
         <NavUserView

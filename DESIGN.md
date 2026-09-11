@@ -641,7 +641,15 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   18px Tabler icon at stroke 1.75 in `--ink-2`, the name, and the meaning on
   the right edge, the Inbox queue as a count (`small` 600, tabular, on
   `--surface-2`, "500+" past the ceiling) or a small arrow on what opens in
-  a new tab (the Wall). Hover `--surface-2`. Active is not a style on the item but one indicator
+  a new tab (the Wall). Product navigation never disappears while Account
+  data or legacy role checks load: the initial product is Owner-only, and
+  plan entitlements are a separate concern. A Pro-only destination stays in
+  place on Free, with its icon and label quieted to the readable neutral ramp
+  and a 16px bolt at the right edge; its accessible name includes "Pro" and
+  it opens Account Billing. On Pro the bolt is absent and the destination
+  opens normally. While the plan loads, the row stays quiet and defaults to
+  Account Billing; the right-edge slot stays reserved so the row never shifts.
+  Hover `--surface-2`. Active is not a style on the item but one indicator
   per list: a `--brand-soft` pill the item's exact size, and a 3px `--brand`
   rail in the gutter, flush with the panel's edge and rounded on its inner
   side; the name goes to 600 and the icon to `--ink`. Chosen by the founder
