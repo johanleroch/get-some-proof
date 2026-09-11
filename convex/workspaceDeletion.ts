@@ -50,6 +50,8 @@ const purgePhases = [
   "testimonialImages",
   "collectionAdmissions",
   "testimonials",
+  "directImageVerifications",
+  "imageAssetMigrationJobs",
   "imageAssets",
   "videoReservations",
   "publicProjections",
@@ -656,6 +658,38 @@ async function deletePhaseBatch(
             ? deleteImageAsset(ctx, record.storageId as Id<"_storage">)
             : Promise.resolve(),
         ),
+      );
+      break;
+    case "directImageVerifications":
+      records = await ctx.db
+        .query("directImageVerifications")
+        .withIndex("by_organization_id", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.map((record) =>
+          deleteImageAsset(ctx, record.storageId as Id<"_storage">),
+        ),
+      );
+      break;
+    case "imageAssetMigrationJobs":
+      records = await ctx.db
+        .query("imageAssetMigrationJobs")
+        .withIndex("by_organization_id", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.flatMap((record) => [
+          deleteImageAsset(ctx, record.storageId as Id<"_storage">),
+          record.replacementStorageId
+            ? deleteImageAsset(
+                ctx,
+                record.replacementStorageId as Id<"_storage">,
+              )
+            : Promise.resolve(),
+        ]),
       );
       break;
     case "videoReservations":

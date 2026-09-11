@@ -18,7 +18,17 @@ import { deleteImageAsset } from "./imageAssetRegistry";
 
 const verificationLifetimeMs = 30 * 60 * 1000;
 
-async function authorizeTarget(ctx: MutationCtx, target: DirectImageTarget) {
+type AuthorizedImageOwner = {
+  organizationId?: Id<"organizations">;
+  ownerUserId?: string;
+  testimonialId?: Id<"testimonials">;
+  testimonialImageId?: Id<"testimonialImages">;
+};
+
+async function authorizeTarget(
+  ctx: MutationCtx,
+  target: DirectImageTarget,
+): Promise<AuthorizedImageOwner> {
   if (target.kind === "ownerPhoto") {
     const principal = await requireVerifiedPrincipal(ctx);
     return { ownerUserId: principal.actorId };
@@ -90,7 +100,7 @@ export const record = internalMutation({
   },
   returns: v.id("directImageVerifications"),
   handler: async (ctx, args) => {
-    await authorizeTarget(ctx, args.target);
+    const owner = await authorizeTarget(ctx, args.target);
     const temporary = await ctx.db.system.get(
       "_storage",
       args.temporaryStorageId,
@@ -117,6 +127,7 @@ export const record = internalMutation({
       createdAt: now,
       expiresAt: now + verificationLifetimeMs,
       metadata: args.metadata,
+      ...owner,
       storageId: args.storageId,
       target: args.target,
     });
@@ -166,7 +177,12 @@ export async function consumeDirectImage(
       code: "IMAGE_UPLOAD_UNAVAILABLE",
       message: "The verified image has expired. Upload it again.",
     });
-  await authorizeTarget(ctx, target);
+  const owner = await authorizeTarget(ctx, target);
+  if (
+    verification.ownerUserId !== owner.ownerUserId ||
+    verification.organizationId !== owner.organizationId
+  )
+    throw new ConvexError({ code: "IMAGE_UPLOAD_UNAVAILABLE" });
   await ctx.db.delete(verification._id);
   return {
     storageId: verification.storageId,
@@ -195,6 +211,73 @@ export const discardUnrecorded = internalMutation({
       .withIndex("by_storage_id", (q) => q.eq("storageId", args.storageId))
       .unique();
     if (!verification) await deleteImageAsset(ctx, args.storageId);
+    return null;
+  },
+});
+
+export const discardUnattachedTemporary = internalMutation({
+  args: {
+    target: directImageTarget,
+    temporaryStorageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authorizeTarget(ctx, args.target);
+    const stored = await ctx.db.system.get("_storage", args.temporaryStorageId);
+    if (!stored || stored._creationTime < Date.now() - verificationLifetimeMs)
+      return null;
+    const checks = await Promise.all([
+      ctx.db
+        .query("imageAssets")
+        .withIndex("by_storage_id", (q) =>
+          q.eq("storageId", args.temporaryStorageId),
+        )
+        .unique(),
+      ctx.db
+        .query("importAvatarUploads")
+        .withIndex("by_storage_id", (q) =>
+          q.eq("storageId", args.temporaryStorageId),
+        )
+        .first(),
+      ctx.db
+        .query("testimonialImages")
+        .withIndex("by_storage_id", (q) =>
+          q.eq("storageId", args.temporaryStorageId),
+        )
+        .first(),
+      ctx.db
+        .query("testimonials")
+        .withIndex("by_poster_storage_id", (q) =>
+          q.eq("posterStorageId", args.temporaryStorageId),
+        )
+        .first(),
+      ctx.db
+        .query("userProfiles")
+        .withIndex("by_avatar_storage_id", (q) =>
+          q.eq("avatarStorageId", args.temporaryStorageId),
+        )
+        .unique(),
+      ctx.db
+        .query("organizations")
+        .withIndex("by_logo_storage_id", (q) =>
+          q.eq("logoStorageId", args.temporaryStorageId),
+        )
+        .unique(),
+      ctx.db
+        .query("testimonials")
+        .withIndex("by_avatar_storage_id", (q) =>
+          q.eq("avatarStorageId", args.temporaryStorageId),
+        )
+        .unique(),
+      ctx.db
+        .query("directImageVerifications")
+        .withIndex("by_storage_id", (q) =>
+          q.eq("storageId", args.temporaryStorageId),
+        )
+        .unique(),
+    ]);
+    if (checks.every((reference) => reference === null))
+      await ctx.storage.delete(args.temporaryStorageId);
     return null;
   },
 });

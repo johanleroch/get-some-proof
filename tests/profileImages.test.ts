@@ -39,12 +39,14 @@ async function verifyImage(
   target:
     | { kind: "ownerPhoto" }
     | { kind: "brandLogo"; organizationId: Id<"organizations"> },
+  ownerUserId?: string,
 ) {
   return await testDirectImageVerification(
     t,
     target,
     image.storageId,
     image.metadata,
+    ownerUserId,
   );
 }
 
@@ -56,10 +58,20 @@ describe("profile image storage", () => {
     const second = await storeImage(t, "second");
 
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      verificationId: await verifyImage(t, first, { kind: "ownerPhoto" }),
+      verificationId: await verifyImage(
+        t,
+        first,
+        { kind: "ownerPhoto" },
+        alice.actorId,
+      ),
     });
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      verificationId: await verifyImage(t, second, { kind: "ownerPhoto" }),
+      verificationId: await verifyImage(
+        t,
+        second,
+        { kind: "ownerPhoto" },
+        alice.actorId,
+      ),
     });
 
     const current = await alice.client.query(api.auth.getCurrentUser, {});
@@ -101,6 +113,7 @@ describe("profile image storage", () => {
           { kind: "ownerPhoto" },
           textFile,
           testImageMetadata("ownerPhoto", 5),
+          alice.actorId,
         ),
       }),
     ).rejects.toMatchObject({
@@ -117,9 +130,14 @@ describe("profile image storage", () => {
 
     await expect(
       alice.client.mutation(api.profileImages.setMyAvatar, {
-        verificationId: await verifyImage(t, oversized, {
-          kind: "ownerPhoto",
-        }),
+        verificationId: await verifyImage(
+          t,
+          oversized,
+          {
+            kind: "ownerPhoto",
+          },
+          alice.actorId,
+        ),
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_STORED_IMAGE" },
@@ -135,7 +153,12 @@ describe("profile image storage", () => {
     });
     const image = await storeImage(t, "alice-avatar");
 
-    const verificationId = await verifyImage(t, image, { kind: "ownerPhoto" });
+    const verificationId = await verifyImage(
+      t,
+      image,
+      { kind: "ownerPhoto" },
+      alice.actorId,
+    );
     await alice.client.mutation(api.profileImages.setMyAvatar, {
       verificationId,
     });

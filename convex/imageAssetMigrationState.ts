@@ -53,6 +53,36 @@ export const commit = internalMutation({
       await deleteImageAsset(ctx, args.replacementStorageId);
       return "skipped";
     }
+    const workspaceDeletion = job.organizationId
+      ? await ctx.db
+          .query("workspaceDeletions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", job.organizationId!),
+          )
+          .first()
+      : null;
+    const account = job.ownerUserId
+      ? await ctx.db
+          .query("accounts")
+          .withIndex("by_owner", (q) => q.eq("ownerUserId", job.ownerUserId!))
+          .unique()
+      : null;
+    const accountDeletion = account
+      ? await ctx.db
+          .query("accountDeletions")
+          .withIndex("by_account", (q) => q.eq("accountId", account._id))
+          .first()
+      : null;
+    if (workspaceDeletion || accountDeletion) {
+      await deleteImageAsset(ctx, args.replacementStorageId);
+      await ctx.db.patch(job._id, {
+        attempts: job.attempts + 1,
+        diagnostic: "OWNER_DELETING",
+        status: "skipped",
+        updatedAt: Date.now(),
+      });
+      return "skipped";
+    }
     let currentStorageId;
     if (job.referenceTable === "userProfiles") {
       const id = ctx.db.normalizeId("userProfiles", job.referenceId);

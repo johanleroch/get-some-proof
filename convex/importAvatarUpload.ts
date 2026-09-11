@@ -163,6 +163,20 @@ export const attach = internalMutation({
 });
 
 export const upload = action({
+  args: { target, temporaryStorageId: v.id("_storage") },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await ctx.runMutation(internal.importAvatarUpload.authorize, {
+      target: args.target,
+    });
+    return ctx.runAction(
+      internal.importImageProcessing.uploadStoredCorrection,
+      args,
+    );
+  },
+});
+
+export const uploadSmallBytes = action({
   args: { target, bytes: v.bytes() },
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
@@ -170,6 +184,15 @@ export const upload = action({
       target: args.target,
     });
     return ctx.runAction(internal.importImageProcessing.uploadCorrection, args);
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: { target },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    await editable(ctx, args.target);
+    return await ctx.storage.generateUploadUrl();
   },
 });
 

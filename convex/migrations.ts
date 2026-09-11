@@ -43,7 +43,7 @@ async function queueLegacyImage(
   if (registered) return;
   const existing = await ctx.db
     .query("imageAssetMigrationJobs")
-    .withIndex("by_reference", (q) =>
+    .withIndex("by_reference_table_and_reference_id", (q) =>
       q
         .eq("referenceTable", reference.referenceTable)
         .eq("referenceId", reference.referenceId),

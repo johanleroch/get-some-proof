@@ -261,6 +261,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
           { kind: "ownerPhoto" },
           image.storageId,
           testImageMetadata("ownerPhoto", 10),
+          owner.actorId,
         ),
       }),
     ).rejects.toThrow("already in use");

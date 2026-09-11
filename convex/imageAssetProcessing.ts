@@ -35,17 +35,6 @@ export const processDirectUpload = action({
     verificationId: v.id("directImageVerifications"),
   }),
   handler: async (ctx, args): Promise<DirectImageProcessingResult> => {
-    if (
-      args.browserMetadata.kind !== args.target.kind ||
-      args.browserMetadata.source !== "direct" ||
-      !acceptedImageInputTypes.includes(
-        args.browserMetadata
-          .originalContentType as (typeof acceptedImageInputTypes)[number],
-      ) ||
-      args.browserMetadata.originalSize <= 0 ||
-      args.browserMetadata.originalSize > maximumImageInputBytes
-    )
-      throw new ConvexError({ code: "INVALID_IMAGE_METADATA" });
     await ctx.runMutation(
       internal.imageAssetProcessingState.authorizeTemporary,
       {
@@ -53,31 +42,43 @@ export const processDirectUpload = action({
         temporaryStorageId: args.temporaryStorageId,
       },
     );
-    const input = await ctx.storage.get(args.temporaryStorageId);
-    if (!input) throw new ConvexError({ code: "IMAGE_UPLOAD_UNAVAILABLE" });
-    let normalized;
+    let storageId: Id<"_storage"> | undefined;
     try {
-      normalized = await normalizeStoredImage(
-        input,
-        args.target.kind,
-        "direct",
+      if (
+        args.browserMetadata.kind !== args.target.kind ||
+        args.browserMetadata.source !== "direct" ||
+        !acceptedImageInputTypes.includes(
+          args.browserMetadata
+            .originalContentType as (typeof acceptedImageInputTypes)[number],
+        ) ||
+        args.browserMetadata.originalSize <= 0 ||
+        args.browserMetadata.originalSize > maximumImageInputBytes
+      )
+        throw new ConvexError({ code: "INVALID_IMAGE_METADATA" });
+      const input = await ctx.storage.get(args.temporaryStorageId);
+      if (!input) throw new ConvexError({ code: "IMAGE_UPLOAD_UNAVAILABLE" });
+      let normalized;
+      try {
+        normalized = await normalizeStoredImage(
+          input,
+          args.target.kind,
+          "direct",
+        );
+      } catch (error) {
+        throw new ConvexError({
+          code:
+            error instanceof StoredImageNormalizationError
+              ? error.diagnostic
+              : "IMAGE_OPTIMIZATION_FAILED",
+          message: "The image could not be verified. Upload another image.",
+        });
+      }
+      normalized.metadata.originalContentType =
+        args.browserMetadata.originalContentType;
+      normalized.metadata.originalSize = args.browserMetadata.originalSize;
+      storageId = await ctx.storage.store(
+        new Blob([normalized.bytes], { type: "image/webp" }),
       );
-    } catch (error) {
-      throw new ConvexError({
-        code:
-          error instanceof StoredImageNormalizationError
-            ? error.diagnostic
-            : "IMAGE_OPTIMIZATION_FAILED",
-        message: "The image could not be verified. Upload another image.",
-      });
-    }
-    normalized.metadata.originalContentType =
-      args.browserMetadata.originalContentType;
-    normalized.metadata.originalSize = args.browserMetadata.originalSize;
-    const storageId = await ctx.storage.store(
-      new Blob([normalized.bytes], { type: "image/webp" }),
-    );
-    try {
       const verificationId: Id<"directImageVerifications"> =
         await ctx.runMutation(internal.imageAssetProcessingState.record, {
           metadata: normalized.metadata,
@@ -87,12 +88,23 @@ export const processDirectUpload = action({
         });
       return { metadata: normalized.metadata, storageId, verificationId };
     } catch (error) {
-      await ctx.runMutation(
-        internal.imageAssetProcessingState.discardUnrecorded,
-        {
-          storageId,
-        },
-      );
+      await Promise.allSettled([
+        ...(storageId
+          ? [
+              ctx.runMutation(
+                internal.imageAssetProcessingState.discardUnrecorded,
+                { storageId },
+              ),
+            ]
+          : []),
+        ctx.runMutation(
+          internal.imageAssetProcessingState.discardUnattachedTemporary,
+          {
+            target: args.target,
+            temporaryStorageId: args.temporaryStorageId,
+          },
+        ),
+      ]);
       throw error;
     }
   },

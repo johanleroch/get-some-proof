@@ -235,7 +235,7 @@ it("keeps a newer photo and deletes the stale downloaded copy", async () => {
 it("keeps a manually uploaded avatar through identity edits and confirmation", async () => {
   const { t, owner, itemId, jobId } = await imported(false);
   const bytes = (await testPngBytes()).buffer;
-  await owner.client.action(api.importAvatarUpload.upload, {
+  await owner.client.action(api.importAvatarUpload.uploadSmallBytes, {
     target: { itemId },
     bytes,
   });
@@ -268,7 +268,7 @@ it("refuses another Owner's photo upload before storing a file", async () => {
   const { t, itemId } = await imported(false);
   const other = await authenticatedUser(t, { email: "outsider@example.test" });
   await expect(
-    other.client.action(api.importAvatarUpload.upload, {
+    other.client.action(api.importAvatarUpload.uploadSmallBytes, {
       target: { itemId },
       bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
     }),

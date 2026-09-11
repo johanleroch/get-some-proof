@@ -127,3 +127,49 @@ export const uploadCorrection = internalAction({
     return null;
   },
 });
+
+export const uploadStoredCorrection = internalAction({
+  args: {
+    target: importSubmitterPhotoTarget,
+    temporaryStorageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    const input = await ctx.storage.get(args.temporaryStorageId);
+    if (!input) throw new Error("IMAGE_UPLOAD_UNAVAILABLE");
+    let storageId: Id<"_storage"> | undefined;
+    try {
+      const normalized = await normalizeStoredImage(
+        input,
+        "submitterPhoto",
+        "direct",
+      );
+      storageId = await ctx.storage.store(
+        new Blob([normalized.bytes], { type: "image/webp" }),
+      );
+      await ctx.runMutation(internal.importAvatarUpload.attach, {
+        target: args.target,
+        storageId,
+        metadata: normalized.metadata,
+      });
+      await ctx.runMutation(internal.importAvatarUpload.discardUnattached, {
+        storageId: args.temporaryStorageId,
+      });
+      return null;
+    } catch (error) {
+      await Promise.allSettled([
+        ...(storageId
+          ? [
+              ctx.runMutation(internal.importAvatarUpload.discardUnattached, {
+                storageId,
+              }),
+            ]
+          : []),
+        ctx.runMutation(internal.importAvatarUpload.discardUnattached, {
+          storageId: args.temporaryStorageId,
+        }),
+      ]);
+      throw error;
+    }
+  },
+});

@@ -40,6 +40,9 @@ export function TestimonialImport({
   const retryPhoto = useMutation(api.testimonialImportAvatar.retry);
   const retryVideo = useMutation(api.testimonialImportVideo.retry);
   const uploadPhoto = useAction(api.importAvatarUpload.upload);
+  const generatePhotoUploadUrl = useMutation(
+    api.importAvatarUpload.generateUploadUrl,
+  );
   const removePhoto = useMutation(api.importAvatarUpload.remove);
   const correctIdentity = useMutation(api.testimonialImports.correctIdentity);
   const [retryingItemId, setRetryingItemId] =
@@ -189,9 +192,19 @@ export function TestimonialImport({
       }}
       onPhoto={async (itemId, photo) => {
         const target = { itemId };
-        if (photo)
-          await uploadPhoto({ target, bytes: await photo.arrayBuffer() });
-        else await removePhoto({ target });
+        if (photo) {
+          const uploadUrl = await generatePhotoUploadUrl({ target });
+          const response = await fetch(uploadUrl, {
+            body: photo,
+            headers: { "Content-Type": photo.type },
+            method: "POST",
+          });
+          if (!response.ok) throw new Error("IMAGE_UPLOAD_FAILED");
+          const { storageId } = (await response.json()) as {
+            storageId: Id<"_storage">;
+          };
+          await uploadPhoto({ target, temporaryStorageId: storageId });
+        } else await removePhoto({ target });
       }}
       onCorrectIdentity={async (itemId, identity) => {
         await correctIdentity({ itemId, ...identity });

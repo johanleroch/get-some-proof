@@ -42,6 +42,9 @@ describe("direct image processing", () => {
     ).rejects.toMatchObject({
       data: { code: "UNSUPPORTED_IMAGE" },
     });
+    expect(
+      await t.run((ctx) => ctx.db.system.get("_storage", temporaryStorageId)),
+    ).toBeNull();
   });
 
   it("re-encodes valid bytes and trusts the server-derived dimensions", async () => {
@@ -89,6 +92,17 @@ describe("direct image processing", () => {
     ).toMatchObject({
       contentType: "image/webp",
       size: result.metadata.size,
+    });
+    const other = await authenticatedUser(t, {
+      email: "other@example.com",
+      name: "Other Owner",
+    });
+    await expect(
+      other.client.mutation(api.profileImages.setMyAvatar, {
+        verificationId: result.verificationId,
+      }),
+    ).rejects.toMatchObject({
+      data: { code: "IMAGE_UPLOAD_UNAVAILABLE" },
     });
 
     await owner.client.mutation(api.profileImages.setMyAvatar, {

@@ -43,7 +43,7 @@ it("keeps an uploaded visitor photo through edits, claim and confirmation", asyn
     api.testimonialImportSource.previewAnonymous,
     { url: "https://testimonial.to/atelier-june/all" },
   );
-  await t.action(api.importAvatarUpload.upload, {
+  await t.action(api.importAvatarUpload.uploadSmallBytes, {
     target: { token, position: 0 },
     bytes: (await testPngBytes()).buffer,
   });
@@ -82,7 +82,7 @@ it("keeps an uploaded visitor photo through edits, claim and confirmation", asyn
       ?.avatarStorageId,
   ).toBe(item.identityCorrection!.avatarStorageId);
   await expect(
-    t.action(api.importAvatarUpload.upload, {
+    t.action(api.importAvatarUpload.uploadSmallBytes, {
       target: { token, position: 0 },
       bytes: (await testPngBytes()).buffer,
     }),

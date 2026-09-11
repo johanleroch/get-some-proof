@@ -68,10 +68,17 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_reference", ["referenceTable", "referenceId"])
+    .index("by_reference_table_and_reference_id", [
+      "referenceTable",
+      "referenceId",
+    ])
+    .index("by_organization_id", ["organizationId"])
+    .index("by_owner_user_id", ["ownerUserId"])
     .index("by_status", ["status"]),
   directImageVerifications: defineTable({
     target: directImageTarget,
+    organizationId: v.optional(v.id("organizations")),
+    ownerUserId: v.optional(v.string()),
     storageId: v.id("_storage"),
     metadata: v.object({
       contentType: v.literal("image/webp"),
@@ -87,7 +94,9 @@ export default defineSchema({
     expiresAt: v.number(),
     createdAt: v.number(),
   })
-    .index("by_expiry", ["expiresAt"])
+    .index("by_expires_at", ["expiresAt"])
+    .index("by_organization_id", ["organizationId"])
+    .index("by_owner_user_id", ["ownerUserId"])
     .index("by_storage_id", ["storageId"]),
   widgets: defineTable({
     organizationId: v.id("organizations"),

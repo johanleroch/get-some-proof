@@ -198,7 +198,7 @@ export async function POST(request: Request) {
           ? client.mutation(api.importAvatarUpload.remove, {
               target: { token, position },
             })
-          : client.action(api.importAvatarUpload.upload, {
+          : client.action(api.importAvatarUpload.uploadSmallBytes, {
               target: { token, position },
               bytes: Uint8Array.from(Buffer.from(imageBase64, "base64")).buffer,
             }),

@@ -55,16 +55,29 @@ export async function testDirectImageVerification(
   target: DirectImageTarget,
   storageId: Id<"_storage">,
   metadata: ImageAssetMetadataValue,
+  ownerUserId?: string,
 ) {
-  return await t.run((ctx) =>
-    ctx.db.insert("directImageVerifications", {
+  return await t.run(async (ctx) => {
+    const linked =
+      target.kind === "submitterPhoto"
+        ? await ctx.db.get(target.reservationId)
+        : target.kind === "testimonialImage"
+          ? await ctx.db.get(target.imageId)
+          : null;
+    const organizationId =
+      target.kind === "brandLogo" || target.kind === "videoThumbnail"
+        ? target.organizationId
+        : linked?.organizationId;
+    return ctx.db.insert("directImageVerifications", {
       createdAt: Date.now(),
       expiresAt: Date.now() + 30 * 60 * 1000,
       metadata,
+      organizationId,
+      ownerUserId,
       storageId,
       target,
-    }),
-  );
+    });
+  });
 }
 
 export async function testPngBytes(

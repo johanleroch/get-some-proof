@@ -10,6 +10,7 @@ import {
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
+  testImageMetadata,
 } from "./convex-test-helpers";
 
 describe("Workspace deletion", () => {
@@ -88,7 +89,12 @@ describe("Workspace deletion", () => {
       name: "Delete Me",
       publicSlug: "delete-me",
     });
-    const { reservationId, testimonialId } = await t.run(async (ctx) => {
+    const {
+      reservationId,
+      testimonialId,
+      verificationStorageId,
+      migrationStorageId,
+    } = await t.run(async (ctx) => {
       const now = Date.now();
       const id = await ctx.db.insert("testimonials", {
         clientSubmissionId: "workspace-delete-text",
@@ -120,7 +126,38 @@ describe("Workspace deletion", () => {
         status: "reserved",
         updatedAt: now,
       });
-      return { reservationId, testimonialId: id };
+      const verificationStorageId = await ctx.storage.store(
+        new Blob(["verified-image"], { type: "image/webp" }),
+      );
+      await ctx.db.insert("directImageVerifications", {
+        createdAt: now,
+        expiresAt: now + 60_000,
+        metadata: testImageMetadata("brandLogo", 14),
+        organizationId: brand.id,
+        storageId: verificationStorageId,
+        target: { kind: "brandLogo", organizationId: brand.id },
+      });
+      const migrationStorageId = await ctx.storage.store(
+        new Blob(["legacy-image"], { type: "image/png" }),
+      );
+      await ctx.db.insert("imageAssetMigrationJobs", {
+        attempts: 0,
+        createdAt: now,
+        kind: "submitterPhoto",
+        organizationId: brand.id,
+        referenceId: String(id),
+        referenceTable: "testimonialSubmitterPhoto",
+        status: "queued",
+        storageId: migrationStorageId,
+        testimonialId: id,
+        updatedAt: now,
+      });
+      return {
+        migrationStorageId,
+        reservationId,
+        testimonialId: id,
+        verificationStorageId,
+      };
     });
 
     const exported = await owner.client.action(
@@ -215,9 +252,11 @@ describe("Workspace deletion", () => {
     const remaining = await t.run(async (ctx) => ({
       deletion: await ctx.db.get(prepared.deletionId),
       memberships: await ctx.db.query("memberships").collect(),
+      migrationJobs: await ctx.db.query("imageAssetMigrationJobs").collect(),
       organizations: await ctx.db.query("organizations").collect(),
       projections: await ctx.db.query("publicTestimonialProjections").collect(),
       testimonials: await ctx.db.query("testimonials").collect(),
+      verifications: await ctx.db.query("directImageVerifications").collect(),
     }));
     expect(remaining).toEqual({
       deletion: expect.objectContaining({
@@ -225,10 +264,18 @@ describe("Workspace deletion", () => {
         status: "deleted",
       }),
       memberships: [],
+      migrationJobs: [],
       organizations: [],
       projections: [],
       testimonials: [],
+      verifications: [],
     });
+    await expect(
+      t.run((ctx) => ctx.db.system.get("_storage", verificationStorageId)),
+    ).resolves.toBeNull();
+    await expect(
+      t.run((ctx) => ctx.db.system.get("_storage", migrationStorageId)),
+    ).resolves.toBeNull();
     await expect(
       owner.client.query(api.workspaceDeletion.getStatus, {
         deletionId: prepared.deletionId,
