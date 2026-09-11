@@ -940,6 +940,7 @@ export default defineSchema({
     assistantImport: v.optional(v.boolean()),
     importedFileVerified: v.optional(v.boolean()),
     importCopyStartedAt: v.optional(v.number()),
+    importCopyCleanupResolvedAt: v.optional(v.number()),
     importItemId: v.optional(v.id("testimonialImportItems")),
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
@@ -1149,6 +1150,8 @@ export default defineSchema({
     ),
     kind: v.union(v.literal("image"), v.literal("video"), v.literal("upload")),
     resourceId: v.string(),
+    sharingStage: v.optional(v.number()),
+    sharingCursor: v.optional(v.string()),
     retained: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
   })

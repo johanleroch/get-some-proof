@@ -630,7 +630,7 @@ describe("Testimonial moderation and Public Projection", () => {
         }),
       ).rejects.toMatchObject(accessDenied);
       await expect(
-        member.client.mutation(api.testimonialModeration.remove, {
+        member.client.action(api.videoMedia.remove, {
           organizationId: brand.id,
           testimonialId: created.testimonialId,
         }),
@@ -668,12 +668,12 @@ describe("Testimonial moderation and Public Projection", () => {
         publicSlug: "acme-proof",
       }),
     ).toBe(0);
-    await owner.client.mutation(api.testimonialModeration.remove, {
+    await owner.client.action(api.videoMedia.remove, {
       organizationId: brand.id,
       testimonialId: created.testimonialId,
     });
     await expect(
-      owner.client.mutation(api.testimonialModeration.remove, {
+      owner.client.action(api.videoMedia.remove, {
         organizationId: brand.id,
         testimonialId: created.testimonialId,
       }),
@@ -772,7 +772,7 @@ describe("Testimonial moderation and Public Projection", () => {
         });
       }
     });
-    await owner.client.mutation(api.testimonialModeration.remove, {
+    await owner.client.action(api.videoMedia.remove, {
       organizationId: brand.id,
       testimonialId: created.testimonialId,
     });

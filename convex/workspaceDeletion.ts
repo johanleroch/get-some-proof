@@ -449,6 +449,23 @@ async function deletePhaseBatch(
   if (phaseIndex === -1) deletionUnavailable();
   const phase = purgePhases[phaseIndex] ?? "organization";
   const organizationId = deletion.organizationId;
+  await assertMediaDeleted(ctx, deletion._id);
+  const unresolved = await ctx.db
+    .query("videoImportCleanupIntents")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .first();
+  if (unresolved)
+    throw new Error(
+      "Waiting for the video provider to confirm all media cleanup.",
+    );
+  const pendingMedia = await ctx.db
+    .query("videoProviderCleanupJobs")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .first();
+  if (pendingMedia) {
+    await ctx.db.patch(deletionId, { phase: "providerCleanup" });
+    return false;
+  }
   let records: Array<{
     _id: Id<TableNames>;
     [key: string]: unknown;
@@ -738,23 +755,6 @@ async function deletePhaseBatch(
       }
       break;
     case "organization": {
-      await assertMediaDeleted(ctx, deletion._id);
-      const unresolved = await ctx.db
-        .query("videoImportCleanupIntents")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        )
-        .first();
-      const pendingMedia = await ctx.db
-        .query("videoProviderCleanupJobs")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        )
-        .first();
-      if (unresolved || pendingMedia)
-        throw new Error(
-          "Waiting for the video provider to confirm all media cleanup.",
-        );
       const organization = await ctx.db.get(organizationId);
       if (
         !deletion.mediaProgress?.inventoryComplete &&

@@ -1,4 +1,7 @@
-import { imageUsedElsewhere } from "./sharedDeletionImages";
+import {
+  advanceAccountImageSharingCheck,
+  imageUsedElsewhere,
+} from "./sharedDeletionImages";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -73,6 +76,7 @@ export async function registerMedia(
     const deletion = await ctx.db.get(deletionId);
     if (
       deletion &&
+      !("ownerUserId" in deletion) &&
       (await imageUsedElsewhere(
         ctx,
         target.resourceId as Id<"_storage">,
@@ -123,9 +127,7 @@ export async function registerImages(
   }
 }
 
-export async function registerVideo(
-  ctx: MutationCtx,
-  deletionId: DeletionId,
+export function videoCleanupTargets(
   asset: Pick<
     Doc<"videoAssets">,
     | "provider"
@@ -133,20 +135,32 @@ export async function registerVideo(
     | "providerUploadId"
     | "downloadProviderAssetId"
   >,
+): Target[] {
+  return [
+    ...[asset.providerAssetId, asset.downloadProviderAssetId].flatMap((id) =>
+      id
+        ? [{ provider: asset.provider, kind: "video" as const, resourceId: id }]
+        : [],
+    ),
+    ...(asset.providerUploadId && !asset.providerAssetId
+      ? [
+          {
+            provider: asset.provider,
+            kind: "upload" as const,
+            resourceId: asset.providerUploadId,
+          },
+        ]
+      : []),
+  ];
+}
+
+export async function registerVideo(
+  ctx: MutationCtx,
+  deletionId: DeletionId,
+  asset: Parameters<typeof videoCleanupTargets>[0],
 ) {
-  for (const id of [asset.providerAssetId, asset.downloadProviderAssetId])
-    if (id)
-      await registerMedia(ctx, deletionId, {
-        provider: asset.provider,
-        kind: "video",
-        resourceId: id,
-      });
-  if (asset.providerUploadId && !asset.providerAssetId)
-    await registerMedia(ctx, deletionId, {
-      provider: asset.provider,
-      kind: "upload",
-      resourceId: asset.providerUploadId,
-    });
+  for (const target of videoCleanupTargets(asset))
+    await registerMedia(ctx, deletionId, target);
 }
 
 /** Called with the exact provider snapshot whose deletion just succeeded. */
@@ -161,15 +175,7 @@ export async function confirmVideoCleanup(
       ? deletion.accountDeletionId
       : deletionId;
   await registerVideo(ctx, owner, asset);
-  const resources = [
-    ...[asset.providerAssetId, asset.downloadProviderAssetId].flatMap((id) =>
-      id ? [{ kind: "video" as const, id }] : [],
-    ),
-    ...(asset.providerUploadId && !asset.providerAssetId
-      ? [{ kind: "upload" as const, id: asset.providerUploadId }]
-      : []),
-  ];
-  for (const resource of resources) {
+  for (const resource of videoCleanupTargets(asset)) {
     const target = await ctx.db
       .query("deletionMediaTargets")
       .withIndex("by_deletion_resource", (q) =>
@@ -177,7 +183,7 @@ export async function confirmVideoCleanup(
           .eq("deletionId", owner)
           .eq("provider", asset.provider)
           .eq("kind", resource.kind)
-          .eq("resourceId", resource.id),
+          .eq("resourceId", resource.resourceId),
       )
       .unique();
     if (target && target.deletedAt === undefined) {
@@ -238,7 +244,14 @@ export const complete = internalMutation({
       if (!storageId) throw new Error("Invalid image reference.");
       const deletion = await ctx.db.get(target.deletionId);
       if (!deletion) throw new Error("Deletion unavailable.");
-      if (await imageUsedElsewhere(ctx, storageId, deletion)) {
+      const sharing =
+        "ownerUserId" in deletion
+          ? await advanceAccountImageSharingCheck(ctx, target, deletion)
+          : (await imageUsedElsewhere(ctx, storageId, deletion))
+            ? "shared"
+            : "exclusive";
+      if (sharing === "pending") return null;
+      if (sharing === "shared") {
         const progress = deletion.mediaProgress ?? emptyMediaProgress();
         await ctx.db.patch(targetId, { retained: true, deletedAt: Date.now() });
         await ctx.db.patch(target.deletionId, {

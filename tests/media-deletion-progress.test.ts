@@ -58,6 +58,19 @@ describe("confirmed media deletion progress", () => {
     });
     const profileImage = await t.run(async (ctx) => {
       await ctx.db.patch(second.id, { logoStorageId: avatar });
+      for (let index = 0; index < 64; index++) {
+        await ctx.db.insert("testimonials", {
+          organizationId: second.id,
+          clientSubmissionId: `shared-${index}`,
+          submissionType: "text",
+          moderationStatus: "pending",
+          submitterName: "Fixture",
+          text: "Shared avatar",
+          avatarStorageId: avatar,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
       const storageId = await ctx.storage.store(
         new Blob(["profile"], { type: "image/png" }),
       );
@@ -86,7 +99,14 @@ describe("confirmed media deletion progress", () => {
     expect(
       await owner.client.query(api.accountDeletion.getMine, {}),
     ).toMatchObject({ mediaProgress: { imagesTotal: 3, imagesDeleted: 0 } });
-    await t.action(internal.accountDeletion.processDeletion, { deletionId });
+    for (let step = 0; step < 20; step++) {
+      await t.action(internal.accountDeletion.processDeletion, { deletionId });
+      if (
+        (await owner.client.query(api.accountDeletion.getMine, {}))
+          ?.mediaProgress?.imagesDeleted === 1
+      )
+        break;
+    }
     expect(
       await owner.client.query(api.accountDeletion.getMine, {}),
     ).toMatchObject({ mediaProgress: { imagesTotal: 3, imagesDeleted: 1 } });
@@ -182,6 +202,12 @@ describe("confirmed media deletion progress", () => {
 
   it("cleans up text testimonial images before finalization and exposes progress only to the Owner", async () => {
     const { t, owner, project, avatar, poster, testimonialId } = await setup();
+    await expect(
+      owner.client.mutation(api.testimonialModeration.remove, {
+        organizationId: project.id,
+        testimonialId,
+      }),
+    ).rejects.toThrow("Refresh this page");
     const prepared = await owner.client.mutation(
       internal.videoMedia.prepareRemoval,
       { organizationId: project.id, testimonialId },

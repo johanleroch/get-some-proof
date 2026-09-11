@@ -1,4 +1,4 @@
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 
 /** An image still used outside the deletion scope belongs to the remaining entity. */
@@ -12,41 +12,6 @@ export async function imageUsedElsewhere(
     accountId?: Id<"accounts">;
   },
 ) {
-  if (scope.accountId && scope.ownerUserId) {
-    for await (const org of ctx.db
-      .query("organizations")
-      .withIndex("by_logo_storage_id", (q) => q.eq("logoStorageId", storageId)))
-      if (org.accountId !== scope.accountId) return true;
-    const profiles = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_avatar_storage_id", (q) =>
-        q.eq("avatarStorageId", storageId),
-      )
-      .take(2);
-    if (profiles.some((profile) => profile.userId !== scope.ownerUserId))
-      return true;
-    const queries = [
-      ctx.db
-        .query("testimonials")
-        .withIndex("by_avatar_storage_id", (q) =>
-          q.eq("avatarStorageId", storageId),
-        ),
-      ctx.db
-        .query("testimonials")
-        .withIndex("by_poster_storage_id", (q) =>
-          q.eq("posterStorageId", storageId),
-        ),
-      ctx.db
-        .query("testimonialImages")
-        .withIndex("by_storage_id", (q) => q.eq("storageId", storageId)),
-    ];
-    for (const query of queries)
-      for await (const record of query) {
-        const org = await ctx.db.get(record.organizationId);
-        if (org?.accountId !== scope.accountId) return true;
-      }
-    return false;
-  }
   const organizations = await ctx.db
     .query("organizations")
     .withIndex("by_logo_storage_id", (q) => q.eq("logoStorageId", storageId))
@@ -150,4 +115,65 @@ export async function imageUsedElsewhere(
     );
   }
   return false;
+}
+
+/** One bounded page per mutation; a popular image never restarts a full scan. */
+export async function advanceAccountImageSharingCheck(
+  ctx: MutationCtx,
+  target: Doc<"deletionMediaTargets">,
+  account: { accountId: Id<"accounts">; ownerUserId: string },
+): Promise<"pending" | "shared" | "exclusive"> {
+  const storageId = target.resourceId as Id<"_storage">;
+  const stage = target.sharingStage ?? 0;
+  if (stage >= 5) return "exclusive";
+  const opts = { cursor: target.sharingCursor ?? null, numItems: 16 };
+  const page =
+    stage === 0
+      ? await ctx.db
+          .query("organizations")
+          .withIndex("by_logo_storage_id", (q) =>
+            q.eq("logoStorageId", storageId),
+          )
+          .paginate(opts)
+      : stage === 1
+        ? await ctx.db
+            .query("userProfiles")
+            .withIndex("by_avatar_storage_id", (q) =>
+              q.eq("avatarStorageId", storageId),
+            )
+            .paginate(opts)
+        : stage === 2
+          ? await ctx.db
+              .query("testimonials")
+              .withIndex("by_avatar_storage_id", (q) =>
+                q.eq("avatarStorageId", storageId),
+              )
+              .paginate(opts)
+          : stage === 3
+            ? await ctx.db
+                .query("testimonials")
+                .withIndex("by_poster_storage_id", (q) =>
+                  q.eq("posterStorageId", storageId),
+                )
+                .paginate(opts)
+            : await ctx.db
+                .query("testimonialImages")
+                .withIndex("by_storage_id", (q) => q.eq("storageId", storageId))
+                .paginate(opts);
+  for (const record of page.page) {
+    if ("organizationId" in record) {
+      if (
+        (await ctx.db.get(record.organizationId))?.accountId !==
+        account.accountId
+      )
+        return "shared";
+    } else if ("userId" in record) {
+      if (record.userId !== account.ownerUserId) return "shared";
+    } else if (record.accountId !== account.accountId) return "shared";
+  }
+  await ctx.db.patch(target._id, {
+    sharingStage: page.isDone ? stage + 1 : stage,
+    sharingCursor: page.isDone ? undefined : page.continueCursor,
+  });
+  return page.isDone && stage === 4 ? "exclusive" : "pending";
 }

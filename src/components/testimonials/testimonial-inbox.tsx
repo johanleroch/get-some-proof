@@ -1083,8 +1083,7 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
-  const removeText = useAction(api.videoMedia.remove);
-  const removeVideo = useAction(api.videoMedia.remove);
+  const remove = useAction(api.videoMedia.remove);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
   );
@@ -1186,8 +1185,6 @@ export function TestimonialInbox({
       organizationId: activeOrganization.id,
       testimonialId: deleteTarget.testimonialId,
     };
-    const remove =
-      deleteTarget.submissionType === "video" ? removeVideo : removeText;
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),

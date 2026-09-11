@@ -1,3 +1,4 @@
+import { registerVideo, videoCleanupTargets } from "./deletionMedia";
 import { removePublicProjection } from "./publicProjection";
 import { cancel, type WorkflowId } from "@convex-dev/workflow";
 import { deleteTestimonialImages } from "./testimonialImages";
@@ -25,6 +26,24 @@ export async function enqueueAssetCleanup(
   },
 ) {
   if (!input.providerAssetId && !input.providerUploadId) return;
+  const workspaceDeletion = await ctx.db
+    .query("workspaceDeletions")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", input.organizationId),
+    )
+    .unique();
+  if (workspaceDeletion && workspaceDeletion.status !== "deleted")
+    await registerVideo(ctx, workspaceDeletion._id, input);
+  if (input.testimonialId) {
+    const deletion = await ctx.db
+      .query("videoMediaDeletions")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", input.testimonialId!),
+      )
+      .unique();
+    if (deletion && deletion.status !== "deleted")
+      await registerVideo(ctx, deletion._id, input);
+  }
   const existing = input.providerAssetId
     ? await ctx.db
         .query("videoProviderCleanupJobs")
@@ -74,43 +93,21 @@ export async function enqueueVideoAssetCleanup(
         .unique()
     : null;
   if (deletion?.mediaProgress?.inventoryComplete) {
-    const ids = [asset.providerAssetId, asset.downloadProviderAssetId].filter(
-      (id): id is string => !!id,
-    );
     const receipts = await Promise.all(
-      ids.map((id) =>
+      videoCleanupTargets(asset).map((target) =>
         ctx.db
           .query("deletionMediaTargets")
           .withIndex("by_deletion_resource", (q) =>
             q
               .eq("deletionId", deletion._id)
-              .eq("provider", asset.provider)
-              .eq("kind", "video")
-              .eq("resourceId", id),
+              .eq("provider", target.provider)
+              .eq("kind", target.kind)
+              .eq("resourceId", target.resourceId),
           )
           .unique(),
       ),
     );
-    const upload =
-      asset.providerUploadId && !asset.providerAssetId
-        ? await ctx.db
-            .query("deletionMediaTargets")
-            .withIndex("by_deletion_resource", (q) =>
-              q
-                .eq("deletionId", deletion._id)
-                .eq("provider", asset.provider)
-                .eq("kind", "upload")
-                .eq("resourceId", asset.providerUploadId!),
-            )
-            .unique()
-        : null;
-    if (
-      receipts.every((receipt) => receipt?.deletedAt !== undefined) &&
-      (!asset.providerUploadId ||
-        asset.providerAssetId ||
-        upload?.deletedAt !== undefined)
-    )
-      return;
+    if (receipts.every((receipt) => receipt?.deletedAt !== undefined)) return;
     if (deletion.status !== "deleted")
       throw new Error("New video media must be cleaned up before deletion.");
   }
