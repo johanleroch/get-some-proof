@@ -251,6 +251,27 @@ export const continueTestimonialRelationshipPurge = internalMutation({
   },
 });
 
+/** An explicit deletion ends reversibility but retains the Spam credit history. */
+export async function finishSpamQuarantineForDeletion(
+  ctx: MutationCtx,
+  testimonial: Doc<"testimonials">,
+) {
+  if (testimonial.moderationStatus !== "spam") return;
+  const quarantine = await ctx.db
+    .query("spamQuarantines")
+    .withIndex("by_testimonial", (index) =>
+      index.eq("testimonialId", testimonial._id),
+    )
+    .order("desc")
+    .first();
+  if (quarantine?.status === "active") {
+    await ctx.db.patch(quarantine._id, {
+      status: "expired",
+      updatedAt: Date.now(),
+    });
+  }
+}
+
 /** Invalidates proof immediately and resumes its private relationship purge in bounded batches.
  * Owner video deletion must complete current provider media deletion before entering here.
  */
@@ -262,6 +283,8 @@ export async function deleteTestimonialRecords(
     | "consentWithdrawal"
     | "spamExpiry" = "permanentDeletion",
 ) {
+  if (reason === "permanentDeletion")
+    await finishSpamQuarantineForDeletion(ctx, testimonial);
   if (testimonial.submissionType === "video") {
     const asset = await ctx.db
       .query("videoAssets")

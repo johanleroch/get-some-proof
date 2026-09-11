@@ -1137,7 +1137,10 @@ describe("Testimonial moderation and Public Projection", () => {
     }));
     expect(stored.testimonial).toBeNull();
     expect(stored.credit?.restoredAt).toBeGreaterThan(0);
-    expect(stored.quarantine?.creditRestored).toBe(true);
+    expect(stored.quarantine).toMatchObject({
+      creditRestored: true,
+      status: "expired",
+    });
     await t.run((ctx) =>
       ctx.db.patch(quarantine!._id, { expiresAt: Date.now() - 1 }),
     );
@@ -1145,7 +1148,7 @@ describe("Testimonial moderation and Public Projection", () => {
       t.mutation(internal.testimonialModeration.expireSpamQuarantine, {
         quarantineId: quarantine!._id,
       }),
-    ).resolves.toEqual({ expired: true });
+    ).resolves.toEqual({ expired: false });
   });
 
   it("permanently removes expired Spam while preserving its restored lifetime credit", async () => {
@@ -1367,7 +1370,9 @@ describe("Testimonial moderation and Public Projection", () => {
       quarantine: await ctx.db.query("spamQuarantines").unique(),
       testimonial: await ctx.db.get(submitted.testimonialId),
     }));
-    expect(Boolean(state.deletion) && Boolean(state.quarantine)).toBe(false);
+    expect(
+      Boolean(state.deletion) && state.quarantine?.status === "active",
+    ).toBe(false);
     expect(
       state.deletion !== null ||
         (state.quarantine?.status === "active" &&
