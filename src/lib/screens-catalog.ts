@@ -360,6 +360,20 @@ export const screenSections: ScreenSection[] = [
     title: "Dialogs and feedback",
     screens: [
       {
+        slug: "testimonial-deletion-progress",
+        title: "Testimonial media cleanup",
+        description:
+          "Confirmed image and video cleanup before Testimonial deletion.",
+        fixturePath: "/visual-evidence/testimonial-deletion-progress",
+      },
+      {
+        slug: "account-deletion-progress",
+        title: "Account media cleanup",
+        description:
+          "Media cleanup across every Project before Account deletion.",
+        fixturePath: "/visual-evidence/account-deletion-progress",
+      },
+      {
         slug: "testimonial-details",
         title: "Details shown on the Wall",
         description:

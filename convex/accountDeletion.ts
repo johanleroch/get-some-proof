@@ -1,3 +1,9 @@
+import {
+  emptyMediaProgress,
+  mediaDeletionProgress,
+} from "./domain/mediaDeletionProgress";
+import { registerImages, assertMediaDeleted } from "./deletionMedia";
+import { deleteNextMedia } from "./deletionMediaActions";
 import { processWorkspaceDeletion } from "./workspaceDeletion";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -19,6 +25,11 @@ const leaseMs = 120_000;
 const stepValidator = v.union(
   v.null(),
   v.object({ kind: v.literal("continue") }),
+  v.object({
+    kind: v.literal("inventoryProject"),
+    deletionId: v.id("workspaceDeletions"),
+  }),
+  v.object({ kind: v.literal("accountMedia") }),
   v.object({
     kind: v.literal("subscription"),
     stripeSubscriptionId: v.string(),
@@ -79,6 +90,7 @@ export const getMine = query({
         v.literal("failed"),
         v.literal("deleted"),
       ),
+      mediaProgress: v.optional(mediaDeletionProgress),
       lastError: v.optional(v.string()),
     }),
   ),
@@ -95,7 +107,11 @@ export const getMine = query({
           .unique()
       : null;
     return deletion
-      ? { status: deletion.status, lastError: deletion.lastError }
+      ? {
+          status: deletion.status,
+          lastError: deletion.lastError,
+          mediaProgress: deletion.mediaProgress,
+        }
       : null;
   },
 });
@@ -199,6 +215,54 @@ export const advance = internalMutation({
         await ctx.db.delete(subscription._id);
       return { kind: "continue" as const };
     }
+    if (!deletion.projectsInventoried) {
+      const page = await ctx.db
+        .query("organizations")
+        .withIndex("by_account_open", (q) => q.eq("accountId", accountId))
+        .paginate({ cursor: deletion.inventoryCursor ?? null, numItems: 16 });
+      for (const project of page.page)
+        await ctx.runMutation(
+          internal.workspaceDeletion.prepareAccountProject,
+          { accountDeletionId: deletion._id, organizationId: project._id },
+        );
+      await ctx.db.patch(deletion._id, {
+        projectsInventoried: page.isDone,
+        inventoryCursor: page.isDone ? undefined : page.continueCursor,
+      });
+      return { kind: "continue" as const };
+    }
+    const inventory = await ctx.db
+      .query("workspaceDeletions")
+      .withIndex("by_account_inventory", (q) =>
+        q
+          .eq("accountDeletionId", deletion._id)
+          .eq("mediaInventoryComplete", false),
+      )
+      .first();
+    if (inventory)
+      return { kind: "inventoryProject" as const, deletionId: inventory._id };
+    if (!deletion.mediaProgress?.inventoryComplete) {
+      const profile = await ctx.db
+        .query("userProfiles")
+        .withIndex("by_user_id", (q) => q.eq("userId", deletion.ownerUserId))
+        .unique();
+      await registerImages(ctx, deletion._id, profile);
+      const fresh = await ctx.db.get(deletion._id);
+      await ctx.db.patch(deletion._id, {
+        mediaProgress: {
+          ...(fresh?.mediaProgress ?? emptyMediaProgress()),
+          inventoryComplete: true,
+        },
+      });
+      return { kind: "continue" as const };
+    }
+    const ownMedia = await ctx.db
+      .query("deletionMediaTargets")
+      .withIndex("by_deletion_pending", (q) =>
+        q.eq("deletionId", deletion._id).eq("deletedAt", undefined),
+      )
+      .first();
+    if (ownMedia) return { kind: "accountMedia" as const };
     const project = await ctx.db
       .query("organizations")
       .withIndex("by_account_open", (q) => q.eq("accountId", accountId))
@@ -245,6 +309,12 @@ export const advance = internalMutation({
       await ctx.db.delete(profile._id);
       return { kind: "continue" as const };
     }
+    await assertMediaDeleted(ctx, deletion._id);
+    const userProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user_id", (q) => q.eq("userId", deletion.ownerUserId))
+      .unique();
+    if (userProfile) await ctx.db.delete(userProfile._id);
     // Keep the minimal closure tombstone to reject late webhooks and new writes.
     await ctx.db.patch(accountId, {
       selectedFreeProjectId: undefined,
@@ -332,6 +402,12 @@ export const processDeletion = internalAction({
           deletionId: args.deletionId,
           markerId: step.markerId,
         });
+      } else if (step?.kind === "inventoryProject") {
+        await ctx.runMutation(internal.workspaceDeletionInventory.advance, {
+          deletionId: step.deletionId,
+        });
+      } else if (step?.kind === "accountMedia") {
+        await deleteNextMedia(ctx, args.deletionId);
       } else if (step?.kind === "project") {
         const deletionId: Id<"workspaceDeletions"> = await ctx.runMutation(
           internal.workspaceDeletion.prepareAccountProject,
@@ -341,6 +417,12 @@ export const processDeletion = internalAction({
           },
         );
         await processWorkspaceDeletion(ctx, { deletionId });
+        const progress = await ctx.runQuery(
+          internal.workspaceDeletion.readDeletion,
+          { deletionId },
+        );
+        if (progress?.status === "failed")
+          throw new Error("Project media cleanup needs another attempt.");
       }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : String(cause);

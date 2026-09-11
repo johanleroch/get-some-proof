@@ -188,7 +188,7 @@ it("starts a copy at most once and refuses an expired reservation", async () => 
   ).toBeNull();
 });
 
-it("keeps a cleanup job created between the workspace media snapshot and its purge", async () => {
+it("retains an asset that changed after the workspace media snapshot", async () => {
   const { t, project, assetId } = await copyFixture();
   await t.mutation(internal.testimonialImportVideo.getCopyContext, { assetId });
   const deletionId = await t.run((ctx) =>
@@ -212,15 +212,20 @@ it("keeps a cleanup job created between the workspace media snapshot and its pur
   );
   await t.mutation(internal.workspaceDeletion.completeMediaBatch, {
     deletionId,
-    assetIds: [assetId],
+    targets: snapshot,
   });
-  await t.run((ctx) => ctx.db.patch(deletionId, { phase: "videoCleanupJobs" }));
-  await t.mutation(internal.workspaceDeletion.purgeBatch, { deletionId });
-  const jobs = await t.run((ctx) =>
-    ctx.db.query("videoProviderCleanupJobs").collect(),
-  );
-  expect(jobs).toHaveLength(1);
-  expect(jobs[0]!.providerAssetId).toBe("arrived-during-deletion");
+  expect(await t.run((ctx) => ctx.db.get(assetId))).toMatchObject({
+    providerAssetId: "arrived-during-deletion",
+  });
+  const next = await t.query(internal.workspaceDeletion.readMediaBatch, {
+    deletionId,
+  });
+  expect(next[0]!.providerAssetIds).toEqual(["arrived-during-deletion"]);
+  await t.mutation(internal.workspaceDeletion.completeMediaBatch, {
+    deletionId,
+    targets: next,
+  });
+  expect(await t.run((ctx) => ctx.db.get(assetId))).toBeNull();
 });
 
 it("finds an orphan on a later inventory page and holds capacity until provider deletion succeeds", async () => {

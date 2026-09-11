@@ -599,8 +599,8 @@ describe("TestimonialInbox (live wiring)", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it("Delete asks first, removes text by the mutation and video by the action", async () => {
-    const removeText = mocks.functions["testimonialModeration:remove"]!;
+  it("Delete asks first and uses the media cleanup action for text and video", async () => {
+    const removeText = mocks.functions["videoMedia:remove"]!;
     const removeVideo = mocks.functions["videoMedia:remove"]!;
     render(<TestimonialInbox slug="fernhill" />);
 
@@ -628,7 +628,7 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(successToast()).toHaveTextContent(
       "Testimonial permanently deleted.",
     );
-    expect(removeVideo).not.toHaveBeenCalled();
+    expect(removeVideo).toHaveBeenCalledTimes(1);
 
     await chooseMenuItem("Remy Jupille", "Delete permanently");
     fireEvent.click(
@@ -645,13 +645,13 @@ describe("TestimonialInbox (live wiring)", () => {
       }),
     );
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
-    expect(removeText).toHaveBeenCalledTimes(1);
-    // The action came from useAction, the mutation from useMutation.
+    expect(removeText).toHaveBeenCalledTimes(2);
+    // Both kinds use the action that confirms media cleanup first.
     expect(calledFunctions(mocks.useAction)).toContainEqual([
       "videoMedia:remove",
       undefined,
     ]);
-    expect(calledFunctions(mocks.useMutation)).toContainEqual([
+    expect(calledFunctions(mocks.useMutation)).not.toContainEqual([
       "testimonialModeration:remove",
       undefined,
     ]);

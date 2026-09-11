@@ -65,6 +65,55 @@ export async function enqueueVideoAssetCleanup(
   testimonialId: Id<"testimonials"> | undefined = asset.testimonialId,
 ) {
   await rememberUnresolvedImportCopy(ctx, asset);
+  const deletion = testimonialId
+    ? await ctx.db
+        .query("videoMediaDeletions")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", testimonialId),
+        )
+        .unique()
+    : null;
+  if (deletion?.mediaProgress?.inventoryComplete) {
+    const ids = [asset.providerAssetId, asset.downloadProviderAssetId].filter(
+      (id): id is string => !!id,
+    );
+    const receipts = await Promise.all(
+      ids.map((id) =>
+        ctx.db
+          .query("deletionMediaTargets")
+          .withIndex("by_deletion_resource", (q) =>
+            q
+              .eq("deletionId", deletion._id)
+              .eq("provider", asset.provider)
+              .eq("kind", "video")
+              .eq("resourceId", id),
+          )
+          .unique(),
+      ),
+    );
+    const upload =
+      asset.providerUploadId && !asset.providerAssetId
+        ? await ctx.db
+            .query("deletionMediaTargets")
+            .withIndex("by_deletion_resource", (q) =>
+              q
+                .eq("deletionId", deletion._id)
+                .eq("provider", asset.provider)
+                .eq("kind", "upload")
+                .eq("resourceId", asset.providerUploadId!),
+            )
+            .unique()
+        : null;
+    if (
+      receipts.every((receipt) => receipt?.deletedAt !== undefined) &&
+      (!asset.providerUploadId ||
+        asset.providerAssetId ||
+        upload?.deletedAt !== undefined)
+    )
+      return;
+    if (deletion.status !== "deleted")
+      throw new Error("New video media must be cleaned up before deletion.");
+  }
   if (asset.cleanupScheduled) return;
   await ctx.db.patch(asset._id, { cleanupScheduled: true });
   await enqueueAssetCleanup(ctx, {
@@ -261,6 +310,7 @@ export async function deleteTestimonialRecords(
     | "permanentDeletion"
     | "consentWithdrawal"
     | "spamExpiry" = "permanentDeletion",
+  mediaAlreadyHandled = false,
 ) {
   if (testimonial.submissionType === "video") {
     const asset = await ctx.db
@@ -270,7 +320,7 @@ export async function deleteTestimonialRecords(
       )
       .unique();
     if (asset) {
-      await preserveImportCopyCleanup(ctx, asset);
+      if (!mediaAlreadyHandled) await preserveImportCopyCleanup(ctx, asset);
       if (reason !== "permanentDeletion")
         await enqueueVideoAssetCleanup(ctx, asset, testimonial._id);
       await ctx.db.delete(asset._id);
@@ -292,8 +342,10 @@ export async function deleteTestimonialRecords(
     testimonial.submissionType === "video",
     reason !== "permanentDeletion",
   );
-  await deleteTestimonialImages(ctx, testimonial._id);
-  if (testimonial.avatarStorageId)
+  await deleteTestimonialImages(ctx, testimonial._id, mediaAlreadyHandled);
+  if (!mediaAlreadyHandled && testimonial.avatarStorageId)
     await ctx.storage.delete(testimonial.avatarStorageId);
+  if (!mediaAlreadyHandled && testimonial.posterStorageId)
+    await ctx.storage.delete(testimonial.posterStorageId);
   await ctx.db.delete(testimonial._id);
 }
