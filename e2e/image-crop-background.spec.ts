@@ -46,14 +46,14 @@ test("a transparent portrait crop exports as WebP without flattening its alpha",
     const result = await createImageBitmap(blob);
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 512;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(result, 0, 0);
+    const outputContext = canvas.getContext("2d")!;
+    outputContext.drawImage(result, 0, 0);
     URL.revokeObjectURL(source);
     result.close();
     return {
       type: blob.type,
-      corner: [...ctx.getImageData(4, 4, 1, 1).data],
-      center: [...ctx.getImageData(256, 256, 1, 1).data],
+      corner: [...outputContext.getImageData(4, 4, 1, 1).data],
+      center: [...outputContext.getImageData(256, 256, 1, 1).data],
     };
   });
   expect(pixels.type).toBe("image/webp");
