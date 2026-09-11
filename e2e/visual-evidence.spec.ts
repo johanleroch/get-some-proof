@@ -274,6 +274,13 @@ for (const screen of config.screens) {
       await expect(
         page.getByRole("dialog", { name: "Manage testimonials" }),
       ).toBeVisible();
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll<HTMLImageElement>('[role="dialog"] img')]
+          .filter(
+            (image) => image.getBoundingClientRect().top < window.innerHeight,
+          )
+          .every((image) => image.complete && image.naturalWidth > 0),
+      );
     }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",

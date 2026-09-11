@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import type { Id } from "@convex/_generated/dataModel";
 import {
   StudioView,
   type StudioWidget,
@@ -18,6 +19,12 @@ const studioCandidates: StudioCandidate[] = [
       role: "Founder",
       avatarUrl: null,
       publishedAt: 1,
+      images: [
+        {
+          id: "studio-image" as Id<"testimonialImages">,
+          url: "/brand/testimonial-sample.svg",
+        },
+      ],
       rating: 5,
       text: "Our customers finally have a place to tell their stories. Setup took ten minutes and the first testimonial arrived that afternoon.",
       richText: [
@@ -34,6 +41,21 @@ const studioCandidates: StudioCandidate[] = [
           ],
         },
       ],
+    },
+  },
+  {
+    testimonialId: "remy",
+    card: {
+      id: "remy",
+      type: "video",
+      name: "Remy Jupille",
+      company: "RemyWeb Agency",
+      role: "Founder",
+      avatarUrl: null,
+      publishedAt: 2,
+      aspectRatio: "9:16",
+      captionsAvailable: false,
+      playbackId: "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y",
     },
   },
   {
@@ -121,7 +143,7 @@ export function StudioFixture({
   choosing?: boolean;
   preview?: boolean;
 }) {
-  const [candidateCount, setCandidateCount] = useState(3);
+  const [candidateCount, setCandidateCount] = useState(4);
   const [widgets, setWidgets] = useState<StudioWidget[]>([seed]);
   const [activeId, setActiveId] = useState<string | null>(
     editor ? seed._id : null,

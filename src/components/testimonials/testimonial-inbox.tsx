@@ -16,7 +16,6 @@ import {
   IconExternalLink,
   IconEyeOff,
   IconGripVertical,
-  IconPlayerPlayFilled,
   IconSend,
   IconVideoOff,
 } from "@tabler/icons-react";
@@ -37,10 +36,7 @@ import {
 import { api } from "@convex/_generated/api";
 import { defaultPrimaryColor } from "@convex/domain/brand";
 import type { Id } from "@convex/_generated/dataModel";
-import type {
-  TestimonialCardTextValue,
-  TestimonialCardVideoValue,
-} from "@convex/testimonialCardValue";
+import type { TestimonialCardTextValue } from "@convex/testimonialCardValue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,10 +60,12 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { cn } from "@/lib/utils";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
-import { DesignQuote } from "@/components/testimonials/designs/design-parts";
-import { videoAspect } from "@/components/testimonials/testimonial-card-markup";
 import { Badge } from "@/components/ui/badge";
-import { Stars } from "@/components/templates/template-primitives";
+import {
+  TestimonialListFace,
+  TestimonialListIdentity,
+  TestimonialListWords,
+} from "./testimonial-list-presentation";
 import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
@@ -165,17 +163,6 @@ export type InboxMove = (
   afterTestimonialId: Id<"testimonials"> | undefined,
 ) => Promise<unknown>;
 
-function formatDuration(seconds: number) {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
-}
-
-/** A small still for the list: the Owner's own thumbnail, or a frame. */
-function stillUrl(card: TestimonialCardVideoValue) {
-  if (card.posterUrl) return card.posterUrl;
-  return `https://image.mux.com/${encodeURIComponent(card.playbackId)}/thumbnail.webp?width=192&time=${card.posterTimeSeconds ?? 0.5}`;
-}
-
 /**
  * The Video Asset's state while it is not yet Ready: a Badge in the status
  * vocabulary of DESIGN.md section 7 and one sentence. The sentence carries
@@ -211,19 +198,6 @@ function videoState(testimonial: VideoInboxTestimonial) {
 }
 
 /**
- * The still keeps the video's own shape, never a landscape crop of a portrait
- * clip: 48px wide when the video is portrait (what a phone records for the
- * Collection Form, 9:16 by default), 64px wide when it is not.
- */
-function stillBox(aspectRatio?: string): CSSProperties {
-  const [width, height] = videoAspect(aspectRatio);
-  return {
-    aspectRatio: `${width} / ${height}`,
-    width: width < height ? 48 : 64,
-  };
-}
-
-/**
  * The first thing in a row: the Customer's face when they sent one, the
  * display quote mark in the Brand accent otherwise (never initials), or the
  * video still that opens the playable card. A video that is not Ready shows
@@ -236,64 +210,31 @@ function InboxFace({
   onPreview: () => void;
   testimonial: InboxTestimonial;
 }) {
-  if (testimonial.submissionType === "text") {
-    return testimonial.card.avatarUrl ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        alt=""
-        className="size-12 shrink-0 rounded-full object-cover"
-        height={48}
-        loading="lazy"
-        src={testimonial.card.avatarUrl}
-        width={48}
-      />
-    ) : (
-      <span
-        aria-hidden="true"
-        className="grid size-12 shrink-0 place-items-center"
-      >
-        <span className="font-display translate-y-[0.3em] text-[44px] leading-none font-bold text-(--wall-accent) select-none">
-          &ldquo;
-        </span>
-      </span>
-    );
-  }
-  if (testimonial.card?.type === "video") {
+  if (testimonial.card) {
     return (
-      <button
-        aria-label={`Preview ${testimonial.submitterName}'s video`}
-        className="group/still bg-ink focus-visible:ring-ring relative block shrink-0 cursor-pointer overflow-hidden rounded-md outline-none focus-visible:ring-[3px]"
-        onClick={onPreview}
-        style={stillBox(testimonial.aspectRatio)}
-        type="button"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="size-full object-cover transition-transform duration-[var(--motion-base)] ease-[var(--ease-settle-soft)] group-hover/still:scale-105 motion-reduce:transition-none"
-          loading="lazy"
-          src={stillUrl(testimonial.card)}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 grid place-items-center bg-black/25 text-white"
-        >
-          <IconPlayerPlayFilled className="size-4" />
-        </span>
-        {testimonial.videoDurationSeconds ? (
-          <span
-            aria-hidden="true"
-            className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 font-mono text-xs leading-4 text-white tabular-nums"
-          >
-            {formatDuration(testimonial.videoDurationSeconds)}
-          </span>
-        ) : null}
-      </button>
+      <TestimonialListFace
+        testimonial={testimonial.card}
+        name={testimonial.submitterName}
+        onPreview={onPreview}
+        aspectRatio={
+          testimonial.submissionType === "video"
+            ? testimonial.aspectRatio
+            : undefined
+        }
+        durationSeconds={
+          testimonial.submissionType === "video"
+            ? testimonial.videoDurationSeconds
+            : undefined
+        }
+      />
     );
   }
   // No still yet, so nothing is drawn around what stands in for it: the
   // failed mark or the blob looking around sit alone in the face column.
-  if (testimonial.videoStatus === "failed") {
+  if (
+    testimonial.submissionType === "video" &&
+    testimonial.videoStatus === "failed"
+  ) {
     return (
       <span
         aria-hidden="true"
@@ -314,41 +255,6 @@ function InboxFace({
         size={40}
       />
     </span>
-  );
-}
-
-/** The words in full, with the marker swash on a highlighted phrase. */
-function InboxWords({
-  accentColor,
-  testimonial,
-}: {
-  accentColor: string;
-  testimonial: TestimonialCardTextValue;
-}) {
-  return (
-    <>
-      <DesignQuote
-        accentColor={accentColor}
-        className="type-body text-ink mt-1 max-w-prose"
-        testimonial={testimonial}
-      />
-      {testimonial.images?.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {testimonial.images.map((image, index) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              alt={`Image ${index + 1} from ${testimonial.name}`}
-              className="size-14 rounded-md object-cover"
-              height={56}
-              key={image.id}
-              loading="lazy"
-              src={image.url}
-              width={56}
-            />
-          ))}
-        </div>
-      ) : null}
-    </>
   );
 }
 
@@ -400,12 +306,6 @@ function InboxRow({
   const videoReady =
     testimonial.submissionType !== "video" ||
     testimonial.videoStatus === "ready";
-  const identity = testimonial.card
-    ? [testimonial.card.role, testimonial.card.company]
-        .filter(Boolean)
-        .join(" · ")
-    : "";
-  const rating = testimonial.card?.rating;
   const video =
     testimonial.submissionType === "video" ? videoState(testimonial) : null;
 
@@ -440,23 +340,13 @@ function InboxRow({
       </div>
 
       <div className="min-w-0 self-center">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {/* The stars stay on the name's line; the role and company wrap. */}
-          <span className="flex items-center gap-x-2">
-            <span className="type-ui text-ink font-semibold">
-              {testimonial.submitterName}
-            </span>
-            {rating ? (
-              <Stars className="shrink-0" rating={rating} size={14} />
-            ) : null}
-          </span>
-          {identity ? (
-            <span className="type-small text-ink-2 min-w-0">{identity}</span>
-          ) : null}
-        </div>
+        <TestimonialListIdentity
+          name={testimonial.submitterName}
+          testimonial={testimonial.card}
+        />
 
         {testimonial.submissionType === "text" ? (
-          <InboxWords
+          <TestimonialListWords
             accentColor={accentColor}
             testimonial={testimonial.card}
           />

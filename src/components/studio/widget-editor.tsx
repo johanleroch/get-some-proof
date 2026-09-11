@@ -420,6 +420,7 @@ export function WidgetEditor(
         </section>
       </div>
       <WidgetSelectionDialog
+        accentColor={draft.config.accentColor}
         open={selectionOpen}
         onOpenChange={setSelectionOpen}
         testimonialIds={draft.testimonialIds}

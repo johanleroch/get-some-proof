@@ -138,3 +138,49 @@ test("keeps selection out of the sidebar and supports search, removal and focus 
   await page.keyboard.press("Escape");
   await expect(manage).toBeFocused();
 });
+
+test("shows Inbox presentation and previews video without changing selection", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/studio-editor");
+  await page
+    .getByRole("button", { name: "Manage selection", exact: true })
+    .click();
+  const selection = page.getByRole("dialog", { name: "Manage testimonials" });
+  const maya = selection.locator('[data-studio-testimonial="maya"]');
+  await expect(
+    maya.getByText("Founder · Atelier June", { exact: true }),
+  ).toBeVisible();
+  await expect(maya.locator("mark")).toContainText(
+    "Our customers finally have a place to tell their stories.",
+  );
+  await expect(
+    maya.getByRole("img", { name: "Image 1 from Maya Laurent" }),
+  ).toBeVisible();
+  const preview = selection.getByRole("button", {
+    name: "Preview Remy Jupille's video",
+    exact: true,
+  });
+  await preview.click();
+  await expect(
+    page.getByRole("dialog", { name: "Remy Jupille’s video", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(selection).toBeVisible();
+  await expect(preview).toBeFocused();
+  await expect(
+    selection.getByRole("tab", { name: "Selected (3)", exact: true }),
+  ).toBeVisible();
+  await selection
+    .getByRole("checkbox", { name: "Select Remy Jupille", exact: true })
+    .check();
+  await selection
+    .getByRole("tab", { name: "Selected (4)", exact: true })
+    .click();
+  await expect(
+    selection.getByRole("button", {
+      name: "Preview Remy Jupille's video",
+      exact: true,
+    }),
+  ).toBeVisible();
+});
