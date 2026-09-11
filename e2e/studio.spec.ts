@@ -145,6 +145,86 @@ test("keeps selection out of the sidebar and supports search, removal and focus 
   await expect(manage).toBeFocused();
 });
 
+test("selects and clears all loaded testimonials from the selection dialog", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/studio-editor");
+  await page
+    .getByRole("button", { name: "Manage selection", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Manage testimonials" });
+  const selectAll = dialog.getByRole("checkbox", {
+    name: "Select all",
+    exact: true,
+  });
+  const captureToggleFrames = () =>
+    dialog.evaluate(async (root) => {
+      const checkbox = root.querySelector('[role="checkbox"]');
+      const firstCard = root.querySelector("[data-studio-testimonial]");
+      if (!(checkbox instanceof HTMLElement) || !firstCard) {
+        throw new Error("Expected the bulk checkbox and a testimonial card");
+      }
+      const snapshot = () =>
+        [root, checkbox, firstCard].map((element) => {
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        });
+      const frames = [snapshot()];
+      checkbox.click();
+      for (let index = 0; index < 18; index += 1) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        frames.push(snapshot());
+      }
+      return frames;
+    });
+
+  await expect(selectAll).toHaveAttribute("data-state", "indeterminate");
+  const selectFrames = await captureToggleFrames();
+  for (const frame of selectFrames) expect(frame).toEqual(selectFrames[0]);
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (4)", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("4 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  const clearFrames = await captureToggleFrames();
+  for (const frame of clearFrames) expect(frame).toEqual(clearFrames[0]);
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (0)", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("0 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  await dialog
+    .getByRole("button", { name: "Load more testimonials", exact: true })
+    .click();
+  await expect(dialog.getByText("56 shown", { exact: true })).toBeVisible();
+  await selectAll.click();
+  await expect(
+    dialog.getByText("50 / 50 selected", { exact: true }),
+  ).toBeVisible();
+  await expect(selectAll).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "Clear shown", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("0 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  await dialog
+    .getByRole("textbox", { name: "Search testimonials" })
+    .fill("Maya");
+  await expect(dialog.getByText("1 shown", { exact: true })).toBeVisible();
+  await selectAll.check();
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (1)", exact: true }),
+  ).toBeVisible();
+});
+
 test("shows Inbox presentation and previews video without changing selection", async ({
   page,
 }) => {
