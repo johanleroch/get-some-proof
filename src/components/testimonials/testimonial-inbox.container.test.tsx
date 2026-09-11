@@ -373,7 +373,9 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(screen.getByRole("heading", { name: "Inbox" })).toBe(heading);
     expect(screen.getByRole("tablist")).toBe(tabs);
     expect(
-      within(screen.getByRole("tabpanel")).getByText("Loading testimonials"),
+      within(screen.getByRole("tabpanel")).getByRole("status", {
+        name: "Loading testimonials",
+      }),
     ).toBeVisible();
     expect(screen.queryByText("No published testimonials yet")).toBeNull();
     mocks.paginationStatus = "Exhausted";
@@ -435,10 +437,19 @@ describe("TestimonialInbox (live wiring)", () => {
     expect(rowOf(remy).getByRole("button", { name: "Publish" })).toBeEnabled();
   });
 
-  it("skips every read and shows the skeleton until the Brand is known", () => {
+  it("keeps real page chrome while the Brand and content are loading", () => {
     mocks.queries["organizations:getBySlug"] = undefined;
     render(<TestimonialInbox slug="fernhill" />);
-    expect(screen.queryByRole("heading", { name: "Inbox" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Inbox" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Import testimonials" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Open Public Wall" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("status", { name: "Loading testimonials" }),
+    ).toBeVisible();
     expect(mocks.usePaginatedQuery).toHaveBeenLastCalledWith(
       expect.anything(),
       "skip",

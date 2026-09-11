@@ -21,7 +21,6 @@ import {
   IconArrowBackUp,
   IconArrowDown,
   IconArrowUp,
-  IconExternalLink,
   IconEyeOff,
   IconGripVertical,
   IconSend,
@@ -57,7 +56,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BlobLoader } from "@/components/brand/blob-loader";
 import { SpeechBubbleStars, WallFrames } from "@/components/doodles";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { convexErrorMessage } from "@/lib/convex-error-message";
 import { formatShortDate } from "@/lib/format-date";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -65,8 +63,22 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
+import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { cn } from "@/lib/utils";
-import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import {
+  inboxCategoryDefinitions,
+  inboxCategoryFromUrl,
+  setModerationStatusFilter,
+  type InboxRouteCategory,
+} from "@/lib/inbox-route-state";
+import {
+  InboxCategoryTabs,
+  InboxImportActions,
+} from "@/components/testimonials/inbox-chrome";
+import {
+  InboxListSkeleton,
+  InboxPageSkeleton,
+} from "@/components/ui/page-skeletons";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -118,48 +130,36 @@ type VideoInboxTestimonial = Extract<
  * itself, in its Curated Order. The Video Asset's own states (Processing,
  * Ready, Failed) are a separate axis and never a category here.
  */
-export const inboxCategories = [
-  {
-    empty: {
-      description: "Nothing is waiting for your decision right now.",
-      title: "Nothing Pending",
-    },
-    key: "pending",
-    label: "Pending",
+const emptyCategoryCopy: Record<
+  InboxCategory,
+  { description: string; title: string }
+> = {
+  pending: {
+    description: "Nothing is waiting for your decision right now.",
+    title: "Nothing Pending",
   },
-  {
-    empty: {
-      description:
-        "Publish a Pending Testimonial and it appears here, in the order visitors see it.",
-      title: "Nothing on your Public Wall yet",
-    },
-    key: "published",
-    label: "Published",
+  published: {
+    description:
+      "Publish a Pending Testimonial and it appears here, in the order visitors see it.",
+    title: "Nothing on your Public Wall yet",
   },
-  {
-    empty: {
-      description: "Testimonials you keep but hide from the public land here.",
-      title: "Nothing Archived",
-    },
-    key: "archived",
-    label: "Archived",
+  archived: {
+    description: "Testimonials you keep but hide from the public land here.",
+    title: "Nothing Archived",
   },
-  {
-    empty: {
-      description:
-        "Testimonials you report as Spam wait here for seven days before they are deleted.",
-      title: "No Spam quarantined",
-    },
-    key: "spam",
-    label: "Spam",
+  spam: {
+    description:
+      "Testimonials you report as Spam wait here for seven days before they are deleted.",
+    title: "No Spam quarantined",
   },
-] as const;
+};
 
-export type InboxCategory = (typeof inboxCategories)[number]["key"];
-export type InboxCounts = Record<InboxCategory, number>;
-/** Mirrors `inboxCountCeiling` in convex/testimonialModeration.ts. */
-const inboxCountCeiling = 500;
+export const inboxCategories = inboxCategoryDefinitions.map((category) => ({
+  ...category,
+  empty: emptyCategoryCopy[category.key],
+}));
 
+export type InboxCategory = InboxRouteCategory;
 function categoryOf(key: InboxCategory) {
   return inboxCategories.find((category) => category.key === key)!;
 }
@@ -772,64 +772,6 @@ export function TestimonialDeleteDialog({
   );
 }
 
-/**
- * The four categories as tabs, each with how many Testimonials wait in it.
- * A category is where you are, not a filter you set; nothing else cuts
- * across them, so the tabs are the whole navigation of the page.
- */
-export function InboxCategoryTabs({
-  children,
-  counts,
-  moderationStatus,
-  onModerationStatusChange,
-  syncIndicator,
-}: {
-  syncIndicator?: ReactNode;
-  /** The category's own panel: only the open one is rendered. */
-  children: ReactNode;
-  counts?: InboxCounts;
-  moderationStatus: InboxCategory;
-  onModerationStatusChange: (value: InboxCategory) => void;
-}) {
-  return (
-    <Tabs
-      className="gap-6"
-      onValueChange={(value) =>
-        onModerationStatusChange(value as InboxCategory)
-      }
-      value={moderationStatus}
-    >
-      <div className="relative">
-        <TabsList aria-label="Testimonial categories">
-          {inboxCategories.map((category) => {
-            const count = counts?.[category.key] ?? 0;
-            return (
-              <TabsTrigger key={category.key} value={category.key}>
-                {category.label}{" "}
-                {count > 0 ? (
-                  // Inherits the tab's colour so an inactive count keeps AA
-                  // contrast; weight alone separates it from the label.
-                  <span className="font-medium tabular-nums">
-                    {count > inboxCountCeiling
-                      ? `${inboxCountCeiling}+`
-                      : count}
-                  </span>
-                ) : null}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-        <div className="absolute -top-5 right-0 flex size-4 items-center justify-center">
-          {syncIndicator}
-        </div>
-      </div>
-      <TabsContent className="space-y-6" value={moderationStatus}>
-        {children}
-      </TabsContent>
-    </Tabs>
-  );
-}
-
 export function InboxFeedback({
   error,
   message,
@@ -907,36 +849,22 @@ async function runInboxAction({
   }
 }
 
-function inboxCategoryFromUrl(searchParams: {
-  getAll: (name: string) => string[];
-}): InboxCategory {
-  const requestedCategory = searchParams.getAll("tab");
-  return (
-    (requestedCategory.length === 1
-      ? inboxCategories.find(
-          (category) => category.key === requestedCategory[0],
-        )?.key
-      : undefined) ?? "pending"
-  );
-}
-
-function setModerationStatusFilter(category: InboxCategory) {
-  const url = new URL(window.location.href);
-  if (
-    url.searchParams.getAll("tab").length === 1 &&
-    url.searchParams.get("tab") === category
-  )
-    return;
-  url.searchParams.set("tab", category);
-  window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
-}
-
 function useInboxData(
   slug: string,
   importJobId: string | undefined,
   moderationStatus: InboxCategory,
+  shellProject: ReturnType<typeof useProjectShell>,
 ) {
-  const organization = useQuery(api.organizations.getBySlug, { slug });
+  const queriedOrganization = useQuery(
+    api.organizations.getBySlug,
+    shellProject ? "skip" : { slug },
+  );
+  const organization = shellProject
+    ? {
+        id: shellProject.organizationId,
+        publicSlug: shellProject.publicSlug,
+      }
+    : queriedOrganization;
 
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
@@ -974,6 +902,8 @@ export function TestimonialInbox({
   slug: string;
   importJobId?: string;
 }) {
+  const projectShell = useProjectShell();
+  const shellProject = projectShell?.slug === slug ? projectShell : null;
   const searchParams = useSearchParams();
   const moderationStatus = inboxCategoryFromUrl(searchParams);
   const {
@@ -983,7 +913,7 @@ export function TestimonialInbox({
     testimonials,
     paginationStatus,
     wallSettings,
-  } = useInboxData(slug, importJobId, moderationStatus);
+  } = useInboxData(slug, importJobId, moderationStatus, shellProject);
 
   const bulkActions = useBulkInboxActions({
     organizationId: organization?.id,
@@ -1064,7 +994,7 @@ export function TestimonialInbox({
   }
 
   if (organization === undefined) {
-    return <OverviewPageSkeleton />;
+    return <InboxPageSkeleton />;
   }
   if (organization === null) {
     // Checked before the list's own loading state: with no Brand the list
@@ -1262,11 +1192,7 @@ export function TestimonialInbox({
         }
       >
         {paginationStatus === "LoadingFirstPage" ? (
-          <BlobLoader
-            className="bg-surface border-line min-h-96 rounded-lg border"
-            label="Loading testimonials"
-            showLabel
-          />
+          <InboxListSkeleton />
         ) : (
           <BulkTestimonialInbox
             key={`${organization.id}:${importJobId ?? ""}:${moderationStatus}`}
@@ -1457,24 +1383,4 @@ export function TestimonialInbox({
   );
 }
 
-export function InboxImportActions({
-  slug,
-  publicSlug,
-}: {
-  slug: string;
-  publicSlug: string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      <Button asChild>
-        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
-      </Button>
-      <Button asChild variant="outline">
-        <Link href={`/w/${publicSlug}` as Route} target="_blank">
-          Open Public Wall
-          <IconExternalLink aria-hidden="true" />
-        </Link>
-      </Button>
-    </div>
-  );
-}
+export { InboxCategoryTabs, InboxImportActions } from "./inbox-chrome";

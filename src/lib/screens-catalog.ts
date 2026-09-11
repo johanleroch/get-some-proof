@@ -270,12 +270,26 @@ export const screenSections: ScreenSection[] = [
         requiresAuth: true,
       },
       {
+        slug: "overview-loading",
+        title: "Overview loading shell",
+        description:
+          "The real Brand header stays visible while addresses, actions and Account data resolve below it.",
+        fixturePath: "/visual-evidence/overview-loading",
+      },
+      {
         slug: "studio",
         title: "Studio widgets",
         description: "Create independent widgets and choose a template.",
         fixturePath: "/visual-evidence/studio",
         livePath: "/org/:organizationSlug/studio",
         requiresAuth: true,
+      },
+      {
+        slug: "studio-loading",
+        title: "Studio loading shell",
+        description:
+          "The Studio header stays ready while widget-shaped placeholders reserve the list below it.",
+        fixturePath: "/visual-evidence/studio-loading",
       },
       {
         slug: "studio-templates",
@@ -304,6 +318,13 @@ export const screenSections: ScreenSection[] = [
         fixturePath: "/visual-evidence/testimonial-inbox",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,
+      },
+      {
+        slug: "inbox-loading",
+        title: "Inbox loading shell",
+        description:
+          "The Inbox header and categories stay visible while count and row placeholders resolve.",
+        fixturePath: "/visual-evidence/inbox-loading",
       },
       {
         slug: "inbox-published",

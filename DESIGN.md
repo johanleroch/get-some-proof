@@ -401,10 +401,10 @@ pages still start at the top and scroll normally.
   bubble, meters, poster, ink card, slim row);
   `src/components/account/sidebar-plan-card.tsx`.
 - Brand overview: the header names the Brand under an "Overview" eyebrow
-  and no action. Its sentence is the state of the queue: with nothing
-  waiting it says so and links the Inbox, so the title carries news rather
-  than a slogan; once something is waiting the queue block says it and the
-  sentence goes back to the neutral one. Below, a 2:1 split, one column
+  and no action. Its sentence stays neutral — "Share your Collection Form,
+  read what comes in, publish what you choose." — so the real header is part
+  of the instant page shell and never waits for the Pending count. The queue
+  block below carries the state whenever something is waiting. Below, a 2:1 split, one column
   under 1024px. Left, the work: the review queue whenever anything is
   waiting, then the Collection Form panel (the address in mono at
   `subheading` so it never competes with the title, Copy link as the
@@ -727,8 +727,12 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   keyboard keeps its own way in through `mod+shift+h`, since no floating
   control is reachable by Tab. Reviewed at `/visual-evidence/rich-testimonial`.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
-  No mascot inside a skeleton: the route loader has just shown the blob full
-  screen, and a second one popping in above the shimmer reads as a glitch.
+  Page headers, navigation and data-independent actions stay real; skeletons
+  begin at the first data-dependent region below them. Never render an
+  unknown count as zero, and disable only controls whose safe destination or
+  payload is still unresolved. No mascot inside a skeleton: the route loader
+  has just shown the blob full screen, and a second one popping in above the
+  shimmer reads as a glitch.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
   transitions through the root `loading.tsx`, a form submitting, a video
@@ -816,7 +820,9 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   reduced motion.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
-- Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
+- Dialogs: fade and scale from 0.98 with `--ease-settle-soft`. Dense utility
+  dialogs whose controls are immediately interactive may keep the fade and
+  omit the scale so an early click cannot appear to resize their contents.
 - Sidebar navigation: the amber rail in the gutter is the only thing that
   travels. Its leading edge leaves at once and its trailing edge follows
   90ms later (`.nav-indicator-rail`, `--motion-base`, `--ease-out-soft`), so
