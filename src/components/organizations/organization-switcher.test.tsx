@@ -48,6 +48,7 @@ describe("OrganizationSwitcher", () => {
       canReadBilling: true,
       canUpdateOrganization: true,
     },
+    currentLogoUrl: string | null = null,
   ) {
     return render(
       <SidebarProvider>
@@ -55,6 +56,7 @@ describe("OrganizationSwitcher", () => {
           canReadAudit={permissions.canReadAudit}
           canReadBilling={permissions.canReadBilling}
           canUpdateOrganization={permissions.canUpdateOrganization}
+          currentLogoUrl={currentLogoUrl}
           currentName={currentName}
           currentSlug={currentSlug}
         />
@@ -73,9 +75,11 @@ describe("OrganizationSwitcher", () => {
       name: /switch project/i,
     });
     expect(trigger).toHaveClass("cursor-pointer");
-    // The project's name is the sidebar's title and the switch itself: no
-    // avatar, no initials, the name at `heading`.
+    // The project's name is the sidebar's title and the switch itself. This
+    // project has no logo, so the name stands alone: no image, no initials,
+    // no placeholder square.
     expect(trigger.querySelector(".type-heading")).toHaveTextContent("Acme");
+    expect(trigger.querySelector("img")).toBeNull();
     expect(trigger.querySelector('[data-slot="avatar-fallback"]')).toBeNull();
 
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
@@ -97,6 +101,30 @@ describe("OrganizationSwitcher", () => {
     for (const item of screen.getAllByRole("menuitem")) {
       expect(item).toHaveClass("cursor-pointer");
     }
+  });
+
+  it("puts the project's own logo before its name once it has one", () => {
+    mocks.useQuery.mockReturnValue([
+      { id: "organization-1", name: "Acme", slug: "acme-1234" },
+    ]);
+
+    renderSwitcher(
+      "Acme",
+      "acme-1234",
+      { canReadAudit: true, canReadBilling: true, canUpdateOrganization: true },
+      "https://cdn.example.test/acme-logo.png",
+    );
+
+    const trigger = screen.getByRole("button", { name: /switch project/i });
+    const logo = trigger.querySelector("img");
+    expect(logo).not.toBeNull();
+    expect(logo).toHaveAttribute(
+      "src",
+      "https://cdn.example.test/acme-logo.png",
+    );
+    // The name says which project; the logo repeating it would be noise.
+    expect(logo).toHaveAttribute("alt", "");
+    expect(trigger.querySelector(".type-heading")).toHaveTextContent("Acme");
   });
 
   it("hides Organization administration actions without permission", () => {

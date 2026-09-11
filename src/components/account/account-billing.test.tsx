@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     usage: { freeTextUsed: number; freeVideoUsed: number };
     deletionStartedAt?: number;
   },
-  projects: [{ id: "own-project", slug: "harbor-studio" }],
+  projects: [{ id: "own-project", slug: "bumpr" }],
 }));
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
@@ -49,13 +49,11 @@ beforeEach(() => {
     freeProjectId: "own-project",
     usage: { freeTextUsed: 0, freeVideoUsed: 0 },
   };
-  mocks.projects = [{ id: "own-project", slug: "harbor-studio" }];
+  mocks.projects = [{ id: "own-project", slug: "bumpr" }];
 });
 it("shows full plan controls in the personal account", () => {
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for harbor-studio"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "View plan details" })).toBeNull();
 });
 it("preserves billing access without a project", () => {
@@ -80,7 +78,7 @@ it("does not mislabel a legacy Project owner as Free while Account migration is 
   expect(
     screen.getByRole("heading", { name: "Billing setup needs attention" }),
   ).toBeInTheDocument();
-  expect(screen.queryByText("Plan controls for harbor-studio")).toBeNull();
+  expect(screen.queryByText("Plan controls for bumpr")).toBeNull();
 });
 
 it("does not diagnose a migration failure for an existing Account with no owned Project", () => {
@@ -97,8 +95,6 @@ it("does not diagnose a migration failure for an existing Account with no owned 
 it("does not select another account's project for personal billing", () => {
   mocks.projects.unshift({ id: "foreign-project", slug: "aaa-other-account" });
   render(<AccountBilling />);
-  expect(
-    screen.getByText("Plan controls for harbor-studio"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Plan controls for bumpr")).toBeInTheDocument();
   expect(screen.queryByText("Plan controls for aaa-other-account")).toBeNull();
 });

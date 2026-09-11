@@ -6,7 +6,7 @@ import { DevQuickAccess } from "./dev-quick-access";
 const mocks = vi.hoisted(() => ({
   authenticated: true,
   organizations: [
-    { name: "Bumper", publicSlug: "bumper", slug: "bumper-bjug" },
+    { name: "Bumpr", publicSlug: "bumpr", slug: "bumpr-bjug" },
   ] as Array<{ name: string; publicSlug: string; slug: string }> | undefined,
 }));
 
@@ -23,7 +23,7 @@ describe("DevQuickAccess", () => {
     cleanup();
     mocks.authenticated = true;
     mocks.organizations = [
-      { name: "Bumper", publicSlug: "bumper", slug: "bumper-bjug" },
+      { name: "Bumpr", publicSlug: "bumpr", slug: "bumpr-bjug" },
     ];
   });
 
@@ -34,18 +34,18 @@ describe("DevQuickAccess", () => {
     });
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
 
-    expect(screen.getByText("Signed in · Bumper")).toBeInTheDocument();
+    expect(screen.getByText("Signed in · Bumpr")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Kit" })).toHaveAttribute(
       "href",
       "/kit",
     );
     expect(screen.getByRole("menuitem", { name: "Inbox" })).toHaveAttribute(
       "href",
-      "/org/bumper-bjug/inbox",
+      "/org/bumpr-bjug/inbox",
     );
     expect(
       screen.getByRole("menuitem", { name: "Public Wall" }),
-    ).toHaveAttribute("href", "/w/bumper");
+    ).toHaveAttribute("href", "/w/bumpr");
     expect(
       screen.getByRole("menuitem", { name: "Sign in" }),
     ).toBeInTheDocument();

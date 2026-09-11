@@ -843,34 +843,48 @@ mark {
 }
 
 /*
- * The sidebar's active indicator (DESIGN.md section 8.3): one pill and its
- * rail travelling between items. The slide itself is a transition on the
- * indicator (`--motion-settle`, `--ease-settle`); this is the body language
- * on top of it: stretched along the travel, squashed on landing, volume kept.
+ * The sidebar's active indicator (DESIGN.md section 8.3): the amber rail is
+ * the only thing that travels between items. Its leading edge leaves at once
+ * and its trailing edge follows a beat later, so the line stretches over the
+ * gap and gathers itself into the new row. This is the squash and stretch of
+ * section 8.2 on the one shape that cannot deform: a 3px line has no corners
+ * to distort and no radius to smear, which a scaled pill does. The pill
+ * itself never moves, it cross-fades under the rail.
  */
-.nav-indicator-travel {
-  transform-origin: 50% 50%;
-  animation: nav-indicator-travel var(--motion-settle) var(--ease-settle) both;
+.nav-indicator-rail {
+  --nav-rail-lag: 90ms;
+  transition-property: top, bottom;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out-soft);
 }
 
-@keyframes nav-indicator-travel {
-  0% {
-    transform: none;
-  }
-  40% {
-    transform: scale(0.94, 1.06);
-  }
-  78% {
-    transform: scale(1.04, 0.96);
-  }
-  100% {
-    transform: none;
-  }
+.nav-indicator-rail[data-travel="down"] {
+  transition-delay: var(--nav-rail-lag), 0ms;
+}
+
+.nav-indicator-rail[data-travel="up"] {
+  transition-delay: 0ms, var(--nav-rail-lag);
+}
+
+/*
+ * The name of the active item eases between medium and semibold on Figtree's
+ * weight axis instead of snapping to it: a font-weight class cannot be
+ * transitioned, and the jump in width used to jitter the row just as the
+ * indicator arrived.
+ */
+.nav-item-label {
+  font-variation-settings: "wght" 500;
+  transition: font-variation-settings var(--motion-fast) var(--ease-out-soft);
+}
+
+[data-active="true"] .nav-item-label {
+  font-variation-settings: "wght" 600;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-indicator-travel {
-    animation: none;
+  .nav-indicator-rail,
+  .nav-item-label {
+    transition: none;
   }
 }
 

@@ -34,12 +34,12 @@ describe("BrandDashboardView", () => {
     render(
       <BrandDashboardView
         copyCollectionUrl={async () => {}}
-        collectionUrl="https://getsomeproof.com/c/harbor"
-        slug="harbor"
-        name="Harbor Studio"
-        publicSlug="harbor"
+        collectionUrl="https://getsomeproof.com/c/bumpr"
+        slug="bumpr"
+        name="Bumpr"
+        publicSlug="bumpr"
         pendingCount={0}
-        billingHref="/org/harbor/billing"
+        billingHref="/org/bumpr/billing"
         account={{
           effectivePlan: "premium",
           usage: {
@@ -63,7 +63,7 @@ describe("BrandDashboardView", () => {
     expect(screen.getByText("2 video slots reserved")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Manage subscription" }),
-    ).toHaveAttribute("href", "/org/harbor/billing");
+    ).toHaveAttribute("href", "/org/bumpr/billing");
     // A Pro Account is offered a door, never a sale.
     expect(screen.queryByRole("link", { name: "Upgrade to Pro" })).toBeNull();
   });

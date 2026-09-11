@@ -368,14 +368,18 @@ pages still start at the top and scroll normally.
   for now (decided 2026-09-09); the dark tokens stay in `globals.css` and the
   development pages (`/kit`, `/screens`, the quick access) keep the switch so
   both themes stay reviewed.
-- Sidebar header: no logo and no avatar. The project's name is the title of
-  the sidebar, at `heading` in Gelica with a thin chevron beside it (20px,
-  `--ink-3`), and the whole title is the button that opens the project menu
-  (switch, create, settings): 16px inset, `--surface-2` on hover and while
-  open. Chosen by the founder on 2026-09-09 from six drafts (brand first,
-  project card, typographic, sectioned, ink panel, rows), the typographic
-  one without its wordmark: the product's name has no business in its own
-  shell. The navigation under it: section 7.
+- Sidebar header: the project's name is the title of the sidebar, at
+  `heading` in Gelica with a thin chevron beside it (20px, `--ink-3`), and
+  the whole title is the button that opens the project menu (switch, create,
+  settings): 16px inset, `--surface-2` on hover and while open. The project's
+  own logo sits before the name when it has one (24px, `--radius-md`,
+  `object-cover`, 8px from the name, the size it has in the project menu);
+  a project without a logo shows the name alone — no initials, no placeholder
+  square, nothing to fill the hole (2026-09-10). Never the product's own
+  wordmark or a user avatar: chosen by the founder on 2026-09-09 from six
+  drafts (brand first, project card, typographic, sectioned, ink panel,
+  rows), the typographic one without its wordmark, because the product's name
+  has no business in its own shell. The navigation under it: section 7.
 - Sidebar plan card: on a Free Account, the sidebar's one sale sits in the
   footer above the user row, as a small poster on `--brand-soft`
   (`--radius-lg`, no border, 12px padding): the promise at `subheading`
@@ -802,12 +806,20 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
 - Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
-- Sidebar navigation: the active indicator is one element that slides to
-  the clicked item before the page arrives, overshoots and settles
-  (`--motion-settle`, `--ease-settle`), stretched along its travel and
-  squashed as it lands (`.nav-indicator-travel`, 6 and 4 percent, volume
-  kept); the name and icon change with it, and the route confirms the move.
-  Under reduced motion it jumps.
+- Sidebar navigation: the amber rail in the gutter is the only thing that
+  travels. Its leading edge leaves at once and its trailing edge follows
+  90ms later (`.nav-indicator-rail`, `--motion-base`, `--ease-out-soft`), so
+  the line stretches across the gap and gathers itself into the new row: the
+  squash and stretch of section 8.2 on the one shape that cannot deform,
+  since a 3px line has neither corners to distort nor a radius to smear. The
+  soft pill never moves, it cross-fades under the rail (in on
+  `--motion-base`, out on `--motion-exit`), and the name eases between
+  medium and semibold on Figtree's weight axis (`.nav-item-label`) rather
+  than snapping. A click sends all of it to the clicked item before the page
+  arrives and the route confirms the move; under reduced motion it jumps.
+  Chosen by the founder on 2026-09-10 from four candidates, over the
+  travelling pill that overshot and squashed before it: on a rounded
+  rectangle that body language read as a rubber band.
 - Lists and grids mount with a 30ms stagger, 12px upward travel, opacity from 0. Maximum 12 items staggered; the rest appear instantly.
 - Buttons press down 1px on active; cards and rows do not lift on hover, they
   tint.
@@ -822,9 +834,14 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides
   the animation control. This does not add a marquee to live customer Walls.
-- Animate `transform` and `opacity` only. The global
-  `prefers-reduced-motion` rule in `globals.css` stays and every animation
-  must look correct when it fires (final state, no draw-in).
+- Animate `transform` and `opacity` only, with one exception: the sidebar's
+  active rail moves its `top` and `bottom` edges, because two edges on
+  independent delays is what makes the line stretch, and a `scaleY` would
+  smear the rounded caps it exists to keep. It is 3px wide and out of flow,
+  so the layout it costs is a rounding error; nothing else in the interface
+  gets that licence. The global `prefers-reduced-motion` rule in
+  `globals.css` stays and every animation must look correct when it fires
+  (final state, no draw-in).
 
 Review the curves and replay every entrance in the development `/kit` page,
 Motion section.

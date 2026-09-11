@@ -126,7 +126,7 @@
       "title": "Brand dashboard",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Harbor Studio",
+      "heading": "Bumpr",
       "theme": "light",
       "requiresAuth": true
     },
@@ -135,7 +135,7 @@
       "title": "Brand dashboard - dark",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/dashboard",
-      "heading": "Harbor Studio",
+      "heading": "Bumpr",
       "theme": "dark",
       "requiresAuth": true
     },
@@ -425,7 +425,7 @@
       "title": "Pro Account with shared project quotas",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/account-pro",
-      "heading": "Harbor Studio",
+      "heading": "Bumpr",
       "theme": "light",
       "requiresAuth": true
     },
@@ -434,7 +434,7 @@
       "title": "Account Project selector",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/account-pro",
-      "heading": "Harbor Studio",
+      "heading": "Bumpr",
       "theme": "light",
       "requiresAuth": true
     },
@@ -443,7 +443,7 @@
       "title": "Inactive Project after downgrade",
       "path": "/org/:organizationSlug/dashboard",
       "fixturePath": "/visual-evidence/inactive-project",
-      "heading": "Harbor Studio",
+      "heading": "Bumpr",
       "theme": "light",
       "requiresAuth": true
     },

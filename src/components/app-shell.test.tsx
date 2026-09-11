@@ -57,9 +57,9 @@ describe("AppShell", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
@@ -76,9 +76,9 @@ describe("AppShell", () => {
     const { container } = render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
@@ -113,16 +113,16 @@ describe("AppShell", () => {
     render(
       <AppShell
         organizationId={"organization-1" as never}
-        organizationName="Harbor Studio"
-        organizationPublicSlug="harbor"
-        organizationSlug="harbor-1234"
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
       >
         Dashboard
       </AppShell>,
     );
     expect(
       screen.getByRole("link", { name: "Inbox, 3 to review" }),
-    ).toHaveAttribute("href", "/org/harbor-1234/inbox");
+    ).toHaveAttribute("href", "/org/bumpr-1234/inbox");
     expect(screen.getByRole("link", { name: "Public Wall" })).toHaveAttribute(
       "target",
       "_blank",
@@ -144,11 +144,24 @@ describe("AppShell", () => {
       container.querySelector(
         '[data-slot="sidebar-active-indicator"]',
       ) as HTMLElement;
-    expect(indicator().style.transform).toBe("translateY(0px)");
+    expect(indicator().style.top).toBe("0px");
 
     fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
 
-    expect(indicator().style.transform).toBe("translateY(40px)");
+    expect(indicator().style.top).toBe("40px");
+    expect(indicator()).toHaveAttribute("data-travel", "down");
+
+    // Back up the list: the other edge of the rail has to lead, so the
+    // direction has to flip with it.
+    fireEvent.click(screen.getByRole("link", { name: "Overview" }));
+
+    expect(indicator().style.top).toBe("0px");
+    expect(indicator()).toHaveAttribute("data-travel", "up");
+
+    fireEvent.click(screen.getByRole("link", { name: "Inbox" }));
+
+    expect(indicator().style.top).toBe("40px");
+    expect(indicator()).toHaveAttribute("data-travel", "down");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "data-active",
       "true",
@@ -169,7 +182,7 @@ describe("AppShell", () => {
         Inbox
       </AppShell>,
     );
-    expect(indicator().style.transform).toBe("translateY(40px)");
+    expect(indicator().style.top).toBe("40px");
     expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
       "aria-current",
       "page",

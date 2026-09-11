@@ -93,10 +93,11 @@ function isActiveHref(pathname: string, href: string) {
  * project, and the account pages carry their own way back. Chosen by the
  * founder on 2026-09-09 as a mix of two of six drafts (DESIGN.md section 7).
  *
- * The active item is not a style on the item but one indicator per list, an
- * amber soft pill with a 3px amber rail in the gutter, flush with the
- * panel's edge. Being one element, it travels: a click sends it to the new
- * item before the page arrives, and the route settles it (section 8.3).
+ * The active item is not a style on the item but one indicator per list: an
+ * amber soft pill on the row and a 3px amber rail in the gutter, flush with
+ * the panel's edge. Only the rail travels, and it stretches on the way while
+ * the pill cross-fades under it (section 8.3). A click sends both to the
+ * clicked item before the page arrives, and the route settles the move.
  */
 function Navigation({
   inboxCount,
@@ -155,38 +156,29 @@ function NavigationList({
     ? items.findIndex(({ href }) => href === pendingHref)
     : -1;
   const activeIndex = pendingIndex >= 0 ? pendingIndex : routeIndex;
-  // The indicator stretches only while it travels: a change of item starts
-  // the travel, the end of its animation stops it.
-  const [lastIndex, setLastIndex] = useState(activeIndex);
-  const [travelling, setTravelling] = useState(false);
-  if (activeIndex !== lastIndex) {
-    setLastIndex(activeIndex);
-    if (lastIndex >= 0 && activeIndex >= 0) setTravelling(true);
+  // Which way the rail travels decides which of its edges leads. The move it
+  // came from is kept across the render that starts it, the React pattern for
+  // state that follows props.
+  const [travel, setTravel] = useState({ from: activeIndex, to: activeIndex });
+  if (activeIndex !== travel.to) {
+    setTravel({ from: travel.to, to: activeIndex });
   }
+  const rowStep = navigationItemHeight + navigationItemGap;
+  const listHeight = items.length * rowStep - navigationItemGap;
 
   return (
     <SidebarMenu className="relative gap-1">
       {activeIndex >= 0 ? (
         <li
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-9 transition-transform duration-[var(--motion-settle)] ease-[var(--ease-settle)] motion-reduce:transition-none"
+          className="nav-indicator-rail bg-brand pointer-events-none absolute -left-2 w-[3px] rounded-r-full"
           data-slot="sidebar-active-indicator"
+          data-travel={activeIndex >= travel.from ? "down" : "up"}
           style={{
-            transform: `translateY(${activeIndex * (navigationItemHeight + navigationItemGap)}px)`,
+            bottom: listHeight - activeIndex * rowStep - navigationItemHeight,
+            top: activeIndex * rowStep,
           }}
-        >
-          <span
-            className={cn(
-              "absolute inset-0",
-              travelling && "nav-indicator-travel",
-            )}
-            key={activeIndex}
-            onAnimationEnd={() => setTravelling(false)}
-          >
-            <span className="bg-brand-soft absolute inset-0 rounded-md" />
-            <span className="bg-brand absolute top-0 bottom-0 -left-2 w-[3px] rounded-r-full" />
-          </span>
-        </li>
+        />
       ) : null}
       {items.map(({ href, icon: IconComponent, label, newTab }, index) => {
         const active = index === activeIndex;
@@ -198,6 +190,16 @@ function NavigationList({
           : null;
         return (
           <SidebarMenuItem key={href}>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "bg-brand-soft pointer-events-none absolute inset-0 rounded-md transition-opacity motion-reduce:transition-none",
+                active
+                  ? "opacity-100 duration-[var(--motion-base)] ease-[var(--ease-out-soft)]"
+                  : "opacity-0 duration-[var(--motion-exit)] ease-[var(--ease-exit)]",
+              )}
+              data-slot="sidebar-active-pill"
+            />
             <SidebarMenuButton
               asChild
               className="h-9 gap-3 px-3 data-[active=true]:bg-transparent data-[active=true]:hover:bg-transparent [&>svg]:size-[18px]"
@@ -230,14 +232,20 @@ function NavigationList({
               >
                 <IconComponent
                   aria-hidden="true"
-                  className={active ? "text-ink" : "text-ink-2"}
+                  className={cn(
+                    "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
+                    active ? "text-ink" : "text-ink-2",
+                  )}
                   stroke={1.75}
                 />
-                <span className="min-w-0 flex-1 truncate">{label}</span>
+                <span className="nav-item-label min-w-0 flex-1 truncate">
+                  {label}
+                </span>
                 {shownCount ? (
                   <span
                     className={cn(
                       "type-small grid h-5 min-w-5 shrink-0 place-items-center rounded-md px-2 font-semibold tabular-nums",
+                      "transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
                       active
                         ? "bg-surface text-ink"
                         : "bg-surface-2 text-ink-2",
@@ -249,7 +257,7 @@ function NavigationList({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "shrink-0",
+                      "shrink-0 transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out-soft)] motion-reduce:transition-none",
                       active ? "text-ink-2" : "text-ink-3",
                     )}
                   >
@@ -320,6 +328,7 @@ export function AppShell(props: AppShellProps) {
           canReadBilling={false}
           canUpdateOrganization={authorization?.can.updateOrganization ?? false}
           canCreateProject={account?.effectivePlan === "premium"}
+          currentLogoUrl={props.organizationLogoUrl}
           currentName={props.organizationName}
           currentSlug={props.organizationSlug}
         />

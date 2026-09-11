@@ -15,10 +15,7 @@ test("Account profile keeps the selected project's Overview reachable", async ({
     exact: true,
   });
   await expect(overview).toBeVisible();
-  await expect(overview).toHaveAttribute(
-    "href",
-    "/org/harbor-studio/dashboard",
-  );
+  await expect(overview).toHaveAttribute("href", "/org/bumpr/dashboard");
   await expect(
     page.getByRole("link", { name: "Profile", exact: true }),
   ).toHaveAttribute("aria-current", "page");
@@ -28,8 +25,7 @@ test("Account profile keeps the selected project's Overview reachable", async ({
   // Fixtures are signed out: observe the link destination before the auth guard
   // redirects it, without creating a real account or bypassing authentication.
   const request = page.waitForRequest(
-    (request) =>
-      new URL(request.url()).pathname === "/org/harbor-studio/dashboard",
+    (request) => new URL(request.url()).pathname === "/org/bumpr/dashboard",
   );
   await overview.click();
   await request;
