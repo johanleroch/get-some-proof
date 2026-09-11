@@ -158,6 +158,15 @@
       "requiresAuth": true
     },
     {
+      "slug": "account-billing-reconciliation",
+      "title": "Account Billing - reconciliation required",
+      "path": "/account/billing",
+      "fixturePath": "/visual-evidence/account-billing-reconciliation",
+      "heading": "Account billing",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "workspace-billing-downgrade",
       "title": "Workspace Billing - downgrade selection",
       "path": "/org/:organizationSlug/billing",
@@ -620,6 +629,24 @@
       "path": "/visual-evidence/assistant-import-consent-free",
       "heading": "Connect your proof",
       "theme": "light"
+    },
+    {
+      "slug": "testimonial-inbox-bulk",
+      "title": "Inbox bulk selection",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-bulk-delete",
+      "title": "Inbox bulk delete confirmation",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
     },
     {
       "slug": "recorder-landscape",
