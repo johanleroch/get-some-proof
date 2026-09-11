@@ -154,6 +154,7 @@ export function WidgetSelectionDialog(props: SelectionProps) {
         }}
       >
         <DialogContent
+          zoom={false}
           className="flex h-[min(44rem,90dvh)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
           style={{ "--wall-accent": props.accentColor } as CSSProperties}
         >

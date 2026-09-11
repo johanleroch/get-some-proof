@@ -157,9 +157,32 @@ test("selects and clears all loaded testimonials from the selection dialog", asy
     name: "Select all",
     exact: true,
   });
+  const captureToggleFrames = () =>
+    dialog.evaluate(async (root) => {
+      const checkbox = root.querySelector('[role="checkbox"]');
+      const firstCard = root.querySelector("[data-studio-testimonial]");
+      if (!(checkbox instanceof HTMLElement) || !firstCard) {
+        throw new Error("Expected the bulk checkbox and a testimonial card");
+      }
+      const snapshot = () =>
+        [root, checkbox, firstCard].map((element) => {
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        });
+      const frames = [snapshot()];
+      checkbox.click();
+      for (let index = 0; index < 18; index += 1) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        frames.push(snapshot());
+      }
+      return frames;
+    });
 
   await expect(selectAll).toHaveAttribute("data-state", "indeterminate");
-  await selectAll.click();
+  const selectFrames = await captureToggleFrames();
+  for (const frame of selectFrames) expect(frame).toEqual(selectFrames[0]);
   await expect(
     dialog.getByRole("tab", { name: "Selected (4)", exact: true }),
   ).toBeVisible();
@@ -167,7 +190,8 @@ test("selects and clears all loaded testimonials from the selection dialog", asy
     dialog.getByText("4 / 50 selected", { exact: true }),
   ).toBeVisible();
 
-  await selectAll.uncheck();
+  const clearFrames = await captureToggleFrames();
+  for (const frame of clearFrames) expect(frame).toEqual(clearFrames[0]);
   await expect(
     dialog.getByRole("tab", { name: "Selected (0)", exact: true }),
   ).toBeVisible();
