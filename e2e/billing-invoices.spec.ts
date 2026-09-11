@@ -4,11 +4,14 @@ test("annual Billing shows the charged total and historical invoice downloads", 
   page,
 }) => {
   await page.goto("/visual-evidence/billing");
-  const annual = page.getByRole("button", { name: "Annual · 2 months free" });
+  const annual = page.getByRole("button", { name: "Annual" });
+  // The two free months left the tab's label for the handwritten note that
+  // points at it, so the tab is named by its word alone and the saving is no
+  // longer a sentence trailing off the price (DESIGN.md sections 4 and 6).
+  await expect(page.getByText("two months on us")).toBeVisible();
   await annual.click();
   await expect(annual).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/24.17.*billed annually/)).toBeVisible();
-  await expect(page.getByText(/Save.*58.*a year/)).toBeVisible();
   const download = page.getByRole("link", {
     name: "Download PDF GSP-2026-0042",
   });
