@@ -1,0 +1,993 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 142
+  },
+  "headSha": "a3440b7ac661a1a26a862bed95ded96d0822ca3c",
+  "runId": "34591143429",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/account-billing-reconciliation.png",
+      "title": "Account Billing - reconciliation required",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-deletion-confirmation.png",
+      "title": "Confirm deletion of all Projects",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-deletion-progress.png",
+      "title": "Account media cleanup",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-deletion.png",
+      "title": "Account deletion scope",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-free-project.png",
+      "title": "Choose the active Free Project",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-inactive-project.png",
+      "title": "Inactive Project after downgrade",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-invoices.png",
+      "title": "Account Invoices",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-project-selector.png",
+      "title": "Account Project selector",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/account-security-error.png",
+      "title": "Account security error toast",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/assistant-import-consent-free.png",
+      "title": "Assistant authorization on Free",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/assistant-import-consent.png",
+      "title": "Assistant connection authorization",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/assistant-import-recovery-dark.png",
+      "title": "Assistant import recovery dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/assistant-import-recovery.png",
+      "title": "Assistant import recovery light",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/brand-dashboard-dark.png",
+      "title": "Brand dashboard - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/brand-dashboard.png",
+      "title": "Brand dashboard",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/brand-onboarding.png",
+      "title": "Brand onboarding",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/brand-settings.png",
+      "title": "Brand settings",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-closed.png",
+      "title": "Collection Form - closed",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-details.png",
+      "title": "Collection Form - identity and consent",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-shell.png",
+      "title": "Collection Form - choose type",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-success.png",
+      "title": "Collection Form - success",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-video.png",
+      "title": "Collection Form - add video",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-write-long.png",
+      "title": "Collection Form - long text with fixed editor height",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/collection-form-write.png",
+      "title": "Collection Form - write text",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/forgot-password.png",
+      "title": "Forgot password",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/full-page-loading.png",
+      "title": "Full-page loading",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/inbox-loading.png",
+      "title": "Inbox loading shell",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/loading-states.png",
+      "title": "Loading states",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/managed-submission.png",
+      "title": "Private Submission Management Link",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/managed-video-processing.png",
+      "title": "Private video replacement processing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/mcp-setup-connected.png",
+      "title": "Connected assistant settings",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/mcp-setup-free.png",
+      "title": "Assistant import on Free",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/mcp-setup.png",
+      "title": "Assistant import setup",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/onboarding-check-email.png",
+      "title": "Onboarding - check your email",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/onboarding-verification-email.png",
+      "title": "Onboarding - verification email",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/overview-loading.png",
+      "title": "Overview loading shell",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/privacy-notice.png",
+      "title": "Brand privacy notice",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/profile-image.png",
+      "title": "Profile image",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall-empty.png",
+      "title": "Empty Public Wall",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/recorder-landscape.png",
+      "title": "Recorder landscape source",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/recorder-portrait.png",
+      "title": "Recorder portrait source",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/rich-testimonial-highlight.png",
+      "title": "Owner phrase highlighting",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/rich-testimonial.png",
+      "title": "Rich testimonial editor and images",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/sign-in-dark.png",
+      "title": "Sign in - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/sign-in.png",
+      "title": "Sign in",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/sign-up-dark.png",
+      "title": "Sign up - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/sign-up.png",
+      "title": "Sign up",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection-order.png",
+      "title": "Studio selection order",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/template-marquee.png",
+      "title": "Template marquee with pause control",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/template-preview.png",
+      "title": "Template full preview",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/templates-dark.png",
+      "title": "Templates gallery - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/templates.png",
+      "title": "Templates gallery",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-delete.png",
+      "title": "Permanent Testimonial deletion confirmation",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-deletion-progress.png",
+      "title": "Testimonial media cleanup",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-dark.png",
+      "title": "Wall import selection - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-expired.png",
+      "title": "Wall import expired preview",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-identity-dark.png",
+      "title": "Wall import identity correction dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-identity.png",
+      "title": "Wall import identity correction",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-public.png",
+      "title": "Public wall import selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-publication-dark.png",
+      "title": "Wall import publication - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-publication.png",
+      "title": "Wall import publication",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-url-dark.png",
+      "title": "Wall import URL - dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-url.png",
+      "title": "Wall import URL",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-failed-dark.png",
+      "title": "Wall import video failed dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import.png",
+      "title": "Wall import selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-bulk-delete.png",
+      "title": "Inbox bulk delete confirmation",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-bulk.png",
+      "title": "Inbox bulk selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-details.png",
+      "title": "Testimonial Inbox - details shown on the Wall",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-options.png",
+      "title": "Testimonial Inbox - options",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-player.png",
+      "title": "Testimonial Inbox - video player",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-links-disabled.png",
+      "title": "Testimonial links disabled",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-links-enabled.png",
+      "title": "Testimonial links enabled",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-sources-hidden.png",
+      "title": "Testimonial sources hidden",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-sources-visible.png",
+      "title": "Testimonial sources visible",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/toast-error.png",
+      "title": "Error notification toast",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/toast-success.png",
+      "title": "Success notification toast",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/two-factor.png",
+      "title": "Two-factor verification",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/video-retry.png",
+      "title": "Private video retry link",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/video-thumbnail.png",
+      "title": "Video thumbnail picker",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/video-upload-progress.png",
+      "title": "Video upload progress",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/workspace-billing-downgrade.png",
+      "title": "Workspace Billing - downgrade selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/workspace-billing.png",
+      "title": "Workspace Billing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/workspace-delete-progress.png",
+      "title": "Workspace deletion retry",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/workspace-delete.png",
+      "title": "Permanent Workspace deletion confirmation",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-billing-reconciliation.png",
+      "title": "Account Billing - reconciliation required",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-deletion-confirmation.png",
+      "title": "Confirm deletion of all Projects",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-deletion-progress.png",
+      "title": "Account media cleanup",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-deletion.png",
+      "title": "Account deletion scope",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-free-project.png",
+      "title": "Choose the active Free Project",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-inactive-project.png",
+      "title": "Inactive Project after downgrade",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-invoices.png",
+      "title": "Account Invoices",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-project-selector.png",
+      "title": "Account Project selector",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-security-error.png",
+      "title": "Account security error toast",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/assistant-import-consent-free.png",
+      "title": "Assistant authorization on Free",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/assistant-import-consent.png",
+      "title": "Assistant connection authorization",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/assistant-import-recovery-dark.png",
+      "title": "Assistant import recovery dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/assistant-import-recovery.png",
+      "title": "Assistant import recovery light",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/brand-dashboard-dark.png",
+      "title": "Brand dashboard - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/brand-dashboard.png",
+      "title": "Brand dashboard",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/brand-onboarding.png",
+      "title": "Brand onboarding",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/brand-settings.png",
+      "title": "Brand settings",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-closed.png",
+      "title": "Collection Form - closed",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-details.png",
+      "title": "Collection Form - identity and consent",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-shell.png",
+      "title": "Collection Form - choose type",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-success.png",
+      "title": "Collection Form - success",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-video.png",
+      "title": "Collection Form - add video",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-write-long.png",
+      "title": "Collection Form - long text with fixed editor height",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/collection-form-write.png",
+      "title": "Collection Form - write text",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/forgot-password.png",
+      "title": "Forgot password",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/full-page-loading.png",
+      "title": "Full-page loading",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/inbox-loading.png",
+      "title": "Inbox loading shell",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/loading-states.png",
+      "title": "Loading states",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/managed-submission.png",
+      "title": "Private Submission Management Link",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/managed-video-processing.png",
+      "title": "Private video replacement processing",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/mcp-setup-connected.png",
+      "title": "Connected assistant settings",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/mcp-setup-free.png",
+      "title": "Assistant import on Free",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/mcp-setup.png",
+      "title": "Assistant import setup",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/onboarding-check-email.png",
+      "title": "Onboarding - check your email",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/onboarding-verification-email.png",
+      "title": "Onboarding - verification email",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/overview-loading.png",
+      "title": "Overview loading shell",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/privacy-notice.png",
+      "title": "Brand privacy notice",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/profile-image.png",
+      "title": "Profile image",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall-empty.png",
+      "title": "Empty Public Wall",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/recorder-landscape.png",
+      "title": "Recorder landscape source",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/recorder-portrait.png",
+      "title": "Recorder portrait source",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/rich-testimonial-highlight.png",
+      "title": "Owner phrase highlighting",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/rich-testimonial.png",
+      "title": "Rich testimonial editor and images",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/sign-in-dark.png",
+      "title": "Sign in - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/sign-in.png",
+      "title": "Sign in",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/sign-up-dark.png",
+      "title": "Sign up - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/sign-up.png",
+      "title": "Sign up",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection-order.png",
+      "title": "Studio selection order",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/template-marquee.png",
+      "title": "Template marquee with pause control",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/template-preview.png",
+      "title": "Template full preview",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/templates-dark.png",
+      "title": "Templates gallery - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/templates.png",
+      "title": "Templates gallery",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-delete.png",
+      "title": "Permanent Testimonial deletion confirmation",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-deletion-progress.png",
+      "title": "Testimonial media cleanup",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-dark.png",
+      "title": "Wall import selection - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-expired.png",
+      "title": "Wall import expired preview",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-identity-dark.png",
+      "title": "Wall import identity correction dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-identity.png",
+      "title": "Wall import identity correction",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-public.png",
+      "title": "Public wall import selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-publication-dark.png",
+      "title": "Wall import publication - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-publication.png",
+      "title": "Wall import publication",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-url-dark.png",
+      "title": "Wall import URL - dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-url.png",
+      "title": "Wall import URL",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-failed-dark.png",
+      "title": "Wall import video failed dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import.png",
+      "title": "Wall import selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-bulk-delete.png",
+      "title": "Inbox bulk delete confirmation",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-bulk.png",
+      "title": "Inbox bulk selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-details.png",
+      "title": "Testimonial Inbox - details shown on the Wall",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-options.png",
+      "title": "Testimonial Inbox - options",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-player.png",
+      "title": "Testimonial Inbox - video player",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-links-disabled.png",
+      "title": "Testimonial links disabled",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-links-enabled.png",
+      "title": "Testimonial links enabled",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-sources-hidden.png",
+      "title": "Testimonial sources hidden",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-sources-visible.png",
+      "title": "Testimonial sources visible",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/toast-error.png",
+      "title": "Error notification toast",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/toast-success.png",
+      "title": "Success notification toast",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/two-factor.png",
+      "title": "Two-factor verification",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/video-retry.png",
+      "title": "Private video retry link",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/video-thumbnail.png",
+      "title": "Video thumbnail picker",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/video-upload-progress.png",
+      "title": "Video upload progress",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/workspace-billing-downgrade.png",
+      "title": "Workspace Billing - downgrade selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/workspace-billing.png",
+      "title": "Workspace Billing",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/workspace-delete-progress.png",
+      "title": "Workspace deletion retry",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/workspace-delete.png",
+      "title": "Permanent Workspace deletion confirmation",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
