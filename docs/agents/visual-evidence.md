@@ -2,6 +2,8 @@
 
 Playwright captures canonical desktop and mobile screens. The publisher commits the PNGs through the Git Data API under a ref of their own, `refs/visual-evidence/<kind>-<number>`, reads every blob back through the API and compares it byte for byte with the local file, links the images by commit-pinned `raw.githubusercontent.com` URLs, then creates or replaces one marked GitHub comment. Whether the raw host already serves the commit is probed and reported, never a reason to fail: the bytes are proven in the repository. It needs nothing but a token that may write contents and comments: no attachment endpoint, no browser session, no bucket, no public hostname.
 
+Every pull request declares its capture scope once in the body with `<!-- visual-evidence-screens: slug-one, slug-two -->`. Use slugs from `visual-evidence.config.json`, `none` when the diff has no visual impact, and `all` only for an explicitly requested full visual audit. The workflow validates this marker and refuses missing, duplicate, mixed, or unknown selections. Editing the pull-request body reruns the capture workflow, so the selection applies to every branch without changing workflow code in that branch.
+
 The ref lives outside `refs/heads`, so clones never fetch the images and no branch rule applies to it. It is force-updated on every publication and holds exactly one parentless commit: the latest head's images plus their manifest. The URLs pin that commit, so a replaced comment keeps showing what it showed.
 
 ## Local publication
@@ -17,7 +19,7 @@ Setup is verified by successful publication below, not merely by a successful CL
 
 ### Publish the reviewed commit
 
-Commit and review the changes, capture the exact commit, and inspect every image. Build a manifest with `GITHUB_REPOSITORY`, `VISUAL_EVIDENCE_HEAD_SHA`, `VISUAL_EVIDENCE_TARGET_KIND` (`pull` or `issue`), and `VISUAL_EVIDENCE_TARGET_NUMBER`. Set `VISUAL_EVIDENCE_DIR` for both manifest creation and publication, pointing at a directory that holds only the capture folders (`desktop-chromium/`, `mobile-chromium/`): the manifest lists every PNG under it. Run `pnpm visual:manifest`, then `pnpm visual:publish`. `pnpm visual:publish:issue` remains a compatibility alias for the same publisher.
+Commit and review the changes, capture the exact commit, and inspect every image. Set `VISUAL_EVIDENCE_SLUGS` to the comma-separated selected slugs before running `pnpm test:visual`; an unfiltered run is rejected, while the explicit value `all` is reserved for a requested full audit. Build a manifest with `GITHUB_REPOSITORY`, `VISUAL_EVIDENCE_HEAD_SHA`, `VISUAL_EVIDENCE_TARGET_KIND` (`pull` or `issue`), and `VISUAL_EVIDENCE_TARGET_NUMBER`. Set `VISUAL_EVIDENCE_DIR` for capture, manifest creation and publication, pointing at a fresh directory that holds only the capture folders (`desktop-chromium/`, `mobile-chromium/`): the manifest lists every PNG under it. Run `pnpm visual:manifest`, then `pnpm visual:publish`. `pnpm visual:publish:issue` remains a compatibility alias for the same publisher.
 
 The publisher requires a clean worktree and matching HEAD. For PRs it checks the remote head before publishing and again before updating the comment. An issue manifest cannot target a PR. Every blob must read back with the local SHA-256. A failed publication or verification leaves the previous comment intact.
 

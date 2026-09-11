@@ -2,6 +2,7 @@ name: Visual evidence capture
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
       - "public/**"
       - "src/**"
@@ -39,22 +40,29 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Resolve the explicit screen selection
+        id: selection
+        run: node scripts/visual-evidence/select.mjs >> "$GITHUB_OUTPUT"
+        env:
+          VISUAL_EVIDENCE_PR_BODY: ${{ github.event.pull_request.body }}
       - name: Capture canonical screens
+        if: steps.selection.outputs.has_screens == 'true'
         run: pnpm test:visual
         env:
-          VISUAL_EVIDENCE_DIR: visual-evidence
+          VISUAL_EVIDENCE_DIR: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}
           VISUAL_EVIDENCE_FIXTURES: "true"
+          VISUAL_EVIDENCE_SLUGS: ${{ steps.selection.outputs.slugs }}
       - name: Build validated manifest
         run: pnpm visual:manifest
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          VISUAL_EVIDENCE_DIR: visual-evidence
+          VISUAL_EVIDENCE_DIR: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}
           VISUAL_EVIDENCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           VISUAL_EVIDENCE_TARGET_KIND: pull
           VISUAL_EVIDENCE_TARGET_NUMBER: ${{ github.event.pull_request.number }}
       - uses: actions/upload-artifact@v7
         with:
           name: visual-evidence-${{ github.run_id }}
-          path: visual-evidence/
+          path: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}/
           if-no-files-found: error
           retention-days: 3

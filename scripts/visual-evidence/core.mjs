@@ -28,6 +28,7 @@ export function validateTrustedConfig(config) {
     throw new Error("The visual evidence config must define screens");
   }
   for (const screen of config.screens) {
+    assertSafeSegment(screen.slug, "screenshot slug");
     if (!SAFE_TITLE.test(screen.title ?? "")) {
       throw new Error(`Invalid screenshot title: ${screen.slug ?? "unknown"}`);
     }
@@ -65,11 +66,8 @@ export function validateManifest(
   if (!["pull", "issue"].includes(manifest.target?.kind)) {
     throw new Error("Manifest target kind is invalid");
   }
-  if (
-    !Array.isArray(manifest.screenshots) ||
-    manifest.screenshots.length === 0
-  ) {
-    throw new Error("Manifest contains no screenshots");
+  if (!Array.isArray(manifest.screenshots)) {
+    throw new Error("Manifest screenshots must be an array");
   }
 
   const paths = new Set();
@@ -168,12 +166,14 @@ export async function listIssueComments(
 export function renderComment(manifest, publishedScreenshots, hosting = {}) {
   const marker = `<!-- visual-evidence:${manifest.project} -->`;
   const headSha = manifest.headSha;
-  const images = publishedScreenshots
-    .map(
-      ({ title, viewport, url }) =>
-        `### ${title} · ${viewport}\n\n[![${title} on ${viewport}](${url})](${url})`,
-    )
-    .join("\n\n");
+  const images = publishedScreenshots.length
+    ? publishedScreenshots
+        .map(
+          ({ title, viewport, url }) =>
+            `### ${title} · ${viewport}\n\n[![${title} on ${viewport}](${url})](${url})`,
+        )
+        .join("\n\n")
+    : "Aucun rendu UI modifié pour ce commit. Aucune capture publiée.";
 
   const targetLabel = manifest.target.kind === "pull" ? "la PR" : "l’issue";
   const served =

@@ -28,6 +28,7 @@ const screenTitles = new Map(
   config.screens.map((screen) => [screen.slug, screen.title]),
 );
 
+await mkdir(outputRoot, { recursive: true });
 const screenshots = (await listPngFiles(outputRoot))
   .filter((filePath) => isCaptureViewport(filePath.split("/")[0]))
   .map((filePath) => {
@@ -54,7 +55,6 @@ const manifest = validateManifest(
   config.project,
 );
 
-await mkdir(outputRoot, { recursive: true });
 await writeFile(
   path.join(outputRoot, "manifest.json"),
   `${JSON.stringify(manifest, null, 2)}\n`,
