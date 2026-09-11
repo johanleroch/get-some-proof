@@ -26,7 +26,11 @@ describe("widget public presentation", () => {
               type: "p",
               children: [
                 { text: "Before. " },
-                { text: "Saved us hours.", highlight: true },
+                {
+                  text: "Saved us hours.",
+                  highlight: true,
+                  href: "https://example.com/review",
+                },
                 { text: " After." },
               ],
             },
@@ -35,6 +39,9 @@ describe("widget public presentation", () => {
       ],
     });
     expect(payload.testimonials[0].html).toContain("Saved us hours.");
+    expect(payload.testimonials[0].html).toContain(
+      'href="https://example.com/review"',
+    );
     expect(payload.testimonials[0].html).not.toContain("Before.");
     expect(payload.testimonials[0].html).not.toContain("out of 5 stars");
   });

@@ -1,3 +1,4 @@
+import { publicRichText } from "./domain/testimonialRichText";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { organizationPublicVisibility } from "./publicProjection";
@@ -9,6 +10,7 @@ export async function hydratePublicProjection(
   ctx: QueryCtx,
   brand: Doc<"organizations">,
   projection: Doc<"publicTestimonialProjections">,
+  linksEnabled: boolean,
 ) {
   const defaults = organizationPublicVisibility(brand);
   const visible = {
@@ -18,6 +20,15 @@ export async function hydratePublicProjection(
     role: projection.visibilityOverrides?.role ?? defaults.role,
   };
   const identity = {
+    source:
+      brand.publicWallShowSourceIcons === false
+        ? undefined
+        : projection.source
+          ? {
+              ...projection.source,
+              url: linksEnabled ? projection.source.url : undefined,
+            }
+          : undefined,
     avatarUrl: projection.avatarStorageId
       ? visible.avatar
         ? await ctx.storage.getUrl(projection.avatarStorageId)
@@ -45,7 +56,7 @@ export async function hydratePublicProjection(
       })
     : testimonialCardValue(identity, {
         text: projection.text,
-        richText: projection.richText,
+        richText: publicRichText(projection.richText, linksEnabled),
         images: projection.imageIds?.length
           ? await resolveTestimonialImages(ctx, projection.imageIds)
           : undefined,

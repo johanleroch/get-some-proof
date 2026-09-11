@@ -1,3 +1,4 @@
+import { testimonialSourceValidator } from "./domain/testimonialSource";
 import { widgetSnapshotValidator } from "./domain/widgets";
 import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { richTextValidator } from "./domain/testimonialRichText";
@@ -203,6 +204,8 @@ export default defineSchema({
     .index("by_jobId_type_position", ["jobId", "type", "position"])
     .index("by_organizationId", ["organizationId"]),
   accounts: defineTable({
+    testimonialLinksEnabled: v.optional(v.boolean()),
+    testimonialLinksRevision: v.optional(v.number()),
     publicationGeneration: v.optional(v.number()),
     publicationTransitionKey: v.optional(v.string()),
     preservedPublicationIds: v.optional(v.array(v.id("testimonials"))),
@@ -267,6 +270,7 @@ export default defineSchema({
     publicWallTransparentEmbed: v.optional(v.boolean()),
     publicWallHideAttribution: v.optional(v.boolean()),
     publicWallOrderVersion: v.optional(v.number()),
+    publicWallShowSourceIcons: v.optional(v.boolean()),
     publicWallVisibility: v.optional(
       v.object({
         avatar: v.boolean(),
@@ -751,6 +755,7 @@ export default defineSchema({
     v.union(
       v.object({
         importJobId: v.optional(v.id("testimonialImportJobs")),
+        source: v.optional(testimonialSourceValidator),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
@@ -779,6 +784,7 @@ export default defineSchema({
       }),
       v.object({
         importJobId: v.optional(v.id("testimonialImportJobs")),
+        source: v.optional(testimonialSourceValidator),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),

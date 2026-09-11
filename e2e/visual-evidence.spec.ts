@@ -284,6 +284,22 @@ for (const screen of config.screens) {
         .getByRole("heading", { name: "Invoices", exact: true })
         .scrollIntoViewIfNeeded();
     }
+    if (screen.slug === "testimonial-sources-hidden") {
+      await page
+        .getByRole("switch", { name: "Show original source logos" })
+        .click();
+      await page.getByRole("button", { name: "Save Public Wall" }).click();
+      await expect(page.locator("[data-gsp-source]")).toHaveCount(0);
+      await page.getByRole("button", { name: "Dismiss", exact: true }).click();
+    }
+    if (screen.slug === "testimonial-links-disabled") {
+      await page
+        .getByRole("switch", { name: "Allow links in testimonials" })
+        .click();
+      await expect(page.locator("blockquote a")).toHaveCount(0);
+      await page.getByRole("button", { name: "Dismiss", exact: true }).click();
+      await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
+    }
     if (
       screen.slug === "studio-preview" ||
       (screen.slug === "studio-editor" &&

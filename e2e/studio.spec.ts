@@ -65,6 +65,12 @@ test("reorders selected proof and switches to real highlights", async ({
     preview.getByText("The proof speaks for itself.", { exact: true }),
   ).toBeVisible();
   await expect(preview.getByText(/We added it beside/)).toHaveCount(0);
+  await expect(
+    preview.getByRole("link", { name: "Source: Google" }),
+  ).toHaveAttribute("href", "https://www.google.com/maps/reviews/1");
+  await expect(
+    preview.locator('a[href="https://example.com/customer-story"]'),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Mobile preview" }).click();
   await expect(
     page.getByRole("button", { name: "Mobile preview" }),

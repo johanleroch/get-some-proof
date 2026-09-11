@@ -54,6 +54,93 @@ async function setup() {
   return { t, owner, brand, testimonialId, widgetId, args };
 }
 describe("Studio widgets", () => {
+  it("applies source visibility and account link policy to published widget cards and revisions", async () => {
+    const s = await setup();
+    await s.t.run(async (ctx) => {
+      const p = await ctx.db
+        .query("publicTestimonialProjections")
+        .withIndex("by_testimonial", (q) =>
+          q.eq("testimonialId", s.testimonialId),
+        )
+        .unique();
+      await ctx.db.patch(p!._id, {
+        source: {
+          platform: "google",
+          url: "https://www.google.com/maps/reviews/1",
+        },
+        richText: [
+          {
+            type: "p",
+            children: [
+              { text: "Wonderful proof", href: "https://example.com/customer" },
+            ],
+          },
+        ],
+      });
+    });
+    await s.owner.client.mutation(api.widgets.save, {
+      ...s.args,
+      expectedRevision: 0,
+      name: "Homepage",
+      config,
+      testimonialIds: [s.testimonialId],
+      publish: true,
+    });
+    const widget = await s.owner.client.query(api.widgets.get, s.args);
+    const read = () =>
+      s.t.query(api.widgets.getPublished, {
+        publicId: widget!.publicId,
+        secret,
+      });
+    const before = (await read())!;
+    expect(before.testimonials[0].source?.url).toBe(
+      "https://www.google.com/maps/reviews/1",
+    );
+    await s.owner.client.mutation(api.accounts.setTestimonialLinksEnabled, {
+      enabled: false,
+    });
+    const disabled = (await read())!;
+    expect(disabled.privacyRevision).toBeGreaterThan(before.privacyRevision);
+    expect(disabled.testimonials[0].source).toEqual({ platform: "google" });
+    expect(
+      disabled.testimonials[0].type === "text" &&
+        disabled.testimonials[0].richText?.[0].children[0].href,
+    ).toBeUndefined();
+    expect(
+      await s.t.query(api.widgets.privacyRevision, {
+        publicId: widget!.publicId,
+      }),
+    ).toBe(disabled.privacyRevision);
+    const settings = {
+      organizationId: s.brand.id,
+      accentColor: "#123abc",
+      hideAttribution: false,
+      theme: "light" as const,
+      transparentEmbed: false,
+      visibility: { avatar: true, company: true, rating: true, role: true },
+    };
+    await s.owner.client.mutation(api.wallCustomization.updateSettings, {
+      ...settings,
+      showSourceIcons: false,
+    });
+    expect((await read())!.testimonials[0].source).toBeUndefined();
+    await s.owner.client.mutation(api.accounts.setTestimonialLinksEnabled, {
+      enabled: true,
+    });
+    const restoredLinks = (await read())!.testimonials[0];
+    expect(
+      restoredLinks.type === "text" &&
+        restoredLinks.richText?.[0].children[0].href,
+    ).toBe("https://example.com/customer");
+    expect(restoredLinks.source).toBeUndefined();
+    await s.owner.client.mutation(api.wallCustomization.updateSettings, {
+      ...settings,
+      showSourceIcons: true,
+    });
+    expect((await read())!.testimonials[0].source?.url).toBe(
+      "https://www.google.com/maps/reviews/1",
+    );
+  });
   it("keeps draft edits private and publishes an independent ordered selection", async () => {
     const s = await setup();
     await s.owner.client.mutation(api.widgets.save, {

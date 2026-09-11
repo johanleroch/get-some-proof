@@ -98,6 +98,12 @@ test("Owner marks a phrase, can unmark it, and never changes the words", async (
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator("blockquote").first()).toHaveText(quote);
   await expect(page.locator("blockquote mark").first()).toContainText("We");
+  await expect(
+    page
+      .locator("blockquote")
+      .first()
+      .getByRole("link", { name: "five hours every week" }),
+  ).toHaveAttribute("href", "https://example.com/atelier");
 });
 
 test("preserves pasted paragraphs and strips pasted HTML formatting", async ({

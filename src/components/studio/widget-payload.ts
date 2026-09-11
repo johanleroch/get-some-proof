@@ -17,15 +17,24 @@ export function widgetPayload(value: WidgetPresentation) {
     const excerpts =
       testimonial.richText?.flatMap((block) =>
         block.children.flatMap((leaf) =>
-          leaf.highlight && leaf.text.trim() ? [leaf.text] : [],
+          leaf.highlight && leaf.text.trim()
+            ? [{ text: leaf.text, ...(leaf.href ? { href: leaf.href } : {}) }]
+            : [],
         ),
       ) ?? [];
     if (!excerpts.length) return [];
     return [
       {
         ...testimonial,
-        text: excerpts.join(" … "),
-        richText: undefined,
+        text: excerpts.map((leaf) => leaf.text).join(" … "),
+        richText: [
+          {
+            type: "p" as const,
+            children: excerpts.flatMap((leaf, index) =>
+              index ? [{ text: " … " }, leaf] : [leaf],
+            ),
+          },
+        ],
         images: undefined,
       },
     ];

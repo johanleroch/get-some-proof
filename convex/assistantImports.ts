@@ -1,3 +1,7 @@
+import {
+  testimonialSource,
+  testimonialSourceValidator,
+} from "./domain/testimonialSource";
 import { components } from "./_generated/api";
 import { authzForOrganization } from "./authorization";
 import { ConvexError, v, type Infer } from "convex/values";
@@ -260,6 +264,7 @@ const assistantRecord = v.object({
   company: v.optional(v.string()),
   rating: v.optional(v.number()),
   richText: v.optional(richTextValidator),
+  source: v.optional(testimonialSourceValidator),
   portraitUrl: v.optional(v.string()),
 });
 const batchArgs = v.object({
@@ -309,6 +314,9 @@ function normalizedRecord(item: Infer<typeof assistantRecord>) {
     company: item.company,
     rating: item.rating,
     richText: normalizeRichText(item.richText, item.text),
+    source: item.source
+      ? testimonialSource(item.source.platform, item.source.url)
+      : undefined,
     avatarUrl: item.portraitUrl,
   };
 }

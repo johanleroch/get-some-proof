@@ -103,7 +103,12 @@ async function selected(
     }
     result.push({
       testimonialId,
-      card: await hydratePublicProjection(ctx, brand, projection),
+      card: await hydratePublicProjection(
+        ctx,
+        brand,
+        projection,
+        account?.testimonialLinksEnabled !== false,
+      ),
     });
   }
   return result;
@@ -286,7 +291,12 @@ export const candidates = query({
         .filter((projection) => projectionIsPublic(account, projection))
         .map(async (projection) => ({
           testimonialId: projection.testimonialId,
-          card: await hydratePublicProjection(ctx, brand, projection),
+          card: await hydratePublicProjection(
+            ctx,
+            brand,
+            projection,
+            account?.testimonialLinksEnabled !== false,
+          ),
         })),
     );
     return { ...page, page: items };
@@ -317,7 +327,8 @@ async function revision(
   return (
     widget.revision +
     (brand.publicWallPrivacyRevision ?? 0) +
-    (account?.publicationGeneration ?? 0)
+    (account?.publicationGeneration ?? 0) +
+    (account?.testimonialLinksRevision ?? 0)
   );
 }
 /** Lookup only: public admission must complete before card/storage hydration. */

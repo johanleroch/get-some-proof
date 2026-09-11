@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AccountTestimonialLinks } from "./account-testimonial-links";
 import { BlobLoader } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useState } from "react";
@@ -93,14 +94,17 @@ function AccountProfileContent({
   }
 
   return (
-    <AccountProfileView
-      currentImage={currentImage}
-      email={email}
-      initialName={initialName}
-      onRemoveImage={removeProfileImage}
-      onSaveName={saveName}
-      onUploadImage={uploadAvatar}
-    />
+    <>
+      <AccountProfileView
+        currentImage={currentImage}
+        email={email}
+        initialName={initialName}
+        onRemoveImage={removeProfileImage}
+        onSaveName={saveName}
+        onUploadImage={uploadAvatar}
+      />
+      <AccountTestimonialLinks />
+    </>
   );
 }
 

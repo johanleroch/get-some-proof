@@ -70,6 +70,7 @@ export const getSettings = query({
     accentColor: v.string(),
     canHideAttribution: v.boolean(),
     hideAttribution: v.boolean(),
+    showSourceIcons: v.optional(v.boolean()),
     theme: themeValidator,
     transparentEmbed: v.boolean(),
     visibility: visibilityValidator,
@@ -91,6 +92,7 @@ export const getSettings = query({
         access.organization.primaryColor,
       canHideAttribution,
       hideAttribution: canHideAttribution,
+      showSourceIcons: access.organization.publicWallShowSourceIcons ?? true,
       theme: access.organization.publicWallTheme ?? "system",
       transparentEmbed: access.organization.publicWallTransparentEmbed ?? false,
       visibility: organizationPublicVisibility(access.organization),
@@ -143,6 +145,7 @@ export const updateSettings = mutation({
   args: {
     accentColor: v.string(),
     hideAttribution: v.boolean(),
+    showSourceIcons: v.optional(v.boolean()),
     organizationId: v.id("organizations"),
     theme: themeValidator,
     transparentEmbed: v.boolean(),
@@ -172,6 +175,10 @@ export const updateSettings = mutation({
     await ctx.db.patch(access.organization._id, {
       publicWallAccentColor: accentColor,
       publicWallHideAttribution: args.hideAttribution,
+      publicWallShowSourceIcons:
+        args.showSourceIcons ??
+        access.organization.publicWallShowSourceIcons ??
+        true,
       publicWallTheme: args.theme,
       publicWallTransparentEmbed: args.transparentEmbed,
       publicWallVisibility: args.visibility,

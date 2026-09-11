@@ -5,6 +5,44 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { previewWall, readWallSource } from "./source";
 
 describe("public testimonial wall retrieval", () => {
+  it("retains the original LinkedIn source, ignoring links in the quotation", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            withTestimonialIds(
+              `<article class="testimonial-card text-testimonial"><span class="font-bold">Lina</span><div class="show-more-text">Thanks <a href="https://x.com/other">friend</a></div><a href="https://www.linkedin.com/posts/original"><img src="/sources/linkedin-embed-logo.png"></a></article>`,
+            ),
+            { headers: { "content-type": "text/html" } },
+          ),
+        ),
+    );
+    const result = await previewWall("https://testimonial.to/atelier/all");
+    expect(result.items[0]?.source).toEqual({
+      platform: "linkedin",
+      url: "https://www.linkedin.com/posts/original",
+    });
+  });
+  it("retains Senja's original platform for text and video", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            `<script>const data = {reviews:[{id:"one",type:"text",text:"Great",customer:{name:"Lina"},integration:"twitter",url:"https://x.com/lina/status/1"},{id:"two",type:"video",customer:{name:"Camille"},integration:"google",url:"https://evil.example"}]};</script>`,
+            { headers: { "content-type": "text/html" } },
+          ),
+        ),
+    );
+    const result = await previewWall("https://love.senja.io/");
+    expect(result.items.map((item) => item.source)).toEqual([
+      { platform: "x", url: "https://x.com/lina/status/1" },
+      { platform: "google" },
+    ]);
+  });
   afterEach(() => vi.unstubAllGlobals());
 
   it.each([
@@ -225,7 +263,7 @@ describe("public testimonial wall retrieval", () => {
         .fn()
         .mockResolvedValue(
           new Response(
-            '<div class="testimonial-card"><div id="unified-video-video-123"></div></div><script>self.__next_f.push(' +
+            '<div class="testimonial-card"><div id="unified-video-video-123"></div><a href="https://www.linkedin.com/posts/video"><img src="/sources/linkedin-embed-logo.png"></a></div><script>self.__next_f.push(' +
               JSON.stringify([1, flight]) +
               ")</script>",
           ),
@@ -236,6 +274,10 @@ describe("public testimonial wall retrieval", () => {
     ).toEqual([
       {
         sourceId: "video-123",
+        source: {
+          platform: "linkedin",
+          url: "https://www.linkedin.com/posts/video",
+        },
         type: "video",
         authorName: "Lucie",
         text: "",
@@ -303,6 +345,35 @@ it("keeps paragraph boundaries and decoded words while dropping unsafe HTML", as
         children: [{ text: "encore", highlight: true }, { text: "" }],
       },
       { type: "p", children: [{ text: "2 < 3" }] },
+    ]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("preserves Senja mentions and nested highlights without guessing bare handles", async () => {
+  const html =
+    'Merci <a href="https://twitter.com/atelier"><mark>@atelier</mark></a> et @camille. <a href="javascript:alert(1)">Suite</a>';
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          `<script>start({reviews:[${JSON.stringify({ id: "mention", type: "text", text: html, customer: { name: "Lina" } })}]})</script>`,
+        ),
+    ),
+  );
+  try {
+    const item = (await previewWall("https://love.senja.io/")).items[0];
+    expect(item.text).toBe("Merci @atelier et @camille. Suite");
+    expect(item.richText?.[0].children).toEqual([
+      { text: "Merci " },
+      {
+        text: "@atelier",
+        highlight: true,
+        href: "https://twitter.com/atelier",
+      },
+      { text: " et @camille. Suite" },
     ]);
   } finally {
     vi.unstubAllGlobals();

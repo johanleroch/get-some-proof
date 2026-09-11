@@ -22,6 +22,7 @@ export type PublicWallSettingsValue = {
   accentColor: string;
   canHideAttribution: boolean;
   hideAttribution: boolean;
+  showSourceIcons?: boolean;
   theme: "light" | "dark" | "system";
   transparentEmbed: boolean;
   visibility: {
@@ -48,6 +49,9 @@ export function PublicWallSettings({
   ) => Promise<void>;
   settings: PublicWallSettingsValue;
 }) {
+  const [showSourceIcons, setShowSourceIcons] = useState(
+    settings.showSourceIcons ?? true,
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -68,6 +72,7 @@ export function PublicWallSettings({
     try {
       await onSave({
         accentColor,
+        showSourceIcons,
         hideAttribution: settings.canHideAttribution,
         theme,
         transparentEmbed,
@@ -159,6 +164,16 @@ export function PublicWallSettings({
         />
         <span>Use a transparent Embedded Wall background</span>
       </label>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+        <Switch
+          checked={showSourceIcons}
+          onCheckedChange={setShowSourceIcons}
+        />
+        <span>Show original source logos</span>
+      </label>
+      <FieldDescription>
+        Applies to the public Wall and all widgets for this Project.
+      </FieldDescription>
       <div className="bg-surface-2 rounded-md border p-4 text-sm">
         <p className="font-medium">
           {settings.canHideAttribution

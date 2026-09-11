@@ -13,6 +13,10 @@ const studioCandidates: StudioCandidate[] = [
     testimonialId: "maya",
     card: {
       id: "maya",
+      source: {
+        platform: "google",
+        url: "https://www.google.com/maps/reviews/1",
+      },
       type: "text",
       name: "Maya Laurent",
       company: "Atelier June",
@@ -34,6 +38,7 @@ const studioCandidates: StudioCandidate[] = [
             {
               text: "Our customers finally have a place to tell their stories.",
               highlight: true,
+              href: "https://example.com/customer-story",
             },
             {
               text: " Setup took ten minutes and the first testimonial arrived that afternoon.",

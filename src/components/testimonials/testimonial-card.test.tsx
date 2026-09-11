@@ -338,3 +338,41 @@ describe("TestimonialCard", () => {
     );
   });
 });
+
+it("renders safe inline links and drops unsafe destinations without treating text as HTML", () => {
+  cleanup();
+  render(
+    <TestimonialCard
+      accentColor="#b86a08"
+      testimonial={{
+        id: "safe-links",
+        type: "text",
+        name: "Camille",
+        avatarUrl: null,
+        publishedAt: 1,
+        text: "@atelier <script> @unsafe",
+        richText: [
+          {
+            type: "p",
+            children: [
+              {
+                text: "@atelier",
+                href: 'https://example.com/?q="hello"&x=1',
+                highlight: true,
+              },
+              { text: " <script> " },
+              { text: "@unsafe", href: "javascript:alert(1)" },
+            ],
+          },
+        ],
+      }}
+    />,
+  );
+  const link = screen.getByRole("link", { name: "@atelier" });
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "ugc nofollow noopener noreferrer");
+  expect(link.querySelector("mark")).toHaveTextContent("@atelier");
+  expect(screen.queryByRole("link", { name: "@unsafe" })).toBeNull();
+  expect(document.querySelector("blockquote script")).toBeNull();
+  expect(document.querySelector("blockquote")).toHaveTextContent("<script>");
+});

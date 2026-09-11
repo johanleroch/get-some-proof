@@ -426,6 +426,20 @@ export const screenSections: ScreenSection[] = [
         fixturePath: "/visual-evidence/workspace-delete-progress",
       },
       {
+        slug: "testimonial-sources",
+        title: "Original testimonial sources",
+        description:
+          "Source logos on imported text and video with a Wall-wide visibility choice.",
+        fixturePath: "/visual-evidence/testimonial-sources",
+      },
+      {
+        slug: "testimonial-links",
+        title: "Testimonial links",
+        description:
+          "Imported mentions and the Account-wide switch for public links.",
+        fixturePath: "/visual-evidence/testimonial-links",
+      },
+      {
         slug: "testimonial-highlight",
         title: "Highlight a phrase",
         description:

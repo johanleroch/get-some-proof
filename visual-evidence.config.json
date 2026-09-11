@@ -719,6 +719,32 @@
       "path": "/visual-evidence/collection-form",
       "heading": "Share your Fernhill Studio story",
       "theme": "light"
+    },
+    {
+      "slug": "testimonial-links-enabled",
+      "title": "Testimonial links enabled",
+      "path": "/visual-evidence/testimonial-links",
+      "heading": "Testimonial links",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-links-disabled",
+      "title": "Testimonial links disabled",
+      "path": "/visual-evidence/testimonial-links",
+      "heading": "Testimonial links",
+      "theme": "light"
+    },
+    {
+      "slug": "testimonial-sources-visible",
+      "title": "Testimonial sources visible",
+      "path": "/visual-evidence/testimonial-sources",
+      "heading": "Public Wall appearance"
+    },
+    {
+      "slug": "testimonial-sources-hidden",
+      "title": "Testimonial sources hidden",
+      "path": "/visual-evidence/testimonial-sources",
+      "heading": "Public Wall appearance"
     }
   ]
 }

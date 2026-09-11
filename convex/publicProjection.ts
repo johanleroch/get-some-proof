@@ -93,6 +93,7 @@ export async function upsertPublicProjection(
     consent?.identityFields ?? ["name", "avatar", "role", "company", "rating"],
   );
   const identity = {
+    source: testimonial.importOrigin?.originalSource,
     importJobId: testimonial.importJobId,
     publicationGeneration: approvePublication
       ? (account?.publicationGeneration ?? 0)

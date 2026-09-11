@@ -22,7 +22,11 @@ const initial: TestimonialCardTextValue = {
       type: "p",
       children: [
         { text: "We saved " },
-        { text: "five hours every week", highlight: true },
+        {
+          text: "five hours every week",
+          highlight: true,
+          href: "https://example.com/atelier",
+        },
         { text: ". Our customers noticed the difference immediately." },
       ],
     },

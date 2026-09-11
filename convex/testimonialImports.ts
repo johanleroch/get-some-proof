@@ -418,6 +418,7 @@ export async function confirmOwnedImport(
         originalCompany: item.company,
         originalRating: item.rating,
         originalRichText: item.richText,
+        originalSource: item.source,
         originalType: item.type,
         originalAvatarUrl: item.avatarUrl,
         importedBy: principal.actorId,

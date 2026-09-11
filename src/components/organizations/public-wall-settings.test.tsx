@@ -32,12 +32,14 @@ describe("PublicWallSettings", () => {
       screen.getByLabelText("Use a transparent Embedded Wall background"),
     );
     fireEvent.click(screen.getByLabelText("Stars"));
+    fireEvent.click(screen.getByLabelText("Show original source logos"));
     fireEvent.click(screen.getByRole("button", { name: "Save Public Wall" }));
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith({
         accentColor: "#f97316",
         hideAttribution: false,
+        showSourceIcons: false,
         theme: "dark",
         transparentEmbed: true,
         visibility: { avatar: true, company: true, rating: false, role: true },

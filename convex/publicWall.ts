@@ -1,6 +1,6 @@
+import { hydratePublicProjection } from "./publicProjectionHydration";
 import { projectionIsPublic } from "./publicProjection";
 import { isProjectActive } from "./projectActivity";
-import { hydratePublicProjection } from "./publicProjectionHydration";
 import { ConvexError, v } from "convex/values";
 import {
   requirePublicWallServer,
@@ -54,6 +54,7 @@ export const getBrand = query({
         .first(),
     ]);
     const accentColor = brand.publicWallAccentColor ?? brand.primaryColor;
+    const account = brand.accountId ? await ctx.db.get(brand.accountId) : null;
     return {
       accentColor,
       accentInk: accentInk(accentColor),
@@ -63,9 +64,8 @@ export const getBrand = query({
       publicSlug: brand.publicSlug,
       privacyRevision:
         (brand.publicWallPrivacyRevision ?? 0) +
-        (brand.accountId
-          ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
-          : 0),
+        (account?.publicationGeneration ?? 0) +
+        (account?.testimonialLinksRevision ?? 0),
       theme: brand.publicWallTheme ?? "system",
       transparentEmbed: brand.publicWallTransparentEmbed ?? false,
     };
@@ -118,9 +118,14 @@ export const list = query({
     const testimonials = await Promise.all(
       page.page
         .filter((projection) => projectionIsPublic(account, projection))
-        .map(async (projection) => {
-          return hydratePublicProjection(ctx, brand, projection);
-        }),
+        .map((projection) =>
+          hydratePublicProjection(
+            ctx,
+            brand,
+            projection,
+            account?.testimonialLinksEnabled !== false,
+          ),
+        ),
     );
     return { ...page, page: testimonials };
   },
@@ -137,11 +142,11 @@ export const privacyRevision = query({
       .query("organizations")
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
       .unique();
+    const account = brand?.accountId ? await ctx.db.get(brand.accountId) : null;
     return !brand || !(await isProjectActive(ctx, brand))
       ? null
       : (brand.publicWallPrivacyRevision ?? 0) +
-          (brand.accountId
-            ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
-            : 0);
+          (account?.publicationGeneration ?? 0) +
+          (account?.testimonialLinksRevision ?? 0);
   },
 });

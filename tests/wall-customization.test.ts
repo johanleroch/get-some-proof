@@ -8,7 +8,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
 import { buildPublicationConsent } from "@convex/domain/submission";
 import { legacyPublicOrderKey } from "@convex/migrations";
-import { publicOrderKeyBetween } from "@convex/publicProjection";
+import {
+  upsertPublicProjection,
+  publicOrderKeyBetween,
+} from "@convex/publicProjection";
 import {
   addStripeSubscription,
   authenticatedUser,
@@ -74,6 +77,88 @@ describe("Public Wall customization and curation", () => {
     });
     return created.testimonialId;
   }
+
+  it("projects original sources, hides them without republishing, and respects account link policy", async () => {
+    const current = await setup();
+    const id = await createAndPublish(current, "source");
+    await current.t.run(async (ctx) => {
+      await ctx.db.patch(id, {
+        importOrigin: {
+          provider: "senja",
+          sourceId: "original",
+          sourceUrl: "https://love.senja.io/",
+          originalAuthorName: "Lina",
+          originalText: "Original",
+          originalSource: { platform: "x", url: "https://x.com/lina/status/1" },
+          importedBy: "owner",
+          importedAt: 1,
+        },
+      });
+      const testimonial = (await ctx.db.get(id))!;
+      await upsertPublicProjection(ctx, testimonial, Date.now());
+    });
+    const read = async () =>
+      (
+        await current.t.query(api.publicWall.list, {
+          secret: "wall-service-test-credential-32-characters",
+          publicSlug: "acme-proof",
+          paginationOpts: { cursor: null, numItems: 20 },
+        })
+      ).page[0];
+    expect((await read())?.source).toEqual({
+      platform: "x",
+      url: "https://x.com/lina/status/1",
+    });
+    await current.owner.client.mutation(
+      api.accounts.setTestimonialLinksEnabled,
+      { enabled: false },
+    );
+    expect((await read())?.source).toEqual({ platform: "x" });
+    const inbox = await current.owner.client.query(
+      api.testimonialModeration.listInbox,
+      {
+        organizationId: current.brand.id,
+        sort: "newest",
+        status: "published",
+        paginationOpts: { cursor: null, numItems: 20 },
+      },
+    );
+    expect(inbox.page[0]?.card?.source).toEqual({
+      platform: "x",
+      url: "https://x.com/lina/status/1",
+    });
+    const settings = await current.owner.client.query(
+      api.wallCustomization.getSettings,
+      { organizationId: current.brand.id },
+    );
+    const values = {
+      accentColor: settings.accentColor,
+      hideAttribution: settings.hideAttribution,
+      theme: settings.theme,
+      transparentEmbed: settings.transparentEmbed,
+      visibility: settings.visibility,
+    };
+    const before = await current.t.query(api.publicWall.privacyRevision, {
+      publicSlug: "acme-proof",
+    });
+    await current.owner.client.mutation(api.wallCustomization.updateSettings, {
+      ...values,
+      organizationId: current.brand.id,
+      showSourceIcons: false,
+    });
+    expect((await read())?.source).toBeUndefined();
+    expect(
+      await current.t.query(api.publicWall.privacyRevision, {
+        publicSlug: "acme-proof",
+      }),
+    ).toBeGreaterThan(before!);
+    await current.owner.client.mutation(api.wallCustomization.updateSettings, {
+      ...values,
+      organizationId: current.brand.id,
+      showSourceIcons: true,
+    });
+    expect((await read())?.source).toEqual({ platform: "x" });
+  });
 
   it("invalidates loaded public identity fields for Brand and Testimonial visibility changes", async () => {
     const current = await setup();
