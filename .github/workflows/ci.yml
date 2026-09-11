@@ -32,7 +32,10 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The full five-project Playwright matrix currently needs slightly more
+    # than 20 minutes on GitHub-hosted runners. Keep enough headroom for the
+    # report upload instead of cancelling an otherwise healthy run.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
