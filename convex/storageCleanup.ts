@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { randomSubmissionManagementToken } from "./domain/submission";
+import { deleteImageAsset } from "./imageAssetRegistry";
 const orphanedStorageMinimumAgeMs = 2 * 60 * 60 * 1_000;
 const storageCleanupLeaseMs = 60 * 60 * 1_000;
 
@@ -124,7 +125,7 @@ export const cleanupUnreferencedAvatarStorage = internalMutation({
         !attachment &&
         !importAvatar
       ) {
-        await ctx.storage.delete(storedFile._id);
+        await deleteImageAsset(ctx, storedFile._id);
       }
     }
     if (!storedFiles.isDone) {

@@ -2,6 +2,8 @@ import { testimonialSourceValidator } from "./domain/testimonialSource";
 import { widgetSnapshotValidator } from "./domain/widgets";
 import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { richTextValidator } from "./domain/testimonialRichText";
+import { imageAssetKind, imageAssetSource } from "./domain/imageAsset";
+import { directImageTarget } from "./domain/directImageUpload";
 import {
   importResult,
   importOrigin,
@@ -14,6 +16,88 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  imageAssets: defineTable({
+    storageId: v.optional(v.id("_storage")),
+    organizationId: v.optional(v.id("organizations")),
+    ownerUserId: v.optional(v.string()),
+    testimonialId: v.optional(v.id("testimonials")),
+    testimonialImageId: v.optional(v.id("testimonialImages")),
+    kind: imageAssetKind,
+    contentType: v.literal("image/webp"),
+    width: v.number(),
+    height: v.number(),
+    size: v.number(),
+    originalContentType: v.string(),
+    originalSize: v.number(),
+    source: imageAssetSource,
+    transformVersion: v.literal("webp-v1"),
+    status: v.union(v.literal("attached"), v.literal("deleted")),
+    createdAt: v.number(),
+    attachedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_storage_id", ["storageId"])
+    .index("by_organization_and_kind", ["organizationId", "kind"])
+    .index("by_owner_user_and_kind", ["ownerUserId", "kind"])
+    .index("by_testimonial_and_kind", ["testimonialId", "kind"])
+    .index("by_status", ["status"]),
+  imageAssetMigrationJobs: defineTable({
+    referenceTable: v.union(
+      v.literal("userProfiles"),
+      v.literal("organizations"),
+      v.literal("testimonialSubmitterPhoto"),
+      v.literal("testimonialPoster"),
+      v.literal("testimonialImages"),
+    ),
+    referenceId: v.string(),
+    storageId: v.id("_storage"),
+    kind: imageAssetKind,
+    organizationId: v.optional(v.id("organizations")),
+    ownerUserId: v.optional(v.string()),
+    testimonialId: v.optional(v.id("testimonials")),
+    testimonialImageId: v.optional(v.id("testimonialImages")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("complete"),
+      v.literal("skipped"),
+      v.literal("failed"),
+    ),
+    attempts: v.number(),
+    diagnostic: v.optional(v.string()),
+    replacementStorageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_reference_table_and_reference_id", [
+      "referenceTable",
+      "referenceId",
+    ])
+    .index("by_organization_id", ["organizationId"])
+    .index("by_owner_user_id", ["ownerUserId"])
+    .index("by_status", ["status"]),
+  directImageVerifications: defineTable({
+    target: directImageTarget,
+    organizationId: v.optional(v.id("organizations")),
+    ownerUserId: v.optional(v.string()),
+    storageId: v.id("_storage"),
+    metadata: v.object({
+      contentType: v.literal("image/webp"),
+      height: v.number(),
+      kind: imageAssetKind,
+      originalContentType: v.string(),
+      originalSize: v.number(),
+      size: v.number(),
+      source: imageAssetSource,
+      transformVersion: v.literal("webp-v1"),
+      width: v.number(),
+    }),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_expires_at", ["expiresAt"])
+    .index("by_organization_id", ["organizationId"])
+    .index("by_owner_user_id", ["ownerUserId"])
+    .index("by_storage_id", ["storageId"]),
   widgets: defineTable({
     organizationId: v.id("organizations"),
     publicId: v.string(),

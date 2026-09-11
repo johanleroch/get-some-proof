@@ -5,6 +5,7 @@ import authz from "@djpanda/convex-authz/convex.config";
 import { defineApp } from "convex/server";
 import { v } from "convex/values";
 import workflow from "@convex-dev/workflow/convex.config";
+import migrations from "@convex-dev/migrations/convex.config.js";
 
 const app = defineApp({
   env: {
@@ -35,5 +36,6 @@ app.use(authz);
 app.use(stripe);
 app.use(rateLimiter);
 app.use(workflow);
+app.use(migrations);
 
 export default app;

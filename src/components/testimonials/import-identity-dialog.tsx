@@ -91,6 +91,7 @@ export function ImportIdentityDialog({
               fallback={authorName.slice(0, 1)}
               imageUrl={photoUrl}
               label="Customer photo"
+              preserveRatio
               size="sm"
               readOnly={pending}
               onUpload={async (blob) => {

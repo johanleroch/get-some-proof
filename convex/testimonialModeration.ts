@@ -14,6 +14,8 @@ import {
 } from "./domain/testimonialRichText";
 import { resolveTestimonialImages } from "./testimonialImages";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -944,7 +946,10 @@ export const setHighlights = mutation({
 
 const posterChoiceValidator = v.union(
   v.object({ kind: v.literal("frame"), timeSeconds: v.number() }),
-  v.object({ kind: v.literal("image"), storageId: v.id("_storage") }),
+  v.object({
+    kind: v.literal("image"),
+    verificationId: v.id("directImageVerifications"),
+  }),
 );
 
 async function findReadyVideo(
@@ -1026,20 +1031,35 @@ export const setPoster = mutation({
         posterTimeSeconds: Math.round(args.poster.timeSeconds * 10) / 10,
       };
     } else {
-      if (testimonial.posterStorageId !== args.poster.storageId)
-        await validateExclusiveStoredImage(ctx, args.poster.storageId, {
-          kind: "testimonial",
+      const image = await consumeDirectImage(ctx, args.poster.verificationId, {
+        kind: "videoThumbnail",
+        organizationId: testimonial.organizationId,
+        testimonialId: testimonial._id,
+      });
+      await validateExclusiveStoredImage(ctx, image.storageId, {
+        kind: "testimonial",
+        imageKind: "videoThumbnail",
+        testimonialId: testimonial._id,
+      });
+      await registerImageAsset(
+        ctx,
+        image.storageId,
+        image.metadata,
+        "videoThumbnail",
+        {
+          organizationId: testimonial.organizationId,
           testimonialId: testimonial._id,
-        });
+        },
+      );
       patch = {
-        posterStorageId: args.poster.storageId,
+        posterStorageId: image.storageId,
         posterTimeSeconds: undefined,
       };
     }
     const previousStorageId = testimonial.posterStorageId;
     await ctx.db.patch(testimonial._id, { ...patch, updatedAt: Date.now() });
     if (previousStorageId && previousStorageId !== patch.posterStorageId)
-      await ctx.storage.delete(previousStorageId);
+      await deleteImageAsset(ctx, previousStorageId);
     if (testimonial.moderationStatus === "published") {
       const projection = await ctx.db
         .query("publicTestimonialProjections")

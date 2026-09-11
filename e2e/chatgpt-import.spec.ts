@@ -367,10 +367,6 @@ test("MCP Apps component keeps server selection across filters and follows the h
     mimeType: "image/png",
     buffer: Buffer.from(imageBase64, "base64"),
   });
-  await app.getByRole("button", { name: "Set new picture" }).click();
-  await expect(
-    app.getByRole("dialog", { name: "Edit customer photo" }),
-  ).toBeHidden();
   await expect(
     dialog.getByRole("button", { name: "Replace image" }),
   ).toBeVisible();

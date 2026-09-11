@@ -12,6 +12,7 @@ import { AccountProfile } from "./account-profile";
 const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
   updateUser: vi.fn(),
+  useAction: vi.fn(() => vi.fn()),
   useMutation: vi.fn(() => vi.fn()),
   useQuery: vi.fn(() => ({
     email: "johan@example.com",
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("convex/react", () => ({
+  useAction: mocks.useAction,
   useMutation: mocks.useMutation,
   useQuery: mocks.useQuery,
 }));
@@ -46,6 +48,7 @@ describe("AccountProfile", () => {
     cleanup();
     mocks.refetch.mockReset();
     mocks.updateUser.mockReset();
+    mocks.useAction.mockClear();
     mocks.updateUser.mockResolvedValue({ data: { status: true }, error: null });
   });
 

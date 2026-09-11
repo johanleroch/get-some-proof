@@ -7,6 +7,7 @@ import {
   rememberUnresolvedImportCopy,
 } from "./videoImportCleanup";
 import { v } from "convex/values";
+import { deleteImageAsset } from "./imageAssetRegistry";
 
 import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -365,8 +366,8 @@ export async function deleteTestimonialRecords(
   );
   await deleteTestimonialImages(ctx, testimonial._id, mediaAlreadyHandled);
   if (!mediaAlreadyHandled && testimonial.avatarStorageId)
-    await ctx.storage.delete(testimonial.avatarStorageId);
+    await deleteImageAsset(ctx, testimonial.avatarStorageId);
   if (!mediaAlreadyHandled && testimonial.posterStorageId)
-    await ctx.storage.delete(testimonial.posterStorageId);
+    await deleteImageAsset(ctx, testimonial.posterStorageId);
   await ctx.db.delete(testimonial._id);
 }

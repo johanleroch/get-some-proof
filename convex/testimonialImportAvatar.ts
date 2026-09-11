@@ -12,11 +12,9 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import {
-  downloadImportAvatar,
-  ImportAvatarError,
-} from "../src/lib/testimonial-import/avatar";
 import { importProvider } from "./domain/testimonialImport";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 import { upsertPublicProjection } from "./publicProjection";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
 
@@ -191,6 +189,7 @@ export const finish = internalMutation({
     sourceUrl: v.string(),
     diagnostic: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
+    metadata: v.optional(imageAssetMetadata),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -225,16 +224,26 @@ export const finish = internalMutation({
     if (!applicable) {
       // A deleted import or a newer photo must not be resurrected/overwritten.
       if (args.storageId && testimonial?.avatarStorageId !== args.storageId)
-        await ctx.storage.delete(args.storageId);
+        await deleteImageAsset(ctx, args.storageId);
       return null;
     }
-    if (!args.storageId) {
+    if (!args.storageId || !args.metadata) {
       await ctx.db.patch(item._id, {
         avatarStatus: "failed",
         avatarDiagnostic: args.diagnostic ?? "COPY_FAILED",
       });
       return null;
     }
+    await registerImageAsset(
+      ctx,
+      args.storageId,
+      args.metadata,
+      "submitterPhoto",
+      {
+        organizationId: testimonial.organizationId,
+        testimonialId: testimonial._id,
+      },
+    );
     await ctx.db.patch(testimonial._id, { avatarStorageId: args.storageId });
     await ctx.db.patch(item._id, {
       avatarStatus: "ready",
@@ -283,34 +292,6 @@ export const copy = internalAction({
       args,
     );
     if (!source) return null;
-    if (source.provider === "assistant")
-      return ctx.runAction(internal.assistantImportMedia.copyPortrait, args);
-    let storageId: Id<"_storage"> | undefined;
-    let stage = "download";
-    try {
-      const image = await downloadImportAvatar(source.provider, source.url);
-      stage = "storage";
-      storageId = await ctx.storage.store(image);
-    } catch (error) {
-      await ctx.runMutation(internal.testimonialImportAvatar.finish, {
-        ...args,
-        sourceUrl: source.url,
-        diagnostic:
-          error instanceof ImportAvatarError
-            ? error.diagnostic
-            : stage === "storage"
-              ? "STORAGE_FAILED"
-              : "FETCH_FAILED",
-      });
-      return null;
-    }
-    // If mutation delivery is uncertain, retain the file: deleting here could
-    // break a successful attachment. Existing orphan cleanup handles unused files.
-    await ctx.runMutation(internal.testimonialImportAvatar.finish, {
-      ...args,
-      sourceUrl: source.url,
-      storageId,
-    });
-    return null;
+    return ctx.runAction(internal.importImageProcessing.copyPortrait, args);
   },
 });

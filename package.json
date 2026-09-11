@@ -42,6 +42,7 @@
   "dependencies": {
     "@better-auth/oauth-provider": "1.6.30",
     "@convex-dev/better-auth": "0.12.5",
+    "@convex-dev/migrations": "^0.3.6",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@convex-dev/stripe": "0.1.6",
     "@convex-dev/workflow": "^0.4.6",
@@ -77,6 +78,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-easy-crop": "6.2.3",
+    "sharp": "0.35.4",
     "sonner": "^2.0.8",
     "stripe": "22.6.0",
     "tailwind-merge": "3.6.0",

@@ -5,7 +5,7 @@ import { AccountTestimonialLinks } from "./account-testimonial-links";
 import { BlobLoader } from "@/components/brand/blob-loader";
 
 import { type FormEvent, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 
 import { api } from "@convex/_generated/api";
 import { PageHeader } from "@/components/page-header";
@@ -70,10 +70,17 @@ function AccountProfileContent({
   );
   const setAvatar = useMutation(api.profileImages.setMyAvatar);
   const removeAvatar = useMutation(api.profileImages.removeMyAvatar);
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
 
   async function uploadAvatar(blob: Blob) {
-    const storageId = await uploadProfileImage(blob, await generateUploadUrl());
-    await setAvatar({ storageId });
+    const image = await uploadProfileImage(
+      blob,
+      await generateUploadUrl(),
+      "ownerPhoto",
+      processImage,
+      { kind: "ownerPhoto" },
+    );
+    await setAvatar({ verificationId: image.verificationId });
   }
 
   async function removeProfileImage() {

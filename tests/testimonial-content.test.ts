@@ -12,7 +12,12 @@ import {
 } from "@convex/domain/submission";
 import { richTextFromPlain } from "@convex/domain/testimonialRichText";
 import type { Id } from "@convex/_generated/dataModel";
-import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+import {
+  authenticatedUser,
+  createConvexTest,
+  testDirectImageVerification,
+  testImageMetadata,
+} from "./convex-test-helpers";
 
 const text = "We saved five hours every week with this product.";
 const token = "a".repeat(64);
@@ -45,13 +50,18 @@ async function setup() {
     );
     const storageId = await t.run(async (ctx) => {
       const id = await ctx.storage.store(new Blob(["test image"]));
-      await ctx.db.patch(id, { contentType: "image/png", size: 10 });
+      await ctx.db.patch(id, { contentType: "image/webp", size: 10 });
       return id;
     });
     const image = await t.mutation(api.testimonialImages.registerUpload, {
       ...uploadIdentity,
       imageId: reservation.imageId,
-      storageId,
+      verificationId: await testDirectImageVerification(
+        t,
+        { kind: "testimonialImage", imageId: reservation.imageId },
+        storageId,
+        testImageMetadata("testimonialImage", 10),
+      ),
     });
     return { ...image, storageId };
   };
@@ -246,7 +256,13 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     );
     await expect(
       owner.client.mutation(api.profileImages.setMyAvatar, {
-        storageId: image.storageId,
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "ownerPhoto" },
+          image.storageId,
+          testImageMetadata("ownerPhoto", 10),
+          owner.actorId,
+        ),
       }),
     ).rejects.toThrow("already in use");
     const reservation = await t.mutation(
@@ -260,15 +276,25 @@ describe("Rich Testimonials and images across their lifecycle", () => {
       t.mutation(api.testimonialImages.registerUpload, {
         ...identity,
         imageId: reservation.imageId,
-        storageId,
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "testimonialImage", imageId: reservation.imageId },
+          storageId,
+          testImageMetadata("testimonialImage", 6),
+        ),
       }),
-    ).rejects.toThrow("JPG, PNG or WebP");
+    ).rejects.toThrow("could not be optimized");
     await expect(
       t.mutation(api.testimonialImages.registerUpload, {
         ...identity,
         clientSubmissionId: "another-private-client",
         imageId: reservation.imageId,
-        storageId,
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "testimonialImage", imageId: reservation.imageId },
+          storageId,
+          testImageMetadata("testimonialImage", 6),
+        ),
       }),
     ).rejects.toThrow("Image unavailable");
     await admittedUpload(t, identity, true);

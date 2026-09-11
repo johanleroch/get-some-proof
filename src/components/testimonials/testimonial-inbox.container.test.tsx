@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => {
   return {
     functions: {
       "assistantImports:resumeVideos": resolved(),
+      "imageAssetProcessing:processDirectUpload": resolved(),
       "testimonialImportAvatar:retry": resolved(),
       "testimonialModeration:generatePosterUploadUrl": resolved(),
       "testimonialModeration:markSpam": resolved(),
