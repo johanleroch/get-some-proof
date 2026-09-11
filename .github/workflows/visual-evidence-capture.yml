@@ -29,8 +29,6 @@ jobs:
   capture:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      VISUAL_EVIDENCE_DIR: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,18 +49,20 @@ jobs:
         if: steps.selection.outputs.has_screens == 'true'
         run: pnpm test:visual
         env:
+          VISUAL_EVIDENCE_DIR: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}
           VISUAL_EVIDENCE_FIXTURES: "true"
           VISUAL_EVIDENCE_SLUGS: ${{ steps.selection.outputs.slugs }}
       - name: Build validated manifest
         run: pnpm visual:manifest
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
+          VISUAL_EVIDENCE_DIR: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}
           VISUAL_EVIDENCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           VISUAL_EVIDENCE_TARGET_KIND: pull
           VISUAL_EVIDENCE_TARGET_NUMBER: ${{ github.event.pull_request.number }}
       - uses: actions/upload-artifact@v7
         with:
           name: visual-evidence-${{ github.run_id }}
-          path: ${{ env.VISUAL_EVIDENCE_DIR }}/
+          path: ${{ runner.temp }}/visual-evidence-${{ github.run_id }}/
           if-no-files-found: error
           retention-days: 3
