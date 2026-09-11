@@ -77,31 +77,13 @@ export function useInboxSelection({
     update((state) => ({
       selected: typeof value === "function" ? value(state.selected) : value,
     }));
-  const setPhase = (value: SetStateAction<BulkState["phase"]>) =>
-    update((state) => ({
-      phase: typeof value === "function" ? value(state.phase) : value,
-    }));
-  const setConfirmation = (value: SetStateAction<BulkState["confirmation"]>) =>
-    update((state) => ({
-      confirmation:
-        typeof value === "function" ? value(state.confirmation) : value,
-    }));
-  const setAttested = (value: SetStateAction<BulkState["attested"]>) =>
-    update((state) => ({
-      attested: typeof value === "function" ? value(state.attested) : value,
-    }));
-  const setOutcome = (value: SetStateAction<BulkState["outcome"]>) =>
-    update((state) => ({
-      outcome: typeof value === "function" ? value(state.outcome) : value,
-    }));
-  const setFailures = (value: SetStateAction<BulkState["failures"]>) =>
-    update((state) => ({
-      failures: typeof value === "function" ? value(state.failures) : value,
-    }));
-  const setProgress = (value: SetStateAction<BulkState["progress"]>) =>
-    update((state) => ({
-      progress: typeof value === "function" ? value(state.progress) : value,
-    }));
+  const setPhase = (phase: BulkState["phase"]) => update({ phase });
+  const setConfirmation = (confirmation: BulkState["confirmation"]) =>
+    update({ confirmation });
+  const setAttested = (attested: BulkState["attested"]) => update({ attested });
+  const setOutcome = (outcome: BulkState["outcome"]) => update({ outcome });
+  const setFailures = (failures: BulkState["failures"]) => update({ failures });
+  const setProgress = (progress: BulkState["progress"]) => update({ progress });
   const operation = useRef(0);
   const locked = useRef(false);
   const toolbar = useRef<HTMLDivElement>(null);
@@ -155,9 +137,7 @@ export function useInboxSelection({
     if (locked.current || blocked) return;
     locked.current = true;
     const token = ++operation.current;
-    setPhase("selecting");
-    setOutcome("");
-    setFailures([]);
+    update({ phase: "selecting", outcome: "", failures: [] });
     try {
       const all = await collectInboxSelection(
         loadPage,
@@ -194,11 +174,13 @@ export function useInboxSelection({
     const token = ++operation.current;
     const batch = action === "publish" ? ready : items;
     const accepted = attested;
-    setConfirmation(null);
-    setPhase("running");
-    setOutcome("");
-    setFailures([]);
-    setProgress({ done: 0, total: batch.length });
+    update({
+      confirmation: null,
+      phase: "running",
+      outcome: "",
+      failures: [],
+      progress: { done: 0, total: batch.length },
+    });
     let successes = 0;
     const errors: Failure[] = [];
     for (const item of batch) {
