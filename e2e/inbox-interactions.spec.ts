@@ -90,6 +90,17 @@ async function gotoInbox(page: Page, route: string = routes.inbox) {
 }
 
 test.describe("Inbox header and tabs", () => {
+  test("does not offer assistant import from the Inbox header", async ({
+    page,
+  }) => {
+    await gotoInbox(page);
+    await expect(
+      page.getByRole("link", {
+        name: /Import with an assistant/,
+      }),
+    ).toHaveCount(0);
+  });
+
   test("Open Public Wall links to the Brand's wall in a new tab", async ({
     page,
   }) => {

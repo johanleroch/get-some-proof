@@ -463,7 +463,6 @@ export function TestimonialInboxScreenFixture({
           <InboxImportActions
             slug="fernhill-studio-l5pg"
             publicSlug={collectionFormFixtureBrand.publicSlug}
-            paid
           />
         }
         description="Review private Submissions and choose what becomes public."
