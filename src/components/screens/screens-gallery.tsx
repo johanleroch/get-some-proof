@@ -20,6 +20,7 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
+import Link from "next/link";
 
 import { api } from "@convex/_generated/api";
 import {
@@ -276,10 +277,10 @@ function GalleryView({
             Reload all
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">
+            <Link href="/kit">
               <IconPalette aria-hidden="true" />
               Kit
-            </a>
+            </Link>
           </Button>
           <ThemeToggle />
         </div>

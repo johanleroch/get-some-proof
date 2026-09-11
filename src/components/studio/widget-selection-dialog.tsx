@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import type { Route } from "next";
+import Link from "next/link";
 import type { TestimonialCardVideoValue } from "@convex/testimonialCardValue";
 import {
   TestimonialListFace,
@@ -216,9 +218,12 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                   ) : (
                     <>
                       Publish a testimonial in your{" "}
-                      <a href={props.inboxHref} className="underline">
+                      <Link
+                        href={props.inboxHref as Route}
+                        className="underline"
+                      >
                         Inbox
-                      </a>{" "}
+                      </Link>{" "}
                       to add it here.
                     </>
                   )}
