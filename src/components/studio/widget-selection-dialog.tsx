@@ -13,6 +13,7 @@ import type { WidgetConfig } from "@convex/domain/widgets";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { StudioCandidateListSkeleton } from "@/components/ui/page-skeletons";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ type SelectionProps = {
   candidates: StudioCandidate[];
   hasMore: boolean;
   loadingMore: boolean;
+  loadingCandidates?: boolean;
   onLoadMore: () => void;
   inboxHref: string;
 };
@@ -114,6 +116,7 @@ export function WidgetSelectionDialog(props: SelectionProps) {
             >
               <Input
                 aria-label="Search testimonials"
+                disabled={props.loadingCandidates}
                 placeholder="Search by name or words…"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -125,82 +128,88 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                     ? "Choose testimonials with highlighted phrases. Add highlights from the Inbox."
                     : "Choose up to 50 testimonials for this widget."}
               </p>
-              <div className="border-line divide-line divide-y overflow-hidden rounded-lg border">
-                {matching.map(({ testimonialId, card }) => {
-                  const checked = selectedIds.has(testimonialId);
-                  const disabled =
-                    !checked &&
-                    ((testimonialIds.length >= 50 &&
-                      props.layout !== "individual") ||
-                      (props.layout === "highlights" && !hasHighlight(card)));
-                  return (
-                    <div
-                      key={testimonialId}
-                      data-studio-testimonial={testimonialId}
-                      className={cn(
-                        "relative grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4",
-                        checked ? "bg-brand-soft/30" : "hover:bg-surface-2",
-                        disabled && "cursor-default opacity-60",
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          className="absolute top-4 right-4 size-6 sm:static"
-                          checked={checked}
-                          disabled={disabled}
-                          aria-label={`Select ${card.name}`}
-                          onCheckedChange={(checked) =>
-                            checked
-                              ? props.onChange(
-                                  props.layout === "individual"
-                                    ? [testimonialId]
-                                    : [...testimonialIds, testimonialId],
-                                )
-                              : remove(testimonialId)
-                          }
-                        />
-                        <TestimonialListFace
-                          testimonial={card}
-                          showAvatar={card.avatarVisible !== false}
-                          onPreview={() => {
-                            if (card.type === "video") setPreview(card);
-                          }}
-                        />
-                      </div>
-                      <div className="min-w-0 self-center">
-                        <div className="pr-8 sm:pr-0">
-                          <TestimonialListIdentity
-                            name={card.name}
+              {props.loadingCandidates ? (
+                <StudioCandidateListSkeleton />
+              ) : (
+                <div className="border-line divide-line divide-y overflow-hidden rounded-lg border">
+                  {matching.map(({ testimonialId, card }) => {
+                    const checked = selectedIds.has(testimonialId);
+                    const disabled =
+                      !checked &&
+                      ((testimonialIds.length >= 50 &&
+                        props.layout !== "individual") ||
+                        (props.layout === "highlights" && !hasHighlight(card)));
+                    return (
+                      <div
+                        key={testimonialId}
+                        data-studio-testimonial={testimonialId}
+                        className={cn(
+                          "relative grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4",
+                          checked ? "bg-brand-soft/30" : "hover:bg-surface-2",
+                          disabled && "cursor-default opacity-60",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            className="absolute top-4 right-4 size-6 sm:static"
+                            checked={checked}
+                            disabled={disabled}
+                            aria-label={`Select ${card.name}`}
+                            onCheckedChange={(checked) =>
+                              checked
+                                ? props.onChange(
+                                    props.layout === "individual"
+                                      ? [testimonialId]
+                                      : [...testimonialIds, testimonialId],
+                                  )
+                                : remove(testimonialId)
+                            }
+                          />
+                          <TestimonialListFace
                             testimonial={card}
+                            showAvatar={card.avatarVisible !== false}
+                            onPreview={() => {
+                              if (card.type === "video") setPreview(card);
+                            }}
                           />
                         </div>
-                        {card.type === "text" ? (
-                          <TestimonialListWords
-                            accentColor={props.accentColor}
-                            testimonial={card}
-                          />
-                        ) : (
-                          <p className="type-small text-ink-2 mt-1">
-                            Video testimonial
-                          </p>
-                        )}
-                        {props.layout === "highlights" &&
-                        !hasHighlight(card) ? (
-                          <p className="type-small text-ink-2 mt-2">
-                            No highlighted phrases
-                          </p>
-                        ) : null}
+                        <div className="min-w-0 self-center">
+                          <div className="pr-8 sm:pr-0">
+                            <TestimonialListIdentity
+                              name={card.name}
+                              testimonial={card}
+                            />
+                          </div>
+                          {card.type === "text" ? (
+                            <TestimonialListWords
+                              accentColor={props.accentColor}
+                              testimonial={card}
+                            />
+                          ) : (
+                            <p className="type-small text-ink-2 mt-1">
+                              Video testimonial
+                            </p>
+                          )}
+                          {props.layout === "highlights" &&
+                          !hasHighlight(card) ? (
+                            <p className="type-small text-ink-2 mt-2">
+                              No highlighted phrases
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
               {searchingMore ? (
                 <p role="status" className="type-small text-ink-2 py-4">
                   Searching more testimonials…
                 </p>
               ) : null}
-              {!matching.length && !searchingMore ? (
+              {!props.loadingCandidates &&
+              !matching.length &&
+              !searchingMore ? (
                 <p className="type-small text-ink-2 py-6">
                   {search.trim() ? (
                     "No matching testimonials."
@@ -215,7 +224,7 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                   )}
                 </p>
               ) : null}
-              {props.hasMore && !search.trim() ? (
+              {!props.loadingCandidates && props.hasMore && !search.trim() ? (
                 <Button
                   className="mt-4"
                   variant="outline"

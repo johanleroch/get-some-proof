@@ -25,6 +25,7 @@ import { NavUser } from "@/components/account/nav-user";
 import { SidebarPlanCard } from "@/components/account/sidebar-plan-card";
 import { BrandMark } from "@/components/brand-mark";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
+import { ProjectShellProvider } from "@/components/organizations/project-shell-context";
 import {
   Sidebar,
   SidebarContent,
@@ -340,6 +341,7 @@ export function AppShell(props: AppShellProps) {
 export function AppShellView({
   children,
   organizationId,
+  organizationName,
   organizationPublicSlug,
   organizationSlug,
   pathname,
@@ -415,68 +417,78 @@ export function AppShellView({
       ]
     : [{ label: "Project", items: productNavigation }];
   return (
-    <SidebarProvider
-      className="dashboard-frame h-svh overflow-hidden"
-      style={{ "--sidebar-width": "17rem" } as CSSProperties}
+    <ProjectShellProvider
+      value={{
+        brandName: organizationName,
+        organizationId,
+        pendingCount: inboxCount,
+        publicSlug: organizationPublicSlug,
+        slug: organizationSlug,
+      }}
     >
-      <Sidebar
-        className="group-data-[side=left]:border-r-0"
-        collapsible="offcanvas"
-        variant="sidebar"
+      <SidebarProvider
+        className="dashboard-frame h-svh overflow-hidden"
+        style={{ "--sidebar-width": "17rem" } as CSSProperties}
       >
-        <SidebarHeader className="px-4 pt-4 pb-1">
-          {projectSwitcher}
-        </SidebarHeader>
-        <SidebarContent>
-          <Navigation
-            inboxCount={inboxCount}
-            pathname={pathname}
-            sections={navigationSections}
-          />
-        </SidebarContent>
-        <SidebarFooter className="gap-3">
-          {account?.effectivePlan === "free" ? <SidebarPlanCard /> : null}
-          {userMenu}
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="dashboard-view min-h-0 overflow-clip">
-        <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
-          <MobileBar />
-          <div
-            role="region"
-            aria-label="Page content"
-            tabIndex={0}
-            className="min-h-0 flex-1 overflow-y-auto scroll-smooth motion-reduce:scroll-auto"
-          >
-            <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
-              <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
-                {!accountContext &&
-                account?.effectivePlan === "free" &&
-                account.freeProjectId &&
-                account.freeProjectId !== organizationId ? (
-                  <section
-                    className="bg-muted space-y-1 rounded-lg border p-4"
-                    aria-label="Inactive project"
-                  >
-                    <h2 className="text-sm font-semibold">
-                      This project is inactive
-                    </h2>
-                    <p className="text-ink-2 text-sm">
-                      You can review your testimonials privately. Collection,
-                      the public Wall, and embeds are disabled. Upgrade to Pro
-                      to use all your projects again.
-                    </p>
-                  </section>
-                ) : null}
-                {children}
+        <Sidebar
+          className="group-data-[side=left]:border-r-0"
+          collapsible="offcanvas"
+          variant="sidebar"
+        >
+          <SidebarHeader className="px-4 pt-4 pb-1">
+            {projectSwitcher}
+          </SidebarHeader>
+          <SidebarContent>
+            <Navigation
+              inboxCount={inboxCount}
+              pathname={pathname}
+              sections={navigationSections}
+            />
+          </SidebarContent>
+          <SidebarFooter className="gap-3">
+            {account?.effectivePlan === "free" ? <SidebarPlanCard /> : null}
+            {userMenu}
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="dashboard-view min-h-0 overflow-clip">
+          <div className="dashboard-view-content flex min-h-0 flex-1 flex-col">
+            <MobileBar />
+            <div
+              role="region"
+              aria-label="Page content"
+              tabIndex={0}
+              className="min-h-0 flex-1 overflow-y-auto scroll-smooth motion-reduce:scroll-auto"
+            >
+              <div className="@container/main mx-auto flex w-full max-w-[1200px] flex-1 flex-col">
+                <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
+                  {!accountContext &&
+                  account?.effectivePlan === "free" &&
+                  account.freeProjectId &&
+                  account.freeProjectId !== organizationId ? (
+                    <section
+                      className="bg-muted space-y-1 rounded-lg border p-4"
+                      aria-label="Inactive project"
+                    >
+                      <h2 className="text-sm font-semibold">
+                        This project is inactive
+                      </h2>
+                      <p className="text-ink-2 text-sm">
+                        You can review your testimonials privately. Collection,
+                        the public Wall, and embeds are disabled. Upgrade to Pro
+                        to use all your projects again.
+                      </p>
+                    </section>
+                  ) : null}
+                  {children}
+                </div>
               </div>
             </div>
+            <span className="sr-only" aria-live="polite">
+              {connected ? "Convex connected" : "Connecting to Convex"}
+            </span>
           </div>
-          <span className="sr-only" aria-live="polite">
-            {connected ? "Convex connected" : "Connecting to Convex"}
-          </span>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </SidebarInset>
+      </SidebarProvider>
+    </ProjectShellProvider>
   );
 }

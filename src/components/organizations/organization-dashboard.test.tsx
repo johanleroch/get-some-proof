@@ -114,7 +114,7 @@ describe("BrandDashboardView", () => {
     ).toBeNull();
   });
 
-  it("leads with the Collection Form and says the queue is empty", async () => {
+  it("keeps a neutral header and leads with the Collection Form", async () => {
     const copyCollectionUrl = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -126,14 +126,8 @@ describe("BrandDashboardView", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Acme Studio" })).toBeVisible();
-    // The state of the queue is the sentence under the title, not a line
-    // floating between two panels.
     expect(screen.getByRole("banner")).toHaveTextContent(
-      /Nothing waiting for review/,
-    );
-    expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute(
-      "href",
-      "/org/acme-studio-ab12/inbox",
+      "Share your Collection Form, read what comes in, publish what you choose.",
     );
     // An empty queue is a sentence, not a figure dressed up as news.
     expect(screen.queryByText("0")).toBeNull();
@@ -148,6 +142,40 @@ describe("BrandDashboardView", () => {
     expect(
       await screen.findByTestId("success-toast-message"),
     ).toHaveTextContent("Collection link copied.");
+  });
+
+  it("keeps the real header and relative links above address placeholders", () => {
+    render(
+      <BrandDashboardView
+        {...base}
+        accountLoading
+        collectionUrl={undefined}
+        copyCollectionUrl={vi.fn()}
+        pendingCount={undefined}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Acme Studio" })).toBeVisible();
+    expect(screen.getByRole("banner")).toHaveTextContent(
+      "Share your Collection Form, read what comes in, publish what you choose.",
+    );
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeDisabled();
+    expect(
+      screen.getByRole("link", { name: "Open Collection Form" }),
+    ).toHaveAttribute("href", "/c/acme-studio");
+    expect(screen.getByRole("link", { name: "Open Wall" })).toHaveAttribute(
+      "href",
+      "/w/acme-studio",
+    );
+    expect(
+      screen.getByRole("link", { name: "Embed on your site" }),
+    ).toHaveAttribute("href", "/org/acme-studio-ab12/settings#embed");
+    expect(
+      screen.getByRole("status", { name: "Loading Account plan and usage" }),
+    ).toBeVisible();
+    expect(
+      document.querySelectorAll('[data-slot="skeleton"]'),
+    ).not.toHaveLength(0);
   });
 
   it("opens the Public Wall and the embed from the overview", () => {

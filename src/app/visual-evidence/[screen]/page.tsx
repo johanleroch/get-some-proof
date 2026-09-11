@@ -1,6 +1,11 @@
 import { TestimonialSourcesFixture } from "@/components/visual-evidence/testimonial-sources-fixture";
 import { TestimonialLinksFixture } from "@/components/visual-evidence/testimonial-links-fixture";
 import {
+  InboxLoadingFixture,
+  OverviewLoadingFixture,
+  StudioLoadingFixture,
+} from "@/components/visual-evidence/instant-page-shells-fixture";
+import {
   StudioFixture,
   StudioEditorFixture,
   StudioTemplatesFixture,
@@ -65,6 +70,9 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "overview-loading": OverviewLoadingFixture,
+  "inbox-loading": InboxLoadingFixture,
+  "studio-loading": StudioLoadingFixture,
   "testimonial-sources": TestimonialSourcesFixture,
   "testimonial-links": TestimonialLinksFixture,
   studio: StudioFixture,
@@ -143,6 +151,8 @@ export default async function VisualEvidenceFixturePage({
   if (!Screen) notFound();
 
   return screen.startsWith("studio") ||
+    screen === "overview-loading" ||
+    screen === "inbox-loading" ||
     screen === "profile" ||
     screen.startsWith("testimonial-import") ||
     screen === "project-settings-shell" ||

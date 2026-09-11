@@ -17,10 +17,15 @@ import { blobToast } from "@/components/brand/blob-toast";
 import { ArrowNote, WallFrames } from "@/components/doodles";
 import { PublicAddress } from "@/components/organizations/public-address";
 import { PageHeader } from "@/components/page-header";
+import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
-import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
+import {
+  AccountPlanSkeleton,
+  OverviewPageSkeleton,
+} from "@/components/ui/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   clearJustCreated,
   type CreatedNoun,
@@ -41,13 +46,14 @@ function ReviewQueue({
   inboxPath: Route;
   pendingCount: number;
 }) {
+  const displayedCount = pendingCount > 500 ? "500+" : pendingCount;
   return (
     <Link
       className="border-line bg-surface hover:bg-surface-2 focus-visible:ring-ring group flex items-center gap-5 rounded-lg border p-5 transition-colors duration-150 outline-none focus-visible:ring-[3px]"
       href={inboxPath}
     >
       <span className="type-kpi text-ink shrink-0 tabular-nums">
-        {pendingCount}
+        {displayedCount}
       </span>
       <span className="min-w-0 flex-1">
         <span className="type-subheading block">
@@ -205,7 +211,7 @@ function AccountPlanPanel({
 
 export type BrandDashboardViewProps = {
   /** The full address a Submitter opens, which is what Copy puts in hand. */
-  collectionUrl: string;
+  collectionUrl?: string;
   account?: {
     effectivePlan: "free" | "premium";
     usage: {
@@ -215,12 +221,13 @@ export type BrandDashboardViewProps = {
       reservedVideos: number;
     };
   } | null;
+  accountLoading?: boolean;
   billingHref?: string;
   copyCollectionUrl: () => Promise<void>;
   /** Set on the first arrival after creation: the mascot says it is ready. */
   justCreated?: CreatedNoun | null;
   name: string;
-  pendingCount: number;
+  pendingCount?: number;
   publicSlug: string;
   slug: string;
 };
@@ -228,6 +235,7 @@ export type BrandDashboardViewProps = {
 export function BrandDashboardView({
   collectionUrl,
   account,
+  accountLoading = false,
   billingHref,
   copyCollectionUrl,
   justCreated = null,
@@ -253,9 +261,13 @@ export function BrandDashboardView({
   const inboxPath = `/org/${slug}/inbox` as Route;
   const wallPath = `/w/${publicSlug}` as Route;
   const embedPath = `/org/${slug}/settings#embed` as Route;
-  const wallUrl = wallUrlFrom(collectionUrl, publicSlug);
-  const waiting = pendingCount > 0;
+  const wallUrl = collectionUrl
+    ? wallUrlFrom(collectionUrl, publicSlug)
+    : undefined;
+  const waiting = pendingCount !== undefined && pendingCount > 0;
   const plan = account && billingHref ? account : null;
+  const planLoading = accountLoading;
+  const addressesLoading = collectionUrl === undefined;
 
   async function copyLink() {
     setError(null);
@@ -270,30 +282,10 @@ export function BrandDashboardView({
 
   return (
     <div className="space-y-8">
-      {/* No action in the header: the only one worth having belongs beside the
-          address it copies, and the sale has its own column. The sentence
-          under the title is the state of the queue, so the title has news to
-          carry: with nothing waiting it says so and points at the Inbox (an
-          empty queue is a sentence, never a large zero); once something is
-          waiting the queue block below says it, and the sentence goes back
-          to the neutral one rather than say it twice. */}
+      {/* The shell already knows the Brand name. Keeping the sentence neutral
+          lets the whole header paint before the queue has answered. */}
       <PageHeader
-        description={
-          waiting ? (
-            "Share your Collection Form, read what comes in, publish what you choose."
-          ) : (
-            <>
-              Nothing waiting for review. New Submissions land in your{" "}
-              <Link
-                className="text-ink font-semibold underline underline-offset-4"
-                href={inboxPath}
-              >
-                Inbox
-              </Link>{" "}
-              first, where you decide what reaches your Wall.
-            </>
-          )
-        }
+        description="Share your Collection Form, read what comes in, publish what you choose."
         eyebrow="Overview"
         title={name}
       />
@@ -304,13 +296,18 @@ export function BrandDashboardView({
       <div
         className={cn(
           "grid gap-6",
-          plan &&
+          (plan || planLoading) &&
             "lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)] lg:items-start",
         )}
       >
         {/* The column reorders itself around the work that is waiting. With
             an empty queue the link is the whole job, so it comes first. */}
         <section aria-label="Brand overview" className="space-y-6">
+          {addressesLoading ? (
+            <p className="sr-only" role="status">
+              Loading Collection Form and Public Wall addresses.
+            </p>
+          ) : null}
           {waiting ? (
             <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
           ) : null}
@@ -326,11 +323,19 @@ export function BrandDashboardView({
                 the tokens rather than a `type-*` utility, because those carry
                 the display family with them and would quietly put Gelica
                 here. */}
-            <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold">
-              <PublicAddress url={collectionUrl} />
-            </p>
+            {collectionUrl ? (
+              <p className="mt-2 font-mono text-[length:var(--type-subheading-size)] leading-[var(--type-subheading-leading)] font-semibold">
+                <PublicAddress url={collectionUrl} />
+              </p>
+            ) : (
+              <Skeleton className="mt-2 h-7 w-[min(34rem,85%)]" />
+            )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Button onClick={copyLink} type="button">
+              <Button
+                disabled={addressesLoading}
+                onClick={copyLink}
+                type="button"
+              >
                 <IconCopy aria-hidden="true" />
                 Copy link
               </Button>
@@ -372,9 +377,13 @@ export function BrandDashboardView({
               <h2 className="type-heading mt-1">
                 Only what you publish reaches it
               </h2>
-              <p className="mt-2 font-mono text-[length:var(--type-ui-size)] leading-[var(--type-ui-leading)] font-semibold">
-                <PublicAddress url={wallUrl} />
-              </p>
+              {wallUrl ? (
+                <p className="mt-2 font-mono text-[length:var(--type-ui-size)] leading-[var(--type-ui-leading)] font-semibold">
+                  <PublicAddress url={wallUrl} />
+                </p>
+              ) : (
+                <Skeleton className="mt-2 h-6 w-[min(30rem,80%)]" />
+              )}
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button asChild variant="outline">
                   <Link href={wallPath} target="_blank">
@@ -393,7 +402,9 @@ export function BrandDashboardView({
           </section>
         </section>
 
-        {plan ? (
+        {planLoading ? (
+          <AccountPlanSkeleton />
+        ) : plan ? (
           <AccountPlanPanel account={plan} billingHref={billingHref as Route} />
         ) : null}
       </div>
@@ -404,19 +415,42 @@ export function BrandDashboardView({
 }
 
 export function OrganizationDashboard({ slug }: { slug: string }) {
+  const projectShell = useProjectShell();
+  const shellProject = projectShell?.slug === slug ? projectShell : null;
   const justCreated = useSyncExternalStore(
     subscribeToNothing,
     readJustCreated,
     () => null,
   );
-  const account = useQuery(api.accounts.getMine, {});
-  const organization = useQuery(api.organizations.getBySlug, { slug });
-  const pendingCount = useQuery(
-    api.submissions.pendingCount,
-    organization ? { organizationId: organization.id } : "skip",
+  const origin = useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.origin,
+    () => null,
   );
+  const account = useQuery(api.accounts.getMine, {});
+  const queriedOrganization = useQuery(
+    api.organizations.getBySlug,
+    shellProject ? "skip" : { slug },
+  );
+  const organization = shellProject
+    ? {
+        id: shellProject.organizationId,
+        name: shellProject.brandName,
+        publicSlug: shellProject.publicSlug,
+        slug: shellProject.slug,
+      }
+    : queriedOrganization;
+  const queriedPendingCount = useQuery(
+    api.submissions.pendingCount,
+    organization && shellProject?.pendingCount === undefined
+      ? { organizationId: organization.id }
+      : "skip",
+  );
+  const pendingCount = shellProject?.pendingCount ?? queriedPendingCount;
 
-  if (organization === undefined) return <OverviewPageSkeleton />;
+  if (organization === undefined) {
+    return <OverviewPageSkeleton name={shellProject?.brandName} />;
+  }
 
   if (organization === null) {
     return (
@@ -430,18 +464,21 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
     );
   }
 
-  if (pendingCount === undefined) return <OverviewPageSkeleton />;
-
-  // Only ever reached on the client: the server renders the skeleton while
-  // the queries are undefined, so reading the origin here cannot mismatch.
-  const collectionUrl = `${window.location.origin}/c/${organization.publicSlug}`;
+  const collectionUrl = origin
+    ? `${origin}/c/${organization.publicSlug}`
+    : undefined;
 
   return (
     <BrandDashboardView
       account={account}
+      accountLoading={account === undefined}
       billingHref="/account/billing"
       collectionUrl={collectionUrl}
-      copyCollectionUrl={() => navigator.clipboard.writeText(collectionUrl)}
+      copyCollectionUrl={() =>
+        collectionUrl
+          ? navigator.clipboard.writeText(collectionUrl)
+          : Promise.reject(new Error("Collection link is still loading."))
+      }
       justCreated={justCreated}
       name={organization.name}
       pendingCount={pendingCount}
