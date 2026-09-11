@@ -2,6 +2,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { expect, test } from "@playwright/test";
+import { installRecorderCamera } from "./helpers/recorder-camera";
 
 type VisualEvidenceConfig = {
   project: string;
@@ -84,6 +85,14 @@ for (const screen of config.screens) {
         });
       });
     }
+    if (screen.slug.startsWith("recorder-")) {
+      const portrait = screen.slug === "recorder-portrait";
+      await installRecorderCamera(
+        page,
+        portrait ? 720 : 1280,
+        portrait ? 1280 : 720,
+      );
+    }
     const destination =
       fixtureMode && screen.fixturePath ? screen.fixturePath : screen.path;
     await page.goto(
@@ -105,6 +114,19 @@ for (const screen of config.screens) {
       await expect(page.locator("[data-sonner-toast]")).toContainText(
         "This security action needs a recent sign-in.",
       );
+    }
+    if (screen.slug.startsWith("recorder-")) {
+      await page
+        .getByRole("button", { name: /Record or upload a video/ })
+        .click();
+      await page.getByRole("button", { name: "Open camera" }).click();
+      await expect
+        .poll(() =>
+          page
+            .getByLabel("Camera preview")
+            .evaluate((video: HTMLVideoElement) => video.readyState),
+        )
+        .toBeGreaterThanOrEqual(2);
     }
     await page.waitForTimeout(250);
     if (screen.slug.startsWith("testimonial-import-identity")) {
@@ -241,11 +263,20 @@ for (const screen of config.screens) {
       ).toBeVisible();
     }
     if (fixtureMode && screen.slug === "workspace-billing") {
+      await page.getByRole("button", { name: "Annual" }).click();
+      // Scrolling to the card's title left the offer poster below the fold on
+      // desktop, so the capture proved everything about this screen except
+      // the block it exists to show. Scroll the whole card instead: it fits a
+      // desktop viewport, so the interval, the handwritten note and the
+      // poster with its mascot all land in one frame.
       await page
-        .getByRole("button", { name: "Annual · 2 months free" })
-        .click();
-      await page
-        .getByRole("heading", { name: "Upgrade to Pro", exact: true })
+        .locator("[data-slot=card]")
+        .filter({
+          has: page.getByRole("heading", {
+            name: "Upgrade to Pro",
+            exact: true,
+          }),
+        })
         .scrollIntoViewIfNeeded();
     }
     if (fixtureMode && screen.slug === "account-invoices") {
@@ -253,16 +284,82 @@ for (const screen of config.screens) {
         .getByRole("heading", { name: "Invoices", exact: true })
         .scrollIntoViewIfNeeded();
     }
+    if (
+      screen.slug === "studio-preview" ||
+      (screen.slug === "studio-editor" &&
+        !testInfo.project.name.startsWith("mobile"))
+    ) {
+      await expect(
+        page.locator("[data-widget-preview] .card").first(),
+      ).toBeVisible();
+    }
+    if (screen.slug.startsWith("studio-selection")) {
+      await page
+        .getByRole("button", { name: "Manage selection", exact: true })
+        .click();
+      if (screen.slug === "studio-selection-order") {
+        await page
+          .getByRole("tab", { name: "Selected (3)", exact: true })
+          .click();
+      }
+      await expect(
+        page.getByRole("dialog", { name: "Manage testimonials" }),
+      ).toBeVisible();
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll<HTMLImageElement>('[role="dialog"] img')]
+          .filter(
+            (image) => image.getBoundingClientRect().top < window.innerHeight,
+          )
+          .every((image) => image.complete && image.naturalWidth > 0),
+      );
+    }
+    if (fixtureMode && screen.slug.startsWith("testimonial-inbox-bulk")) {
+      await page
+        .getByRole("checkbox", { name: "Select displayed testimonials" })
+        .check();
+      await expect(page.getByText("3 selected", { exact: true })).toBeVisible();
+      if (screen.slug.endsWith("-delete")) {
+        await page
+          .getByRole("button", {
+            name: testInfo.project.name.startsWith("mobile")
+              ? "Actions (3)"
+              : "More bulk actions",
+            exact: true,
+          })
+          .click();
+        await page
+          .getByRole("menuitem", { name: "Delete permanently" })
+          .click();
+        await expect(
+          page.getByRole("dialog", {
+            name: "Permanently delete 3 testimonials?",
+          }),
+        ).toBeVisible();
+      }
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
     const projectDirectory = path.join(outputRoot, testInfo.project.name);
     await mkdir(projectDirectory, { recursive: true });
 
+    if (screen.slug.startsWith("recorder-")) {
+      await page
+        .getByLabel("Camera preview")
+        .locator("../..")
+        .screenshot({
+          path: path.join(projectDirectory, `${screen.slug}.png`),
+          animations: "disabled",
+          scale: "css",
+        });
+      return;
+    }
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
       fullPage:
+        !screen.slug.startsWith("testimonial-inbox-bulk") &&
         screen.slug !== "rich-testimonial-highlight" &&
+        !screen.slug.startsWith("studio-selection") &&
         !screen.slug.startsWith("testimonial-import-identity"),
       animations: "disabled",
       caret: "initial",

@@ -1,10 +1,18 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import {
+  MediaDeletionProgress,
+  type MediaDeletionCounts,
+} from "@/components/ui/media-deletion-progress";
+
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
 import { AssistantImportNotice } from "./assistant-import-recovery";
 import { ImportPublicationDialog } from "./import-publication-dialog";
+import { useBulkInboxActions } from "./use-bulk-inbox-actions";
+import { BulkTestimonialInbox } from "./bulk-testimonial-inbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useInboxPages } from "./use-inbox-pages";
 import { InboxSyncIndicator } from "./inbox-sync-indicator";
 import {
@@ -16,7 +24,6 @@ import {
   IconExternalLink,
   IconEyeOff,
   IconGripVertical,
-  IconPlayerPlayFilled,
   IconSend,
   IconVideoOff,
 } from "@tabler/icons-react";
@@ -37,10 +44,7 @@ import {
 import { api } from "@convex/_generated/api";
 import { defaultPrimaryColor } from "@convex/domain/brand";
 import type { Id } from "@convex/_generated/dataModel";
-import type {
-  TestimonialCardTextValue,
-  TestimonialCardVideoValue,
-} from "@convex/testimonialCardValue";
+import type { TestimonialCardTextValue } from "@convex/testimonialCardValue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,10 +68,12 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { cn } from "@/lib/utils";
 import { OverviewPageSkeleton } from "@/components/ui/page-skeletons";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
-import { DesignQuote } from "@/components/testimonials/designs/design-parts";
-import { videoAspect } from "@/components/testimonials/testimonial-card-markup";
 import { Badge } from "@/components/ui/badge";
-import { Stars } from "@/components/templates/template-primitives";
+import {
+  TestimonialListFace,
+  TestimonialListIdentity,
+  TestimonialListWords,
+} from "./testimonial-list-presentation";
 import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
@@ -165,17 +171,6 @@ export type InboxMove = (
   afterTestimonialId: Id<"testimonials"> | undefined,
 ) => Promise<unknown>;
 
-function formatDuration(seconds: number) {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
-}
-
-/** A small still for the list: the Owner's own thumbnail, or a frame. */
-function stillUrl(card: TestimonialCardVideoValue) {
-  if (card.posterUrl) return card.posterUrl;
-  return `https://image.mux.com/${encodeURIComponent(card.playbackId)}/thumbnail.webp?width=192&time=${card.posterTimeSeconds ?? 0.5}`;
-}
-
 /**
  * The Video Asset's state while it is not yet Ready: a Badge in the status
  * vocabulary of DESIGN.md section 7 and one sentence. The sentence carries
@@ -211,19 +206,6 @@ function videoState(testimonial: VideoInboxTestimonial) {
 }
 
 /**
- * The still keeps the video's own shape, never a landscape crop of a portrait
- * clip: 48px wide when the video is portrait (what a phone records for the
- * Collection Form, 9:16 by default), 64px wide when it is not.
- */
-function stillBox(aspectRatio?: string): CSSProperties {
-  const [width, height] = videoAspect(aspectRatio);
-  return {
-    aspectRatio: `${width} / ${height}`,
-    width: width < height ? 48 : 64,
-  };
-}
-
-/**
  * The first thing in a row: the Customer's face when they sent one, the
  * display quote mark in the Brand accent otherwise (never initials), or the
  * video still that opens the playable card. A video that is not Ready shows
@@ -236,64 +218,31 @@ function InboxFace({
   onPreview: () => void;
   testimonial: InboxTestimonial;
 }) {
-  if (testimonial.submissionType === "text") {
-    return testimonial.card.avatarUrl ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        alt=""
-        className="size-12 shrink-0 rounded-full object-cover"
-        height={48}
-        loading="lazy"
-        src={testimonial.card.avatarUrl}
-        width={48}
-      />
-    ) : (
-      <span
-        aria-hidden="true"
-        className="grid size-12 shrink-0 place-items-center"
-      >
-        <span className="font-display translate-y-[0.3em] text-[44px] leading-none font-bold text-(--wall-accent) select-none">
-          &ldquo;
-        </span>
-      </span>
-    );
-  }
-  if (testimonial.card?.type === "video") {
+  if (testimonial.card) {
     return (
-      <button
-        aria-label={`Preview ${testimonial.submitterName}'s video`}
-        className="group/still bg-ink focus-visible:ring-ring relative block shrink-0 cursor-pointer overflow-hidden rounded-md outline-none focus-visible:ring-[3px]"
-        onClick={onPreview}
-        style={stillBox(testimonial.aspectRatio)}
-        type="button"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="size-full object-cover transition-transform duration-[var(--motion-base)] ease-[var(--ease-settle-soft)] group-hover/still:scale-105 motion-reduce:transition-none"
-          loading="lazy"
-          src={stillUrl(testimonial.card)}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 grid place-items-center bg-black/25 text-white"
-        >
-          <IconPlayerPlayFilled className="size-4" />
-        </span>
-        {testimonial.videoDurationSeconds ? (
-          <span
-            aria-hidden="true"
-            className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 font-mono text-xs leading-4 text-white tabular-nums"
-          >
-            {formatDuration(testimonial.videoDurationSeconds)}
-          </span>
-        ) : null}
-      </button>
+      <TestimonialListFace
+        testimonial={testimonial.card}
+        name={testimonial.submitterName}
+        onPreview={onPreview}
+        aspectRatio={
+          testimonial.submissionType === "video"
+            ? testimonial.aspectRatio
+            : undefined
+        }
+        durationSeconds={
+          testimonial.submissionType === "video"
+            ? testimonial.videoDurationSeconds
+            : undefined
+        }
+      />
     );
   }
   // No still yet, so nothing is drawn around what stands in for it: the
   // failed mark or the blob looking around sit alone in the face column.
-  if (testimonial.videoStatus === "failed") {
+  if (
+    testimonial.submissionType === "video" &&
+    testimonial.videoStatus === "failed"
+  ) {
     return (
       <span
         aria-hidden="true"
@@ -314,41 +263,6 @@ function InboxFace({
         size={40}
       />
     </span>
-  );
-}
-
-/** The words in full, with the marker swash on a highlighted phrase. */
-function InboxWords({
-  accentColor,
-  testimonial,
-}: {
-  accentColor: string;
-  testimonial: TestimonialCardTextValue;
-}) {
-  return (
-    <>
-      <DesignQuote
-        accentColor={accentColor}
-        className="type-body text-ink mt-1 max-w-prose"
-        testimonial={testimonial}
-      />
-      {testimonial.images?.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {testimonial.images.map((image, index) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              alt={`Image ${index + 1} from ${testimonial.name}`}
-              className="size-14 rounded-md object-cover"
-              height={56}
-              key={image.id}
-              loading="lazy"
-              src={image.url}
-              width={56}
-            />
-          ))}
-        </div>
-      ) : null}
-    </>
   );
 }
 
@@ -373,6 +287,8 @@ function InboxRow({
   onMove,
   position,
   registerControl,
+  hideActions,
+  selection,
   testimonial,
 }: {
   accentColor: string;
@@ -393,6 +309,8 @@ function InboxRow({
     control: InboxRowControl,
     element: HTMLButtonElement | null,
   ) => void;
+  hideActions?: boolean;
+  selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -400,19 +318,16 @@ function InboxRow({
   const videoReady =
     testimonial.submissionType !== "video" ||
     testimonial.videoStatus === "ready";
-  const identity = testimonial.card
-    ? [testimonial.card.role, testimonial.card.company]
-        .filter(Boolean)
-        .join(" · ")
-    : "";
-  const rating = testimonial.card?.rating;
   const video =
     testimonial.submissionType === "video" ? videoState(testimonial) : null;
 
   return (
     <li
       aria-busy={busy || undefined}
-      className="hover:bg-surface-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]"
+      className={cn(
+        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
+        selection?.checked ? "bg-brand-soft" : "hover:bg-surface-2",
+      )}
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
       draggable={ordering && !disabled ? true : undefined}
       onDragEnd={drag?.onEnd}
@@ -427,6 +342,16 @@ function InboxRow({
         wide, so the words start on the same line from one row to the next.
       */}
       <div className="flex items-center gap-2 md:gap-3">
+        {selection && (
+          <label className="flex min-h-11 min-w-6 cursor-pointer items-center justify-center">
+            <Checkbox
+              aria-label={`Select ${testimonial.submitterName}'s testimonial`}
+              checked={selection.checked}
+              disabled={selection.disabled}
+              onCheckedChange={selection.onToggle}
+            />
+          </label>
+        )}
         {ordering ? (
           <IconGripVertical
             aria-hidden="true"
@@ -440,23 +365,13 @@ function InboxRow({
       </div>
 
       <div className="min-w-0 self-center">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {/* The stars stay on the name's line; the role and company wrap. */}
-          <span className="flex items-center gap-x-2">
-            <span className="type-ui text-ink font-semibold">
-              {testimonial.submitterName}
-            </span>
-            {rating ? (
-              <Stars className="shrink-0" rating={rating} size={14} />
-            ) : null}
-          </span>
-          {identity ? (
-            <span className="type-small text-ink-2 min-w-0">{identity}</span>
-          ) : null}
-        </div>
+        <TestimonialListIdentity
+          name={testimonial.submitterName}
+          testimonial={testimonial.card}
+        />
 
         {testimonial.submissionType === "text" ? (
-          <InboxWords
+          <TestimonialListWords
             accentColor={accentColor}
             testimonial={testimonial.card}
           />
@@ -492,7 +407,12 @@ function InboxRow({
         </p>
       </div>
 
-      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center">
+      <div
+        className={cn(
+          "col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center",
+          hideActions && "hidden",
+        )}
+      >
         {ordering && onMove && position ? (
           <>
             <Button
@@ -604,6 +524,7 @@ export function TestimonialInboxView({
   onAction,
   onMove,
   pendingId,
+  selection,
   testimonials,
 }: {
   accentColor?: string;
@@ -620,6 +541,11 @@ export function TestimonialInboxView({
   /** Present in Published, where the list is the Public Wall's order. */
   onMove?: InboxMove;
   pendingId: Id<"testimonials"> | null;
+  selection?: {
+    ids: ReadonlySet<string>;
+    disabled: boolean;
+    onToggle: (item: InboxTestimonial) => void;
+  };
   testimonials: InboxTestimonial[];
 }) {
   const draggedId = useRef<string | undefined>(undefined);
@@ -702,6 +628,7 @@ export function TestimonialInboxView({
           {testimonials.map((testimonial, index) => (
             <InboxRow
               accentColor={accentColor}
+              hideActions={selection !== undefined && selection.ids.size > 0}
               busy={pendingId === testimonial.testimonialId}
               disabled={actionsDisabled}
               drag={
@@ -721,6 +648,15 @@ export function TestimonialInboxView({
                       onStart: () => {
                         draggedId.current = String(testimonial.testimonialId);
                       },
+                    }
+                  : undefined
+              }
+              selection={
+                selection
+                  ? {
+                      checked: selection.ids.has(testimonial.testimonialId),
+                      disabled: selection.disabled,
+                      onToggle: () => selection.onToggle(testimonial),
                     }
                   : undefined
               }
@@ -760,6 +696,8 @@ export function TestimonialDeleteDialog({
   onDelete,
   onOpenChange,
   pending,
+  progress,
+  deletionStatus,
   target,
 }: {
   /** Where focus goes when the confirmation closes; the opener by default. */
@@ -767,10 +705,17 @@ export function TestimonialDeleteDialog({
   onDelete: () => void;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
+  progress?: MediaDeletionCounts;
+  deletionStatus?: "requested" | "failed" | "deleted";
   target: InboxTestimonial | null;
 }) {
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!pending) onOpenChange(open);
+      }}
+      open={target !== null}
+    >
       <AlertDialogContent
         className="max-w-[480px]"
         onCloseAutoFocus={onCloseAutoFocus}
@@ -783,7 +728,9 @@ export function TestimonialDeleteDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {target
-                  ? `Delete ${target.submitterName}'s Testimonial?`
+                  ? pending
+                    ? `Deleting ${target.submitterName}'s Testimonial`
+                    : `Delete ${target.submitterName}'s Testimonial?`
                   : "Delete Testimonial"}
               </AlertDialogTitle>
               <AlertDialogDescription className="type-body">
@@ -791,6 +738,14 @@ export function TestimonialDeleteDialog({
                 no undo.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {pending || deletionStatus ? (
+              <div className="mt-5">
+                <MediaDeletionProgress
+                  progress={progress}
+                  status={deletionStatus ?? "requested"}
+                />
+              </div>
+            ) : null}
             <AlertDialogFooter className="mt-6">
               <AlertDialogCancel asChild>
                 <Button disabled={pending} variant="outline">
@@ -800,7 +755,10 @@ export function TestimonialDeleteDialog({
               <AlertDialogAction asChild>
                 <Button
                   loading={pending}
-                  onClick={onDelete}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onDelete();
+                  }}
                   variant="destructive"
                 >
                   Delete
@@ -979,10 +937,6 @@ function useInboxData(
   moderationStatus: InboxCategory,
 ) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const assistantEntitlement = useQuery(
-    api.billing.getProjectEntitlement,
-    organization ? { organizationId: organization.id } : "skip",
-  );
 
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
@@ -1005,7 +959,6 @@ function useInboxData(
   );
   return {
     organization,
-    assistantEntitlement,
     counts,
     loadMore,
     testimonials,
@@ -1025,7 +978,6 @@ export function TestimonialInbox({
   const moderationStatus = inboxCategoryFromUrl(searchParams);
   const {
     organization,
-    assistantEntitlement,
     counts,
     loadMore,
     testimonials,
@@ -1033,6 +985,11 @@ export function TestimonialInbox({
     wallSettings,
   } = useInboxData(slug, importJobId, moderationStatus);
 
+  const bulkActions = useBulkInboxActions({
+    organizationId: organization?.id,
+    importJobId,
+    category: moderationStatus,
+  });
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
@@ -1056,10 +1013,18 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
-  const removeText = useMutation(api.testimonialModeration.remove);
-  const removeVideo = useAction(api.videoMedia.remove);
+  const remove = useAction(api.videoMedia.remove);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
+  );
+  const removalStatus = useQuery(
+    api.videoMedia.getRemovalStatus,
+    organization && deleteTarget
+      ? {
+          organizationId: organization.id,
+          testimonialId: deleteTarget.testimonialId,
+        }
+      : "skip",
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1150,8 +1115,6 @@ export function TestimonialInbox({
       organizationId: activeOrganization.id,
       testimonialId: deleteTarget.testimonialId,
     };
-    const remove =
-      deleteTarget.submissionType === "video" ? removeVideo : removeText;
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
@@ -1269,7 +1232,6 @@ export function TestimonialInbox({
           <InboxImportActions
             slug={slug}
             publicSlug={organization.publicSlug}
-            paid={assistantEntitlement?.effectivePlan === "premium"}
           />
         }
         description="Review private Submissions and choose what becomes public."
@@ -1305,7 +1267,11 @@ export function TestimonialInbox({
             showLabel
           />
         ) : (
-          <TestimonialInboxView
+          <BulkTestimonialInbox
+            key={`${organization.id}:${importJobId ?? ""}:${moderationStatus}`}
+            totalCount={counts?.[moderationStatus] ?? testimonials.length}
+            hasMore={paginationStatus !== "Exhausted"}
+            {...bulkActions}
             accentColor={wallSettings?.accentColor}
             actionsDisabled={pendingId !== null}
             category={moderationStatus}
@@ -1448,6 +1414,8 @@ export function TestimonialInbox({
       ) : null}
 
       <TestimonialDeleteDialog
+        progress={removalStatus?.mediaProgress}
+        deletionStatus={removalStatus?.status}
         onCloseAutoFocus={returnFocus}
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
@@ -1485,24 +1453,12 @@ export function TestimonialInbox({
 export function InboxImportActions({
   slug,
   publicSlug,
-  paid,
 }: {
   slug: string;
   publicSlug: string;
-  paid: boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <Button
-        asChild
-        variant="ghost"
-        className={paid ? undefined : "text-ink-2"}
-      >
-        <Link href={`/org/${slug}/mcp` as Route}>
-          Import with an assistant
-          {!paid ? " · Pro" : ""}
-        </Link>
-      </Button>
       <Button asChild>
         <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
       </Button>

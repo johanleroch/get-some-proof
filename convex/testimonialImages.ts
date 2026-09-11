@@ -232,21 +232,29 @@ export async function setTestimonialImages(
   await ctx.db.patch(testimonial._id, { imageIds: ids });
 }
 
-async function deleteImage(ctx: MutationCtx, id: Id<"testimonialImages">) {
+async function deleteImage(
+  ctx: MutationCtx,
+  id: Id<"testimonialImages">,
+  mediaAlreadyHandled = false,
+) {
   const image = await ctx.db.get(id);
   if (!image) return;
-  if (image.storageId) await ctx.storage.delete(image.storageId);
+  if (!mediaAlreadyHandled && image.storageId)
+    await ctx.storage.delete(image.storageId);
   await ctx.db.delete(id);
 }
 export async function deleteTestimonialImages(
   ctx: MutationCtx,
   testimonialId: Id<"testimonials">,
+  mediaAlreadyHandled = false,
 ) {
   const images = await ctx.db
     .query("testimonialImages")
     .withIndex("by_testimonial", (q) => q.eq("testimonialId", testimonialId))
     .take(4);
-  await Promise.all(images.map((image) => deleteImage(ctx, image._id)));
+  await Promise.all(
+    images.map((image) => deleteImage(ctx, image._id, mediaAlreadyHandled)),
+  );
 }
 export const expireUpload = internalMutation({
   args: { imageId: v.id("testimonialImages") },

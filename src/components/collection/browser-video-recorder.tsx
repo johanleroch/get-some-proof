@@ -2,10 +2,12 @@
 
 import {
   type RefObject,
+  type SyntheticEvent,
   useCallback,
   useEffect,
   useReducer,
   useRef,
+  useState,
 } from "react";
 import {
   IconCamera,
@@ -464,10 +466,23 @@ function RecorderView({
   recording: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
 }) {
+  const [aspectRatio, setAspectRatio] = useState(16 / 9);
+  const updateAspectRatio = (event: SyntheticEvent<HTMLVideoElement>) => {
+    const { videoWidth, videoHeight } = event.currentTarget;
+    if (videoWidth > 0 && videoHeight > 0) {
+      setAspectRatio(videoWidth / videoHeight);
+    }
+  };
+
   return (
     <div className="bg-card space-y-4 rounded-lg border p-3">
       <div
-        className={`relative mx-auto overflow-hidden rounded-md bg-black ${previewReady || recordedFile ? "aspect-9/16 w-full max-w-[calc(65svh*9/16)] sm:aspect-video sm:max-w-none" : ""}`}
+        className="relative mx-auto w-full overflow-hidden rounded-md bg-black"
+        style={
+          previewReady || recordedFile
+            ? { aspectRatio, maxWidth: `calc(65svh * ${aspectRatio})` }
+            : undefined
+        }
       >
         <video
           aria-label={
@@ -477,6 +492,8 @@ function RecorderView({
           className="absolute inset-0 h-full w-full object-contain"
           controls={Boolean(recordedFile)}
           muted={!recordedFile}
+          onLoadedMetadata={updateAspectRatio}
+          onResize={updateAspectRatio}
           playsInline
           ref={videoRef}
         />

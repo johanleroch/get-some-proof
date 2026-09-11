@@ -21,7 +21,7 @@ import { useSearchParams } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { WallFrames } from "@/components/doodles";
+import { Sparkle, WallFrames } from "@/components/doodles";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BillingPageLoading } from "./billing-page-loading";
 import { AccountFreeProjectSelection } from "./account-free-project-selection";
+import { ProOffer, ProOfferHeader, formatAmount } from "./pro-offer";
 
 function billingErrorMessage(error: unknown) {
   if (!(error instanceof Error))
@@ -71,11 +72,7 @@ type SubscriptionDetails = {
 };
 
 function formatOfferAmount(offer: Pick<PublicOffer, "amount" | "currency">) {
-  return new Intl.NumberFormat(undefined, {
-    currency: offer.currency,
-    maximumFractionDigits: offer.amount % 100 === 0 ? 0 : 2,
-    style: "currency",
-  }).format(offer.amount / 100);
+  return formatAmount(offer.amount, offer.currency);
 }
 
 type BillingState =
@@ -964,100 +961,47 @@ export function BillingCockpit({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div
-                className="flex flex-wrap items-center gap-2"
-                role="group"
-                aria-label="Billing interval"
-              >
-                <Button
-                  variant={selectedInterval === "month" ? "default" : "outline"}
-                  aria-pressed={selectedInterval === "month"}
-                  disabled={checkoutPending}
-                  onClick={() => setSelectedInterval("month")}
-                >
-                  Monthly
-                </Button>
-                <Button
-                  variant={selectedInterval === "year" ? "default" : "outline"}
-                  aria-pressed={selectedInterval === "year"}
-                  disabled={checkoutPending}
-                  onClick={() => setSelectedInterval("year")}
-                >
-                  Annual{twoMonthsFree ? " · 2 months free" : ""}
-                </Button>
-              </div>
+              <ProOfferHeader
+                disabled={checkoutPending}
+                interval={selectedInterval}
+                onIntervalChange={setSelectedInterval}
+                twoMonthsFree={Boolean(twoMonthsFree)}
+              />
               {offersError ? (
                 <ErrorToast message={offersError} />
               ) : selectedOffer ? (
-                <div className="border-brand bg-brand-soft rounded-lg border p-5">
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <span className="text-sm font-medium">
-                      {selectedOffer.name}
-                    </span>
-                    <span className="text-2xl font-semibold">
-                      {formatOfferAmount(selectedOffer)}
-                      <span className="text-muted-foreground ml-1 text-xs font-normal">
-                        / {selectedOffer.interval}
-                      </span>
-                    </span>
-                  </div>
-                  {selectedOffer.interval === "year" ? (
-                    <p className="text-muted-foreground mt-2 text-sm">
-                      {formatOfferAmount({
-                        ...selectedOffer,
-                        amount: selectedOffer.amount / 12,
-                      })}{" "}
-                      / month, billed annually.
-                      {twoMonthsFree
-                        ? ` Save ${formatOfferAmount({ ...selectedOffer, amount: monthlyOffer.amount * 12 - selectedOffer.amount })} a year.`
-                        : ""}
-                    </p>
-                  ) : null}
-                  {selectedOffer.description ? (
-                    <p className="text-muted-foreground mt-3 text-sm">
-                      {selectedOffer.description}
-                    </p>
-                  ) : null}
-                  {selectedOffer.features.length > 0 ? (
-                    <ul className="text-muted-foreground mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                      {selectedOffer.features.map((feature) => (
-                        <li key={feature}>{feature}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
+                <ProOffer
+                  checkoutButton={
+                    overview.canManage ? (
+                      <Button
+                        loading={checkoutPending}
+                        onClick={beginCheckout}
+                        type="button"
+                      >
+                        <Sparkle aria-hidden="true" className="size-4" />
+                        Continue to Stripe
+                      </Button>
+                    ) : (
+                      <p className="type-small text-ink-2">
+                        An Owner must start Checkout.
+                      </p>
+                    )
+                  }
+                  offer={selectedOffer}
+                />
               ) : offers ? (
-                <p className="text-muted-foreground text-sm">
+                <p className="type-small text-ink-2">
                   This billing option is temporarily unavailable.
                 </p>
               ) : (
                 <BlobLoadingText label="Loading Pro prices…" />
               )}
 
-              <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    Payment finishes securely on Stripe
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Your plan changes only after Stripe confirms the
-                    subscription.
-                  </p>
-                </div>
-                {overview.canManage ? (
-                  <Button
-                    disabled={!selectedOffer || !!offersError}
-                    loading={checkoutPending}
-                    onClick={beginCheckout}
-                    type="button"
-                  >
-                    Continue to Stripe
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground text-xs">
-                    An Owner must start Checkout.
-                  </p>
-                )}
+              <div className="border-t pt-5">
+                <p className="type-ui">Payment finishes securely on Stripe</p>
+                <p className="type-small text-ink-2 mt-1">
+                  Your plan changes only after Stripe confirms the subscription.
+                </p>
               </div>
               {checkoutError ? <ErrorToast message={checkoutError} /> : null}
             </CardContent>

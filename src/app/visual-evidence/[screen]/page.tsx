@@ -1,4 +1,10 @@
 import {
+  StudioFixture,
+  StudioEditorFixture,
+  StudioTemplatesFixture,
+  StudioPreviewFixture,
+} from "@/components/visual-evidence/studio-fixture";
+import {
   ImportConsentFixture,
   ImportConsentFreeFixture,
 } from "@/components/visual-evidence/import-consent-fixture";
@@ -30,6 +36,8 @@ import {
   DashboardBackgroundScreenFixture,
   DashboardPendingScreenFixture,
   AccountDeletionScreenFixture,
+  AccountDeletionProgressScreenFixture,
+  TestimonialDeletionProgressScreenFixture,
   AccountFreeProjectScreenFixture,
   ProProjectsScreenFixture,
   InactiveProjectScreenFixture,
@@ -55,6 +63,10 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  studio: StudioFixture,
+  "studio-templates": StudioTemplatesFixture,
+  "studio-preview": StudioPreviewFixture,
+  "studio-editor": StudioEditorFixture,
   "assistant-import-recovery": AssistantImportRecoveryFixture,
   "mcp-setup": McpSetupFixture,
   "mcp-setup-free": McpFreeSetupFixture,
@@ -100,6 +112,8 @@ const screens = {
   dashboard: DashboardBackgroundScreenFixture,
   "dashboard-pending": DashboardPendingScreenFixture,
   "account-deletion": AccountDeletionScreenFixture,
+  "account-deletion-progress": AccountDeletionProgressScreenFixture,
+  "testimonial-deletion-progress": TestimonialDeletionProgressScreenFixture,
   "account-free-project": AccountFreeProjectScreenFixture,
   "account-pro": ProProjectsScreenFixture,
   "inactive-project": InactiveProjectScreenFixture,
@@ -124,7 +138,8 @@ export default async function VisualEvidenceFixturePage({
   const Screen = screens[screen as keyof typeof screens];
   if (!Screen) notFound();
 
-  return screen === "profile" ||
+  return screen.startsWith("studio") ||
+    screen === "profile" ||
     screen.startsWith("testimonial-import") ||
     screen === "project-settings-shell" ||
     screen === "full-page-loading" ||

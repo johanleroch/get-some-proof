@@ -156,6 +156,11 @@ describe("Owner Account", () => {
       },
     );
     expect(prepared.subscriptionIds).toEqual([]);
+    while (
+      !(await t.mutation(internal.workspaceDeletionInventory.advance, {
+        deletionId: prepared.deletionId,
+      }))
+    ) {}
     // Drive the bounded database purge without contacting external providers.
     await t.run((ctx) =>
       ctx.db.patch(prepared.deletionId, { phase: "managementItems" }),

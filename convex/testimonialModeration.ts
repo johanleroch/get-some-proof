@@ -883,7 +883,6 @@ export const remove = mutation({
     if (testimonial.organizationId !== access.organization._id) {
       testimonialUnavailable();
     }
-    if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     if (testimonial.submissionType === "video") {
       throw new ConvexError({
         code: "VIDEO_DELETION_REQUIRES_MEDIA_ACTION",
@@ -891,25 +890,11 @@ export const remove = mutation({
           "Video Testimonials must be deleted through the media deletion workflow.",
       });
     }
-    await deleteTestimonialRecords(ctx, testimonial);
-    const deletionEventId = await recordOrganizationAuditEvent(ctx, {
-      organizationId: access.organization._id,
-      eventType: "testimonial.deleted",
-      actorUserId: access.principal.actorId,
-      actorDisplayName: access.principal.name,
-      targetType: "testimonial",
-      targetId: String(testimonial._id),
-      targetLabel: "Deleted Testimonial",
-      previousValue: testimonial.moderationStatus,
-      occurredAt: Date.now(),
+    throw new ConvexError({
+      code: "MEDIA_DELETION_REQUIRES_ACTION",
+      message:
+        "Refresh this page to delete the Testimonial through media cleanup.",
     });
-    await beginTestimonialAuditPurge(
-      ctx,
-      access.organization._id,
-      testimonial._id,
-      deletionEventId,
-    );
-    return { deleted: true };
   },
 });
 

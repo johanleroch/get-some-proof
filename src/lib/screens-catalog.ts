@@ -270,10 +270,37 @@ export const screenSections: ScreenSection[] = [
         requiresAuth: true,
       },
       {
+        slug: "studio",
+        title: "Studio widgets",
+        description: "Create independent widgets and choose a template.",
+        fixturePath: "/visual-evidence/studio",
+        livePath: "/org/:organizationSlug/studio",
+        requiresAuth: true,
+      },
+      {
+        slug: "studio-templates",
+        title: "Studio templates",
+        description: "Choose a widget template.",
+        fixturePath: "/visual-evidence/studio-templates",
+      },
+      {
+        slug: "studio-preview",
+        title: "Studio preview",
+        description: "Preview published proof at a mobile width.",
+        fixturePath: "/visual-evidence/studio-preview",
+      },
+      {
+        slug: "studio-editor",
+        title: "Studio editor",
+        description:
+          "Style proof beside its live preview; manage selection in a dialog.",
+        fixturePath: "/visual-evidence/studio-editor",
+      },
+      {
         slug: "inbox",
         title: "Testimonial inbox",
         description:
-          "Pending first: one list of rows, each with its decision. Publish, Archive, preview a video, and reach the tools from the menu.",
+          "Pending first: row checkboxes and a contextual bulk toolbar. Select all, publish or archive a batch, and confirm permanent deletion.",
         fixturePath: "/visual-evidence/testimonial-inbox",
         livePath: "/org/:organizationSlug/inbox",
         requiresAuth: true,
@@ -359,6 +386,20 @@ export const screenSections: ScreenSection[] = [
     id: "dialogs-feedback",
     title: "Dialogs and feedback",
     screens: [
+      {
+        slug: "testimonial-deletion-progress",
+        title: "Testimonial media cleanup",
+        description:
+          "Confirmed image and video cleanup before Testimonial deletion.",
+        fixturePath: "/visual-evidence/testimonial-deletion-progress",
+      },
+      {
+        slug: "account-deletion-progress",
+        title: "Account media cleanup",
+        description:
+          "Media cleanup across every Project before Account deletion.",
+        fixturePath: "/visual-evidence/account-deletion-progress",
+      },
       {
         slug: "testimonial-details",
         title: "Details shown on the Wall",

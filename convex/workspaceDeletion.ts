@@ -1,3 +1,6 @@
+import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
+import { assertMediaDeleted, confirmVideoCleanup } from "./deletionMedia";
+import { deleteNextMedia } from "./deletionMediaActions";
 import {
   clearTestimonialImageLimit,
   resolveTestimonialImages,
@@ -25,7 +28,7 @@ import {
   requireVerifiedPrincipal,
 } from "./security/principal";
 import { cancelVideoDirectUpload, deleteVideoAsset } from "./videoProvider";
-import { preserveImportCopyCleanup } from "./videoImportCleanup";
+import { rememberUnresolvedImportCopy } from "./videoImportCleanup";
 
 const purgeBatchSize = 32;
 const purgePhases = [
@@ -48,6 +51,7 @@ const purgePhases = [
   "testimonials",
   "videoReservations",
   "publicProjections",
+  "widgets",
   "projects",
   "invitations",
   "billingEmails",
@@ -87,6 +91,7 @@ export const readDeletion = internalQuery({
 export const getStatus = query({
   args: { deletionId: v.id("workspaceDeletions") },
   returns: v.object({
+    mediaProgress: v.optional(mediaDeletionProgress),
     lastError: v.optional(v.string()),
     phase: v.string(),
     status: v.union(
@@ -102,6 +107,7 @@ export const getStatus = query({
       deletionUnavailable();
     }
     return {
+      mediaProgress: deletion.mediaProgress,
       lastError: deletion.lastError,
       phase: deletion.phase,
       status: deletion.status,
@@ -116,6 +122,7 @@ export const getByOrganizationSlug = query({
     v.object({
       brandName: v.string(),
       deletionId: v.id("workspaceDeletions"),
+      mediaProgress: v.optional(mediaDeletionProgress),
       lastError: v.optional(v.string()),
       phase: v.string(),
       organizationId: v.id("organizations"),
@@ -143,6 +150,7 @@ export const getByOrganizationSlug = query({
     return {
       brandName: organization.name,
       deletionId: deletion._id,
+      mediaProgress: deletion.mediaProgress,
       lastError: deletion.lastError,
       phase: deletion.phase,
       organizationId: organization._id,
@@ -283,7 +291,8 @@ export const prepare = internalMutation({
       attempts: 1,
       createdAt: now,
       organizationId: access.organization._id,
-      phase: "providerCleanup",
+      phase: "inventory",
+      mediaInventoryComplete: false,
       status: "requested",
       subscriptionIds,
       updatedAt: now,
@@ -355,7 +364,10 @@ export const completeProviderCleanupBatch = internalMutation({
     await requireDeletionAccess(ctx, args.deletionId);
     for (const cleanupJobId of args.cleanupJobIds) {
       const cleanupJob = await ctx.db.get(cleanupJobId);
-      if (cleanupJob) await ctx.db.delete(cleanupJob._id);
+      if (cleanupJob) {
+        await confirmVideoCleanup(ctx, args.deletionId, cleanupJob);
+        await ctx.db.delete(cleanupJob._id);
+      }
     }
     return null;
   },
@@ -397,16 +409,29 @@ export const readMediaBatch = internalQuery({
 
 export const completeMediaBatch = internalMutation({
   args: {
-    assetIds: v.array(v.id("videoAssets")),
+    targets: v.array(mediaTarget),
     deletionId: v.id("workspaceDeletions"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireDeletionAccess(ctx, args.deletionId);
-    for (const assetId of args.assetIds) {
-      const asset = await ctx.db.get(assetId);
+    for (const target of args.targets) {
+      const asset = await ctx.db.get(target.assetId);
       if (asset) {
-        await preserveImportCopyCleanup(ctx, asset);
+        const ids = [
+          asset.providerAssetId,
+          asset.downloadProviderAssetId,
+        ].filter((id): id is string => !!id);
+        if (
+          asset.provider !== target.provider ||
+          ids.length !== target.providerAssetIds.length ||
+          ids.some((id) => !target.providerAssetIds.includes(id)) ||
+          (!asset.providerAssetId &&
+            asset.providerUploadId !== target.providerUploadId)
+        )
+          continue;
+        await confirmVideoCleanup(ctx, args.deletionId, asset);
+        await rememberUnresolvedImportCopy(ctx, asset);
         await ctx.db.delete(asset._id);
       }
     }
@@ -425,6 +450,33 @@ async function deletePhaseBatch(
   if (phaseIndex === -1) deletionUnavailable();
   const phase = purgePhases[phaseIndex] ?? "organization";
   const organizationId = deletion.organizationId;
+  const pendingTarget = await ctx.db
+    .query("deletionMediaTargets")
+    .withIndex("by_deletion_pending", (q) =>
+      q.eq("deletionId", deletionId).eq("deletedAt", undefined),
+    )
+    .first();
+  if (pendingTarget) {
+    await ctx.db.patch(deletionId, { phase: "deleteMedia" });
+    return false;
+  }
+  const unresolved = await ctx.db
+    .query("videoImportCleanupIntents")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .first();
+  if (unresolved)
+    throw new Error(
+      "Waiting for the video provider to confirm all media cleanup.",
+    );
+  const pendingMedia = await ctx.db
+    .query("videoProviderCleanupJobs")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .first();
+  if (pendingMedia) {
+    await ctx.db.patch(deletionId, { phase: "providerCleanup" });
+    return false;
+  }
+  await assertMediaDeleted(ctx, deletion._id);
   let records: Array<{
     _id: Id<TableNames>;
     [key: string]: unknown;
@@ -540,7 +592,7 @@ async function deletePhaseBatch(
         )
         .take(purgeBatchSize);
       for (const record of records) {
-        if (record.storageId)
+        if (!deletion.mediaProgress?.inventoryComplete && record.storageId)
           await ctx.storage.delete(record.storageId as Id<"_storage">);
       }
       break;
@@ -554,7 +606,7 @@ async function deletePhaseBatch(
         .take(purgeBatchSize);
       await Promise.all(
         records.map((record) =>
-          record.storageId
+          !deletion.mediaProgress?.inventoryComplete && record.storageId
             ? ctx.storage.delete(record.storageId as Id<"_storage">)
             : Promise.resolve(),
         ),
@@ -576,8 +628,16 @@ async function deletePhaseBatch(
         )
         .take(purgeBatchSize);
       for (const record of records) {
-        if (record.avatarStorageId)
+        if (
+          !deletion.mediaProgress?.inventoryComplete &&
+          record.avatarStorageId
+        )
           await ctx.storage.delete(record.avatarStorageId as Id<"_storage">);
+        if (
+          !deletion.mediaProgress?.inventoryComplete &&
+          record.posterStorageId
+        )
+          await ctx.storage.delete(record.posterStorageId as Id<"_storage">);
       }
       break;
     case "videoReservations":
@@ -592,6 +652,14 @@ async function deletePhaseBatch(
       records = await ctx.db
         .query("publicTestimonialProjections")
         .withIndex("by_organization", (i) =>
+          i.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      break;
+    case "widgets":
+      records = await ctx.db
+        .query("widgets")
+        .withIndex("by_organizationId", (i) =>
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
@@ -707,7 +775,10 @@ async function deletePhaseBatch(
       break;
     case "organization": {
       const organization = await ctx.db.get(organizationId);
-      if (organization?.logoStorageId) {
+      if (
+        !deletion.mediaProgress?.inventoryComplete &&
+        organization?.logoStorageId
+      ) {
         await ctx.storage.delete(organization.logoStorageId);
       }
       if (organization) await ctx.db.delete(organization._id);
@@ -807,9 +878,15 @@ export const claimDeletion = internalMutation({
     ) {
       return null;
     }
+    const phase =
+      deletion.mediaInventoryComplete === undefined &&
+      deletion.phase !== "complete"
+        ? "inventory"
+        : deletion.phase;
     const leaseExpiresAt = Date.now() + processingLeaseMs;
     await ctx.db.patch(deletion._id, {
       lastError: undefined,
+      phase,
       leaseExpiresAt,
       leaseId: args.leaseId,
       nextRetryAt: undefined,
@@ -821,7 +898,7 @@ export const claimDeletion = internalMutation({
       internal.workspaceDeletion.processDeletion,
       { deletionId: deletion._id },
     );
-    return { phase: deletion.phase };
+    return { phase };
   },
 });
 
@@ -949,6 +1026,24 @@ export async function processWorkspaceDeletion(
           markerId: pendingSubscription.markerId,
         },
       );
+    } else if (claim.phase === "inventory") {
+      if (
+        await ctx.runMutation(internal.workspaceDeletionInventory.advance, {
+          deletionId: args.deletionId,
+        })
+      )
+        await ctx.runMutation(internal.workspaceDeletion.advanceDeletionPhase, {
+          deletionId: args.deletionId,
+          leaseId,
+          phase: "deleteMedia",
+        });
+    } else if (claim.phase === "deleteMedia") {
+      if (!(await deleteNextMedia(ctx, args.deletionId)))
+        await ctx.runMutation(internal.workspaceDeletion.advanceDeletionPhase, {
+          deletionId: args.deletionId,
+          leaseId,
+          phase: "providerCleanup",
+        });
     } else if (claim.phase === "providerCleanup") {
       const cleanupBatch = await ctx.runQuery(
         internal.workspaceDeletion.readProviderCleanupBatch,
@@ -1003,7 +1098,7 @@ export async function processWorkspaceDeletion(
           }
         }
         await ctx.runMutation(internal.workspaceDeletion.completeMediaBatch, {
-          assetIds: mediaBatch.map((media) => media.assetId),
+          targets: mediaBatch,
           deletionId: args.deletionId,
         });
       }
@@ -1087,14 +1182,46 @@ export const prepareAccountProject = internalMutation({
       .query("workspaceDeletions")
       .withIndex("by_organization", (q) => q.eq("organizationId", project._id))
       .unique();
-    if (existing) return existing._id;
+    if (existing) {
+      if (!existing.accountDeletionId) {
+        const previous = parent.mediaProgress ?? {
+          imagesTotal: 0,
+          imagesDeleted: 0,
+          videosTotal: 0,
+          videosDeleted: 0,
+          uploadsTotal: 0,
+          uploadsDeleted: 0,
+          inventoryComplete: false,
+        };
+        const child = existing.mediaProgress;
+        await ctx.db.patch(parent._id, {
+          mediaProgress: {
+            ...previous,
+            imagesTotal: previous.imagesTotal + (child?.imagesTotal ?? 0),
+            imagesDeleted: previous.imagesDeleted + (child?.imagesDeleted ?? 0),
+            videosTotal: previous.videosTotal + (child?.videosTotal ?? 0),
+            videosDeleted: previous.videosDeleted + (child?.videosDeleted ?? 0),
+            uploadsTotal: previous.uploadsTotal + (child?.uploadsTotal ?? 0),
+            uploadsDeleted:
+              previous.uploadsDeleted + (child?.uploadsDeleted ?? 0),
+          },
+        });
+        await ctx.db.patch(existing._id, {
+          accountDeletionId: parent._id,
+          mediaInventoryComplete: existing.mediaInventoryComplete ?? false,
+        });
+      }
+      return existing._id;
+    }
     const now = Date.now();
     const deletionId = await ctx.db.insert("workspaceDeletions", {
       accountId: parent.accountId,
+      accountDeletionId: parent._id,
       actorUserId: parent.ownerUserId,
       organizationId: project._id,
       attempts: 1,
-      phase: "providerCleanup",
+      phase: "inventory",
+      mediaInventoryComplete: false,
       status: "requested",
       subscriptionIds: [],
       createdAt: now,
