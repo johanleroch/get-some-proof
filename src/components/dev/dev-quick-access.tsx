@@ -12,6 +12,8 @@ import {
 } from "react";
 import { IconDeviceLaptop, IconMoon, IconSun } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
+import type { Route } from "next";
+import Link from "next/link";
 
 import { api } from "@convex/_generated/api";
 import { blobToast } from "@/components/brand/blob-toast";
@@ -231,13 +233,13 @@ function QuickAccessMenu({
         <DropdownMenuGroup>
           <DropdownMenuLabel>Design</DropdownMenuLabel>
           <DropdownMenuItem asChild>
-            <a href="/kit">Kit</a>
+            <Link href="/kit">Kit</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/kit/blob">Blob expressions</a>
+            <Link href="/kit/blob">Blob expressions</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/kit/testimonials">Testimonial card</a>
+            <Link href="/kit/testimonials">Testimonial card</Link>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() =>
@@ -249,16 +251,16 @@ function QuickAccessMenu({
             Test toast
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/kit/templates">Templates</a>
+            <Link href="/kit/templates">Templates</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/kit/onboarding">Onboarding playground</a>
+            <Link href="/kit/onboarding">Onboarding playground</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/kit/billing-offer">Pro offer variants</a>
+            <Link href="/kit/billing-offer">Pro offer variants</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/screens">Screens</a>
+            <Link href="/screens">Screens</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         {workspace.length > 0 ? (
@@ -268,7 +270,7 @@ function QuickAccessMenu({
               <DropdownMenuLabel>Workspace</DropdownMenuLabel>
               {workspace.map((link) => (
                 <DropdownMenuItem asChild key={link.href}>
-                  <a href={link.href}>{link.label}</a>
+                  <Link href={link.href as Route}>{link.label}</Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
@@ -279,7 +281,7 @@ function QuickAccessMenu({
           <DropdownMenuLabel>Public</DropdownMenuLabel>
           {publicPages.map((link) => (
             <DropdownMenuItem asChild key={link.href}>
-              <a href={link.href}>{link.label}</a>
+              <Link href={link.href as Route}>{link.label}</Link>
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
@@ -288,7 +290,7 @@ function QuickAccessMenu({
           <DropdownMenuLabel>Authentication</DropdownMenuLabel>
           {auth.map((link) => (
             <DropdownMenuItem asChild key={link.href}>
-              <a href={link.href}>{link.label}</a>
+              <Link href={link.href as Route}>{link.label}</Link>
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type Dispatch, type SetStateAction } from "react";
+import type { Route } from "next";
+import Link from "next/link";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
@@ -317,9 +319,11 @@ export function TestimonialImportView({
         actions={
           navigation ?? (
             <Button asChild variant="ghost">
-              <a href={publicPreview ? "/" : `/org/${slug}/inbox`}>
+              <Link
+                href={(publicPreview ? "/" : `/org/${slug}/inbox`) as Route}
+              >
                 {publicPreview ? "Get Some Proof" : "Back to Inbox"}
-              </a>
+              </Link>
             </Button>
           )
         }
@@ -346,11 +350,13 @@ export function TestimonialImportView({
           <div className="flex flex-wrap gap-3">
             {inboxAction ?? (
               <Button asChild>
-                <a
-                  href={`/org/${slug}/inbox${jobId ? `?import=${encodeURIComponent(jobId)}` : ""}`}
+                <Link
+                  href={
+                    `/org/${slug}/inbox${jobId ? `?import=${encodeURIComponent(jobId)}` : ""}` as Route
+                  }
                 >
                   Open Inbox
-                </a>
+                </Link>
               </Button>
             )}
             <Button variant="outline" onClick={backToUrl}>

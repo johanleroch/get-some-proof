@@ -6,7 +6,9 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { IconCheck, IconStar } from "@tabler/icons-react";
+import type { Route } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import { uploadTestimonialImages } from "@/lib/upload-testimonial-images";
 import { TestimonialImagesInput } from "@/components/testimonials/testimonial-images-input";
@@ -1523,12 +1525,14 @@ export function CollectionFormShellView({
 
           <p className="text-ink-2 type-small">
             Read the{" "}
-            <a
+            <Link
               className="underline underline-offset-2"
-              href={`/c/${encodeURIComponent(brand.publicSlug)}/privacy`}
+              href={
+                `/c/${encodeURIComponent(brand.publicSlug)}/privacy` as Route
+              }
             >
               privacy notice
-            </a>
+            </Link>
             .
           </p>
           {/* Recovering a lost management link belongs on the entry screen

@@ -136,9 +136,9 @@ export function ImportAuthorization({
           </p>
         </header>
         <Button asChild className="min-h-11">
-          <a href={`/sign-in?callbackURL=${encodeURIComponent(callback)}`}>
+          <Link href={`/sign-in?callbackURL=${encodeURIComponent(callback)}`}>
             Sign in to continue
-          </a>
+          </Link>
         </Button>
       </section>
     );
