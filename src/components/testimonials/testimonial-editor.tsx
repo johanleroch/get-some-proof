@@ -6,6 +6,7 @@ import { HighlightPlugin } from "@platejs/basic-nodes/react";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
 import {
+  safeTestimonialHref,
   richTextFromPlain,
   richTextToPlain,
   type TestimonialRichText,
@@ -72,6 +73,9 @@ export function TestimonialEditor({
       children: block.children.map((leaf) => ({
         text: typeof leaf.text === "string" ? leaf.text : "",
         ...(leaf.highlight ? { highlight: true } : {}),
+        ...(typeof leaf.href === "string" && safeTestimonialHref(leaf.href)
+          ? { href: safeTestimonialHref(leaf.href) }
+          : {}),
       })),
     }));
     const serialized = JSON.stringify(content);

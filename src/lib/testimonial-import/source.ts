@@ -1,6 +1,10 @@
 import { load } from "cheerio/slim";
 import JSON5 from "json5";
-import type { TestimonialRichText } from "../../../convex/domain/testimonialRichText";
+import {
+  normalizeRichText,
+  safeTestimonialHref,
+  type TestimonialRichText,
+} from "../../../convex/domain/testimonialRichText";
 import { testimonialTextIdentities } from "./testimonial-text-identity";
 
 export type WallProvider = "testimonial-to" | "senja";
@@ -269,23 +273,36 @@ function senjaQuote(html: string): {
   $("br").replaceWith("\n");
   $("p,div").append("\n");
   const richText: TestimonialRichText = [{ type: "p", children: [] }];
-  function visit(nodes: ReturnType<typeof $>, highlighted = false) {
+  function visit(
+    nodes: ReturnType<typeof $>,
+    highlighted = false,
+    href?: string,
+  ) {
     nodes.each((_, node) => {
       if (node.type === "text") {
         node.data.split("\n").forEach((text, index) => {
           if (index) richText.push({ type: "p", children: [] });
           const children = richText[richText.length - 1]!.children;
           const previous = children[children.length - 1];
-          if (previous && !!previous.highlight === highlighted)
+          if (
+            previous &&
+            !!previous.highlight === highlighted &&
+            previous.href === href
+          )
             previous.text += text;
           else
             children.push({
               text,
               ...(highlighted ? { highlight: true } : {}),
+              ...(href ? { href } : {}),
             });
         });
       } else if ("name" in node) {
-        visit($(node).contents(), highlighted || node.name === "mark");
+        visit(
+          $(node).contents(),
+          highlighted || node.name === "mark",
+          node.name === "a" ? safeTestimonialHref($(node).attr("href")) : href,
+        );
       }
     });
   }
@@ -303,8 +320,10 @@ function senjaQuote(html: string): {
     .join("\n");
   return {
     text,
-    ...(richText.some((block) => block.children.some((leaf) => leaf.highlight))
-      ? { richText }
+    ...(richText.some((block) =>
+      block.children.some((leaf) => leaf.highlight || leaf.href),
+    )
+      ? { richText: normalizeRichText(richText, text) }
       : {}),
   };
 }

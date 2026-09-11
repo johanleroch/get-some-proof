@@ -1,5 +1,6 @@
 "use client";
 
+import { safeTestimonialHref } from "@convex/domain/testimonialRichText";
 import type { ReactNode } from "react";
 
 import type {
@@ -76,10 +77,34 @@ export function DesignQuote({
                 key={leafIndex}
                 style={{ backgroundImage: swash }}
               >
-                {leaf.text}
+                {safeTestimonialHref(leaf.href) ? (
+                  <a
+                    href={safeTestimonialHref(leaf.href)}
+                    target="_blank"
+                    rel="ugc nofollow noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    {leaf.text}
+                  </a>
+                ) : (
+                  leaf.text
+                )}
               </mark>
             ) : (
-              <span key={leafIndex}>{leaf.text}</span>
+              <span key={leafIndex}>
+                {safeTestimonialHref(leaf.href) ? (
+                  <a
+                    href={safeTestimonialHref(leaf.href)}
+                    target="_blank"
+                    rel="ugc nofollow noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    {leaf.text}
+                  </a>
+                ) : (
+                  leaf.text
+                )}
+              </span>
             ),
           )}
           {quoted && blockIndex === last ? "”" : null}

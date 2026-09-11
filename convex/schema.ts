@@ -188,6 +188,8 @@ export default defineSchema({
     .index("by_jobId_type_position", ["jobId", "type", "position"])
     .index("by_organizationId", ["organizationId"]),
   accounts: defineTable({
+    testimonialLinksEnabled: v.optional(v.boolean()),
+    testimonialLinksRevision: v.optional(v.number()),
     publicationGeneration: v.optional(v.number()),
     publicationTransitionKey: v.optional(v.string()),
     preservedPublicationIds: v.optional(v.array(v.id("testimonials"))),

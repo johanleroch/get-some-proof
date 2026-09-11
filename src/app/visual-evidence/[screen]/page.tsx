@@ -1,3 +1,4 @@
+import { TestimonialLinksFixture } from "@/components/visual-evidence/testimonial-links-fixture";
 import {
   ImportConsentFixture,
   ImportConsentFreeFixture,
@@ -55,6 +56,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "testimonial-links": TestimonialLinksFixture,
   "assistant-import-recovery": AssistantImportRecoveryFixture,
   "mcp-setup": McpSetupFixture,
   "mcp-setup-free": McpFreeSetupFixture,

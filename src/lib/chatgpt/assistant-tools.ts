@@ -85,7 +85,11 @@ export const assistantTextInput = z.object({
         type: z.literal("p"),
         children: z
           .array(
-            z.object({ text: z.string(), highlight: z.boolean().optional() }),
+            z.object({
+              text: z.string(),
+              highlight: z.boolean().optional(),
+              href: z.string().max(2048).optional(),
+            }),
           )
           .min(1)
           .max(2000),

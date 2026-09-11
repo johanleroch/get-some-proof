@@ -1,3 +1,4 @@
+import { publicRichText } from "./domain/testimonialRichText";
 import { projectionIsPublic } from "./publicProjection";
 import { isProjectActive } from "./projectActivity";
 import { resolveTestimonialImages } from "./testimonialImages";
@@ -56,6 +57,7 @@ export const getBrand = query({
         .first(),
     ]);
     const accentColor = brand.publicWallAccentColor ?? brand.primaryColor;
+    const account = brand.accountId ? await ctx.db.get(brand.accountId) : null;
     return {
       accentColor,
       accentInk: accentInk(accentColor),
@@ -65,9 +67,8 @@ export const getBrand = query({
       publicSlug: brand.publicSlug,
       privacyRevision:
         (brand.publicWallPrivacyRevision ?? 0) +
-        (brand.accountId
-          ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
-          : 0),
+        (account?.publicationGeneration ?? 0) +
+        (account?.testimonialLinksRevision ?? 0),
       theme: brand.publicWallTheme ?? "system",
       transparentEmbed: brand.publicWallTransparentEmbed ?? false,
     };
@@ -157,7 +158,10 @@ export const list = query({
               })
             : testimonialCardValue(identity, {
                 text: projection.text,
-                richText: projection.richText,
+                richText: publicRichText(
+                  projection.richText,
+                  account?.testimonialLinksEnabled !== false,
+                ),
                 images: projection.imageIds?.length
                   ? await resolveTestimonialImages(ctx, projection.imageIds)
                   : undefined,
@@ -180,11 +184,11 @@ export const privacyRevision = query({
       .query("organizations")
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
       .unique();
+    const account = brand?.accountId ? await ctx.db.get(brand.accountId) : null;
     return !brand || !(await isProjectActive(ctx, brand))
       ? null
       : (brand.publicWallPrivacyRevision ?? 0) +
-          (brand.accountId
-            ? ((await ctx.db.get(brand.accountId))?.publicationGeneration ?? 0)
-            : 0);
+          (account?.publicationGeneration ?? 0) +
+          (account?.testimonialLinksRevision ?? 0);
   },
 });

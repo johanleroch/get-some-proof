@@ -1,8 +1,17 @@
 import { expect, it } from "vitest";
 import { previewSchema } from "./import-wire";
-it("preserves Senja highlights across the widget wire contract", () => {
+it("preserves Senja links and highlights across the widget wire contract", () => {
   const richText = [
-    { type: "p", children: [{ text: "Excellent", highlight: true }] },
+    {
+      type: "p",
+      children: [
+        {
+          text: "Excellent",
+          highlight: true,
+          href: "https://example.com/atelier",
+        },
+      ],
+    },
   ];
   const result = previewSchema.parse({
     provider: "senja",

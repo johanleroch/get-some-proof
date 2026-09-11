@@ -308,3 +308,32 @@ it("keeps paragraph boundaries and decoded words while dropping unsafe HTML", as
     vi.unstubAllGlobals();
   }
 });
+
+it("preserves Senja mentions and nested highlights without guessing bare handles", async () => {
+  const html =
+    'Merci <a href="https://twitter.com/atelier"><mark>@atelier</mark></a> et @camille. <a href="javascript:alert(1)">Suite</a>';
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          `<script>start({reviews:[${JSON.stringify({ id: "mention", type: "text", text: html, customer: { name: "Lina" } })}]})</script>`,
+        ),
+    ),
+  );
+  try {
+    const item = (await previewWall("https://love.senja.io/")).items[0];
+    expect(item.text).toBe("Merci @atelier et @camille. Suite");
+    expect(item.richText?.[0].children).toEqual([
+      { text: "Merci " },
+      {
+        text: "@atelier",
+        highlight: true,
+        href: "https://twitter.com/atelier",
+      },
+      { text: " et @camille. Suite" },
+    ]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

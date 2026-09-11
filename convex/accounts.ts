@@ -18,6 +18,7 @@ export const getMine = query({
       id: v.id("accounts"),
       ownerUserId: v.string(),
       canManageSubscription: v.boolean(),
+      testimonialLinksEnabled: v.boolean(),
       deletionStartedAt: v.optional(v.number()),
       freeProjectId: v.union(v.id("organizations"), v.null()),
       freeProjectName: v.union(v.string(), v.null()),
@@ -92,6 +93,7 @@ export const getMine = query({
     const freeProject = await resolveFreeProject(ctx, account);
     return {
       id: account._id,
+      testimonialLinksEnabled: account.testimonialLinksEnabled ?? true,
       deletionStartedAt: account.deletionStartedAt,
       ownerUserId: account.ownerUserId,
       canManageSubscription: !!(
@@ -173,5 +175,26 @@ export const getBillingContext = internalQuery({
       .withIndex("by_account", (q) => q.eq("accountId", account._id))
       .unique();
     return { customerId: profile?.stripeCustomerId ?? null };
+  },
+});
+
+export const setTestimonialLinksEnabled = mutation({
+  args: { enabled: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { enabled }) => {
+    const principal = await requireVerifiedPrincipal(ctx);
+    const account = await ctx.db
+      .query("accounts")
+      .withIndex("by_owner", (q) => q.eq("ownerUserId", principal.actorId))
+      .unique();
+    if (!account || account.deletionStartedAt !== undefined)
+      throw new ConvexError("Account unavailable.");
+    if ((account.testimonialLinksEnabled ?? true) !== enabled)
+      await ctx.db.patch(account._id, {
+        testimonialLinksEnabled: enabled,
+        testimonialLinksRevision: (account.testimonialLinksRevision ?? 0) + 1,
+        updatedAt: Date.now(),
+      });
+    return null;
   },
 });

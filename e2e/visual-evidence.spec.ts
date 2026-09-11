@@ -253,6 +253,12 @@ for (const screen of config.screens) {
         .getByRole("heading", { name: "Invoices", exact: true })
         .scrollIntoViewIfNeeded();
     }
+    if (screen.slug === "testimonial-links-disabled") {
+      await page
+        .getByRole("switch", { name: "Allow links in testimonials" })
+        .click();
+      await expect(page.locator("blockquote a")).toHaveCount(0);
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
