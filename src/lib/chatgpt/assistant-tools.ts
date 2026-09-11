@@ -190,7 +190,13 @@ export const assistantBatchInput = z.object({
         .extend({
           type: z.enum(["text", "video"]).default("text"),
           text: z.string().max(10_000).default(""),
-          videoUrl: z.url().max(2048).optional(),
+          videoUrl: z
+            .url()
+            .max(2048)
+            .optional()
+            .describe(
+              "A public MP4, MOV or WebM file URL, or a public Mux HLS playback URL matching https://stream.mux.com/{PLAYBACK_ID}.m3u8. Never use a page URL.",
+            ),
         }),
     )
     .min(1)
@@ -268,7 +274,7 @@ export function registerAssistantTools(
       {
         title: "Import a batch of original testimonials",
         description:
-          "Save up to 50 original testimonials from the one supplied page directly as Pending after explicit import intent. Announce the discovered count. Preserve words and explicit individual identity; leave missing fields unset and never use page-wide ratings. Use stable source IDs, report ambiguous identities instead of guessing. Reuse the exact request ID and payload on interruption. Report created, duplicate and conflict outcomes separately; do not overwrite changed source records. Nothing is published.",
+          "Save up to 50 original testimonials from the one supplied page directly as Pending after explicit import intent. Announce the discovered count. Preserve words and explicit individual identity; leave missing fields unset and never use page-wide ratings. For video, use a public MP4, MOV or WebM file URL, or a public Mux HLS playback URL matching https://stream.mux.com/{PLAYBACK_ID}.m3u8; never use a page URL. Use stable source IDs, report ambiguous identities instead of guessing. Reuse the exact request ID and payload on interruption. Report created, duplicate and conflict outcomes separately; do not overwrite changed source records. Nothing is published.",
         inputSchema: assistantBatchInput.shape,
         annotations: {
           readOnlyHint: false,
