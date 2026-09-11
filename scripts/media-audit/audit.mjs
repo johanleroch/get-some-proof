@@ -79,10 +79,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const query = (source) => JSON.parse(cli(["run", "--inline-query", source]));
   const tables = cli(["data"]).split("\n").filter(Boolean);
-  if (
-    !tables.length ||
-    tables.some((table) => !/^[A-Za-z][A-Za-z0-9_]*$/.test(table))
-  )
+  if (tables.some((table) => !/^[A-Za-z][A-Za-z0-9_]*$/.test(table)))
     throw new Error("Could not establish the application table inventory.");
   const assets = [];
   async function pages(getPage, consume) {
