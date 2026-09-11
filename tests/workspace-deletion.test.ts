@@ -357,6 +357,11 @@ describe("Workspace deletion", () => {
       await ctx.db.patch(deletion._id, { phase: "managementItems" });
     });
 
+    while (
+      !(await t.mutation(internal.workspaceDeletionInventory.advance, {
+        deletionId: prepared.deletionId,
+      }))
+    ) {}
     for (let guard = 0; guard < 100; guard += 1) {
       if (
         await owner.client.mutation(internal.workspaceDeletion.purgeBatch, {
@@ -482,9 +487,19 @@ describe("Workspace deletion", () => {
       organizationId: brand.id,
     });
     expect(started.deleted).toBe(false);
-    await owner.client.action(internal.workspaceDeletion.processDeletion, {
-      deletionId: started.deletionId,
-    });
+    for (let step = 0; step < 30; step++) {
+      await owner.client.action(internal.workspaceDeletion.processDeletion, {
+        deletionId: started.deletionId,
+      });
+      if (
+        (
+          await owner.client.query(api.workspaceDeletion.getStatus, {
+            deletionId: started.deletionId,
+          })
+        ).status === "failed"
+      )
+        break;
+    }
     await expect(
       owner.client.query(api.workspaceDeletion.getStatus, {
         deletionId: started.deletionId,

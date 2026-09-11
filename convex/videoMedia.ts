@@ -1,9 +1,25 @@
+import {
+  mediaDeletionProgress,
+  emptyMediaProgress,
+} from "./domain/mediaDeletionProgress";
+import {
+  registerImages,
+  registerVideo,
+  assertMediaDeleted,
+} from "./deletionMedia";
+import { deleteNextMedia } from "./deletionMediaActions";
+import { rememberUnresolvedImportCopy } from "./videoImportCleanup";
 import { finishSpamQuarantineForDeletion } from "./testimonialDeletion";
 import { removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { action, internalAction, internalMutation } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  query,
+} from "./_generated/server";
 import {
   beginTestimonialAuditPurge,
   recordOrganizationAuditEvent,
@@ -125,6 +141,7 @@ export const prepareRemoval = internalMutation({
     testimonialId: v.id("testimonials"),
   },
   returns: v.object({
+    deletionId: v.id("videoMediaDeletions"),
     alreadyDeleted: v.boolean(),
     cleanupJobIds: v.array(v.id("videoProviderCleanupJobs")),
     providerAssets: v.array(
@@ -164,6 +181,7 @@ export const prepareRemoval = internalMutation({
         .take(32);
       if (cleanupJobs.length > 0) {
         return {
+          deletionId: existing._id,
           alreadyDeleted: false,
           cleanupJobIds: cleanupJobs.map((job) => job._id),
           providerAssets: cleanupJobs.flatMap((job) =>
@@ -189,6 +207,7 @@ export const prepareRemoval = internalMutation({
         };
       }
       return {
+        deletionId: existing._id,
         alreadyDeleted: true,
         cleanupJobIds: [],
         providerAssets: [],
@@ -199,8 +218,7 @@ export const prepareRemoval = internalMutation({
     const testimonial = await ctx.db.get(args.testimonialId);
     if (
       !testimonial ||
-      testimonial.organizationId !== access.organization._id ||
-      testimonial.submissionType !== "video"
+      testimonial.organizationId !== access.organization._id
     ) {
       testimonialUnavailable();
     }
@@ -210,7 +228,8 @@ export const prepareRemoval = internalMutation({
         index.eq("testimonialId", testimonial._id),
       )
       .unique();
-    if (!asset) testimonialUnavailable();
+    if (!asset && testimonial.submissionType === "video")
+      testimonialUnavailable();
     await finishSpamQuarantineForDeletion(ctx, testimonial);
 
     const [cleanupJobs, projection, retryLink, activeRevision] =
@@ -327,9 +346,12 @@ export const prepareRemoval = internalMutation({
     }
 
     const now = Date.now();
+    let deletionId = existing?._id;
     if (existing) {
       await ctx.db.patch(existing._id, {
         attempts: existing.attempts + 1,
+        inventoryStage: 0,
+        inventoryCursor: undefined,
         lastError: undefined,
         providerAssets,
         providerUploads,
@@ -337,7 +359,7 @@ export const prepareRemoval = internalMutation({
         updatedAt: now,
       });
     } else {
-      await ctx.db.insert("videoMediaDeletions", {
+      deletionId = await ctx.db.insert("videoMediaDeletions", {
         attempts: 1,
         createdAt: now,
         organizationId: access.organization._id,
@@ -348,7 +370,28 @@ export const prepareRemoval = internalMutation({
         updatedAt: now,
       });
     }
+    if (!deletionId) throw new Error("Deletion unavailable.");
+    await registerImages(ctx, deletionId, testimonial);
+    const images = await ctx.db
+      .query("testimonialImages")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", testimonial._id),
+      )
+      .take(4);
+    for (const image of images) await registerImages(ctx, deletionId, image);
+    for (const target of [...providerAssets, ...providerUploads])
+      await registerVideo(ctx, deletionId, target);
+    for (const candidate of allAssets)
+      if (candidate) await rememberUnresolvedImportCopy(ctx, candidate);
+    const fresh = await ctx.db.get(deletionId);
+    await ctx.db.patch(deletionId, {
+      mediaProgress: {
+        ...(fresh?.mediaProgress ?? emptyMediaProgress()),
+        inventoryComplete: false,
+      },
+    });
     return {
+      deletionId,
       alreadyDeleted: false,
       cleanupJobIds: cleanupJobs.map((job) => job._id),
       providerAssets,
@@ -431,7 +474,24 @@ export const finalizeRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    await deleteTestimonialRecords(ctx, testimonial);
+    await registerImages(ctx, deletion._id, testimonial);
+    const assets = await ctx.db
+      .query("videoAssets")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", testimonial._id),
+      )
+      .take(8);
+    for (const asset of assets) {
+      await registerVideo(ctx, deletion._id, asset);
+      const unresolved = await ctx.db
+        .query("videoImportCleanupIntents")
+        .withIndex("by_asset", (q) => q.eq("assetId", asset._id))
+        .first();
+      if (unresolved)
+        throw new Error("Waiting for the video provider to confirm cleanup.");
+    }
+    await assertMediaDeleted(ctx, deletion._id);
+    await deleteTestimonialRecords(ctx, testimonial, "permanentDeletion", true);
     const deletionEventId = await recordOrganizationAuditEvent(ctx, {
       actorDisplayName: access.principal.name,
       actorUserId: access.principal.actorId,
@@ -467,6 +527,7 @@ export const remove = action({
   returns: v.object({ deleted: v.boolean() }),
   handler: async (ctx, args): Promise<{ deleted: boolean }> => {
     const prepared: {
+      deletionId: import("./_generated/dataModel").Id<"videoMediaDeletions">;
       alreadyDeleted: boolean;
       cleanupJobIds: Array<
         import("./_generated/dataModel").Id<"videoProviderCleanupJobs">
@@ -482,17 +543,15 @@ export const remove = action({
     } = await ctx.runMutation(internal.videoMedia.prepareRemoval, args);
     if (prepared.alreadyDeleted) return { deleted: true };
     try {
-      for (const providerUpload of prepared.providerUploads) {
-        await cancelVideoDirectUpload(
-          providerUpload.providerUploadId,
-          providerUpload.provider,
-        );
+      while (
+        !(await ctx.runMutation(internal.testimonialDeletionInventory.advance, {
+          deletionId: prepared.deletionId,
+        }))
+      ) {
+        /* Bounded inventory pages. */
       }
-      for (const providerAsset of prepared.providerAssets) {
-        await deleteVideoAsset(
-          providerAsset.providerAssetId,
-          providerAsset.provider,
-        );
+      while (await deleteNextMedia(ctx, prepared.deletionId)) {
+        /* Each receipt commits progress. */
       }
       for (const cleanupJobId of prepared.cleanupJobIds) {
         await ctx.runMutation(internal.videoMedia.completeProviderCleanup, {
@@ -500,6 +559,7 @@ export const remove = action({
           organizationId: args.organizationId,
         });
       }
+      return await ctx.runMutation(internal.videoMedia.finalizeRemoval, args);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await ctx.runMutation(internal.videoMedia.recordRemovalFailure, {
@@ -508,6 +568,39 @@ export const remove = action({
       });
       throw error;
     }
-    return ctx.runMutation(internal.videoMedia.finalizeRemoval, args);
+  },
+});
+
+export const getRemovalStatus = query({
+  args: {
+    organizationId: v.id("organizations"),
+    testimonialId: v.id("testimonials"),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      status: v.union(
+        v.literal("requested"),
+        v.literal("failed"),
+        v.literal("deleted"),
+      ),
+      mediaProgress: v.optional(mediaDeletionProgress),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const deletion = await ctx.db
+      .query("videoMediaDeletions")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", args.testimonialId),
+      )
+      .unique();
+    if (!deletion || deletion.organizationId !== args.organizationId)
+      return null;
+    return { status: deletion.status, mediaProgress: deletion.mediaProgress };
   },
 });

@@ -196,7 +196,23 @@ export const finish = internalMutation({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     const testimonial = await ctx.db.get(args.testimonialId);
+    const organization = testimonial
+      ? await ctx.db.get(testimonial.organizationId)
+      : null;
+    const account = organization?.accountId
+      ? await ctx.db.get(organization.accountId)
+      : null;
+    const deletion = await ctx.db
+      .query("videoMediaDeletions")
+      .withIndex("by_testimonial", (q) =>
+        q.eq("testimonialId", args.testimonialId),
+      )
+      .first();
     const applicable =
+      organization &&
+      organization.deletionStartedAt === undefined &&
+      account?.deletionStartedAt === undefined &&
+      !deletion &&
       item &&
       testimonial &&
       item.testimonialId === testimonial._id &&

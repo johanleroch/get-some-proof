@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  MediaDeletionProgress,
+  type MediaDeletionCounts,
+} from "@/components/ui/media-deletion-progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -19,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type ClosureStatus = {
+  mediaProgress?: MediaDeletionCounts;
   status: "requested" | "failed" | "deleted";
   lastError?: string;
 } | null;
@@ -47,6 +59,7 @@ export function AccountDeletionSection({
   status: ClosureStatus;
   onDelete: () => Promise<void>;
 }) {
+  const [progressOpen, setProgressOpen] = useState(true);
   const [confirmation, setConfirmation] = useState("");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -74,20 +87,39 @@ export function AccountDeletionSection({
         className="bg-card space-y-3 rounded-lg border p-5"
       >
         <h2 className="type-subheading">
-          {status.status === "deleted"
-            ? "Account deleted"
-            : "Deleting your account"}
+          {status.status === "deleted" ? "Account deleted" : "Account deletion"}
         </h2>
         <p className="text-ink-2 text-sm">
           {status.status === "deleted"
             ? "Your subscription has been canceled and all projects and hosted media have been deleted."
             : "All projects are now private and unavailable for new activity. Subscription cancellation and permanent cleanup are in progress."}
         </p>
-        {status.status === "failed" ? (
-          <p className="text-sm">
-            A cleanup step failed. We will retry automatically. Deletion is not
-            complete yet.
-          </p>
+        {status.status !== "deleted" ? (
+          <>
+            <Button variant="outline" onClick={() => setProgressOpen(true)}>
+              View deletion progress
+            </Button>
+            <Dialog open={progressOpen} onOpenChange={setProgressOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Deleting your account</DialogTitle>
+                  <DialogDescription>
+                    All project images and videos are cleaned up before your
+                    account is deleted.
+                  </DialogDescription>
+                </DialogHeader>
+                <MediaDeletionProgress
+                  progress={status.mediaProgress}
+                  status={status.status}
+                />
+                {status.status === "failed" ? (
+                  <p className="type-small text-ink-2">
+                    We will retry automatically.
+                  </p>
+                ) : null}
+              </DialogContent>
+            </Dialog>
+          </>
         ) : null}
       </section>
     );

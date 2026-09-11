@@ -1,6 +1,11 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import {
+  MediaDeletionProgress,
+  type MediaDeletionCounts,
+} from "@/components/ui/media-deletion-progress";
+
 import { useEffect, useRef, useState } from "react";
 import { importAttestationVersion } from "@convex/domain/testimonialImport";
 import { AssistantImportNotice } from "./assistant-import-recovery";
@@ -801,6 +806,8 @@ export function TestimonialDeleteDialog({
   onDelete,
   onOpenChange,
   pending,
+  progress,
+  deletionStatus,
   target,
 }: {
   /** Where focus goes when the confirmation closes; the opener by default. */
@@ -808,10 +815,17 @@ export function TestimonialDeleteDialog({
   onDelete: () => void;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
+  progress?: MediaDeletionCounts;
+  deletionStatus?: "requested" | "failed" | "deleted";
   target: InboxTestimonial | null;
 }) {
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!pending) onOpenChange(open);
+      }}
+      open={target !== null}
+    >
       <AlertDialogContent
         className="max-w-[480px]"
         onCloseAutoFocus={onCloseAutoFocus}
@@ -824,7 +838,9 @@ export function TestimonialDeleteDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {target
-                  ? `Delete ${target.submitterName}'s Testimonial?`
+                  ? pending
+                    ? `Deleting ${target.submitterName}'s Testimonial`
+                    : `Delete ${target.submitterName}'s Testimonial?`
                   : "Delete Testimonial"}
               </AlertDialogTitle>
               <AlertDialogDescription className="type-body">
@@ -832,6 +848,14 @@ export function TestimonialDeleteDialog({
                 no undo.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {pending || deletionStatus ? (
+              <div className="mt-5">
+                <MediaDeletionProgress
+                  progress={progress}
+                  status={deletionStatus ?? "requested"}
+                />
+              </div>
+            ) : null}
             <AlertDialogFooter className="mt-6">
               <AlertDialogCancel asChild>
                 <Button disabled={pending} variant="outline">
@@ -841,7 +865,10 @@ export function TestimonialDeleteDialog({
               <AlertDialogAction asChild>
                 <Button
                   loading={pending}
-                  onClick={onDelete}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onDelete();
+                  }}
                   variant="destructive"
                 >
                   Delete
@@ -1102,10 +1129,18 @@ export function TestimonialInbox({
     useState<InboxTestimonial | null>(null);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
-  const removeText = useMutation(api.testimonialModeration.remove);
-  const removeVideo = useAction(api.videoMedia.remove);
+  const remove = useAction(api.videoMedia.remove);
   const [deleteTarget, setDeleteTarget] = useState<InboxTestimonial | null>(
     null,
+  );
+  const removalStatus = useQuery(
+    api.videoMedia.getRemovalStatus,
+    organization && deleteTarget
+      ? {
+          organizationId: organization.id,
+          testimonialId: deleteTarget.testimonialId,
+        }
+      : "skip",
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1196,8 +1231,6 @@ export function TestimonialInbox({
       organizationId: activeOrganization.id,
       testimonialId: deleteTarget.testimonialId,
     };
-    const remove =
-      deleteTarget.submissionType === "video" ? removeVideo : removeText;
     await runInboxAction({
       onError: setError,
       onFinish: () => setPendingId(null),
@@ -1498,6 +1531,8 @@ export function TestimonialInbox({
       ) : null}
 
       <TestimonialDeleteDialog
+        progress={removalStatus?.mediaProgress}
+        deletionStatus={removalStatus?.status}
         onCloseAutoFocus={returnFocus}
         onDelete={() => void confirmDelete()}
         onOpenChange={(open) => !open && setDeleteTarget(null)}

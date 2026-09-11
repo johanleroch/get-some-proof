@@ -1,4 +1,15 @@
 "use client";
+import {
+  MediaDeletionProgress,
+  type MediaDeletionCounts,
+} from "@/components/ui/media-deletion-progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import { AnimatedBlob } from "@/components/brand/animated-blob";
 
@@ -148,6 +159,8 @@ export function OrganizationSettings({
   const activeDeletion = startedDeletion
     ? {
         ...startedDeletion,
+        mediaProgress:
+          deletionStatus?.mediaProgress ?? deletionBySlug?.mediaProgress,
         lastError: deletionStatus?.lastError,
         phase: deletionStatus?.phase ?? deletionBySlug?.phase ?? "queued",
         status:
@@ -160,6 +173,7 @@ export function OrganizationSettings({
   if (activeDeletion) {
     return (
       <WorkspaceDeletionProgress
+        mediaProgress={activeDeletion.mediaProgress}
         brandName={activeDeletion.brandName}
         lastError={activeDeletion.lastError}
         onRetry={async () => {
@@ -514,12 +528,13 @@ export function OrganizationSettingsView({
 }
 
 export function WorkspaceDeletionProgress({
+  mediaProgress,
   brandName,
   lastError,
   onRetry,
-  phase,
   status,
 }: {
+  mediaProgress?: MediaDeletionCounts;
   brandName: string;
   lastError?: string;
   onRetry: () => Promise<void>;
@@ -528,14 +543,7 @@ export function WorkspaceDeletionProgress({
 }) {
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
-  const phaseLabel =
-    phase === "providerCleanup" || phase === "media"
-      ? "Deleting hosted videos"
-      : phase.startsWith("stripe")
-        ? "Removing billing records"
-        : phase === "complete"
-          ? "Finishing deletion"
-          : "Removing private Workspace data";
+  const [progressOpen, setProgressOpen] = useState(true);
 
   async function retry() {
     setRetrying(true);
@@ -555,30 +563,38 @@ export function WorkspaceDeletionProgress({
         <AnimatedBlob size={64} variant="look" />
       ) : null}
       <div>
-        <h1 className="type-heading">Deleting {brandName}</h1>
+        <h1 className="type-heading">Project deletion</h1>
         <p className="type-body text-ink-2 mt-2">
           Public access is disabled and will not be restored. You may leave this
           page; deletion continues in the background.
         </p>
       </div>
-      <div className="bg-card space-y-3 rounded-lg border p-5">
-        <p className="font-medium" role="status">
-          {status === "failed" ? "Cleanup needs another attempt" : phaseLabel}
-        </p>
-        <p className="text-muted-foreground text-sm">
-          {status === "failed"
-            ? "A provider cleanup step failed. The Workspace remains private and the same deletion can be resumed safely."
-            : "The durable cleanup is progressing in small, retryable steps."}
-        </p>
-        {lastError || retryError ? (
-          <ErrorToast message={(retryError ?? lastError)!} />
-        ) : null}
-        {status === "failed" ? (
-          <Button loading={retrying} onClick={() => void retry()} type="button">
-            Retry cleanup now
-          </Button>
-        ) : null}
-      </div>
+      <Button variant="outline" onClick={() => setProgressOpen(true)}>
+        View deletion progress
+      </Button>
+      <Dialog open={progressOpen} onOpenChange={setProgressOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deleting {brandName}</DialogTitle>
+            <DialogDescription>
+              Images and videos are cleaned up before the project is deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <MediaDeletionProgress progress={mediaProgress} status={status} />
+          {lastError || retryError ? (
+            <ErrorToast message={(retryError ?? lastError)!} />
+          ) : null}
+          {status === "failed" ? (
+            <Button
+              loading={retrying}
+              onClick={() => void retry()}
+              type="button"
+            >
+              Retry cleanup now
+            </Button>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

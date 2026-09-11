@@ -21,8 +21,7 @@ export function useBulkInboxActions({
   const setStatus = useMutation(api.testimonialModeration.setStatus);
   const markSpam = useMutation(api.testimonialModeration.markSpam);
   const undoSpam = useMutation(api.testimonialModeration.undoSpam);
-  const removeText = useMutation(api.testimonialModeration.remove);
-  const removeVideo = useAction(api.videoMedia.remove);
+  const remove = useAction(api.videoMedia.remove);
   return {
     loadPage: async (cursor: string | null) => {
       if (!organizationId) throw new Error("Project unavailable.");
@@ -43,9 +42,7 @@ export function useBulkInboxActions({
       const target = { organizationId, testimonialId: item.testimonialId };
       switch (action) {
         case "delete":
-          await (item.submissionType === "video"
-            ? removeVideo(target)
-            : removeText(target));
+          await remove(target);
           break;
         case "spam":
           await markSpam(target);

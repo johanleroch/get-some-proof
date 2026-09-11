@@ -105,7 +105,10 @@ describe("Account closure", () => {
     }
     await expect(
       owner.client.query(api.accountDeletion.getMine, {}),
-    ).resolves.toEqual({ status: "deleted" });
+    ).resolves.toMatchObject({
+      status: "deleted",
+      mediaProgress: { inventoryComplete: true },
+    });
     expect(vi.mocked(cancelStripeSubscription).mock.calls[0]).toEqual(
       vi.mocked(cancelStripeSubscription).mock.calls[1],
     );
