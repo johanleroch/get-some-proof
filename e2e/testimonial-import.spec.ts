@@ -1,5 +1,23 @@
 import { expect, test } from "@playwright/test";
 
+test("offers assistant import from the testimonial import page", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/testimonial-import-url");
+  await expect(
+    page.getByRole("heading", {
+      name: "Import with an assistant",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "Import with an assistant",
+      exact: true,
+    }),
+  ).toHaveAttribute("href", "/org/fernhill-studio/mcp");
+});
+
 test("public preview keeps square checkboxes inside touch targets and explains the next step", async ({
   page,
 }) => {

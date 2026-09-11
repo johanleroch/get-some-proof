@@ -1,4 +1,5 @@
 import { IconArrowLeft } from "@tabler/icons-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { BlobLoader } from "@/components/brand/blob-loader";
@@ -25,10 +26,10 @@ export function BlobSet() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">
+            <Link href="/kit">
               <IconArrowLeft aria-hidden="true" />
               Kit
-            </a>
+            </Link>
           </Button>
         </div>
       </header>

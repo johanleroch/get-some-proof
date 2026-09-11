@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
+import Link from "next/link";
 
 import { ProOffer, ProOfferHeader } from "@/components/billing/pro-offer";
 import { ArrowNote, CircleAround, Sparkle } from "@/components/doodles";
@@ -582,10 +583,10 @@ export function BillingOfferVariants() {
           />
           <ThemeToggle />
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">
+            <Link href="/kit">
               <IconArrowLeft aria-hidden="true" />
               Kit
-            </a>
+            </Link>
           </Button>
         </div>
       </header>

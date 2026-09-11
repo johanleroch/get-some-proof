@@ -28,10 +28,10 @@ export function TemplatesKit() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">
+            <Link href="/kit">
               <IconArrowLeft aria-hidden="true" />
               Kit
-            </a>
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link href="/templates">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { IconMoon, IconSun } from "@tabler/icons-react";
+import Link from "next/link";
 
 import { Sparkle } from "@/components/doodles";
 import { TemplateStage } from "@/components/templates/template-stage";
@@ -72,10 +73,10 @@ export function TestimonialCardDesigns() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">Kit</a>
+            <Link href="/kit">Kit</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit/templates">Templates</a>
+            <Link href="/kit/templates">Templates</Link>
           </Button>
           <ThemeToggle />
         </div>

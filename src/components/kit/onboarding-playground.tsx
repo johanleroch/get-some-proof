@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   IconCheck,
   IconChevronLeft,
@@ -310,16 +311,16 @@ export function OnboardingPlayground({
             Reload
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit">
+            <Link href="/kit">
               <IconPalette aria-hidden="true" />
               Kit
-            </a>
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/screens">
+            <Link href="/screens">
               <IconLayoutGrid aria-hidden="true" />
               Screens
-            </a>
+            </Link>
           </Button>
           <ThemeToggle />
         </div>

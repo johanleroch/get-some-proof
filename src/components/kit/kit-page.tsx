@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   IconCheck,
   IconCopy,
@@ -316,22 +317,22 @@ export function KitPage() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit/onboarding">
+            <Link href="/kit/onboarding">
               <IconRoute aria-hidden="true" />
               Onboarding
-            </a>
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/kit/templates">
+            <Link href="/kit/templates">
               <IconTemplate aria-hidden="true" />
               Templates
-            </a>
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/screens">
+            <Link href="/screens">
               <IconLayoutGrid aria-hidden="true" />
               Screens
-            </a>
+            </Link>
           </Button>
           <Button onClick={resetAll} size="sm" variant="outline">
             <IconRefresh aria-hidden="true" />

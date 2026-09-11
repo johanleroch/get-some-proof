@@ -77,8 +77,12 @@ _Avoid_: Archived, Trash
 ## Proof lifecycle
 
 **Testimonial**:
-A collected text or video Submission held by the Brand as private proof or selected for public display.
+A text or video customer statement collected through a Submission or migrated through a Testimonial Import, held by the Brand as private proof or selected for public display.
 _Avoid_: Review, Quote, Proof when referring to one record
+
+**Testimonial Import**:
+A migration of existing customer statements from a supplied source page into a Project. Imported Testimonials enter Pending; importing does not publish them.
+_Avoid_: Submission, Collection when referring to migrated proof
 
 **Testimonial Image**:
 An optional image supplied alongside a text Testimonial and covered by its Publication Consent. It follows the Testimonial through revision, publication, withdrawal and deletion.
@@ -93,7 +97,7 @@ The still shown for a video Testimonial before playback: a moment of the video c
 _Avoid_: Poster (in copy), Cover, Preview
 
 **Pending**:
-The moderation state of a newly collected Testimonial that has never been public.
+The moderation state of a newly collected or imported Testimonial that has never been published in the Project.
 _Avoid_: Unapproved, Draft
 
 **Published**:
