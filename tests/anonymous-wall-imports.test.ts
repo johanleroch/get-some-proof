@@ -1,7 +1,11 @@
 import { withTestimonialIds } from "./testimonial-source-fixture";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api, internal, components } from "@convex/_generated/api";
-import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+import {
+  authenticatedUser,
+  createConvexTest,
+  testPngBytes,
+} from "./convex-test-helpers";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -39,9 +43,9 @@ it("keeps an uploaded visitor photo through edits, claim and confirmation", asyn
     api.testimonialImportSource.previewAnonymous,
     { url: "https://testimonial.to/atelier-june/all" },
   );
-  await t.action(api.importAvatarUpload.upload, {
+  await t.action(api.importAvatarUpload.uploadSmallBytes, {
     target: { token, position: 0 },
-    bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
+    bytes: (await testPngBytes()).buffer,
   });
   await t.mutation(api.anonymousWallImports.correctIdentity, {
     token,
@@ -78,9 +82,9 @@ it("keeps an uploaded visitor photo through edits, claim and confirmation", asyn
       ?.avatarStorageId,
   ).toBe(item.identityCorrection!.avatarStorageId);
   await expect(
-    t.action(api.importAvatarUpload.upload, {
+    t.action(api.importAvatarUpload.uploadSmallBytes, {
       target: { token, position: 0 },
-      bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
+      bytes: (await testPngBytes()).buffer,
     }),
   ).rejects.toThrow();
 });

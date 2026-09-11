@@ -874,11 +874,11 @@ describe("CollectionFormShellView", () => {
 
     const photo = screen.getByLabelText("Photo (optional)");
     const tooLarge = new File(["photo"], "kitchen.jpg", { type: "image/jpeg" });
-    Object.defineProperty(tooLarge, "size", { value: 6 * 1024 * 1024 });
+    Object.defineProperty(tooLarge, "size", { value: 21 * 1024 * 1024 });
     fireEvent.change(photo, { target: { files: [tooLarge] } });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Choose a PNG, JPG, or WebP image smaller than 5 MB.",
+      "Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.",
     );
     expect(screen.queryByText("kitchen.jpg")).toBeNull();
     expect(

@@ -7,9 +7,11 @@ import { ImageCropDialog } from "@/components/profile-image/image-crop-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ErrorToast } from "@/components/ui/error-toast";
+import {
+  acceptedImageInputTypes,
+  maximumImageInputBytes,
+} from "@/lib/image-assets";
 import { cn } from "@/lib/utils";
-
-const maximumImageBytes = 5 * 1024 * 1024;
 
 export function ProfileImageControl({
   alt,
@@ -19,6 +21,7 @@ export function ProfileImageControl({
   label,
   onRemove,
   onUpload,
+  preserveRatio = false,
   readOnly = false,
   size = "md",
 }: {
@@ -29,6 +32,7 @@ export function ProfileImageControl({
   label: string;
   onRemove: () => Promise<void>;
   onUpload: (blob: Blob) => Promise<void>;
+  preserveRatio?: boolean;
   readOnly?: boolean;
   /** `sm` where the image is optional and must not outweigh the fields. */
   size?: "md" | "sm";
@@ -48,8 +52,16 @@ export function ProfileImageControl({
   function chooseFile(file: File | undefined) {
     setError(null);
     if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > maximumImageBytes) {
-      setError("Choose a PNG, SVG, JPG, or WebP image smaller than 5 MB.");
+    if (
+      !(acceptedImageInputTypes as readonly string[]).includes(file.type) ||
+      file.size > maximumImageInputBytes ||
+      file.size === 0
+    ) {
+      setError("Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.");
+      return;
+    }
+    if (preserveRatio) {
+      void upload(file);
       return;
     }
     setSource(URL.createObjectURL(file));
@@ -116,7 +128,7 @@ export function ProfileImageControl({
         <div>
           <p className="text-sm font-medium">{label}</p>
           <p className="text-muted-foreground mt-1 text-xs">
-            PNG, SVG, JPG, or WebP. Maximum 5 MB.
+            JPEG, PNG, WebP, or AVIF. Maximum 20 MB.
           </p>
         </div>
         {!readOnly ? (
@@ -145,7 +157,7 @@ export function ProfileImageControl({
         ) : null}
         <input
           aria-label={`Upload ${label.toLowerCase()}`}
-          accept="image/png,image/svg+xml,image/jpeg,image/webp"
+          accept={acceptedImageInputTypes.join(",")}
           className="sr-only"
           onChange={(event) => {
             chooseFile(event.target.files?.[0]);

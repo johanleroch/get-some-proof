@@ -29,6 +29,7 @@ import {
 } from "./security/principal";
 import { cancelVideoDirectUpload, deleteVideoAsset } from "./videoProvider";
 import { rememberUnresolvedImportCopy } from "./videoImportCleanup";
+import { deleteImageAsset } from "./imageAssetRegistry";
 
 const purgeBatchSize = 32;
 const purgePhases = [
@@ -49,6 +50,9 @@ const purgePhases = [
   "testimonialImages",
   "collectionAdmissions",
   "testimonials",
+  "directImageVerifications",
+  "imageAssetMigrationJobs",
+  "imageAssets",
   "videoReservations",
   "publicProjections",
   "widgets",
@@ -591,10 +595,13 @@ async function deletePhaseBatch(
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
-      for (const record of records) {
-        if (!deletion.mediaProgress?.inventoryComplete && record.storageId)
-          await ctx.storage.delete(record.storageId as Id<"_storage">);
-      }
+      await Promise.all(
+        records.map((record) =>
+          !deletion.mediaProgress?.inventoryComplete && record.storageId
+            ? deleteImageAsset(ctx, record.storageId as Id<"_storage">)
+            : Promise.resolve(),
+        ),
+      );
       break;
     case "testimonialImages":
       await clearTestimonialImageLimit(ctx, organizationId);
@@ -607,7 +614,7 @@ async function deletePhaseBatch(
       await Promise.all(
         records.map((record) =>
           !deletion.mediaProgress?.inventoryComplete && record.storageId
-            ? ctx.storage.delete(record.storageId as Id<"_storage">)
+            ? deleteImageAsset(ctx, record.storageId as Id<"_storage">)
             : Promise.resolve(),
         ),
       );
@@ -627,18 +634,63 @@ async function deletePhaseBatch(
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
-      for (const record of records) {
-        if (
-          !deletion.mediaProgress?.inventoryComplete &&
-          record.avatarStorageId
+      await Promise.all(
+        records.flatMap((record) => [
+          !deletion.mediaProgress?.inventoryComplete && record.avatarStorageId
+            ? deleteImageAsset(ctx, record.avatarStorageId as Id<"_storage">)
+            : Promise.resolve(),
+          !deletion.mediaProgress?.inventoryComplete && record.posterStorageId
+            ? deleteImageAsset(ctx, record.posterStorageId as Id<"_storage">)
+            : Promise.resolve(),
+        ]),
+      );
+      break;
+    case "imageAssets":
+      records = await ctx.db
+        .query("imageAssets")
+        .withIndex("by_organization_and_kind", (q) =>
+          q.eq("organizationId", organizationId),
         )
-          await ctx.storage.delete(record.avatarStorageId as Id<"_storage">);
-        if (
-          !deletion.mediaProgress?.inventoryComplete &&
-          record.posterStorageId
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.map((record) =>
+          record.storageId
+            ? deleteImageAsset(ctx, record.storageId as Id<"_storage">)
+            : Promise.resolve(),
+        ),
+      );
+      break;
+    case "directImageVerifications":
+      records = await ctx.db
+        .query("directImageVerifications")
+        .withIndex("by_organization_id", (q) =>
+          q.eq("organizationId", organizationId),
         )
-          await ctx.storage.delete(record.posterStorageId as Id<"_storage">);
-      }
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.map((record) =>
+          deleteImageAsset(ctx, record.storageId as Id<"_storage">),
+        ),
+      );
+      break;
+    case "imageAssetMigrationJobs":
+      records = await ctx.db
+        .query("imageAssetMigrationJobs")
+        .withIndex("by_organization_id", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.flatMap((record) => [
+          deleteImageAsset(ctx, record.storageId as Id<"_storage">),
+          record.replacementStorageId
+            ? deleteImageAsset(
+                ctx,
+                record.replacementStorageId as Id<"_storage">,
+              )
+            : Promise.resolve(),
+        ]),
+      );
       break;
     case "videoReservations":
       records = await ctx.db
@@ -779,7 +831,7 @@ async function deletePhaseBatch(
         !deletion.mediaProgress?.inventoryComplete &&
         organization?.logoStorageId
       ) {
-        await ctx.storage.delete(organization.logoStorageId);
+        await deleteImageAsset(ctx, organization.logoStorageId);
       }
       if (organization) await ctx.db.delete(organization._id);
       await ctx.db.patch(deletion._id, {

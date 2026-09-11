@@ -3,9 +3,12 @@ import authzTest from "@djpanda/convex-authz/test";
 import betterAuthSchema from "../convex/betterAuth/schema";
 import { convexTest } from "convex-test";
 import workflowTest from "@convex-dev/workflow/test";
+import migrationsTest from "@convex-dev/migrations/test";
 
 import { components, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import type { ImageAssetMetadataValue } from "../convex/domain/imageAsset";
+import type { DirectImageTarget } from "../convex/domain/directImageUpload";
 import {
   authzForOrganization,
   type OrganizationRole,
@@ -23,8 +26,77 @@ export function createConvexTest() {
   authzTest.register(t);
   rateLimiterTest.register(t);
   workflowTest.register(t);
+  migrationsTest.register(t);
   t.registerComponent("stripe", stripeTestSchema, stripeTestModules);
   return t;
+}
+
+export function testImageMetadata(
+  kind: ImageAssetMetadataValue["kind"],
+  size: number,
+  overrides: Partial<ImageAssetMetadataValue> = {},
+): ImageAssetMetadataValue {
+  return {
+    contentType: "image/webp",
+    height: 128,
+    kind,
+    originalContentType: "image/png",
+    originalSize: Math.max(size, 1),
+    size,
+    source: "direct",
+    transformVersion: "webp-v1",
+    width: 128,
+    ...overrides,
+  };
+}
+
+export async function testDirectImageVerification(
+  t: ReturnType<typeof createConvexTest>,
+  target: DirectImageTarget,
+  storageId: Id<"_storage">,
+  metadata: ImageAssetMetadataValue,
+  ownerUserId?: string,
+) {
+  return await t.run(async (ctx) => {
+    const linked =
+      target.kind === "submitterPhoto"
+        ? await ctx.db.get(target.reservationId)
+        : target.kind === "testimonialImage"
+          ? await ctx.db.get(target.imageId)
+          : null;
+    const organizationId =
+      target.kind === "brandLogo" || target.kind === "videoThumbnail"
+        ? target.organizationId
+        : linked?.organizationId;
+    return ctx.db.insert("directImageVerifications", {
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 30 * 60 * 1000,
+      metadata,
+      organizationId,
+      ownerUserId,
+      storageId,
+      target,
+    });
+  });
+}
+
+export async function testPngBytes(
+  width = 32,
+  height = 24,
+): Promise<Uint8Array> {
+  const { default: sharp } = await import("sharp");
+  return new Uint8Array(
+    await sharp({
+      create: {
+        width,
+        height,
+        channels: 4,
+        background: { r: 34, g: 126, b: 214, alpha: 0.8 },
+      },
+    })
+      .png()
+      .toBuffer(),
+  );
 }
 
 export async function addStripeSubscription(

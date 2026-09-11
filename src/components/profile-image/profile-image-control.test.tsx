@@ -115,7 +115,7 @@ describe("ProfileImageControl", () => {
 
     expect(
       await screen.findByText(
-        "Choose a PNG, SVG, JPG, or WebP image smaller than 5 MB.",
+        "Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();

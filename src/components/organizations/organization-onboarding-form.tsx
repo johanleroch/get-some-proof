@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { IconChevronRight } from "@tabler/icons-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -64,6 +64,7 @@ export function OrganizationOnboardingForm({
     api.organizations.generateLogoUploadUrl,
   );
   const setLogo = useMutation(api.organizations.setLogo);
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   return (
     <OrganizationOnboardingFormView
       createOrganization={createOrganization}
@@ -74,7 +75,12 @@ export function OrganizationOnboardingForm({
       }}
       noun={noun}
       setLogo={setLogo}
-      uploadImage={uploadProfileImage}
+      uploadImage={(blob, uploadUrl, organizationId) =>
+        uploadProfileImage(blob, uploadUrl, "brandLogo", processImage, {
+          kind: "brandLogo",
+          organizationId,
+        })
+      }
     />
   );
 }
@@ -108,9 +114,17 @@ export function OrganizationOnboardingFormView({
   noun?: OrganizationNoun;
   setLogo: (args: {
     organizationId: Id<"organizations">;
-    storageId: Id<"_storage">;
+    verificationId: Id<"directImageVerifications">;
   }) => Promise<unknown>;
-  uploadImage: (blob: Blob, uploadUrl: string) => Promise<Id<"_storage">>;
+  uploadImage: (
+    blob: Blob,
+    uploadUrl: string,
+    organizationId: Id<"organizations">,
+  ) => Promise<{
+    storageId: Id<"_storage">;
+    metadata: import("@convex/domain/imageAsset").ImageAssetMetadataValue;
+    verificationId: Id<"directImageVerifications">;
+  }>;
 }) {
   const [name, setName] = useState("");
   const [publicSlug, setPublicSlug] = useState("");
@@ -202,8 +216,11 @@ export function OrganizationOnboardingFormView({
         const uploadUrl = await generateUploadUrl({
           organizationId: organization.id,
         });
-        const storageId = await uploadImage(logoBlob, uploadUrl);
-        await setLogo({ organizationId: organization.id, storageId });
+        const image = await uploadImage(logoBlob, uploadUrl, organization.id);
+        await setLogo({
+          organizationId: organization.id,
+          verificationId: image.verificationId,
+        });
       }
       navigate(`/org/${organization.slug}/dashboard`);
     } catch (caught) {
@@ -244,6 +261,7 @@ export function OrganizationOnboardingFormView({
           label="Brand logo (optional)"
           onRemove={removeStagedLogo}
           onUpload={stageLogo}
+          preserveRatio
           size="sm"
         />
         <div className="space-y-4">

@@ -119,6 +119,32 @@ export async function requireOrganizationPermission(
   );
 }
 
+/** Allows authorized cleanup to finish after deletion has closed normal writes. */
+export async function requireOrganizationCleanupPermission(
+  ctx: DatabaseCtx,
+  organizationId: Id<"organizations">,
+  permission: OrganizationPermission,
+) {
+  const principal = await requireVerifiedPrincipal(ctx);
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) organizationUnavailable();
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_organization_user", (index) =>
+      index
+        .eq("organizationId", organizationId)
+        .eq("userId", principal.actorId),
+    )
+    .unique();
+  if (!membership || membership.status !== "active") organizationAccessDenied();
+  const allowed = await authzForOrganization(String(organizationId)).can(
+    ctx,
+    principal.actorId,
+    permission,
+  );
+  if (!allowed) organizationAccessDenied();
+}
+
 /** Internal callers supply an identity verified for their own authentication boundary. */
 export async function requireOrganizationPermissionForPrincipal(
   ctx: DatabaseCtx,

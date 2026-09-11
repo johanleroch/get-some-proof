@@ -4,6 +4,7 @@ import {
   authenticatedUser,
   createConvexTest,
   addStripeSubscription,
+  testImageMetadata,
 } from "./convex-test-helpers";
 beforeEach(() => {
   vi.useFakeTimers();
@@ -198,15 +199,17 @@ it("recovers a failed portrait once, preserves its copied asset and keeps recent
   await owner.client.mutation(api.testimonialImportAvatar.retry, { itemId });
   const item = await t.run((ctx) => ctx.db.get(itemId));
   expect(item?.avatarStatus).toBe("processing");
-  const storageId = await t.run((ctx) =>
-    ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" })),
-  );
+  const stored = new Blob(["webp-fixture"], { type: "image/webp" });
+  const storageId = await t.run((ctx) => ctx.storage.store(stored));
   await t.mutation(internal.testimonialImportAvatar.finish, {
     itemId,
     testimonialId: item!.testimonialId!,
     attempt: item!.avatarAttempt!,
     sourceUrl: item!.avatarUrl!,
     storageId,
+    metadata: testImageMetadata("submitterPhoto", stored.size, {
+      source: "import",
+    }),
   });
   await expect(
     owner.client.mutation(api.testimonialImportAvatar.retry, { itemId }),

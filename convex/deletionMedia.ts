@@ -10,6 +10,7 @@ import {
   type MutationCtx,
 } from "./_generated/server";
 import { emptyMediaProgress } from "./domain/mediaDeletionProgress";
+import { deleteImageAsset } from "./imageAssetRegistry";
 
 export const deletionIdValidator = v.union(
   v.id("workspaceDeletions"),
@@ -264,7 +265,7 @@ export const complete = internalMutation({
         return null;
       }
       if (await ctx.db.system.get(storageId))
-        await ctx.storage.delete(storageId);
+        await deleteImageAsset(ctx, storageId);
     }
     await ctx.db.patch(targetId, { deletedAt: Date.now() });
     await increment(ctx, target.deletionId, target.kind, true);

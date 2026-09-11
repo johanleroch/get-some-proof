@@ -45,6 +45,7 @@ import {
   buildVideoSubmissionConfirmationEmail,
 } from "./email/templates";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { attachImageAssetToTestimonial } from "./imageAssetRegistry";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { createVideoDirectUpload, type DirectUpload } from "./videoProvider";
 import { createVideoRetryLink } from "./videoRetryLinks";
@@ -989,6 +990,7 @@ export const createVideoRecords = internalMutation({
       }
       await validateExclusiveStoredImage(ctx, args.avatarStorageId, {
         kind: "testimonial",
+        imageKind: "submitterPhoto",
       });
     }
     const consent = buildPublicationConsent({
@@ -1031,6 +1033,12 @@ export const createVideoRecords = internalMutation({
       text: "",
       updatedAt: now,
     });
+    if (args.avatarStorageId)
+      await attachImageAssetToTestimonial(
+        ctx,
+        args.avatarStorageId,
+        testimonialId,
+      );
     await ctx.db.insert("publicationConsents", {
       acceptedAt: now,
       brandName: brand.name,

@@ -399,11 +399,11 @@ export function ManagedSubmissionView({
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="managed-avatar">Avatar</Label>
+            <Label htmlFor="managed-avatar">Submitter Photo</Label>
             <div className="flex items-center gap-4">
               {submission.avatarUrl && !removeAvatar ? (
                 <Image
-                  alt="Current avatar"
+                  alt="Current Submitter Photo"
                   className="size-14 rounded-full object-cover"
                   height={56}
                   src={submission.avatarUrl}
@@ -416,7 +416,7 @@ export function ManagedSubmissionView({
                 </div>
               )}
               <Input
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/avif"
                 id="managed-avatar"
                 onChange={(event) => {
                   setAvatarFile(event.target.files?.[0]);
@@ -603,6 +603,7 @@ export function ManagedSubmission({ token }: { token: string }) {
   const generateImageUpload = useMutation(
     api.testimonialImages.generateUploadUrl,
   );
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
   const [imageClientId] = useState(() => crypto.randomUUID());
   const withdrawConsent = useMutation(api.submissionManagement.withdrawConsent);
@@ -682,8 +683,18 @@ export function ManagedSubmission({ token }: { token: string }) {
           token,
         };
         const { imageId, uploadUrl } = await generateImageUpload(identity);
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        return registerImageUpload({ ...identity, imageId, storageId });
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "testimonialImage",
+          processImage,
+          { kind: "testimonialImage", imageId },
+        );
+        return registerImageUpload({
+          ...identity,
+          imageId,
+          verificationId: image.verificationId,
+        });
       }}
       uploadAvatar={async (file) => {
         const clientSubmissionId = `revision-${token.slice(0, 32)}`;
@@ -692,9 +703,18 @@ export function ManagedSubmission({ token }: { token: string }) {
           token,
           publicSlug: submission.publicSlug,
         });
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        await registerAvatarUpload({ reservationId, storageId });
-        return { reservationId, storageId };
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "submitterPhoto",
+          processImage,
+          { kind: "submitterPhoto", reservationId },
+        );
+        await registerAvatarUpload({
+          reservationId,
+          verificationId: image.verificationId,
+        });
+        return { reservationId, storageId: image.storageId };
       }}
     />
   );
