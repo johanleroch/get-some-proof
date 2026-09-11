@@ -6,17 +6,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { InboxCounts, InboxRouteCategory } from "@/lib/inbox-route-state";
-
-const categories: readonly {
-  key: InboxRouteCategory;
-  label: string;
-}[] = [
-  { key: "pending", label: "Pending" },
-  { key: "published", label: "Published" },
-  { key: "archived", label: "Archived" },
-  { key: "spam", label: "Spam" },
-];
+import {
+  inboxCategoryDefinitions,
+  type InboxCounts,
+  type InboxRouteCategory,
+} from "@/lib/inbox-route-state";
 
 const inboxCountCeiling = 500;
 
@@ -43,7 +37,7 @@ export function InboxCategoryTabs({
     >
       <div className="relative">
         <TabsList aria-label="Testimonial categories">
-          {categories.map((category) => {
+          {inboxCategoryDefinitions.map((category) => {
             const count = counts?.[category.key] ?? 0;
             return (
               <TabsTrigger key={category.key} value={category.key}>

@@ -1,13 +1,14 @@
-export type InboxRouteCategory = "pending" | "published" | "archived" | "spam";
+export const inboxCategoryDefinitions = [
+  { key: "pending", label: "Pending" },
+  { key: "published", label: "Published" },
+  { key: "archived", label: "Archived" },
+  { key: "spam", label: "Spam" },
+] as const;
+
+export type InboxRouteCategory =
+  (typeof inboxCategoryDefinitions)[number]["key"];
 
 export type InboxCounts = Record<InboxRouteCategory, number>;
-
-const categories: readonly InboxRouteCategory[] = [
-  "pending",
-  "published",
-  "archived",
-  "spam",
-];
 
 export function inboxCategoryFromUrl(searchParams: {
   getAll: (name: string) => string[];
@@ -15,7 +16,9 @@ export function inboxCategoryFromUrl(searchParams: {
   const requestedCategory = searchParams.getAll("tab");
   return (
     (requestedCategory.length === 1
-      ? categories.find((category) => category === requestedCategory[0])
+      ? inboxCategoryDefinitions.find(
+          (category) => category.key === requestedCategory[0],
+        )?.key
       : undefined) ?? "pending"
   );
 }

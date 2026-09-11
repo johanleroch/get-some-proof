@@ -66,6 +66,7 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { cn } from "@/lib/utils";
 import {
+  inboxCategoryDefinitions,
   inboxCategoryFromUrl,
   setModerationStatusFilter,
   type InboxRouteCategory,
@@ -129,42 +130,34 @@ type VideoInboxTestimonial = Extract<
  * itself, in its Curated Order. The Video Asset's own states (Processing,
  * Ready, Failed) are a separate axis and never a category here.
  */
-export const inboxCategories = [
-  {
-    empty: {
-      description: "Nothing is waiting for your decision right now.",
-      title: "Nothing Pending",
-    },
-    key: "pending",
-    label: "Pending",
+const emptyCategoryCopy: Record<
+  InboxCategory,
+  { description: string; title: string }
+> = {
+  pending: {
+    description: "Nothing is waiting for your decision right now.",
+    title: "Nothing Pending",
   },
-  {
-    empty: {
-      description:
-        "Publish a Pending Testimonial and it appears here, in the order visitors see it.",
-      title: "Nothing on your Public Wall yet",
-    },
-    key: "published",
-    label: "Published",
+  published: {
+    description:
+      "Publish a Pending Testimonial and it appears here, in the order visitors see it.",
+    title: "Nothing on your Public Wall yet",
   },
-  {
-    empty: {
-      description: "Testimonials you keep but hide from the public land here.",
-      title: "Nothing Archived",
-    },
-    key: "archived",
-    label: "Archived",
+  archived: {
+    description: "Testimonials you keep but hide from the public land here.",
+    title: "Nothing Archived",
   },
-  {
-    empty: {
-      description:
-        "Testimonials you report as Spam wait here for seven days before they are deleted.",
-      title: "No Spam quarantined",
-    },
-    key: "spam",
-    label: "Spam",
+  spam: {
+    description:
+      "Testimonials you report as Spam wait here for seven days before they are deleted.",
+    title: "No Spam quarantined",
   },
-] as const;
+};
+
+export const inboxCategories = inboxCategoryDefinitions.map((category) => ({
+  ...category,
+  empty: emptyCategoryCopy[category.key],
+}));
 
 export type InboxCategory = InboxRouteCategory;
 function categoryOf(key: InboxCategory) {
