@@ -292,7 +292,8 @@ export const screenSections: ScreenSection[] = [
       {
         slug: "studio-editor",
         title: "Studio editor",
-        description: "Select, reorder and style proof beside its live preview.",
+        description:
+          "Style proof beside its live preview; manage selection in a dialog.",
         fixturePath: "/visual-evidence/studio-editor",
       },
       {

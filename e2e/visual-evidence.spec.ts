@@ -262,6 +262,19 @@ for (const screen of config.screens) {
         page.locator("[data-widget-preview] .card").first(),
       ).toBeVisible();
     }
+    if (screen.slug.startsWith("studio-selection")) {
+      await page
+        .getByRole("button", { name: "Manage selection", exact: true })
+        .click();
+      if (screen.slug === "studio-selection-order") {
+        await page
+          .getByRole("tab", { name: "Selected (3)", exact: true })
+          .click();
+      }
+      await expect(
+        page.getByRole("dialog", { name: "Manage testimonials" }),
+      ).toBeVisible();
+    }
     const outputRoot = path.resolve(
       process.env.VISUAL_EVIDENCE_DIR ?? "visual-evidence",
     );
@@ -272,6 +285,7 @@ for (const screen of config.screens) {
       path: path.join(projectDirectory, `${screen.slug}.png`),
       fullPage:
         screen.slug !== "rich-testimonial-highlight" &&
+        !screen.slug.startsWith("studio-selection") &&
         !screen.slug.startsWith("testimonial-import-identity"),
       animations: "disabled",
       caret: "initial",

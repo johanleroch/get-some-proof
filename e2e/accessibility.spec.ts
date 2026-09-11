@@ -257,3 +257,19 @@ test("iframe-free embed has accessible alternatives, video controls, and reduced
   expect(transitionDuration).toBe("0s");
   await expectNoWcagViolations(page);
 });
+
+test("Studio selection dialog is accessible for choosing and ordering proof", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/visual-evidence/studio-editor");
+  await page
+    .getByRole("button", { name: "Manage selection", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Manage testimonials" }),
+  ).toBeVisible();
+  await expectNoWcagViolations(page);
+  await page.getByRole("tab", { name: "Selected (3)", exact: true }).click();
+  await expectNoWcagViolations(page);
+});

@@ -657,6 +657,18 @@
       "path": "/visual-evidence/studio-preview",
       "heading": "Homepage proof",
       "theme": "light"
+    },
+    {
+      "slug": "studio-selection",
+      "title": "Studio selection",
+      "path": "/visual-evidence/studio-editor",
+      "heading": "Homepage proof"
+    },
+    {
+      "slug": "studio-selection-order",
+      "title": "Studio selection order",
+      "path": "/visual-evidence/studio-editor",
+      "heading": "Homepage proof"
     }
   ]
 }

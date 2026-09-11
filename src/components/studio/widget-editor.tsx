@@ -5,21 +5,16 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import {
   IconArrowLeft,
-  IconArrowDown,
-  IconArrowUp,
   IconCopy,
   IconDeviceDesktop,
   IconDeviceMobile,
-  IconTrash,
 } from "@tabler/icons-react";
 import type { WidgetConfig } from "@convex/domain/widgets";
-import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -48,17 +43,11 @@ import {
 import { cn } from "@/lib/utils";
 import { widgetTemplates } from "./catalog";
 import { WidgetPreview } from "./widget-preview";
+import { WidgetSelectionDialog } from "./widget-selection-dialog";
+import { hasHighlight } from "./selection-rules";
 
 import type { StudioDraft, StudioViewProps, StudioWidget } from "./studio-view";
 
-function hasHighlight(card: TestimonialCardValue) {
-  return (
-    card.type === "text" &&
-    card.richText?.some((block) =>
-      block.children.some((leaf) => leaf.highlight && leaf.text.trim()),
-    )
-  );
-}
 export function WidgetEditor(
   props: StudioViewProps & { widget: StudioWidget },
 ) {
@@ -79,7 +68,7 @@ export function WidgetEditor(
   const [notice, setNotice] = useState("");
   const [share, setShare] = useState(false);
   const [leave, setLeave] = useState(false);
-  const [search, setSearch] = useState("");
+  const [selectionOpen, setSelectionOpen] = useState(false);
   const dirty =
     JSON.stringify(draft) !==
     JSON.stringify({ name: widget.name, ...widget.draft });
@@ -123,7 +112,6 @@ export function WidgetEditor(
     document.addEventListener("click", guardNavigation, true);
     return () => document.removeEventListener("click", guardNavigation, true);
   }, [busy, dirty]);
-  const selectedIds = new Set(draft.testimonialIds);
   const byId = new Map(
     props.candidates.map((item) => [item.testimonialId, item.card]),
   );
@@ -171,11 +159,6 @@ export function WidgetEditor(
     } finally {
       setBusy(false);
     }
-  }
-  function move(index: number, offset: number) {
-    const ids = [...draft.testimonialIds];
-    [ids[index], ids[index + offset]] = [ids[index + offset], ids[index]];
-    setDraft({ ...draft, testimonialIds: ids });
   }
   async function copy(value: string) {
     try {
@@ -360,141 +343,25 @@ export function WidgetEditor(
             ))}
           </section>
           <section className="border-line space-y-3 border-t pt-5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="type-subheading">Testimonials</h2>
               <span className="text-ink-2 type-small">
-                {draft.testimonialIds.length} / 50
+                {draft.testimonialIds.length} selected
               </span>
             </div>
-            <p className="type-small text-ink-2">
-              Only published proof appears in widgets.
-            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setSelectionOpen(true);
+              }}
+            >
+              Manage selection
+            </Button>
             {eligibility ? (
               <p role="status" className="text-warning type-small">
                 {eligibility}
-              </p>
-            ) : null}
-            {draft.testimonialIds.length ? (
-              <ol className="space-y-2" aria-label="Selected testimonials">
-                {draft.testimonialIds.map((id, index) => (
-                  <li
-                    className="border-line bg-surface flex items-center gap-1 rounded-md border p-2"
-                    key={id}
-                  >
-                    <span className="type-small min-w-0 flex-1 truncate">
-                      {index + 1}.{" "}
-                      {byId.get(id)?.name ?? "Unavailable testimonial"}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Move ${byId.get(id)?.name ?? "testimonial"} up`}
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                    >
-                      <IconArrowUp className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Move ${byId.get(id)?.name ?? "testimonial"} down`}
-                      disabled={index === draft.testimonialIds.length - 1}
-                      onClick={() => move(index, 1)}
-                    >
-                      <IconArrowDown className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Remove ${byId.get(id)?.name ?? "testimonial"}`}
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          testimonialIds: draft.testimonialIds.filter(
-                            (item) => item !== id,
-                          ),
-                        })
-                      }
-                    >
-                      <IconTrash className="size-4" />
-                    </Button>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-            <Input
-              aria-label="Search testimonials"
-              placeholder="Search loaded testimonials"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <div className="max-h-80 space-y-1 overflow-y-auto">
-              {props.candidates
-                .filter(({ card }) =>
-                  `${card.name} ${card.type === "text" ? card.text : "video"}`
-                    .toLowerCase()
-                    .includes(search.toLowerCase()),
-                )
-                .map(({ testimonialId, card }) => {
-                  const checked = selectedIds.has(testimonialId);
-                  const disabled =
-                    !checked &&
-                    (draft.testimonialIds.length >= 50 ||
-                      (draft.config.layout === "highlights" &&
-                        !hasHighlight(card)));
-                  return (
-                    <label
-                      key={testimonialId}
-                      className={cn(
-                        "hover:bg-surface-2 flex cursor-pointer items-start gap-3 rounded-md p-2",
-                        disabled && "opacity-50",
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        disabled={disabled}
-                        aria-label={`Select ${card.name}`}
-                        onCheckedChange={(checked) =>
-                          setDraft({
-                            ...draft,
-                            testimonialIds: checked
-                              ? draft.config.layout === "individual"
-                                ? [testimonialId]
-                                : [...draft.testimonialIds, testimonialId]
-                              : draft.testimonialIds.filter(
-                                  (id) => id !== testimonialId,
-                                ),
-                          })
-                        }
-                      />
-                      <span className="min-w-0">
-                        <span className="type-ui block">{card.name}</span>
-                        <span className="type-small text-ink-2 line-clamp-2">
-                          {card.type === "text"
-                            ? card.text
-                            : "Video testimonial"}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
-            </div>
-            {props.hasMore ? (
-              <Button
-                variant="outline"
-                loading={props.loadingMore}
-                onClick={props.onLoadMore}
-              >
-                Load more testimonials
-              </Button>
-            ) : null}
-            {!props.candidates.length ? (
-              <p className="type-small text-ink-2">
-                Publish a testimonial in your{" "}
-                <a className="underline" href={props.inboxHref}>
-                  Inbox
-                </a>{" "}
-                to add it here.
               </p>
             ) : null}
           </section>
@@ -552,6 +419,23 @@ export function WidgetEditor(
           </p>
         </section>
       </div>
+      <WidgetSelectionDialog
+        open={selectionOpen}
+        onOpenChange={setSelectionOpen}
+        testimonialIds={draft.testimonialIds}
+        layout={draft.config.layout}
+        candidates={props.candidates}
+        hasMore={props.hasMore}
+        loadingMore={props.loadingMore}
+        onLoadMore={props.onLoadMore}
+        inboxHref={props.inboxHref}
+        onChange={(testimonialIds) => {
+          if (!busy) {
+            setDraft((current) => ({ ...current, testimonialIds }));
+            setNotice("");
+          }
+        }}
+      />
       <Dialog open={share} onOpenChange={setShare}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>

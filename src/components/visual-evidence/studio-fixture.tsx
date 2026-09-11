@@ -121,6 +121,7 @@ export function StudioFixture({
   choosing?: boolean;
   preview?: boolean;
 }) {
+  const [candidateCount, setCandidateCount] = useState(3);
   const [widgets, setWidgets] = useState<StudioWidget[]>([seed]);
   const [activeId, setActiveId] = useState<string | null>(
     editor ? seed._id : null,
@@ -134,10 +135,10 @@ export function StudioFixture({
       attributionRequired={false}
       widgets={widgets}
       active={widgets.find((item) => item._id === activeId) ?? null}
-      candidates={studioCandidates}
-      hasMore={false}
+      candidates={studioCandidates.slice(0, candidateCount)}
+      hasMore={candidateCount < studioCandidates.length}
       loadingMore={false}
-      onLoadMore={() => {}}
+      onLoadMore={() => setCandidateCount(studioCandidates.length)}
       onOpen={setActiveId}
       inboxHref="/visual-evidence/testimonial-inbox"
       origin="https://getsomeproof.example"
