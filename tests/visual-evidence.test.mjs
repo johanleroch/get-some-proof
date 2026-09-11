@@ -7,7 +7,10 @@ import {
   validateManifest,
   validateTrustedConfig,
 } from "../scripts/visual-evidence/core.mjs";
-import { selectVisualEvidenceScreens } from "../scripts/visual-evidence/select.mjs";
+import {
+  resolveVisualEvidenceSlugs,
+  selectVisualEvidenceScreens,
+} from "../scripts/visual-evidence/select.mjs";
 
 const manifest = {
   schemaVersion: 1,
@@ -147,6 +150,14 @@ describe("visual evidence screen selection", () => {
         config,
       ),
     ).toEqual([]);
+  });
+
+  it("supports an explicit full visual audit", () => {
+    expect(resolveVisualEvidenceSlugs("all", config)).toEqual([
+      "overview-loading",
+      "inbox-loading",
+      "studio-loading",
+    ]);
   });
 
   it("rejects missing, duplicate, and unknown selections", () => {

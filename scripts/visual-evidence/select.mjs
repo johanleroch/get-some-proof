@@ -6,7 +6,6 @@ import { validateTrustedConfig } from "./core.mjs";
 const MARKER = /<!--\s*visual-evidence-screens:\s*([a-z0-9.,_\s-]+?)\s*-->/gi;
 
 export function selectVisualEvidenceScreens(body, config) {
-  const trustedConfig = validateTrustedConfig(config);
   const matches = [...String(body ?? "").matchAll(MARKER)];
   if (matches.length !== 1) {
     throw new Error(
@@ -14,7 +13,12 @@ export function selectVisualEvidenceScreens(body, config) {
     );
   }
 
-  const requested = matches[0][1]
+  return resolveVisualEvidenceSlugs(matches[0][1], config);
+}
+
+export function resolveVisualEvidenceSlugs(value, config) {
+  const trustedConfig = validateTrustedConfig(config);
+  const requested = String(value ?? "")
     .split(",")
     .map((slug) => slug.trim())
     .filter(Boolean);
