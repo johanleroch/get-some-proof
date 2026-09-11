@@ -2,6 +2,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { expect, test } from "@playwright/test";
+import { installRecorderCamera } from "./helpers/recorder-camera";
 
 type VisualEvidenceConfig = {
   project: string;
@@ -84,6 +85,14 @@ for (const screen of config.screens) {
         });
       });
     }
+    if (screen.slug.startsWith("recorder-")) {
+      const portrait = screen.slug === "recorder-portrait";
+      await installRecorderCamera(
+        page,
+        portrait ? 720 : 1280,
+        portrait ? 1280 : 720,
+      );
+    }
     const destination =
       fixtureMode && screen.fixturePath ? screen.fixturePath : screen.path;
     await page.goto(
@@ -105,6 +114,19 @@ for (const screen of config.screens) {
       await expect(page.locator("[data-sonner-toast]")).toContainText(
         "This security action needs a recent sign-in.",
       );
+    }
+    if (screen.slug.startsWith("recorder-")) {
+      await page
+        .getByRole("button", { name: /Record or upload a video/ })
+        .click();
+      await page.getByRole("button", { name: "Open camera" }).click();
+      await expect
+        .poll(() =>
+          page
+            .getByLabel("Camera preview")
+            .evaluate((video: HTMLVideoElement) => video.readyState),
+        )
+        .toBeGreaterThanOrEqual(2);
     }
     await page.waitForTimeout(250);
     if (screen.slug.startsWith("testimonial-import-identity")) {
@@ -259,6 +281,17 @@ for (const screen of config.screens) {
     const projectDirectory = path.join(outputRoot, testInfo.project.name);
     await mkdir(projectDirectory, { recursive: true });
 
+    if (screen.slug.startsWith("recorder-")) {
+      await page
+        .getByLabel("Camera preview")
+        .locator("../..")
+        .screenshot({
+          path: path.join(projectDirectory, `${screen.slug}.png`),
+          animations: "disabled",
+          scale: "css",
+        });
+      return;
+    }
     await page.screenshot({
       path: path.join(projectDirectory, `${screen.slug}.png`),
       fullPage:

@@ -48,10 +48,5 @@ for (const width of [320, 390, 1280]) {
     await expect(
       page.getByRole("button", { name: "Start recording" }),
     ).toBeVisible();
-    const ratio = await page.getByLabel("Camera preview").evaluate((video) => {
-      const frame = video.parentElement!.getBoundingClientRect();
-      return frame.width / frame.height;
-    });
-    expect(ratio).toBeCloseTo(width < 640 ? 9 / 16 : 16 / 9, 2);
   });
 }

@@ -620,6 +620,20 @@
       "path": "/visual-evidence/assistant-import-consent-free",
       "heading": "Connect your proof",
       "theme": "light"
+    },
+    {
+      "slug": "recorder-landscape",
+      "title": "Recorder landscape source",
+      "path": "/visual-evidence/collection-form",
+      "heading": "Share your Fernhill Studio story",
+      "theme": "light"
+    },
+    {
+      "slug": "recorder-portrait",
+      "title": "Recorder portrait source",
+      "path": "/visual-evidence/collection-form",
+      "heading": "Share your Fernhill Studio story",
+      "theme": "light"
     }
   ]
 }
