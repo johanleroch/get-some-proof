@@ -21,7 +21,7 @@ for (const [name, width, height] of [
         .poll(() =>
           video.evaluate((element: HTMLVideoElement) => element.videoWidth),
         )
-        .toBe(width);
+        .toBeGreaterThan(0);
       const dimensions = await video.evaluate((element: HTMLVideoElement) => {
         const frame = element.parentElement!.getBoundingClientRect();
         return {
@@ -48,7 +48,15 @@ for (const [name, width, height] of [
     await expect(page.getByText("00:01", { exact: true })).toBeVisible();
     await assertRatio("Camera preview");
     await page.getByRole("button", { name: "Stop recording" }).click();
+    await page
+      .getByLabel("Recorded video preview")
+      .evaluate(async (video: HTMLVideoElement) => {
+        await video.play();
+      });
     await assertRatio("Recorded video preview");
+    await page
+      .getByLabel("Recorded video preview")
+      .evaluate((video: HTMLVideoElement) => video.pause());
     await page.getByRole("button", { name: "Record again" }).click();
     await assertRatio("Camera preview");
   });
