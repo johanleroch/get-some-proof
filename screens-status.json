@@ -3,6 +3,8 @@
   "account-free-project": "ok",
   "account-inactive-project": "ok",
   "account-pro-projects": "ok",
+  "assistant-import-consent": "ok",
+  "assistant-import-consent-free": "ok",
   "assistant-import-recovery": "ok",
   "billing": "ok",
   "billing-downgrade": "ok",
@@ -14,6 +16,7 @@
   "forgot-password": "ok",
   "inbox": "ok",
   "mcp-setup": "ok",
+  "mcp-setup-connected": "ok",
   "mcp-setup-free": "ok",
   "onboarding": "ok",
   "privacy-notice": "ok",
@@ -31,13 +34,11 @@
   "testimonial-import-publication": "ok",
   "testimonial-import-video-failed": "ok",
   "testimonial-import-video-processing": "ok",
+  "testimonial-links": "ok",
   "toast-error": "todo",
   "toast-success": "todo",
   "two-factor": "ok",
   "video-upload-progress": "todo",
   "workspace-delete": "todo",
-  "workspace-delete-progress": "ok",
-  "mcp-setup-connected": "ok",
-  "assistant-import-consent": "ok",
-  "assistant-import-consent-free": "ok"
+  "workspace-delete-progress": "ok"
 }
