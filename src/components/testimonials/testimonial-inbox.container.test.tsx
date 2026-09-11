@@ -989,9 +989,7 @@ describe("TestimonialInbox (live wiring)", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
     );
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Archive", exact: true })[0]!,
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Archive" })[0]!);
     await waitFor(() =>
       expect(
         mocks.functions["testimonialModeration:setStatus"],

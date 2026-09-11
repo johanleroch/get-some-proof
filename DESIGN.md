@@ -457,7 +457,9 @@ pages still start at the top and scroll normally.
   arriving proof never joins an already selected batch. Deletion has one
   count-specific confirmation; imported publication has one permission
   attestation for the batch. Show progress and individual failures, keeping
-  failed and non-ready Testimonials selected for retry.
+  failed and non-ready Testimonials selected for retry. Refreshing selection
+  updates off-page video readiness without reselecting excluded Testimonials.
+  During selection, row actions give way to the shared toolbar.
 - Authentication: split screen from 1024px, form first. Left column holds the
   product name, the form and the footer line in one 400px block centered in
   the column, so wide screens never leave the form stuck to the edge; right panel on

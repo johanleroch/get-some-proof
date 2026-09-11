@@ -22,6 +22,7 @@ const text = (name: string): InboxTestimonial => ({
   submissionType: "text",
   card: {
     id: name,
+    avatarUrl: null,
     name,
     type: "text",
     text: "The studio made our launch much easier.",
@@ -107,9 +108,7 @@ describe("Bulk Inbox selection and operations", () => {
         name: "Select Remy Jupille's testimonial",
       }),
     );
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Archive", exact: true })[0]!,
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Archive" })[0]!);
     await screen.findByText("2 archived.");
     expect(perform.mock.calls.map(([item]) => item.testimonialId)).toEqual([
       alice.testimonialId,
@@ -126,12 +125,10 @@ describe("Bulk Inbox selection and operations", () => {
     selectDisplayed();
     expect(
       screen.getByText(
-        "2 ready to publish · 1 videos not ready will stay selected.",
+        "2 ready to publish · 1 video not ready will stay selected.",
       ),
     ).toBeVisible();
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Publish", exact: true })[0]!,
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
     await screen.findByText("1 published · 1 failed · 1 videos not ready.");
     expect(perform).toHaveBeenCalledTimes(2);
     expect(
@@ -158,9 +155,7 @@ describe("Bulk Inbox selection and operations", () => {
     const imported = { ...alice, requiresImportAttestation: true };
     const { perform } = setup({ testimonials: [imported, remy] });
     selectDisplayed();
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Publish", exact: true })[0]!,
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
     const dialog = screen.getByRole("dialog");
     const publish = within(dialog).getByRole("button", {
       name: "Publish 2 testimonials",
@@ -197,6 +192,49 @@ describe("Bulk Inbox selection and operations", () => {
     ]);
   });
 
+  it("refreshes an off-page video's readiness without reselecting exclusions", async () => {
+    const readyVideo: InboxTestimonial = {
+      ...video,
+      videoStatus: "ready",
+      card: {
+        id: video.testimonialId,
+        name: video.submitterName,
+        type: "video",
+        avatarUrl: null,
+        publishedAt: 1,
+        playbackId: "ready-playback",
+        captionsAvailable: false,
+      },
+    };
+    const loadPage = vi
+      .fn()
+      .mockResolvedValueOnce(page([alice, remy, video]))
+      .mockResolvedValueOnce(page([alice, remy, readyVideo, nina]));
+    const { perform } = setup({ hasMore: true, totalCount: 3, loadPage });
+    selectDisplayed();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Select all 3 testimonials in this tab",
+      }),
+    );
+    await screen.findByText("3 selected");
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Select Remy Jupille's testimonial",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Refresh selected testimonials" }),
+    );
+    await screen.findByText("Selection refreshed.");
+    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
+    await screen.findByText("2 published.");
+    expect(perform.mock.calls.map(([item]) => item.testimonialId)).toEqual([
+      alice.testimonialId,
+      video.testimonialId,
+    ]);
+  });
+
   it("keeps the previous selection when a later page fails", async () => {
     const loadPage = vi
       .fn()
@@ -224,7 +262,6 @@ describe("Bulk Inbox selection and operations", () => {
     selectDisplayed();
     const archive = screen.getAllByRole("button", {
       name: "Archive",
-      exact: true,
     })[0]!;
     fireEvent.click(archive);
     fireEvent.click(archive);
@@ -271,9 +308,7 @@ describe("Bulk Inbox selection and operations", () => {
     expect(
       screen.getAllByRole("button", { name: "Not Spam" })[0],
     ).toBeEnabled();
-    expect(
-      screen.queryByRole("button", { name: "Publish", exact: true }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
     unmount();
     setup({
       category: "published",

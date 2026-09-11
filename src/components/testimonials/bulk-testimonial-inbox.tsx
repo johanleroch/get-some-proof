@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
-import { IconDots, IconChevronDown } from "@tabler/icons-react";
+import { IconDots, IconChevronDown, IconX } from "@tabler/icons-react";
 import { importAttestationText } from "@convex/domain/testimonialImport";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -162,7 +162,7 @@ export function BulkTestimonialInbox({
     setOutcome("");
     setFailures([]);
   }
-  async function selectAll() {
+  async function selectAll(onlySelected = false) {
     if (locked.current || blocked) return;
     locked.current = true;
     const token = ++operation.current;
@@ -174,7 +174,16 @@ export function BulkTestimonialInbox({
         loadPage,
         () => operation.current !== token,
       );
-      if (all) setSelected(all);
+      if (all) {
+        setSelected((previous) =>
+          onlySelected
+            ? new Map(
+                [...previous].map(([id, item]) => [id, all.get(id) ?? item]),
+              )
+            : all,
+        );
+        if (onlySelected) setOutcome("Selection refreshed.");
+      }
     } catch (error) {
       if (operation.current === token)
         setOutcome(
@@ -346,13 +355,15 @@ export function BulkTestimonialInbox({
                   </DropdownMenu>
                 </div>
                 <Button
-                  className="ml-auto"
+                  aria-label="Clear selection"
+                  className="ml-auto size-9 p-0 md:h-9 md:w-auto md:px-3"
                   size="sm"
                   variant="ghost"
                   disabled={phase === "running"}
                   onClick={clear}
                 >
-                  Clear selection
+                  <IconX aria-hidden="true" className="md:hidden" />
+                  <span className="hidden md:inline">Clear selection</span>
                 </Button>
               </>
             )}
@@ -383,12 +394,26 @@ export function BulkTestimonialInbox({
                 ready.length < items.length && (
                   <p className="type-small text-ink-2 mt-2">
                     {ready.length} ready to publish ·{" "}
-                    {items.length - ready.length} videos not ready will stay
-                    selected.
+                    {items.length - ready.length}{" "}
+                    {items.length - ready.length === 1 ? "video" : "videos"} not
+                    ready will stay selected.
                   </p>
                 )}
             </>
           )}
+          {phase === "idle" &&
+            items.length > ready.length &&
+            primaryActions[view.category].includes("publish") && (
+              <Button
+                variant="link"
+                size="sm"
+                className="px-0"
+                disabled={blocked}
+                onClick={() => void selectAll(true)}
+              >
+                Refresh selected testimonials
+              </Button>
+            )}
           {outcome && (
             <p role="status" className="type-small mt-2">
               {outcome}

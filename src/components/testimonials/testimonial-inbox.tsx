@@ -376,6 +376,7 @@ function InboxRow({
   onMove,
   position,
   registerControl,
+  hideActions,
   selection,
   testimonial,
 }: {
@@ -397,6 +398,7 @@ function InboxRow({
     control: InboxRowControl,
     element: HTMLButtonElement | null,
   ) => void;
+  hideActions?: boolean;
   selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
   testimonial: InboxTestimonial;
 }) {
@@ -510,7 +512,12 @@ function InboxRow({
         </p>
       </div>
 
-      <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center">
+      <div
+        className={cn(
+          "col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center",
+          hideActions && "hidden",
+        )}
+      >
         {ordering && onMove && position ? (
           <>
             <Button
@@ -726,6 +733,7 @@ export function TestimonialInboxView({
           {testimonials.map((testimonial, index) => (
             <InboxRow
               accentColor={accentColor}
+              hideActions={selection !== undefined && selection.ids.size > 0}
               busy={pendingId === testimonial.testimonialId}
               disabled={actionsDisabled}
               drag={
