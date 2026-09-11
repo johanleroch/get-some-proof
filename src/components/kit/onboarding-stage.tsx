@@ -381,9 +381,6 @@ function FirstOverviewStep({
   return (
     <AppShellView
       account={accountView}
-      authorization={{
-        can: { manageOwnership: true, updateOrganization: true },
-      }}
       connected
       organizationId={playgroundOrganizationId}
       organizationName={brand.name}

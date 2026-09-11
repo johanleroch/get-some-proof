@@ -101,9 +101,6 @@ export function ProfileScreenFixture() {
         effectivePlan: "free",
         freeProjectId: "fixture-bumpr" as Id<"organizations">,
       }}
-      authorization={{
-        can: { manageOwnership: true, updateOrganization: true },
-      }}
       connected
       userMenu={
         <NavUserView
@@ -748,9 +745,6 @@ export function DashboardBackgroundScreenFixture({
       pathname={`/org/${project.slug}/dashboard`}
       account={account}
       inboxCount={pendingCount}
-      authorization={{
-        can: { manageOwnership: true, updateOrganization: true },
-      }}
       connected
       userMenu={
         <NavUserView
@@ -877,9 +871,6 @@ export function ProjectSettingsShellFixture() {
       organizationSlug="fernhill-studio"
       pathname="/org/fernhill-studio/settings"
       connected
-      authorization={{
-        can: { manageOwnership: true, updateOrganization: true },
-      }}
       userMenu={null}
       projectSwitcher={null}
     >

@@ -243,6 +243,17 @@ for (const screen of config.screens) {
       ).toBeVisible();
     }
 
+    if (
+      testInfo.project.name.startsWith("mobile") &&
+      ["brand-dashboard", "account-pro-projects"].includes(screen.slug)
+    ) {
+      await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+      await expect(page.getByRole("dialog", { name: "Sidebar" })).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: /Assistant import/ }),
+      ).toBeVisible();
+    }
+
     if (screen.slug === "account-deletion-confirmation") {
       await page
         .getByLabel("Type DELETE ACCOUNT to continue")
