@@ -171,6 +171,9 @@ export function PublicWallSettings({
         />
         <span>Show original source logos</span>
       </label>
+      <FieldDescription>
+        Applies to the public Wall and all widgets for this Project.
+      </FieldDescription>
       <div className="bg-surface-2 rounded-md border p-4 text-sm">
         <p className="font-medium">
           {settings.canHideAttribution

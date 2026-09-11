@@ -270,6 +270,33 @@ export const screenSections: ScreenSection[] = [
         requiresAuth: true,
       },
       {
+        slug: "studio",
+        title: "Studio widgets",
+        description: "Create independent widgets and choose a template.",
+        fixturePath: "/visual-evidence/studio",
+        livePath: "/org/:organizationSlug/studio",
+        requiresAuth: true,
+      },
+      {
+        slug: "studio-templates",
+        title: "Studio templates",
+        description: "Choose a widget template.",
+        fixturePath: "/visual-evidence/studio-templates",
+      },
+      {
+        slug: "studio-preview",
+        title: "Studio preview",
+        description: "Preview published proof at a mobile width.",
+        fixturePath: "/visual-evidence/studio-preview",
+      },
+      {
+        slug: "studio-editor",
+        title: "Studio editor",
+        description:
+          "Style proof beside its live preview; manage selection in a dialog.",
+        fixturePath: "/visual-evidence/studio-editor",
+      },
+      {
         slug: "inbox",
         title: "Testimonial inbox",
         description:

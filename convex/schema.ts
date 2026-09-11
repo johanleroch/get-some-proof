@@ -1,4 +1,5 @@
 import { testimonialSourceValidator } from "./domain/testimonialSource";
+import { widgetSnapshotValidator } from "./domain/widgets";
 import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { richTextValidator } from "./domain/testimonialRichText";
 import {
@@ -13,6 +14,19 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  widgets: defineTable({
+    organizationId: v.id("organizations"),
+    publicId: v.string(),
+    name: v.string(),
+    draft: widgetSnapshotValidator,
+    published: v.optional(widgetSnapshotValidator),
+    revision: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    publishedAt: v.optional(v.number()),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_publicId", ["publicId"]),
   assistantImportUploads: defineTable({
     actorId: v.string(),
     jobId: v.id("testimonialImportJobs"),
