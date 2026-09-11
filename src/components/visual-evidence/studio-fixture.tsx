@@ -8,7 +8,7 @@ import {
 } from "@/components/studio/studio-view";
 import { initialWidgetConfig } from "@/components/studio/catalog";
 
-const studioCandidates: StudioCandidate[] = [
+const primaryStudioCandidates: StudioCandidate[] = [
   {
     testimonialId: "maya",
     card: {
@@ -128,6 +128,21 @@ const studioCandidates: StudioCandidate[] = [
       text: "Simple, thoughtful and easy to keep up to date.",
     },
   },
+];
+const studioCandidates: StudioCandidate[] = [
+  ...primaryStudioCandidates,
+  ...Array.from({ length: 51 }, (_, index) => ({
+    testimonialId: `extra-${index}`,
+    card: {
+      id: `extra-${index}`,
+      type: "text" as const,
+      name: `Customer ${index + 1}`,
+      company: "Example Company",
+      avatarUrl: null,
+      publishedAt: index + 10,
+      text: `A concise testimonial used to verify selection capacity ${index + 1}.`,
+    },
+  })),
 ];
 const seed: StudioWidget = {
   _id: "fixture-widget",

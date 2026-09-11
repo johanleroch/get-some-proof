@@ -145,6 +145,62 @@ test("keeps selection out of the sidebar and supports search, removal and focus 
   await expect(manage).toBeFocused();
 });
 
+test("selects and clears all loaded testimonials from the selection dialog", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/studio-editor");
+  await page
+    .getByRole("button", { name: "Manage selection", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Manage testimonials" });
+  const selectAll = dialog.getByRole("checkbox", {
+    name: "Select all",
+    exact: true,
+  });
+
+  await expect(selectAll).toHaveAttribute("data-state", "indeterminate");
+  await selectAll.click();
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (4)", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("4 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  await selectAll.uncheck();
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (0)", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("0 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  await dialog
+    .getByRole("button", { name: "Load more testimonials", exact: true })
+    .click();
+  await expect(dialog.getByText("56 shown", { exact: true })).toBeVisible();
+  await selectAll.click();
+  await expect(
+    dialog.getByText("50 / 50 selected", { exact: true }),
+  ).toBeVisible();
+  await expect(selectAll).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "Clear shown", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("0 / 50 selected", { exact: true }),
+  ).toBeVisible();
+
+  await dialog
+    .getByRole("textbox", { name: "Search testimonials" })
+    .fill("Maya");
+  await expect(dialog.getByText("1 shown", { exact: true })).toBeVisible();
+  await selectAll.check();
+  await expect(
+    dialog.getByRole("tab", { name: "Selected (1)", exact: true }),
+  ).toBeVisible();
+});
+
 test("shows Inbox presentation and previews video without changing selection", async ({
   page,
 }) => {

@@ -8,3 +8,16 @@ export function hasHighlight(card: TestimonialCardValue) {
     )
   );
 }
+
+export function selectAllWithinLimit(
+  currentIds: string[],
+  candidateIds: string[],
+  limit = 50,
+) {
+  const next = new Set(currentIds);
+  for (const id of candidateIds) {
+    if (next.size >= limit) break;
+    next.add(id);
+  }
+  return [...next];
+}
