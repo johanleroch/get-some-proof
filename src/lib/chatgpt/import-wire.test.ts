@@ -28,8 +28,13 @@ it("preserves Senja links and highlights across the widget wire contract", () =>
         authorName: "Camille",
         text: "Excellent",
         richText,
+        source: { platform: "x", url: "https://x.com/camille/status/1" },
       },
     ],
+  });
+  expect(result.items[0]?.source).toEqual({
+    platform: "x",
+    url: "https://x.com/camille/status/1",
   });
   expect(result.items[0]?.richText).toEqual(richText);
 });

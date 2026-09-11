@@ -1,3 +1,4 @@
+import { sourcePlatforms } from "../../../convex/domain/testimonialSource";
 import { z } from "zod";
 export const importEligibilitySchema = z.object({
   selected: z.number().int().nonnegative(),
@@ -22,6 +23,12 @@ export const snapshotSchema = {
       type: z.enum(["text", "video"]),
       authorName: z.string(),
       text: z.string(),
+      source: z
+        .object({
+          platform: z.enum(sourcePlatforms),
+          url: z.string().max(2048).optional(),
+        })
+        .optional(),
       richText: z
         .array(
           z.object({

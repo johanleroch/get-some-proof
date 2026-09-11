@@ -131,6 +131,18 @@ export const list = query({
             role: projection.visibilityOverrides?.role ?? defaults.role,
           };
           const identity = {
+            source:
+              brand.publicWallShowSourceIcons === false
+                ? undefined
+                : projection.source
+                  ? {
+                      ...projection.source,
+                      url:
+                        account?.testimonialLinksEnabled === false
+                          ? undefined
+                          : projection.source.url,
+                    }
+                  : undefined,
             avatarUrl: projection.avatarStorageId
               ? visible.avatar
                 ? await ctx.storage.getUrl(projection.avatarStorageId)

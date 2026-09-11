@@ -1,3 +1,5 @@
+import { sourceIcons } from "./source-icons";
+import { testimonialSource } from "@convex/domain/testimonialSource";
 import { animatedBlobSvg, blobAnimations } from "@/lib/blob-animations";
 import type {
   TestimonialCardTextValue,
@@ -119,6 +121,7 @@ export function testimonialCardHtml({
   statusMount?: boolean;
   testimonial: TestimonialCardValue;
 }) {
+  const source = sourceMarkup(testimonial);
   const identity = [testimonial.role, testimonial.company]
     .filter(Boolean)
     .join(" · ");
@@ -140,7 +143,7 @@ export function testimonialCardHtml({
   const body =
     testimonial.type === "video"
       ? video
-      : `<div class="content p-6${menuMount ? " pr-12" : ""}${statusMount ? " pt-14" : ""}">${starsMarkup(testimonial.rating)}${text}${attachments}<div class="identity mt-5 flex items-center gap-3">${signatureMarkup(testimonial)}<div class="person min-w-0 flex-1"><p class="name truncate text-[14px] leading-5 font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div></div></div>`;
+      : `<div class="content p-6${menuMount ? " pr-12" : ""}${statusMount ? " pt-14" : ""}">${starsMarkup(testimonial.rating)}${text}${attachments}<div class="identity mt-5 flex items-center gap-3">${signatureMarkup(testimonial)}<div class="person min-w-0 flex-1"><p class="name truncate text-[14px] leading-5 font-semibold">${escapeHtml(testimonial.name)}</p>${meta}</div>${source}</div></div>`;
 
   const menu = menuMount
     ? '<span class="absolute right-3 top-3 z-20" data-gsp-card-menu=""></span>'
@@ -149,7 +152,7 @@ export function testimonialCardHtml({
     ? '<span class="absolute left-3 top-3 z-20" data-gsp-card-status=""></span>'
     : "";
 
-  return `<article class="card relative mb-5 break-inside-avoid overflow-hidden rounded-lg border bg-card text-card-foreground${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)};--wall-accent-ink:${accentInk(accentColor)};--wall-accent-soft:${accentSoft(accentColor)}">${status}${menu}${body}</article>`;
+  return `<article class="card relative mb-5 break-inside-avoid overflow-hidden rounded-lg border bg-card text-card-foreground${testimonial.type === "video" ? " video-card" : ""}" data-gsp-card="" style="--wall-accent:${escapeHtml(accentColor)};--wall-accent-ink:${accentInk(accentColor)};--wall-accent-soft:${accentSoft(accentColor)}">${status}${menu}${body}${testimonial.type === "video" && source ? `<div style="position:absolute;top:${statusMount ? 56 : 16}px;left:16px;z-index:6;color:white;background:rgba(0,0,0,.6);border-radius:6px">${source}</div>` : ""}</article>`;
 }
 
 function testimonialLeafHtml(
@@ -164,4 +167,17 @@ function testimonialLeafHtml(
   return href
     ? `<a href="${escapeHtml(href)}" target="_blank" rel="ugc nofollow noopener noreferrer" style="color:inherit;text-decoration:underline;text-underline-offset:0.15em">${marked}</a>`
     : marked;
+}
+
+function sourceMarkup(testimonial: TestimonialCardValue) {
+  const source = testimonial.source
+    ? testimonialSource(testimonial.source.platform, testimonial.source.url)
+    : undefined;
+  if (!source) return "";
+  const { label, markup } = sourceIcons[source.platform];
+  const icon = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${markup}</svg>`;
+  const attributes = `data-gsp-source="${source.platform}" aria-label="Source: ${label}" title="Source: ${label}" style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:44px;height:44px;color:inherit"`;
+  return source.url
+    ? `<a ${attributes} href="${escapeHtml(source.url)}" target="_blank" rel="ugc nofollow noopener noreferrer">${icon}</a>`
+    : `<span ${attributes} role="img">${icon}</span>`;
 }

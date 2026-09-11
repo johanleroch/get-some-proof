@@ -5,7 +5,7 @@
       "slug": "full-page-loading",
       "title": "Full-page loading",
       "path": "/visual-evidence/full-page-loading",
-      "heading": "Loading…",
+      "heading": "Loading\u2026",
       "theme": "light"
     },
     {
@@ -297,7 +297,7 @@
       "title": "Testimonial Inbox - details shown on the Wall",
       "path": "/org/:organizationSlug/inbox",
       "fixturePath": "/visual-evidence/testimonial-inbox-details",
-      "heading": "Details on Alice Martin’s card",
+      "heading": "Details on Alice Martin\u2019s card",
       "theme": "light",
       "requiresAuth": true
     },
@@ -634,6 +634,18 @@
       "path": "/visual-evidence/testimonial-links",
       "heading": "Testimonial links",
       "theme": "light"
+    },
+    {
+      "slug": "testimonial-sources-visible",
+      "title": "Testimonial sources visible",
+      "path": "/visual-evidence/testimonial-sources",
+      "heading": "Public Wall appearance"
+    },
+    {
+      "slug": "testimonial-sources-hidden",
+      "title": "Testimonial sources hidden",
+      "path": "/visual-evidence/testimonial-sources",
+      "heading": "Public Wall appearance"
     }
   ]
 }

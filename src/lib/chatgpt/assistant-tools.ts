@@ -1,3 +1,4 @@
+import { sourcePlatforms } from "../../../convex/domain/testimonialSource";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -79,6 +80,12 @@ export const assistantTextInput = z.object({
     .describe(
       "Only an explicitly displayed individual rating; never the page-wide aggregate.",
     ),
+  source: z
+    .object({
+      platform: z.enum(sourcePlatforms),
+      url: z.string().max(2048).optional(),
+    })
+    .optional(),
   richText: z
     .array(
       z.object({

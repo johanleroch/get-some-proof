@@ -1,8 +1,10 @@
+import { testimonialSourceValidator } from "./domain/testimonialSource";
 import { imageValueValidator } from "./domain/testimonialImage";
 import { richTextValidator } from "./domain/testimonialRichText";
 import { type Infer, v } from "convex/values";
 
 export const testimonialCardIdentityValidator = {
+  source: v.optional(testimonialSourceValidator),
   avatarUrl: v.union(v.null(), v.string()),
   avatarVisible: v.optional(v.boolean()),
   company: v.optional(v.string()),

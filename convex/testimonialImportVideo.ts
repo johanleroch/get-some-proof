@@ -74,6 +74,7 @@ async function ensureImportedVideoTestimonial(
         originalCompany: item.company,
         originalRating: item.rating,
         originalRichText: item.richText,
+        originalSource: item.source,
         originalType: item.type,
         originalVideoUrl: item.videoUrl,
         originalAvatarUrl: item.avatarUrl,

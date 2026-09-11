@@ -1,3 +1,7 @@
+import {
+  testimonialSource,
+  type TestimonialSource,
+} from "../../../convex/domain/testimonialSource";
 import { load } from "cheerio/slim";
 import JSON5 from "json5";
 import {
@@ -10,6 +14,7 @@ import { testimonialTextIdentities } from "./testimonial-text-identity";
 export type WallProvider = "testimonial-to" | "senja";
 
 export type WallCandidate = {
+  source?: TestimonialSource;
   sourceId: string;
   type: "text" | "video";
   authorName: string;
@@ -155,6 +160,10 @@ export async function previewWall(input: string) {
       if (!sourceId) throw formatChanged();
       items.push({
         sourceId,
+        source: testimonialSource(
+          undefined,
+          card.find('a:has(img[src*="/sources/"])').first().attr("href"),
+        ),
         type: "text",
         authorName,
         text,
@@ -205,6 +214,14 @@ export async function previewWall(input: string) {
           : undefined;
       items.push({
         sourceId,
+        source: testimonialSource(
+          undefined,
+          $(`[id="unified-video-${sourceId.replace(/[^a-zA-Z0-9_-]/g, "")}"]`)
+            .closest(".testimonial-card")
+            .find('a:has(img[src*="/sources/"])')
+            .first()
+            .attr("href"),
+        ),
         type: "video",
         authorName:
           typeof metadata?.authorName === "string" ? metadata.authorName : "",
@@ -242,6 +259,7 @@ export async function previewWall(input: string) {
         review.type === "video" ? senjaVideoUrl(review.media_asset) : undefined;
       items.push({
         sourceId: review.id,
+        source: testimonialSource(review.integration, review.url),
         type: review.type,
         ...senjaQuote(typeof review.text === "string" ? review.text : ""),
         authorName: customer.name,

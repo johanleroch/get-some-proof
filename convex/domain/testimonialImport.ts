@@ -1,3 +1,4 @@
+import { testimonialSourceValidator } from "./testimonialSource";
 import { ConvexError, v, type Infer } from "convex/values";
 import { richTextValidator } from "./testimonialRichText";
 
@@ -44,6 +45,7 @@ export const importOrigin = v.object({
   originalTagline: v.optional(v.string()),
   originalCompany: v.optional(v.string()),
   originalRating: v.optional(v.number()),
+  originalSource: v.optional(testimonialSourceValidator),
   originalRichText: v.optional(richTextValidator),
   originalType: v.optional(v.union(v.literal("text"), v.literal("video"))),
   originalVideoUrl: v.optional(v.string()),
@@ -60,6 +62,7 @@ export const importOrigin = v.object({
   ),
 });
 export const wallCandidate = v.object({
+  source: v.optional(testimonialSourceValidator),
   company: v.optional(v.string()),
   rating: v.optional(v.number()),
   richText: v.optional(richTextValidator),
@@ -96,6 +99,8 @@ export function hasUnchangedImportContent(
       origin.originalAvatarUrl !== candidate.avatarUrl) ||
     origin.originalCompany !== candidate.company ||
     origin.originalRating !== candidate.rating ||
+    JSON.stringify(origin.originalSource) !==
+      JSON.stringify(candidate.source) ||
     JSON.stringify(origin.originalRichText) !==
       JSON.stringify(candidate.richText) ||
     (origin.originalType ?? existing.submissionType) !== candidate.type

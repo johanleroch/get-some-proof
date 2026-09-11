@@ -1,3 +1,4 @@
+import { testimonialSourceValidator } from "./domain/testimonialSource";
 import { richTextValidator } from "./domain/testimonialRichText";
 import {
   importResult,
@@ -251,6 +252,7 @@ export default defineSchema({
     publicWallTransparentEmbed: v.optional(v.boolean()),
     publicWallHideAttribution: v.optional(v.boolean()),
     publicWallOrderVersion: v.optional(v.number()),
+    publicWallShowSourceIcons: v.optional(v.boolean()),
     publicWallVisibility: v.optional(
       v.object({
         avatar: v.boolean(),
@@ -725,6 +727,7 @@ export default defineSchema({
     v.union(
       v.object({
         importJobId: v.optional(v.id("testimonialImportJobs")),
+        source: v.optional(testimonialSourceValidator),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
@@ -753,6 +756,7 @@ export default defineSchema({
       }),
       v.object({
         importJobId: v.optional(v.id("testimonialImportJobs")),
+        source: v.optional(testimonialSourceValidator),
         publicationGeneration: v.optional(v.number()),
         organizationId: v.id("organizations"),
         testimonialId: v.id("testimonials"),
