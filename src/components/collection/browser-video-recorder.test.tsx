@@ -60,16 +60,16 @@ describe("BrowserVideoRecorder", () => {
     };
     setDimensions(640, 480);
     fireEvent.loadedMetadata(video);
-    expect(Number(frame.style.aspectRatio)).toBeCloseTo(4 / 3);
+    expect(parseFloat(frame.style.aspectRatio)).toBeCloseTo(4 / 3);
     setDimensions(720, 1280);
     fireEvent(video, new Event("resize"));
-    expect(Number(frame.style.aspectRatio)).toBeCloseTo(9 / 16);
+    expect(parseFloat(frame.style.aspectRatio)).toBeCloseTo(9 / 16);
     setDimensions(0, 0);
     fireEvent.loadedMetadata(video);
-    expect(Number(frame.style.aspectRatio)).toBeCloseTo(9 / 16);
+    expect(parseFloat(frame.style.aspectRatio)).toBeCloseTo(9 / 16);
     setDimensions(1280, 720);
     fireEvent(video, new Event("resize"));
-    expect(Number(frame.style.aspectRatio)).toBeCloseTo(16 / 9);
+    expect(parseFloat(frame.style.aspectRatio)).toBeCloseTo(16 / 9);
   });
 
   it("opens a live preview and exposes the available camera and microphone", async () => {
