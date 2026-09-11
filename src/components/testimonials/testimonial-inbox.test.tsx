@@ -385,8 +385,19 @@ describe("TestimonialInboxView", () => {
 describe("InboxCategoryTabs", () => {
   beforeEach(cleanup);
 
+  function expectStableCountSlots(container: HTMLElement) {
+    const countSlots = container.querySelectorAll(
+      '[data-slot="inbox-category-count"]',
+    );
+    expect(countSlots).toHaveLength(4);
+    for (const slot of countSlots) {
+      expect(slot).toHaveClass("h-6", "w-8", "sm:w-9");
+    }
+    return countSlots;
+  }
+
   it("names each category with how many Testimonials wait in it", () => {
-    render(
+    const { container } = render(
       <InboxCategoryTabs
         counts={{ archived: 0, pending: 3, published: 2, spam: 1 }}
         moderationStatus="pending"
@@ -404,6 +415,47 @@ describe("InboxCategoryTabs", () => {
     // An empty category stays quiet.
     expect(screen.getByRole("tab", { name: "Archived" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Spam 1" })).toBeVisible();
+
+    expectStableCountSlots(container);
+    expect(screen.getByText("3")).toHaveClass("text-warning");
+    expect(screen.getByText("2")).toHaveClass("text-success");
+    expect(screen.getByText("1")).toHaveClass("text-danger");
+  });
+
+  it("reserves the same count slots while counts load", () => {
+    const { container } = render(
+      <InboxCategoryTabs
+        moderationStatus="pending"
+        onModerationStatusChange={vi.fn()}
+      >
+        <p>panel</p>
+      </InboxCategoryTabs>,
+    );
+
+    const countSlots = expectStableCountSlots(container);
+    for (const slot of countSlots) {
+      expect(slot.querySelector('[data-slot="skeleton"]')).toHaveClass(
+        "size-full",
+      );
+    }
+  });
+
+  it("keeps zero, multi-digit and capped counts inside the stable slots", () => {
+    const { container } = render(
+      <InboxCategoryTabs
+        counts={{ archived: 0, pending: 501, published: 10, spam: 99 }}
+        moderationStatus="pending"
+        onModerationStatusChange={vi.fn()}
+      >
+        <p>panel</p>
+      </InboxCategoryTabs>,
+    );
+
+    expectStableCountSlots(container);
+    expect(screen.getByRole("tab", { name: "Pending 500+" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Published 10" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Archived" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Spam 99" })).toBeVisible();
   });
 });
 
