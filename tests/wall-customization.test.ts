@@ -114,6 +114,19 @@ describe("Public Wall customization and curation", () => {
       { enabled: false },
     );
     expect((await read())?.source).toEqual({ platform: "x" });
+    const inbox = await current.owner.client.query(
+      api.testimonialModeration.listInbox,
+      {
+        organizationId: current.brand.id,
+        sort: "newest",
+        status: "published",
+        paginationOpts: { cursor: null, numItems: 20 },
+      },
+    );
+    expect(inbox.page[0]?.card?.source).toEqual({
+      platform: "x",
+      url: "https://x.com/lina/status/1",
+    });
     const settings = await current.owner.client.query(
       api.wallCustomization.getSettings,
       { organizationId: current.brand.id },

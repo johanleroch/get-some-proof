@@ -159,7 +159,6 @@ async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
     ]);
   if (!consent && !testimonial.importOrigin) testimonialUnavailable();
   const identity = {
-    source: testimonial.importOrigin?.originalSource,
     ...(testimonial.importOrigin
       ? {
           requiresImportAttestation:
@@ -177,6 +176,7 @@ async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
     publicVisibilityOverrides: testimonial.publicVisibilityOverrides,
   };
   const cardIdentity = {
+    source: testimonial.importOrigin?.originalSource,
     avatarUrl,
     company: testimonial.company,
     id: testimonial._id,
