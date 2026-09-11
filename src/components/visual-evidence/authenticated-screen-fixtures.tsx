@@ -1,5 +1,7 @@
 "use client";
 
+import { BulkTestimonialInbox } from "@/components/testimonials/bulk-testimonial-inbox";
+
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -32,7 +34,6 @@ import {
   InboxImportActions,
   InboxCategoryTabs,
   TestimonialDeleteDialog,
-  TestimonialInboxView,
 } from "@/components/testimonials/testimonial-inbox";
 import { VideoPreviewDialog } from "@/components/testimonials/video-preview-dialog";
 import { WallDisplayDialog } from "@/components/testimonials/wall-display-dialog";
@@ -475,7 +476,16 @@ export function TestimonialInboxScreenFixture({
         moderationStatus={category}
         onModerationStatusChange={setCategory}
       >
-        <TestimonialInboxView
+        <BulkTestimonialInbox
+          key={category}
+          totalCount={lists[category].length}
+          hasMore={false}
+          loadPage={async () => ({
+            page: lists[category],
+            isDone: true,
+            continueCursor: "",
+          })}
+          perform={async () => {}}
           accentColor={collectionFormFixtureBrand.primaryColor}
           category={category}
           emptyAction={

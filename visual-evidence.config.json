@@ -647,6 +647,24 @@
       "heading": "Deleting your account",
       "theme": "light",
       "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-bulk",
+      "title": "Inbox bulk selection",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "testimonial-inbox-bulk-delete",
+      "title": "Inbox bulk delete confirmation",
+      "path": "/org/:organizationSlug/inbox",
+      "fixturePath": "/visual-evidence/testimonial-inbox",
+      "heading": "Inbox",
+      "theme": "light",
+      "requiresAuth": true
     }
   ]
 }

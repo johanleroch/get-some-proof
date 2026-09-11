@@ -883,7 +883,6 @@ export const remove = mutation({
     if (testimonial.organizationId !== access.organization._id) {
       testimonialUnavailable();
     }
-    if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     if (testimonial.submissionType === "video") {
       throw new ConvexError({
         code: "VIDEO_DELETION_REQUIRES_MEDIA_ACTION",

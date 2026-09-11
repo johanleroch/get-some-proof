@@ -9,6 +9,7 @@ import {
 } from "./deletionMedia";
 import { deleteNextMedia } from "./deletionMediaActions";
 import { rememberUnresolvedImportCopy } from "./videoImportCleanup";
+import { finishSpamQuarantineForDeletion } from "./testimonialDeletion";
 import { removePublicProjection } from "./publicProjection";
 import { ConvexError, v } from "convex/values";
 
@@ -221,7 +222,6 @@ export const prepareRemoval = internalMutation({
     ) {
       testimonialUnavailable();
     }
-    if (testimonial.moderationStatus === "spam") testimonialUnavailable();
     const asset = await ctx.db
       .query("videoAssets")
       .withIndex("by_testimonial", (index) =>
@@ -230,6 +230,7 @@ export const prepareRemoval = internalMutation({
       .unique();
     if (!asset && testimonial.submissionType === "video")
       testimonialUnavailable();
+    await finishSpamQuarantineForDeletion(ctx, testimonial);
 
     const [cleanupJobs, projection, retryLink, activeRevision] =
       await Promise.all([
