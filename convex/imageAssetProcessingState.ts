@@ -12,11 +12,36 @@ import {
   type ImageAssetMetadataValue,
 } from "./domain/imageAsset";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { requireOrganizationPermission } from "./security/organizationAccess";
+import {
+  requireOrganizationCleanupPermission,
+  requireOrganizationPermission,
+} from "./security/organizationAccess";
 import { requireVerifiedPrincipal } from "./security/principal";
 import { deleteImageAsset } from "./imageAssetRegistry";
 
 const verificationLifetimeMs = 30 * 60 * 1000;
+
+async function authorizeCleanupTarget(
+  ctx: MutationCtx,
+  target: DirectImageTarget,
+) {
+  if (target.kind === "ownerPhoto") {
+    await requireVerifiedPrincipal(ctx);
+    return;
+  }
+  if (target.kind === "brandLogo" || target.kind === "videoThumbnail") {
+    await requireOrganizationCleanupPermission(
+      ctx,
+      target.organizationId,
+      target.kind === "brandLogo" ? "organization:update" : "ownership:manage",
+    );
+    return;
+  }
+  const record = await ctx.db.get(
+    target.kind === "submitterPhoto" ? target.reservationId : target.imageId,
+  );
+  if (!record) throw new ConvexError({ code: "IMAGE_UPLOAD_UNAVAILABLE" });
+}
 
 type AuthorizedImageOwner = {
   organizationId?: Id<"organizations">;
@@ -169,6 +194,15 @@ export const authorizeTemporary = internalMutation({
   },
 });
 
+export const authorizeCleanup = internalMutation({
+  args: { target: directImageTarget },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authorizeCleanupTarget(ctx, args.target);
+    return null;
+  },
+});
+
 export async function consumeDirectImage(
   ctx: MutationCtx,
   verificationId: Id<"directImageVerifications">,
@@ -229,7 +263,6 @@ export const discardUnattachedTemporary = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await authorizeTarget(ctx, args.target);
     const stored = await ctx.db.system.get("_storage", args.temporaryStorageId);
     if (!stored || stored._creationTime < Date.now() - verificationLifetimeMs)
       return null;

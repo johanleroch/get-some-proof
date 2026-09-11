@@ -35,6 +35,9 @@ export const processDirectUpload = action({
     verificationId: v.id("directImageVerifications"),
   }),
   handler: async (ctx, args): Promise<DirectImageProcessingResult> => {
+    await ctx.runMutation(internal.imageAssetProcessingState.authorizeCleanup, {
+      target: args.target,
+    });
     try {
       await ctx.runMutation(
         internal.imageAssetProcessingState.authorizeTemporary,
