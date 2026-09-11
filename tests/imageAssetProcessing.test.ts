@@ -47,6 +47,27 @@ describe("direct image processing", () => {
     ).toBeNull();
   });
 
+  it("deletes an unattached blob rejected by preliminary storage validation", async () => {
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const temporaryStorageId = await t.run(async (ctx) => {
+      const storageId = await ctx.storage.store(new Blob(["plain text"]));
+      await ctx.db.patch(storageId, { contentType: "text/plain" });
+      return storageId;
+    });
+
+    await expect(
+      owner.client.action(api.imageAssetProcessing.processDirectUpload, {
+        browserMetadata: testImageMetadata("ownerPhoto", 10),
+        target: { kind: "ownerPhoto" },
+        temporaryStorageId,
+      }),
+    ).rejects.toMatchObject({ data: { code: "INVALID_STORED_IMAGE" } });
+    expect(
+      await t.run((ctx) => ctx.db.system.get("_storage", temporaryStorageId)),
+    ).toBeNull();
+  });
+
   it("re-encodes valid bytes and trusts the server-derived dimensions", async () => {
     const t = createConvexTest();
     const owner = await authenticatedUser(t);

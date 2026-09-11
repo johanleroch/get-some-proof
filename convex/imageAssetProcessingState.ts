@@ -31,6 +31,12 @@ async function authorizeTarget(
 ): Promise<AuthorizedImageOwner> {
   if (target.kind === "ownerPhoto") {
     const principal = await requireVerifiedPrincipal(ctx);
+    const account = await ctx.db
+      .query("accounts")
+      .withIndex("by_owner", (q) => q.eq("ownerUserId", principal.actorId))
+      .unique();
+    if (account?.deletionStartedAt !== undefined)
+      throw new ConvexError({ code: "ACCOUNT_UNAVAILABLE" });
     return { ownerUserId: principal.actorId };
   }
   if (target.kind === "brandLogo") {
@@ -127,7 +133,8 @@ export const record = internalMutation({
       createdAt: now,
       expiresAt: now + verificationLifetimeMs,
       metadata: args.metadata,
-      ...owner,
+      organizationId: owner.organizationId,
+      ownerUserId: owner.ownerUserId,
       storageId: args.storageId,
       target: args.target,
     });

@@ -35,13 +35,26 @@ export const processDirectUpload = action({
     verificationId: v.id("directImageVerifications"),
   }),
   handler: async (ctx, args): Promise<DirectImageProcessingResult> => {
-    await ctx.runMutation(
-      internal.imageAssetProcessingState.authorizeTemporary,
-      {
-        target: args.target,
-        temporaryStorageId: args.temporaryStorageId,
-      },
-    );
+    try {
+      await ctx.runMutation(
+        internal.imageAssetProcessingState.authorizeTemporary,
+        {
+          target: args.target,
+          temporaryStorageId: args.temporaryStorageId,
+        },
+      );
+    } catch (error) {
+      await Promise.allSettled([
+        ctx.runMutation(
+          internal.imageAssetProcessingState.discardUnattachedTemporary,
+          {
+            target: args.target,
+            temporaryStorageId: args.temporaryStorageId,
+          },
+        ),
+      ]);
+      throw error;
+    }
     let storageId: Id<"_storage"> | undefined;
     try {
       if (
