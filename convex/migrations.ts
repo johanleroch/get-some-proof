@@ -20,7 +20,7 @@ type LegacyImageReference = {
   referenceTable:
     | "userProfiles"
     | "organizations"
-    | "testimonialAvatar"
+    | "testimonialSubmitterPhoto"
     | "testimonialPoster"
     | "testimonialImages";
   referenceId: string;
@@ -39,7 +39,7 @@ async function queueLegacyImage(
   const registered = await ctx.db
     .query("imageAssets")
     .withIndex("by_storage_id", (q) => q.eq("storageId", reference.storageId))
-    .first();
+    .unique();
   if (registered) return;
   const existing = await ctx.db
     .query("imageAssetMigrationJobs")
@@ -104,12 +104,12 @@ export const queueLegacyTestimonialImages = statefulMigrations.define({
   },
 });
 
-export const queueLegacyTestimonialAvatars = statefulMigrations.define({
+export const queueLegacySubmitterPhotos = statefulMigrations.define({
   table: "testimonials",
   migrateOne: async (ctx, testimonial) => {
     if (!testimonial.avatarStorageId) return;
     await queueLegacyImage(ctx, {
-      referenceTable: "testimonialAvatar",
+      referenceTable: "testimonialSubmitterPhoto",
       referenceId: String(testimonial._id),
       storageId: testimonial.avatarStorageId,
       kind: "submitterPhoto",
@@ -138,7 +138,7 @@ export const runImageAssetInventory = statefulMigrations.runner([
   internal.migrations.queueLegacyOwnerPhotos,
   internal.migrations.queueLegacyBrandLogos,
   internal.migrations.queueLegacyTestimonialImages,
-  internal.migrations.queueLegacyTestimonialAvatars,
+  internal.migrations.queueLegacySubmitterPhotos,
   internal.migrations.queueLegacyTestimonialPosters,
 ]);
 

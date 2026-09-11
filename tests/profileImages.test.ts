@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import {
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
+  testDirectImageVerification,
   testImageMetadata,
 } from "./convex-test-helpers";
 
@@ -31,6 +33,21 @@ async function storeImage(
   });
 }
 
+async function verifyImage(
+  t: ReturnType<typeof createConvexTest>,
+  image: Awaited<ReturnType<typeof storeImage>>,
+  target:
+    | { kind: "ownerPhoto" }
+    | { kind: "brandLogo"; organizationId: Id<"organizations"> },
+) {
+  return await testDirectImageVerification(
+    t,
+    target,
+    image.storageId,
+    image.metadata,
+  );
+}
+
 describe("profile image storage", () => {
   it("lets an authenticated user set, replace, and remove their own avatar", async () => {
     const t = createConvexTest();
@@ -39,10 +56,10 @@ describe("profile image storage", () => {
     const second = await storeImage(t, "second");
 
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      ...first,
+      verificationId: await verifyImage(t, first, { kind: "ownerPhoto" }),
     });
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      ...second,
+      verificationId: await verifyImage(t, second, { kind: "ownerPhoto" }),
     });
 
     const current = await alice.client.query(api.auth.getCurrentUser, {});
@@ -79,8 +96,12 @@ describe("profile image storage", () => {
 
     await expect(
       alice.client.mutation(api.profileImages.setMyAvatar, {
-        storageId: textFile,
-        metadata: testImageMetadata("ownerPhoto", 5),
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "ownerPhoto" },
+          textFile,
+          testImageMetadata("ownerPhoto", 5),
+        ),
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_STORED_IMAGE" },
@@ -96,7 +117,9 @@ describe("profile image storage", () => {
 
     await expect(
       alice.client.mutation(api.profileImages.setMyAvatar, {
-        ...oversized,
+        verificationId: await verifyImage(t, oversized, {
+          kind: "ownerPhoto",
+        }),
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_STORED_IMAGE" },
@@ -112,13 +135,14 @@ describe("profile image storage", () => {
     });
     const image = await storeImage(t, "alice-avatar");
 
+    const verificationId = await verifyImage(t, image, { kind: "ownerPhoto" });
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      ...image,
+      verificationId,
     });
     await expect(
-      bob.client.mutation(api.profileImages.setMyAvatar, image),
+      bob.client.mutation(api.profileImages.setMyAvatar, { verificationId }),
     ).rejects.toMatchObject({
-      data: { code: "STORED_IMAGE_UNAVAILABLE" },
+      data: { code: "IMAGE_UPLOAD_UNAVAILABLE" },
     });
 
     expect(
@@ -147,11 +171,17 @@ describe("profile image storage", () => {
 
     await owner.client.mutation(api.organizations.setLogo, {
       organizationId: organization.id,
-      ...first,
+      verificationId: await verifyImage(t, first, {
+        kind: "brandLogo",
+        organizationId: organization.id,
+      }),
     });
     await owner.client.mutation(api.organizations.setLogo, {
       organizationId: organization.id,
-      ...second,
+      verificationId: await verifyImage(t, second, {
+        kind: "brandLogo",
+        organizationId: organization.id,
+      }),
     });
 
     expect(
@@ -198,7 +228,10 @@ describe("profile image storage", () => {
 
       const update = member.client.mutation(api.organizations.setLogo, {
         organizationId: organization.id,
-        ...image,
+        verificationId: await verifyImage(t, image, {
+          kind: "brandLogo",
+          organizationId: organization.id,
+        }),
       });
 
       if (allowed) {
@@ -244,7 +277,10 @@ describe("profile image storage", () => {
       });
       await originalOwner.client.mutation(api.organizations.setLogo, {
         organizationId: organization.id,
-        ...image,
+        verificationId: await verifyImage(t, image, {
+          kind: "brandLogo",
+          organizationId: organization.id,
+        }),
       });
 
       const uploadUrl = member.client.mutation(

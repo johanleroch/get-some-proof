@@ -4,6 +4,37 @@ import { describe, expect, it } from "vitest";
 import { normalizeStoredImage } from "./normalizeImage";
 
 describe("normalizeStoredImage", () => {
+  it.each([
+    ["jpeg", "image/jpeg"],
+    ["png", "image/png"],
+    ["webp", "image/webp"],
+    ["avif", "image/avif"],
+  ] as const)(
+    "accepts static %s input and emits WebP",
+    async (format, mime) => {
+      const source = sharp({
+        create: {
+          width: 64,
+          height: 48,
+          channels: 3,
+          background: { r: 50, g: 100, b: 150 },
+        },
+      });
+      const input = await source[format]().toBuffer();
+
+      const result = await normalizeStoredImage(
+        new Blob([new Uint8Array(input)], { type: mime }),
+        "submitterPhoto",
+        "import",
+      );
+
+      expect(
+        (await sharp(new Uint8Array(result.bytes)).metadata()).format,
+      ).toBe("webp");
+      expect(result.metadata.originalContentType).toBe(mime);
+    },
+  );
+
   it("converts a large transparent PNG to bounded WebP and preserves alpha", async () => {
     const input = await sharp({
       create: {
@@ -86,5 +117,12 @@ describe("normalizeStoredImage", () => {
     ).rejects.toMatchObject({
       diagnostic: "ANIMATED_IMAGE",
     });
+    await expect(
+      normalizeStoredImage(
+        new Blob(["GIF89a"], { type: "image/gif" }),
+        "submitterPhoto",
+        "import",
+      ),
+    ).rejects.toMatchObject({ diagnostic: "UNSUPPORTED_IMAGE" });
   });
 });

@@ -352,6 +352,8 @@ function CreateBrandStep({
           }
           return {
             storageId: "playground-logo" as Id<"_storage">,
+            verificationId:
+              "playground-logo-verification" as Id<"directImageVerifications">,
             metadata: {
               contentType: "image/webp" as const,
               height: 128,

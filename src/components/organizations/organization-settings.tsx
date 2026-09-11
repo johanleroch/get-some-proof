@@ -144,6 +144,7 @@ export function OrganizationSettings({
   const generateUploadUrl = useMutation(
     api.organizations.generateLogoUploadUrl,
   );
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   const setLogo = useMutation(api.organizations.setLogo);
   const removeLogo = useMutation(api.organizations.removeLogo);
   const wallSettings = useQuery(
@@ -227,8 +228,14 @@ export function OrganizationSettings({
 
   async function uploadLogo(blob: Blob) {
     const uploadUrl = await generateUploadUrl({ organizationId });
-    const image = await uploadProfileImage(blob, uploadUrl, "brandLogo");
-    await setLogo({ organizationId, ...image });
+    const image = await uploadProfileImage(
+      blob,
+      uploadUrl,
+      "brandLogo",
+      processImage,
+      { kind: "brandLogo", organizationId },
+    );
+    await setLogo({ organizationId, verificationId: image.verificationId });
   }
 
   return (

@@ -68,12 +68,35 @@ export async function normalizeStoredImage(
         ? "ANIMATED_IMAGE"
         : "DECODE_FAILED",
     );
-  pipeline = pipeline.resize({
-    width: profile.maxWidth,
-    height: profile.maxHeight,
-    fit: kind === "videoThumbnail" ? "cover" : "inside",
-    withoutEnlargement: true,
-  });
+  if (kind === "ownerPhoto") {
+    const side = Math.min(
+      profile.maxWidth,
+      sourceMetadata.width,
+      sourceMetadata.height,
+    );
+    pipeline = pipeline.resize({ width: side, height: side, fit: "cover" });
+  } else if (kind === "videoThumbnail") {
+    const targetRatio = profile.maxWidth / profile.maxHeight;
+    const sourceRatio = sourceMetadata.width / sourceMetadata.height;
+    const width =
+      sourceRatio > targetRatio
+        ? Math.floor(
+            Math.min(profile.maxHeight, sourceMetadata.height) * targetRatio,
+          )
+        : Math.min(profile.maxWidth, sourceMetadata.width);
+    const height =
+      sourceRatio > targetRatio
+        ? Math.min(profile.maxHeight, sourceMetadata.height)
+        : Math.floor(width / targetRatio);
+    pipeline = pipeline.resize({ width, height, fit: "cover" });
+  } else {
+    pipeline = pipeline.resize({
+      width: profile.maxWidth,
+      height: profile.maxHeight,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
 
   let output: Buffer | undefined;
   for (

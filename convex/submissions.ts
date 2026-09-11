@@ -34,7 +34,7 @@ import { authzForOrganization } from "./authorization";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { consumeFreeCollectionCredit } from "./collectionQuotas";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { imageAssetMetadata } from "./domain/imageAsset";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import {
   attachImageAssetToTestimonial,
   deleteImageAsset,
@@ -248,35 +248,35 @@ export const generateAvatarUploadUrl = mutation({
 export const registerAvatarUpload = mutation({
   args: {
     reservationId: v.id("submissionAvatarUploads"),
-    storageId: v.id("_storage"),
-    metadata: imageAssetMetadata,
+    verificationId: v.id("directImageVerifications"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation || reservation.expiresAt <= Date.now()) {
-      await ctx.storage.delete(args.storageId);
       throw new ConvexError({
         code: "AVATAR_UPLOAD_UNAVAILABLE",
         message: "Avatar upload expired. Try again.",
       });
     }
-    await validateExclusiveStoredImage(ctx, args.storageId, {
+    if (reservation.storageId) return null;
+    const image = await consumeDirectImage(ctx, args.verificationId, {
+      kind: "submitterPhoto",
+      reservationId: reservation._id,
+    });
+    await validateExclusiveStoredImage(ctx, image.storageId, {
       kind: "testimonial",
       imageKind: "submitterPhoto",
     });
     await registerImageAsset(
       ctx,
-      args.storageId,
-      args.metadata,
+      image.storageId,
+      image.metadata,
       "submitterPhoto",
       { organizationId: reservation.organizationId },
     );
-    if (reservation.storageId && reservation.storageId !== args.storageId) {
-      await deleteImageAsset(ctx, reservation.storageId);
-    }
     await ctx.db.patch(reservation._id, {
-      storageId: args.storageId,
+      storageId: image.storageId,
       updatedAt: Date.now(),
     });
     return null;

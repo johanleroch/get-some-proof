@@ -1557,6 +1557,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   const generateImageUpload = useMutation(
     api.testimonialImages.generateUploadUrl,
   );
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
   const createDirectUpload = useAction(api.video.createDirectUpload);
   const submitVideo = useAction(api.video.submit);
@@ -1660,8 +1661,14 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
           file,
           uploadUrl,
           "testimonialImage",
+          processImage,
+          { kind: "testimonialImage", imageId },
         );
-        return registerImageUpload({ ...identity, imageId, ...image });
+        return registerImageUpload({
+          ...identity,
+          imageId,
+          verificationId: image.verificationId,
+        });
       }}
       uploadAvatar={async (file, clientSubmissionId) => {
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
@@ -1673,8 +1680,13 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
           file,
           uploadUrl,
           "submitterPhoto",
+          processImage,
+          { kind: "submitterPhoto", reservationId },
         );
-        await registerAvatarUpload({ reservationId, ...image });
+        await registerAvatarUpload({
+          reservationId,
+          verificationId: image.verificationId,
+        });
         return { reservationId, storageId: image.storageId };
       }}
     />

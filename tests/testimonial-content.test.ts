@@ -15,6 +15,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
   authenticatedUser,
   createConvexTest,
+  testDirectImageVerification,
   testImageMetadata,
 } from "./convex-test-helpers";
 
@@ -55,8 +56,12 @@ async function setup() {
     const image = await t.mutation(api.testimonialImages.registerUpload, {
       ...uploadIdentity,
       imageId: reservation.imageId,
-      storageId,
-      metadata: testImageMetadata("testimonialImage", 10),
+      verificationId: await testDirectImageVerification(
+        t,
+        { kind: "testimonialImage", imageId: reservation.imageId },
+        storageId,
+        testImageMetadata("testimonialImage", 10),
+      ),
     });
     return { ...image, storageId };
   };
@@ -251,8 +256,12 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     );
     await expect(
       owner.client.mutation(api.profileImages.setMyAvatar, {
-        storageId: image.storageId,
-        metadata: testImageMetadata("ownerPhoto", 10),
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "ownerPhoto" },
+          image.storageId,
+          testImageMetadata("ownerPhoto", 10),
+        ),
       }),
     ).rejects.toThrow("already in use");
     const reservation = await t.mutation(
@@ -266,8 +275,12 @@ describe("Rich Testimonials and images across their lifecycle", () => {
       t.mutation(api.testimonialImages.registerUpload, {
         ...identity,
         imageId: reservation.imageId,
-        storageId,
-        metadata: testImageMetadata("testimonialImage", 6),
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "testimonialImage", imageId: reservation.imageId },
+          storageId,
+          testImageMetadata("testimonialImage", 6),
+        ),
       }),
     ).rejects.toThrow("could not be optimized");
     await expect(
@@ -275,8 +288,12 @@ describe("Rich Testimonials and images across their lifecycle", () => {
         ...identity,
         clientSubmissionId: "another-private-client",
         imageId: reservation.imageId,
-        storageId,
-        metadata: testImageMetadata("testimonialImage", 6),
+        verificationId: await testDirectImageVerification(
+          t,
+          { kind: "testimonialImage", imageId: reservation.imageId },
+          storageId,
+          testImageMetadata("testimonialImage", 6),
+        ),
       }),
     ).rejects.toThrow("Image unavailable");
     await admittedUpload(t, identity, true);

@@ -18,7 +18,7 @@ import {
 } from "./_generated/server";
 import { hashSubmissionManagementToken } from "./domain/submission";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { imageAssetMetadata } from "./domain/imageAsset";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import {
   attachImageAssetToTestimonial,
   deleteImageAsset,
@@ -131,8 +131,7 @@ export const registerUpload = mutation({
   args: {
     ...uploadIdentity,
     imageId: v.id("testimonialImages"),
-    storageId: v.id("_storage"),
-    metadata: imageAssetMetadata,
+    verificationId: v.id("directImageVerifications"),
   },
   returns: imageValueValidator,
   handler: async (ctx, args) => {
@@ -147,13 +146,16 @@ export const registerUpload = mutation({
       image.expiresAt <= Date.now()
     )
       unavailable();
-    if (image.storageId === args.storageId)
+    if (image.storageId)
       return {
         id: image._id,
-        url: (await ctx.storage.getUrl(args.storageId))!,
+        url: (await ctx.storage.getUrl(image.storageId))!,
       };
-    if (image.storageId) unavailable();
-    const metadata = await ctx.db.system.get("_storage", args.storageId);
+    const verified = await consumeDirectImage(ctx, args.verificationId, {
+      kind: "testimonialImage",
+      imageId: image._id,
+    });
+    const metadata = await ctx.db.system.get("_storage", verified.storageId);
     if (
       !metadata ||
       !testimonialImageMimeTypes.includes(metadata.contentType ?? "") ||
@@ -165,19 +167,19 @@ export const registerUpload = mutation({
         code: "INVALID_TESTIMONIAL_IMAGE",
         message: "The image could not be optimized. Choose another image.",
       });
-    await validateExclusiveStoredImage(ctx, args.storageId, {
+    await validateExclusiveStoredImage(ctx, verified.storageId, {
       kind: "testimonial",
       imageKind: "testimonialImage",
     });
     const reservation = await ctx.db
       .query("submissionAvatarUploads")
-      .withIndex("by_storage_id", (q) => q.eq("storageId", args.storageId))
+      .withIndex("by_storage_id", (q) => q.eq("storageId", verified.storageId))
       .first();
     if (reservation) unavailable();
     await registerImageAsset(
       ctx,
-      args.storageId,
-      args.metadata,
+      verified.storageId,
+      verified.metadata,
       "testimonialImage",
       {
         organizationId: brand._id,
@@ -185,8 +187,8 @@ export const registerUpload = mutation({
         testimonialImageId: image._id,
       },
     );
-    await ctx.db.patch(image._id, { storageId: args.storageId });
-    const url = await ctx.storage.getUrl(args.storageId);
+    await ctx.db.patch(image._id, { storageId: verified.storageId });
+    const url = await ctx.storage.getUrl(verified.storageId);
     if (!url) unavailable();
     return { id: image._id, url };
   },

@@ -14,8 +14,8 @@ import {
 } from "./domain/testimonialRichText";
 import { resolveTestimonialImages } from "./testimonialImages";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { imageAssetMetadata } from "./domain/imageAsset";
 import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -948,8 +948,7 @@ const posterChoiceValidator = v.union(
   v.object({ kind: v.literal("frame"), timeSeconds: v.number() }),
   v.object({
     kind: v.literal("image"),
-    storageId: v.id("_storage"),
-    metadata: imageAssetMetadata,
+    verificationId: v.id("directImageVerifications"),
   }),
 );
 
@@ -1032,16 +1031,20 @@ export const setPoster = mutation({
         posterTimeSeconds: Math.round(args.poster.timeSeconds * 10) / 10,
       };
     } else {
-      if (testimonial.posterStorageId !== args.poster.storageId)
-        await validateExclusiveStoredImage(ctx, args.poster.storageId, {
-          kind: "testimonial",
-          imageKind: "videoThumbnail",
-          testimonialId: testimonial._id,
-        });
+      const image = await consumeDirectImage(ctx, args.poster.verificationId, {
+        kind: "videoThumbnail",
+        organizationId: testimonial.organizationId,
+        testimonialId: testimonial._id,
+      });
+      await validateExclusiveStoredImage(ctx, image.storageId, {
+        kind: "testimonial",
+        imageKind: "videoThumbnail",
+        testimonialId: testimonial._id,
+      });
       await registerImageAsset(
         ctx,
-        args.poster.storageId,
-        args.poster.metadata,
+        image.storageId,
+        image.metadata,
         "videoThumbnail",
         {
           organizationId: testimonial.organizationId,
@@ -1049,7 +1052,7 @@ export const setPoster = mutation({
         },
       );
       patch = {
-        posterStorageId: args.poster.storageId,
+        posterStorageId: image.storageId,
         posterTimeSeconds: undefined,
       };
     }

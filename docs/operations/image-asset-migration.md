@@ -10,7 +10,7 @@ without `dryRun` only on an explicitly approved non-production deployment:
 pnpm convex run migrations:queueLegacyOwnerPhotos '{"dryRun":true}'
 pnpm convex run migrations:queueLegacyBrandLogos '{"dryRun":true}'
 pnpm convex run migrations:queueLegacyTestimonialImages '{"dryRun":true}'
-pnpm convex run migrations:queueLegacyTestimonialAvatars '{"dryRun":true}'
+pnpm convex run migrations:queueLegacySubmitterPhotos '{"dryRun":true}'
 pnpm convex run migrations:queueLegacyTestimonialPosters '{"dryRun":true}'
 ```
 

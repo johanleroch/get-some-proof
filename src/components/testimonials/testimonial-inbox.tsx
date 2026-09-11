@@ -1000,6 +1000,7 @@ export function TestimonialInbox({
   const generatePosterUploadUrl = useMutation(
     api.testimonialModeration.generatePosterUploadUrl,
   );
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   const [thumbnailTarget, setThumbnailTarget] =
     useState<InboxTestimonial | null>(null);
   const [previewTarget, setPreviewTarget] = useState<InboxTestimonial | null>(
@@ -1356,10 +1357,15 @@ export function TestimonialInbox({
                 choice.file,
                 uploadUrl,
                 "videoThumbnail",
+                processImage,
+                { kind: "videoThumbnail", ...target },
               );
               await savePoster({
                 ...target,
-                poster: { kind: "image", ...image },
+                poster: {
+                  kind: "image",
+                  verificationId: image.verificationId,
+                },
               });
             } else {
               await savePoster({

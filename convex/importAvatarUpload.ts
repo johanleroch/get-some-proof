@@ -9,7 +9,7 @@ import { internal, components } from "./_generated/api";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { hashSubmissionManagementToken } from "./domain/submission";
 import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
-import { importAvatarTarget as target } from "./domain/importAvatar";
+import { importSubmitterPhotoTarget as target } from "./domain/importSubmitterPhoto";
 import { imageAssetMetadata } from "./domain/imageAsset";
 import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 

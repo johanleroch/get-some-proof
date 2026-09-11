@@ -160,6 +160,8 @@ export function OnboardingScreenFixture() {
         setLogo={async () => null}
         uploadImage={async () => ({
           storageId: "fixture-image" as Id<"_storage">,
+          verificationId:
+            "fixture-image-verification" as Id<"directImageVerifications">,
           metadata: {
             contentType: "image/webp",
             height: 128,

@@ -22,8 +22,8 @@ import {
   randomSlugSuffix,
 } from "./domain/organizationSlug";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { imageAssetMetadata } from "./domain/imageAsset";
 import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import {
   findActiveOrganizationAccess,
   requireOrganizationPermission,
@@ -337,8 +337,7 @@ export const generateLogoUploadUrl = mutation({
 export const setLogo = mutation({
   args: {
     organizationId: v.id("organizations"),
-    storageId: v.id("_storage"),
-    metadata: imageAssetMetadata,
+    verificationId: v.id("directImageVerifications"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -347,17 +346,25 @@ export const setLogo = mutation({
       { organizationId: args.organizationId },
       "organization:update",
     );
-    await validateExclusiveStoredImage(ctx, args.storageId, {
+    const image = await consumeDirectImage(ctx, args.verificationId, {
+      kind: "brandLogo",
+      organizationId: access.organization._id,
+    });
+    await validateExclusiveStoredImage(ctx, image.storageId, {
       kind: "organization",
       organizationId: access.organization._id,
     });
-    await registerImageAsset(ctx, args.storageId, args.metadata, "brandLogo", {
-      organizationId: access.organization._id,
-    });
+    await registerImageAsset(
+      ctx,
+      image.storageId,
+      image.metadata,
+      "brandLogo",
+      { organizationId: access.organization._id },
+    );
     const previousStorageId = access.organization.logoStorageId;
     const now = Date.now();
     await ctx.db.patch(access.organization._id, {
-      logoStorageId: args.storageId,
+      logoStorageId: image.storageId,
       updatedAt: now,
     });
     await recordOrganizationAuditEvent(ctx, {
@@ -370,7 +377,7 @@ export const setLogo = mutation({
       targetLabel: access.organization.name,
       occurredAt: now,
     });
-    if (previousStorageId && previousStorageId !== args.storageId) {
+    if (previousStorageId && previousStorageId !== image.storageId) {
       await deleteImageAsset(ctx, previousStorageId);
     }
     return null;

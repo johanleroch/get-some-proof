@@ -16,10 +16,14 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   setLogo: vi.fn(),
   uploadProfileImage: vi.fn(),
+  useAction: vi.fn(() => vi.fn()),
   useMutation: vi.fn(),
 }));
 
-vi.mock("convex/react", () => ({ useMutation: mocks.useMutation }));
+vi.mock("convex/react", () => ({
+  useAction: mocks.useAction,
+  useMutation: mocks.useMutation,
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
@@ -45,6 +49,7 @@ describe("OrganizationOnboardingForm", () => {
     mocks.push.mockReset();
     mocks.setLogo.mockReset();
     mocks.uploadProfileImage.mockReset();
+    mocks.useAction.mockClear();
     mocks.useMutation.mockReset();
     let mutationCall = 0;
     const mutations = [mocks.create, mocks.generateUploadUrl, mocks.setLogo];
@@ -58,6 +63,7 @@ describe("OrganizationOnboardingForm", () => {
     });
     mocks.uploadProfileImage.mockResolvedValue({
       storageId: "storage-1",
+      verificationId: "verification-1",
       metadata: {
         contentType: "image/webp",
         height: 128,
@@ -176,9 +182,8 @@ describe("OrganizationOnboardingForm", () => {
         publicSlug: "visual-studio",
       });
       expect(mocks.setLogo).toHaveBeenCalledWith({
-        metadata: expect.objectContaining({ kind: "brandLogo" }),
         organizationId: "organization-1",
-        storageId: "storage-1",
+        verificationId: "verification-1",
       });
     });
     expect(mocks.push).toHaveBeenCalledWith(

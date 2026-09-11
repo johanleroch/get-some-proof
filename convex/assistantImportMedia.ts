@@ -8,6 +8,7 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MediaCopyError } from "../src/lib/testimonial-import/public-media";
+import { copyPortraitForImport } from "./importImageProcessing";
 
 export const copyPortrait = internalAction({
   args: {
@@ -17,8 +18,7 @@ export const copyPortrait = internalAction({
     copyAttempt: v.optional(v.number()),
   },
   returns: v.null(),
-  handler: async (ctx, args): Promise<null> =>
-    ctx.runAction(internal.importImageProcessing.copyPortrait, args),
+  handler: copyPortraitForImport,
 });
 
 export const copyVideo = internalAction({

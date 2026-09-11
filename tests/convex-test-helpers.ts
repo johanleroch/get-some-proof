@@ -8,6 +8,7 @@ import migrationsTest from "@convex-dev/migrations/test";
 import { components, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import type { ImageAssetMetadataValue } from "../convex/domain/imageAsset";
+import type { DirectImageTarget } from "../convex/domain/directImageUpload";
 import {
   authzForOrganization,
   type OrganizationRole,
@@ -47,6 +48,23 @@ export function testImageMetadata(
     width: 128,
     ...overrides,
   };
+}
+
+export async function testDirectImageVerification(
+  t: ReturnType<typeof createConvexTest>,
+  target: DirectImageTarget,
+  storageId: Id<"_storage">,
+  metadata: ImageAssetMetadataValue,
+) {
+  return await t.run((ctx) =>
+    ctx.db.insert("directImageVerifications", {
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 30 * 60 * 1000,
+      metadata,
+      storageId,
+      target,
+    }),
+  );
 }
 
 export async function testPngBytes(

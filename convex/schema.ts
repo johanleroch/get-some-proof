@@ -3,6 +3,7 @@ import { widgetSnapshotValidator } from "./domain/widgets";
 import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { richTextValidator } from "./domain/testimonialRichText";
 import { imageAssetKind, imageAssetSource } from "./domain/imageAsset";
+import { directImageTarget } from "./domain/directImageUpload";
 import {
   importResult,
   importOrigin,
@@ -44,7 +45,7 @@ export default defineSchema({
     referenceTable: v.union(
       v.literal("userProfiles"),
       v.literal("organizations"),
-      v.literal("testimonialAvatar"),
+      v.literal("testimonialSubmitterPhoto"),
       v.literal("testimonialPoster"),
       v.literal("testimonialImages"),
     ),
@@ -69,6 +70,25 @@ export default defineSchema({
   })
     .index("by_reference", ["referenceTable", "referenceId"])
     .index("by_status", ["status"]),
+  directImageVerifications: defineTable({
+    target: directImageTarget,
+    storageId: v.id("_storage"),
+    metadata: v.object({
+      contentType: v.literal("image/webp"),
+      height: v.number(),
+      kind: imageAssetKind,
+      originalContentType: v.string(),
+      originalSize: v.number(),
+      size: v.number(),
+      source: imageAssetSource,
+      transformVersion: v.literal("webp-v1"),
+      width: v.number(),
+    }),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_expiry", ["expiresAt"])
+    .index("by_storage_id", ["storageId"]),
   widgets: defineTable({
     organizationId: v.id("organizations"),
     publicId: v.string(),

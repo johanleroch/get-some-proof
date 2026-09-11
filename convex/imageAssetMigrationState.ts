@@ -69,7 +69,7 @@ export const commit = internalMutation({
       const id = ctx.db.normalizeId("testimonials", job.referenceId);
       const testimonial = id ? await ctx.db.get(id) : null;
       currentStorageId =
-        job.referenceTable === "testimonialAvatar"
+        job.referenceTable === "testimonialSubmitterPhoto"
           ? testimonial?.avatarStorageId
           : testimonial?.posterStorageId;
     }
@@ -112,7 +112,7 @@ export const commit = internalMutation({
       const id = ctx.db.normalizeId("testimonials", job.referenceId)!;
       const testimonial = (await ctx.db.get(id))!;
       const patch =
-        job.referenceTable === "testimonialAvatar"
+        job.referenceTable === "testimonialSubmitterPhoto"
           ? {
               avatarStorageId: args.replacementStorageId,
               updatedAt: Date.now(),

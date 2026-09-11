@@ -2,8 +2,8 @@ import { ConvexError, v } from "convex/values";
 
 import { mutation, type MutationCtx } from "./_generated/server";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
-import { imageAssetMetadata } from "./domain/imageAsset";
 import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
+import { consumeDirectImage } from "./imageAssetProcessingState";
 import { requireVerifiedPrincipal } from "./security/principal";
 
 async function requireOpenAccount(ctx: MutationCtx) {
@@ -30,17 +30,24 @@ export const generateAvatarUploadUrl = mutation({
 });
 
 export const setMyAvatar = mutation({
-  args: { storageId: v.id("_storage"), metadata: imageAssetMetadata },
+  args: { verificationId: v.id("directImageVerifications") },
   returns: v.null(),
   handler: async (ctx, args) => {
     const principal = await requireOpenAccount(ctx);
-    await validateExclusiveStoredImage(ctx, args.storageId, {
+    const image = await consumeDirectImage(ctx, args.verificationId, {
+      kind: "ownerPhoto",
+    });
+    await validateExclusiveStoredImage(ctx, image.storageId, {
       kind: "user",
       userId: principal.actorId,
     });
-    await registerImageAsset(ctx, args.storageId, args.metadata, "ownerPhoto", {
-      ownerUserId: principal.actorId,
-    });
+    await registerImageAsset(
+      ctx,
+      image.storageId,
+      image.metadata,
+      "ownerPhoto",
+      { ownerUserId: principal.actorId },
+    );
 
     const profile = await ctx.db
       .query("userProfiles")
@@ -50,17 +57,17 @@ export const setMyAvatar = mutation({
     const updatedAt = Date.now();
     if (profile) {
       await ctx.db.patch(profile._id, {
-        avatarStorageId: args.storageId,
+        avatarStorageId: image.storageId,
         updatedAt,
       });
     } else {
       await ctx.db.insert("userProfiles", {
         userId: principal.actorId,
-        avatarStorageId: args.storageId,
+        avatarStorageId: image.storageId,
         updatedAt,
       });
     }
-    if (previousStorageId && previousStorageId !== args.storageId) {
+    if (previousStorageId && previousStorageId !== image.storageId) {
       await deleteImageAsset(ctx, previousStorageId);
     }
     return null;
