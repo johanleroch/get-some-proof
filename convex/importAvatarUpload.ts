@@ -8,13 +8,11 @@ import {
 import { internal, components } from "./_generated/api";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { hashSubmissionManagementToken } from "./domain/submission";
-import { imageType } from "../src/lib/testimonial-import/avatar";
 import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
+import { importAvatarTarget as target } from "./domain/importAvatar";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 
-const target = v.union(
-  v.object({ itemId: v.id("testimonialImportItems") }),
-  v.object({ token: v.string(), position: v.number() }),
-);
 const limiter = new RateLimiter(components.rateLimiter, {
   photo: { kind: "fixed window", rate: 30, period: HOUR },
 });
@@ -85,14 +83,28 @@ export const authorize = internalMutation({
 });
 
 export const attach = internalMutation({
-  args: { target, storageId: v.union(v.null(), v.id("_storage")) },
+  args: {
+    target,
+    storageId: v.union(v.null(), v.id("_storage")),
+    metadata: v.optional(imageAssetMetadata),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const access = await editable(ctx, args.target);
     const expiresAt =
       access.kind === "owned" ? access.job.expiresAt : access.preview.expiresAt;
     if (args.storageId) {
+      if (!args.metadata) unavailable();
       if (!(await ctx.db.system.get("_storage", args.storageId))) unavailable();
+      await registerImageAsset(
+        ctx,
+        args.storageId,
+        args.metadata,
+        "submitterPhoto",
+        access.kind === "owned"
+          ? { organizationId: access.job.organizationId }
+          : {},
+      );
       const uploadId = await ctx.db.insert("importAvatarUploads", {
         storageId: args.storageId,
         expiresAt,
@@ -144,7 +156,7 @@ export const attach = internalMutation({
         .withIndex("by_storage_id", (q) => q.eq("storageId", previous))
         .unique();
       if (old) await ctx.db.delete(old._id);
-      await ctx.storage.delete(previous);
+      await deleteImageAsset(ctx, previous);
     }
     return null;
   },
@@ -153,30 +165,11 @@ export const attach = internalMutation({
 export const upload = action({
   args: { target, bytes: v.bytes() },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const type = imageType(new Uint8Array(args.bytes).subarray(0, 12));
-    if (args.bytes.byteLength > 750_000 || !type)
-      throw new ConvexError({
-        code: "INVALID_STORED_IMAGE",
-        message: "Choose a smaller image and crop it before uploading.",
-      });
+  handler: async (ctx, args): Promise<null> => {
     await ctx.runMutation(internal.importAvatarUpload.authorize, {
       target: args.target,
     });
-    const storageId = await ctx.storage.store(new Blob([args.bytes], { type }));
-    // Do not delete on an uncertain mutation response: it may already be linked.
-    try {
-      await ctx.runMutation(internal.importAvatarUpload.attach, {
-        target: args.target,
-        storageId,
-      });
-    } catch (error) {
-      await ctx.runMutation(internal.importAvatarUpload.discardUnattached, {
-        storageId,
-      });
-      throw error;
-    }
-    return null;
+    return ctx.runAction(internal.importImageProcessing.uploadCorrection, args);
   },
 });
 
@@ -194,7 +187,7 @@ export const discardUnattached = internalMutation({
         q.eq("avatarStorageId", args.storageId),
       )
       .first();
-    if (!upload && !testimonial) await ctx.storage.delete(args.storageId);
+    if (!upload && !testimonial) await deleteImageAsset(ctx, args.storageId);
     return null;
   },
 });
@@ -231,7 +224,7 @@ export const expire = internalMutation({
         q.eq("avatarStorageId", upload.storageId),
       )
       .first();
-    if (!testimonial) await ctx.storage.delete(upload.storageId);
+    if (!testimonial) await deleteImageAsset(ctx, upload.storageId);
     await ctx.db.delete(upload._id);
     return null;
   },

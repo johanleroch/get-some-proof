@@ -45,6 +45,10 @@ import {
 } from "./domain/submission";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
 import {
+  attachImageAssetToTestimonial,
+  deleteImageAsset,
+} from "./imageAssetRegistry";
+import {
   sourceVideoDimensionsValidator,
   sourceVideoMetadata,
 } from "./domain/video";
@@ -380,8 +384,14 @@ export const confirmRevision = mutation({
       }
       await validateExclusiveStoredImage(ctx, args.avatarStorageId, {
         kind: "testimonial",
+        imageKind: "submitterPhoto",
       });
       nextAvatarStorageId = args.avatarStorageId;
+      await attachImageAssetToTestimonial(
+        ctx,
+        args.avatarStorageId,
+        testimonial._id,
+      );
     }
     if (
       testimonial.submissionType === "video" &&
@@ -489,7 +499,7 @@ export const confirmRevision = mutation({
       testimonial.avatarStorageId &&
       testimonial.avatarStorageId !== nextAvatarStorageId
     ) {
-      await ctx.storage.delete(testimonial.avatarStorageId);
+      await deleteImageAsset(ctx, testimonial.avatarStorageId);
     }
     await recordOrganizationAuditEvent(ctx, {
       actorDisplayName: "Submitter",

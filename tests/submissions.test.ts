@@ -10,6 +10,7 @@ import {
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
+  testImageMetadata,
 } from "./convex-test-helpers";
 
 const consent = buildPublicationConsent({
@@ -325,12 +326,13 @@ describe("text Submission collection", () => {
     );
     const storageId = await t.run(async (ctx) => {
       const id = await ctx.storage.store(new Blob(["avatar"]));
-      await ctx.db.patch(id, { contentType: "image/jpeg" });
+      await ctx.db.patch(id, { contentType: "image/webp" });
       return id;
     });
     await t.mutation(api.submissions.registerAvatarUpload, {
       reservationId: upload.reservationId,
       storageId,
+      metadata: testImageMetadata("submitterPhoto", 6),
     });
 
     await t.action(api.submissions.submitText, {

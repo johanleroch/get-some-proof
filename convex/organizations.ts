@@ -22,6 +22,8 @@ import {
   randomSlugSuffix,
 } from "./domain/organizationSlug";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 import {
   findActiveOrganizationAccess,
   requireOrganizationPermission,
@@ -336,6 +338,7 @@ export const setLogo = mutation({
   args: {
     organizationId: v.id("organizations"),
     storageId: v.id("_storage"),
+    metadata: imageAssetMetadata,
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -346,6 +349,9 @@ export const setLogo = mutation({
     );
     await validateExclusiveStoredImage(ctx, args.storageId, {
       kind: "organization",
+      organizationId: access.organization._id,
+    });
+    await registerImageAsset(ctx, args.storageId, args.metadata, "brandLogo", {
       organizationId: access.organization._id,
     });
     const previousStorageId = access.organization.logoStorageId;
@@ -365,7 +371,7 @@ export const setLogo = mutation({
       occurredAt: now,
     });
     if (previousStorageId && previousStorageId !== args.storageId) {
-      await ctx.storage.delete(previousStorageId);
+      await deleteImageAsset(ctx, previousStorageId);
     }
     return null;
   },
@@ -397,7 +403,7 @@ export const removeLogo = mutation({
       targetLabel: access.organization.name,
       occurredAt: now,
     });
-    await ctx.storage.delete(previousStorageId);
+    await deleteImageAsset(ctx, previousStorageId);
     return null;
   },
 });

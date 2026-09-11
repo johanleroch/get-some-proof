@@ -1352,13 +1352,14 @@ export function TestimonialInbox({
             };
             if (choice.kind === "image") {
               const uploadUrl = await generatePosterUploadUrl(target);
-              const storageId = await uploadProfileImage(
+              const image = await uploadProfileImage(
                 choice.file,
                 uploadUrl,
+                "videoThumbnail",
               );
               await savePoster({
                 ...target,
-                poster: { kind: "image", storageId },
+                poster: { kind: "image", ...image },
               });
             } else {
               await savePoster({

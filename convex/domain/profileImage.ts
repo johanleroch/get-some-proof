@@ -2,13 +2,16 @@ import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-
-export const maximumStoredImageBytes = 5 * 1024 * 1024;
+import { imageAssetProfiles } from "../../src/lib/image-assets";
 
 type ImageOwner =
   | { kind: "user"; userId: string }
   | { kind: "organization"; organizationId: Id<"organizations"> }
-  | { kind: "testimonial"; testimonialId?: Id<"testimonials"> };
+  | {
+      kind: "testimonial";
+      imageKind: "submitterPhoto" | "testimonialImage" | "videoThumbnail";
+      testimonialId?: Id<"testimonials">;
+    };
 
 export async function validateExclusiveStoredImage(
   ctx: MutationCtx,
@@ -16,14 +19,21 @@ export async function validateExclusiveStoredImage(
   owner: ImageOwner,
 ) {
   const metadata = await ctx.db.system.get("_storage", storageId);
+  const imageKind =
+    owner.kind === "user"
+      ? "ownerPhoto"
+      : owner.kind === "organization"
+        ? "brandLogo"
+        : owner.imageKind;
   if (
     !metadata ||
-    !metadata.contentType?.startsWith("image/") ||
-    metadata.size > maximumStoredImageBytes
+    metadata.contentType !== "image/webp" ||
+    metadata.size === 0 ||
+    metadata.size > imageAssetProfiles[imageKind].maximumBytes
   ) {
     throw new ConvexError({
       code: "INVALID_STORED_IMAGE",
-      message: "Choose an image smaller than 5 MB.",
+      message: "The image could not be optimized. Choose another image.",
     });
   }
 

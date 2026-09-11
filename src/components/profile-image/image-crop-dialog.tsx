@@ -30,9 +30,6 @@ export async function cropImage(source: string, area: Area) {
 
   canvas.width = 512;
   canvas.height = 512;
-  // JPEG has no alpha channel: composite transparent logos onto white.
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(
     image,
     area.x,
@@ -51,8 +48,8 @@ export async function cropImage(source: string, area: Area) {
         blob
           ? resolve(blob)
           : reject(new Error("Unable to prepare the image.")),
-      "image/jpeg",
-      0.9,
+      "image/webp",
+      0.82,
     );
   });
 }

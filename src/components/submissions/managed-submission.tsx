@@ -682,8 +682,12 @@ export function ManagedSubmission({ token }: { token: string }) {
           token,
         };
         const { imageId, uploadUrl } = await generateImageUpload(identity);
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        return registerImageUpload({ ...identity, imageId, storageId });
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "testimonialImage",
+        );
+        return registerImageUpload({ ...identity, imageId, ...image });
       }}
       uploadAvatar={async (file) => {
         const clientSubmissionId = `revision-${token.slice(0, 32)}`;
@@ -692,9 +696,13 @@ export function ManagedSubmission({ token }: { token: string }) {
           token,
           publicSlug: submission.publicSlug,
         });
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        await registerAvatarUpload({ reservationId, storageId });
-        return { reservationId, storageId };
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "submitterPhoto",
+        );
+        await registerAvatarUpload({ reservationId, ...image });
+        return { reservationId, storageId: image.storageId };
       }}
     />
   );

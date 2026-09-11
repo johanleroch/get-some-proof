@@ -6,9 +6,12 @@ export const imageValueValidator = v.object({
 });
 export type TestimonialImage = Infer<typeof imageValueValidator>;
 export const maximumTestimonialImages = 3;
-export const maximumTestimonialImageBytes = 5 * 1024 * 1024;
-export const testimonialImageMimeTypes = [
+export const maximumTestimonialImageBytes = 1024 * 1024;
+export const maximumTestimonialImageInputBytes = 20 * 1024 * 1024;
+export const testimonialImageMimeTypes = ["image/webp"];
+export const testimonialImageInputMimeTypes = [
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/avif",
 ];

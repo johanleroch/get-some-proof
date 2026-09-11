@@ -68,6 +68,22 @@ vi.mock("@/components/testimonials/testimonial-editor", () => ({
     />
   ),
 }));
+vi.mock("@/lib/upload-profile-image", () => ({
+  uploadProfileImage: vi.fn().mockResolvedValue({
+    storageId: "storage-fixture",
+    metadata: {
+      contentType: "image/webp",
+      height: 720,
+      kind: "testimonialImage",
+      originalContentType: "image/png",
+      originalSize: 9,
+      size: 9,
+      source: "direct",
+      transformVersion: "webp-v1",
+      width: 960,
+    },
+  }),
+}));
 import { CollectionFormShell } from "./collection-form-shell";
 
 afterEach(() => {

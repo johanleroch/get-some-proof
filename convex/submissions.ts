@@ -34,6 +34,12 @@ import { authzForOrganization } from "./authorization";
 import { getOrganizationBillingEntitlement } from "./billingEntitlements";
 import { consumeFreeCollectionCredit } from "./collectionQuotas";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import {
+  attachImageAssetToTestimonial,
+  deleteImageAsset,
+  registerImageAsset,
+} from "./imageAssetRegistry";
 import {
   sendTransactionalEmail,
   UncertainEmailDeliveryError,
@@ -219,7 +225,7 @@ export const generateAvatarUploadUrl = mutation({
           updatedAt: now,
         });
     if (existing) {
-      if (existing.storageId) await ctx.storage.delete(existing.storageId);
+      if (existing.storageId) await deleteImageAsset(ctx, existing.storageId);
       await ctx.db.patch(existing._id, {
         expiresAt,
         storageId: undefined,
@@ -243,6 +249,7 @@ export const registerAvatarUpload = mutation({
   args: {
     reservationId: v.id("submissionAvatarUploads"),
     storageId: v.id("_storage"),
+    metadata: imageAssetMetadata,
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -256,9 +263,17 @@ export const registerAvatarUpload = mutation({
     }
     await validateExclusiveStoredImage(ctx, args.storageId, {
       kind: "testimonial",
+      imageKind: "submitterPhoto",
     });
+    await registerImageAsset(
+      ctx,
+      args.storageId,
+      args.metadata,
+      "submitterPhoto",
+      { organizationId: reservation.organizationId },
+    );
     if (reservation.storageId && reservation.storageId !== args.storageId) {
-      await ctx.storage.delete(reservation.storageId);
+      await deleteImageAsset(ctx, reservation.storageId);
     }
     await ctx.db.patch(reservation._id, {
       storageId: args.storageId,
@@ -276,7 +291,7 @@ export const expireAvatarUpload = internalMutation({
     const now = Date.now();
     if (reservation && reservation.expiresAt <= now) {
       if (reservation.storageId)
-        await ctx.storage.delete(reservation.storageId);
+        await deleteImageAsset(ctx, reservation.storageId);
       await ctx.db.delete(reservation._id);
     }
     await scheduleOrphanedStorageCleanup(ctx);
@@ -423,6 +438,7 @@ export const createTextRecords = internalMutation({
       }
       await validateExclusiveStoredImage(ctx, args.avatarStorageId, {
         kind: "testimonial",
+        imageKind: "submitterPhoto",
       });
     }
 
@@ -472,6 +488,12 @@ export const createTextRecords = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+    if (args.avatarStorageId)
+      await attachImageAssetToTestimonial(
+        ctx,
+        args.avatarStorageId,
+        testimonialId,
+      );
     await setTestimonialImages(
       ctx,
       (await ctx.db.get(testimonialId))!,

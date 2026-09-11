@@ -18,6 +18,12 @@ import {
 } from "./_generated/server";
 import { hashSubmissionManagementToken } from "./domain/submission";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import {
+  attachImageAssetToTestimonial,
+  deleteImageAsset,
+  registerImageAsset,
+} from "./imageAssetRegistry";
 import { scheduleOrphanedStorageCleanup } from "./storageCleanup";
 
 const hour = HOUR;
@@ -126,6 +132,7 @@ export const registerUpload = mutation({
     ...uploadIdentity,
     imageId: v.id("testimonialImages"),
     storageId: v.id("_storage"),
+    metadata: imageAssetMetadata,
   },
   returns: imageValueValidator,
   handler: async (ctx, args) => {
@@ -156,16 +163,28 @@ export const registerUpload = mutation({
     )
       throw new ConvexError({
         code: "INVALID_TESTIMONIAL_IMAGE",
-        message: "Choose a JPG, PNG or WebP image smaller than 5 MB.",
+        message: "The image could not be optimized. Choose another image.",
       });
     await validateExclusiveStoredImage(ctx, args.storageId, {
       kind: "testimonial",
+      imageKind: "testimonialImage",
     });
     const reservation = await ctx.db
       .query("submissionAvatarUploads")
       .withIndex("by_storage_id", (q) => q.eq("storageId", args.storageId))
       .first();
     if (reservation) unavailable();
+    await registerImageAsset(
+      ctx,
+      args.storageId,
+      args.metadata,
+      "testimonialImage",
+      {
+        organizationId: brand._id,
+        testimonialId,
+        testimonialImageId: image._id,
+      },
+    );
     await ctx.db.patch(image._id, { storageId: args.storageId });
     const url = await ctx.storage.getUrl(args.storageId);
     if (!url) unavailable();
@@ -201,9 +220,27 @@ export async function setTestimonialImages(
     testimonial.submissionType !== "text"
   )
     unavailable();
+  const desiredImages = await Promise.all(ids.map((id) => ctx.db.get(id)));
+  const digests = await Promise.all(
+    desiredImages.map((image) =>
+      image?.storageId
+        ? ctx.db.system.get("_storage", image.storageId)
+        : Promise.resolve(null),
+    ),
+  );
+  const seenDigests = new Set<string>();
+  for (const stored of digests) {
+    if (!stored?.sha256) continue;
+    if (seenDigests.has(stored.sha256))
+      throw new ConvexError({
+        code: "DUPLICATE_TESTIMONIAL_IMAGE",
+        message: "Remove the duplicate image before submitting.",
+      });
+    seenDigests.add(stored.sha256);
+  }
   await Promise.all(
-    ids.map(async (id) => {
-      const image = await ctx.db.get(id);
+    ids.map(async (id, index) => {
+      const image = desiredImages[index];
       if (
         !image ||
         !image.storageId ||
@@ -220,6 +257,11 @@ export async function setTestimonialImages(
         )
           unavailable();
         await ctx.db.patch(id, { testimonialId: testimonial._id });
+        await attachImageAssetToTestimonial(
+          ctx,
+          image.storageId,
+          testimonial._id,
+        );
       }
     }),
   );
@@ -240,7 +282,7 @@ async function deleteImage(
   const image = await ctx.db.get(id);
   if (!image) return;
   if (!mediaAlreadyHandled && image.storageId)
-    await ctx.storage.delete(image.storageId);
+    await deleteImageAsset(ctx, image.storageId);
   await ctx.db.delete(id);
 }
 export async function deleteTestimonialImages(

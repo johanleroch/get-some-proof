@@ -5,20 +5,29 @@ import {
   addMemberWithRole,
   authenticatedUser,
   createConvexTest,
+  testImageMetadata,
 } from "./convex-test-helpers";
 
 async function storeImage(
   t: ReturnType<typeof createConvexTest>,
   body = "image bytes",
-  options: { contentType?: string; size?: number } = {},
+  options: {
+    contentType?: string;
+    kind?: "ownerPhoto" | "brandLogo";
+    size?: number;
+  } = {},
 ) {
   return await t.run(async (ctx) => {
     const storageId = await ctx.storage.store(new Blob([body]));
+    const size = options.size ?? new Blob([body]).size;
     await ctx.db.patch(storageId, {
-      contentType: options.contentType ?? "image/jpeg",
-      ...(options.size === undefined ? {} : { size: options.size }),
+      contentType: options.contentType ?? "image/webp",
+      size,
     });
-    return storageId;
+    return {
+      storageId,
+      metadata: testImageMetadata(options.kind ?? "ownerPhoto", size),
+    };
   });
 }
 
@@ -30,10 +39,10 @@ describe("profile image storage", () => {
     const second = await storeImage(t, "second");
 
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      storageId: first,
+      ...first,
     });
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      storageId: second,
+      ...second,
     });
 
     const current = await alice.client.query(api.auth.getCurrentUser, {});
@@ -45,9 +54,9 @@ describe("profile image storage", () => {
           .withIndex("by_user_id", (index) => index.eq("userId", alice.actorId))
           .unique(),
       ),
-    ).toMatchObject({ avatarStorageId: second });
+    ).toMatchObject({ avatarStorageId: second.storageId });
     expect(
-      await t.run((ctx) => ctx.db.system.get("_storage", first)),
+      await t.run((ctx) => ctx.db.system.get("_storage", first.storageId)),
     ).toBeNull();
 
     await alice.client.mutation(api.profileImages.removeMyAvatar, {});
@@ -55,7 +64,7 @@ describe("profile image storage", () => {
       (await alice.client.query(api.auth.getCurrentUser, {}))?.image,
     ).toBeNull();
     expect(
-      await t.run((ctx) => ctx.db.system.get("_storage", second)),
+      await t.run((ctx) => ctx.db.system.get("_storage", second.storageId)),
     ).toBeNull();
   });
 
@@ -71,6 +80,7 @@ describe("profile image storage", () => {
     await expect(
       alice.client.mutation(api.profileImages.setMyAvatar, {
         storageId: textFile,
+        metadata: testImageMetadata("ownerPhoto", 5),
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_STORED_IMAGE" },
@@ -86,7 +96,7 @@ describe("profile image storage", () => {
 
     await expect(
       alice.client.mutation(api.profileImages.setMyAvatar, {
-        storageId: oversized,
+        ...oversized,
       }),
     ).rejects.toMatchObject({
       data: { code: "INVALID_STORED_IMAGE" },
@@ -103,16 +113,16 @@ describe("profile image storage", () => {
     const image = await storeImage(t, "alice-avatar");
 
     await alice.client.mutation(api.profileImages.setMyAvatar, {
-      storageId: image,
+      ...image,
     });
     await expect(
-      bob.client.mutation(api.profileImages.setMyAvatar, { storageId: image }),
+      bob.client.mutation(api.profileImages.setMyAvatar, image),
     ).rejects.toMatchObject({
       data: { code: "STORED_IMAGE_UNAVAILABLE" },
     });
 
     expect(
-      await t.run((ctx) => ctx.db.system.get("_storage", image)),
+      await t.run((ctx) => ctx.db.system.get("_storage", image.storageId)),
     ).not.toBeNull();
     expect(
       await t.run((ctx) =>
@@ -121,7 +131,7 @@ describe("profile image storage", () => {
           .withIndex("by_user_id", (index) => index.eq("userId", alice.actorId))
           .unique(),
       ),
-    ).toMatchObject({ avatarStorageId: image });
+    ).toMatchObject({ avatarStorageId: image.storageId });
   });
 
   it("replaces and removes an Organization logo without leaving old files", async () => {
@@ -130,26 +140,28 @@ describe("profile image storage", () => {
     const organization = await owner.client.mutation(api.organizations.create, {
       name: "Logo Lifecycle Company",
     });
-    const first = await storeImage(t, "first-logo");
-    const second = await storeImage(t, "second-logo");
+    const first = await storeImage(t, "first-logo", { kind: "brandLogo" });
+    const second = await storeImage(t, "second-logo", {
+      kind: "brandLogo",
+    });
 
     await owner.client.mutation(api.organizations.setLogo, {
       organizationId: organization.id,
-      storageId: first,
+      ...first,
     });
     await owner.client.mutation(api.organizations.setLogo, {
       organizationId: organization.id,
-      storageId: second,
+      ...second,
     });
 
     expect(
-      await t.run((ctx) => ctx.db.system.get("_storage", first)),
+      await t.run((ctx) => ctx.db.system.get("_storage", first.storageId)),
     ).toBeNull();
     await owner.client.mutation(api.organizations.removeLogo, {
       organizationId: organization.id,
     });
     expect(
-      await t.run((ctx) => ctx.db.system.get("_storage", second)),
+      await t.run((ctx) => ctx.db.system.get("_storage", second.storageId)),
     ).toBeNull();
     expect(
       await t.run((ctx) => ctx.db.get(organization.id)),
@@ -182,11 +194,11 @@ describe("profile image storage", () => {
         name: `${role} Member`,
       });
       await addMemberWithRole(t, organization.id, member.actorId, role);
-      const image = await storeImage(t, role);
+      const image = await storeImage(t, role, { kind: "brandLogo" });
 
       const update = member.client.mutation(api.organizations.setLogo, {
         organizationId: organization.id,
-        storageId: image,
+        ...image,
       });
 
       if (allowed) {
@@ -197,7 +209,7 @@ describe("profile image storage", () => {
         expect(visible?.logoUrl).toMatch(/^https:\/\//);
         expect(await t.run((ctx) => ctx.db.get(organization.id))).toMatchObject(
           {
-            logoStorageId: image,
+            logoStorageId: image.storageId,
           },
         );
       } else {
@@ -227,10 +239,12 @@ describe("profile image storage", () => {
         name: `${role} Logo Member`,
       });
       await addMemberWithRole(t, organization.id, member.actorId, role);
-      const image = await storeImage(t, `${role}-logo`);
+      const image = await storeImage(t, `${role}-logo`, {
+        kind: "brandLogo",
+      });
       await originalOwner.client.mutation(api.organizations.setLogo, {
         organizationId: organization.id,
-        storageId: image,
+        ...image,
       });
 
       const uploadUrl = member.client.mutation(
@@ -245,7 +259,7 @@ describe("profile image storage", () => {
         await expect(uploadUrl).resolves.toMatch(/^https:\/\//);
         await expect(removal).resolves.toBeNull();
         expect(
-          await t.run((ctx) => ctx.db.system.get("_storage", image)),
+          await t.run((ctx) => ctx.db.system.get("_storage", image.storageId)),
         ).toBeNull();
       } else {
         await expect(uploadUrl).rejects.toMatchObject({
@@ -255,7 +269,7 @@ describe("profile image storage", () => {
           data: { code: "ORGANIZATION_ACCESS_DENIED" },
         });
         expect(
-          await t.run((ctx) => ctx.db.system.get("_storage", image)),
+          await t.run((ctx) => ctx.db.system.get("_storage", image.storageId)),
         ).not.toBeNull();
       }
     },

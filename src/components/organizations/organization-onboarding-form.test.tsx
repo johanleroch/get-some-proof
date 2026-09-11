@@ -56,7 +56,20 @@ describe("OrganizationOnboardingForm", () => {
       publicSlug: "visual-studio",
       slug: "visual-studio-ab12",
     });
-    mocks.uploadProfileImage.mockResolvedValue("storage-1");
+    mocks.uploadProfileImage.mockResolvedValue({
+      storageId: "storage-1",
+      metadata: {
+        contentType: "image/webp",
+        height: 128,
+        kind: "brandLogo",
+        originalContentType: "image/jpeg",
+        originalSize: 4,
+        size: 4,
+        source: "direct",
+        transformVersion: "webp-v1",
+        width: 128,
+      },
+    });
     mocks.setLogo.mockResolvedValue(null);
   });
 
@@ -163,6 +176,7 @@ describe("OrganizationOnboardingForm", () => {
         publicSlug: "visual-studio",
       });
       expect(mocks.setLogo).toHaveBeenCalledWith({
+        metadata: expect.objectContaining({ kind: "brandLogo" }),
         organizationId: "organization-1",
         storageId: "storage-1",
       });

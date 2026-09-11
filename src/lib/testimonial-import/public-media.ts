@@ -3,6 +3,7 @@ import { BlockList, isIP } from "node:net";
 import { request as httpRequest, type IncomingMessage } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { imageType, maximumImportAvatarBytes } from "./avatar";
+import { acceptedImageInputTypes } from "../image-assets";
 
 const blocked = new BlockList();
 for (const [address, prefix] of [
@@ -50,7 +51,7 @@ function publicAddress(address: string, family: number) {
 export async function openPublicMedia(
   input: string,
   signal: AbortSignal,
-  accept = "image/jpeg,image/png,image/webp,image/gif",
+  accept = acceptedImageInputTypes.join(","),
 ): Promise<IncomingMessage> {
   let url: URL;
   try {
@@ -142,7 +143,7 @@ export async function downloadPublicPortrait(input: string): Promise<Blob> {
   try {
     const contentType = response.headers["content-type"]?.split(";")[0];
     if (
-      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+      !(acceptedImageInputTypes as readonly string[]).includes(
         contentType ?? "",
       ) ||
       Number(response.headers["content-length"]) > maximumImportAvatarBytes ||
@@ -160,8 +161,7 @@ export async function downloadPublicPortrait(input: string): Promise<Blob> {
     const blob = new Blob(chunks, { type: contentType });
     if (
       !length ||
-      imageType(new Uint8Array(await blob.slice(0, 12).arrayBuffer())) !==
-        contentType
+      imageType(new Uint8Array(await blob.arrayBuffer())) !== contentType
     )
       throw new MediaCopyError();
     return blob;

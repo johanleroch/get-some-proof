@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/convex/schemas/convex.schema.json",
   "node": {
-    "externalPackages": ["ffmpeg-static"],
+    "externalPackages": ["ffmpeg-static", "sharp"],
     "nodeVersion": "24"
   }
 }

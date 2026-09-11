@@ -74,7 +74,9 @@ export function OrganizationOnboardingForm({
       }}
       noun={noun}
       setLogo={setLogo}
-      uploadImage={uploadProfileImage}
+      uploadImage={(blob, uploadUrl) =>
+        uploadProfileImage(blob, uploadUrl, "brandLogo")
+      }
     />
   );
 }
@@ -109,8 +111,15 @@ export function OrganizationOnboardingFormView({
   setLogo: (args: {
     organizationId: Id<"organizations">;
     storageId: Id<"_storage">;
+    metadata: import("@convex/domain/imageAsset").ImageAssetMetadataValue;
   }) => Promise<unknown>;
-  uploadImage: (blob: Blob, uploadUrl: string) => Promise<Id<"_storage">>;
+  uploadImage: (
+    blob: Blob,
+    uploadUrl: string,
+  ) => Promise<{
+    storageId: Id<"_storage">;
+    metadata: import("@convex/domain/imageAsset").ImageAssetMetadataValue;
+  }>;
 }) {
   const [name, setName] = useState("");
   const [publicSlug, setPublicSlug] = useState("");
@@ -202,8 +211,8 @@ export function OrganizationOnboardingFormView({
         const uploadUrl = await generateUploadUrl({
           organizationId: organization.id,
         });
-        const storageId = await uploadImage(logoBlob, uploadUrl);
-        await setLogo({ organizationId: organization.id, storageId });
+        const image = await uploadImage(logoBlob, uploadUrl);
+        await setLogo({ organizationId: organization.id, ...image });
       }
       navigate(`/org/${organization.slug}/dashboard`);
     } catch (caught) {
@@ -244,6 +253,7 @@ export function OrganizationOnboardingFormView({
           label="Brand logo (optional)"
           onRemove={removeStagedLogo}
           onUpload={stageLogo}
+          preserveRatio
           size="sm"
         />
         <div className="space-y-4">

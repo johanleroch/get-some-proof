@@ -158,7 +158,20 @@ export function OnboardingScreenFixture() {
         generateUploadUrl={async () => "fixture://upload"}
         navigate={() => undefined}
         setLogo={async () => null}
-        uploadImage={async () => "fixture-image" as Id<"_storage">}
+        uploadImage={async () => ({
+          storageId: "fixture-image" as Id<"_storage">,
+          metadata: {
+            contentType: "image/webp",
+            height: 128,
+            kind: "brandLogo",
+            originalContentType: "image/png",
+            originalSize: 1024,
+            size: 512,
+            source: "direct",
+            transformVersion: "webp-v1",
+            width: 128,
+          },
+        })}
       />
     </OrganizationOnboardingScreen>
   );

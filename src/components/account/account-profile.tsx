@@ -72,8 +72,12 @@ function AccountProfileContent({
   const removeAvatar = useMutation(api.profileImages.removeMyAvatar);
 
   async function uploadAvatar(blob: Blob) {
-    const storageId = await uploadProfileImage(blob, await generateUploadUrl());
-    await setAvatar({ storageId });
+    const image = await uploadProfileImage(
+      blob,
+      await generateUploadUrl(),
+      "ownerPhoto",
+    );
+    await setAvatar(image);
   }
 
   async function removeProfileImage() {

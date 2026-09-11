@@ -227,8 +227,8 @@ export function OrganizationSettings({
 
   async function uploadLogo(blob: Blob) {
     const uploadUrl = await generateUploadUrl({ organizationId });
-    const storageId = await uploadProfileImage(blob, uploadUrl);
-    await setLogo({ organizationId, storageId });
+    const image = await uploadProfileImage(blob, uploadUrl, "brandLogo");
+    await setLogo({ organizationId, ...image });
   }
 
   return (
@@ -383,6 +383,7 @@ export function OrganizationSettingsView({
               label="Brand logo"
               onRemove={onRemoveLogo}
               onUpload={onUploadLogo}
+              preserveRatio
               readOnly={!canUpdate}
             />
           </div>

@@ -105,7 +105,7 @@ describe("VideoThumbnailDialog", () => {
       },
     });
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Choose a JPEG, PNG or WebP image.",
+      "Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.",
     );
 
     const photo = new File(["x"], "smile.jpg", { type: "image/jpeg" });

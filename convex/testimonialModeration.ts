@@ -14,6 +14,8 @@ import {
 } from "./domain/testimonialRichText";
 import { resolveTestimonialImages } from "./testimonialImages";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 
@@ -944,7 +946,11 @@ export const setHighlights = mutation({
 
 const posterChoiceValidator = v.union(
   v.object({ kind: v.literal("frame"), timeSeconds: v.number() }),
-  v.object({ kind: v.literal("image"), storageId: v.id("_storage") }),
+  v.object({
+    kind: v.literal("image"),
+    storageId: v.id("_storage"),
+    metadata: imageAssetMetadata,
+  }),
 );
 
 async function findReadyVideo(
@@ -1029,8 +1035,19 @@ export const setPoster = mutation({
       if (testimonial.posterStorageId !== args.poster.storageId)
         await validateExclusiveStoredImage(ctx, args.poster.storageId, {
           kind: "testimonial",
+          imageKind: "videoThumbnail",
           testimonialId: testimonial._id,
         });
+      await registerImageAsset(
+        ctx,
+        args.poster.storageId,
+        args.poster.metadata,
+        "videoThumbnail",
+        {
+          organizationId: testimonial.organizationId,
+          testimonialId: testimonial._id,
+        },
+      );
       patch = {
         posterStorageId: args.poster.storageId,
         posterTimeSeconds: undefined,
@@ -1039,7 +1056,7 @@ export const setPoster = mutation({
     const previousStorageId = testimonial.posterStorageId;
     await ctx.db.patch(testimonial._id, { ...patch, updatedAt: Date.now() });
     if (previousStorageId && previousStorageId !== patch.posterStorageId)
-      await ctx.storage.delete(previousStorageId);
+      await deleteImageAsset(ctx, previousStorageId);
     if (testimonial.moderationStatus === "published") {
       const projection = await ctx.db
         .query("publicTestimonialProjections")

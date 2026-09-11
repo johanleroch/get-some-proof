@@ -2,6 +2,8 @@ import { ConvexError, v } from "convex/values";
 
 import { mutation, type MutationCtx } from "./_generated/server";
 import { validateExclusiveStoredImage } from "./domain/profileImage";
+import { imageAssetMetadata } from "./domain/imageAsset";
+import { deleteImageAsset, registerImageAsset } from "./imageAssetRegistry";
 import { requireVerifiedPrincipal } from "./security/principal";
 
 async function requireOpenAccount(ctx: MutationCtx) {
@@ -28,13 +30,16 @@ export const generateAvatarUploadUrl = mutation({
 });
 
 export const setMyAvatar = mutation({
-  args: { storageId: v.id("_storage") },
+  args: { storageId: v.id("_storage"), metadata: imageAssetMetadata },
   returns: v.null(),
   handler: async (ctx, args) => {
     const principal = await requireOpenAccount(ctx);
     await validateExclusiveStoredImage(ctx, args.storageId, {
       kind: "user",
       userId: principal.actorId,
+    });
+    await registerImageAsset(ctx, args.storageId, args.metadata, "ownerPhoto", {
+      ownerUserId: principal.actorId,
     });
 
     const profile = await ctx.db
@@ -56,7 +61,7 @@ export const setMyAvatar = mutation({
       });
     }
     if (previousStorageId && previousStorageId !== args.storageId) {
-      await ctx.storage.delete(previousStorageId);
+      await deleteImageAsset(ctx, previousStorageId);
     }
     return null;
   },
@@ -77,7 +82,7 @@ export const removeMyAvatar = mutation({
       avatarStorageId: undefined,
       updatedAt: Date.now(),
     });
-    await ctx.storage.delete(previousStorageId);
+    await deleteImageAsset(ctx, previousStorageId);
     return null;
   },
 });

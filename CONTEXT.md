@@ -38,6 +38,10 @@ _Avoid_: Survey, Questionnaire, Campaign
 A person aged 18 or over who gives proof through a Collection Form without needing an account.
 _Avoid_: Customer when referring to the person submitting, Respondent
 
+**Submitter Photo**:
+The optional public image identifying a Submitter alongside their Testimonial. It is part of the disclosed public identity covered by Publication Consent.
+_Avoid_: Avatar, Owner profile image, Testimonial Image
+
 **Submission**:
 A completed delivery of exactly one type of proof, text or video, together with submitter details and Publication Consent.
 _Avoid_: Response, Lead, Draft
