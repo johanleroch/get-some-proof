@@ -2,8 +2,6 @@
 
 import { BlobLoadingText } from "@/components/brand/blob-loader";
 
-import { SkeletonMascot } from "@/components/ui/page-skeletons";
-
 import { type FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -162,7 +160,6 @@ export function InvitationManager({
 
       {!showList ? null : filteredInvitations === undefined ? (
         <div aria-label="Loading Pending Invitations" role="status">
-          <SkeletonMascot />
           <div className="dashboard-skeleton h-12 rounded-md" />
           <div className="dashboard-skeleton mt-2 h-20 rounded-md" />
           <span className="sr-only">Loading Pending Invitations</span>

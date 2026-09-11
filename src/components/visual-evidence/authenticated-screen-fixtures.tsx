@@ -39,13 +39,6 @@ import { VideoPreviewDialog } from "@/components/testimonials/video-preview-dial
 import { WallDisplayDialog } from "@/components/testimonials/wall-display-dialog";
 import { Button } from "@/components/ui/button";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 function useFixtureImage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -237,21 +230,17 @@ export function VideoUploadProgressScreenFixture() {
         } as CSSProperties
       }
     >
-      <Card className="w-full max-w-xl shadow-xl shadow-black/5">
-        <CardHeader>
-          <CardTitle className="text-2xl">Video upload progress</CardTitle>
-          <CardDescription>
-            Your testimonial is being sent securely.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <VideoUploadProgress
-            onCancel={() => undefined}
-            phase="uploading"
-            progress={62}
-          />
-        </CardContent>
-      </Card>
+      {/* The block as the form shows it: no frame of its own around it. The
+          title belongs to the review page, which the capture waits for. */}
+      <div className="w-full max-w-[520px] space-y-4">
+        <h1 className="type-heading">Video upload progress</h1>
+        <VideoUploadProgress
+          onCancel={() => undefined}
+          phase="uploading"
+          progress={62}
+        />
+        <VideoUploadProgress phase="processing" progress={100} />
+      </div>
     </main>
   );
 }

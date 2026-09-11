@@ -1,7 +1,5 @@
 "use client";
 
-import { AnimatedBlob } from "@/components/brand/animated-blob";
-
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { IconLayoutSidebar } from "@tabler/icons-react";
@@ -617,7 +615,6 @@ function SidebarMenuSkeleton({
       className={cn("flex h-8 items-center gap-2 rounded-md px-2", className)}
       {...props}
     >
-      <AnimatedBlob size={24} variant="look" />
       {showIcon && (
         <Skeleton
           className="size-4 rounded-md"

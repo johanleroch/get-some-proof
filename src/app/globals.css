@@ -889,6 +889,54 @@ mark {
 }
 
 /*
+ * The upload wait changing state (DESIGN.md sections 8.2 and 8.3): the beat
+ * where a Submitter's video lands. The mascot hops on its base, stretched on
+ * the way up and squashed as it comes down, and the new label rises into
+ * place behind it — both once. The only thing still looping in the block is
+ * the blob's own behaviour.
+ */
+.upload-status-cheer {
+  display: inline-block;
+  transform-origin: bottom center;
+  animation: upload-status-cheer var(--motion-settle) var(--ease-out-soft) both;
+}
+
+@keyframes upload-status-cheer {
+  0% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  46% {
+    transform: translateY(-6px) scale(0.96, 1.05);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+.upload-status-label {
+  animation: upload-status-label var(--motion-settle) var(--ease-settle) 60ms
+    both;
+}
+
+@keyframes upload-status-label {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-status-cheer,
+  .upload-status-label {
+    animation: none;
+  }
+}
+
+/*
  * The one shine in the interface, the founder's call for the sidebar's
  * Upgrade button (DESIGN.md section 6): a soft light sweeps across the amber
  * every few seconds, a light passing, never a fill. Still under reduced

@@ -727,12 +727,17 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
   keyboard keeps its own way in through `mod+shift+h`, since no floating
   control is reachable by Tab. Reviewed at `/visual-evidence/rich-testimonial`.
 - Skeletons: keep the shimmer, on `--surface-2`, shaped like the final layout.
+  No mascot inside a skeleton: the route loader has just shown the blob full
+  screen, and a second one popping in above the shimmer reads as a glitch.
 - Loaders: the blob looking around (`BlobLoader`, `look` behaviour, 64px,
   72px full screen) for every indeterminate wait without a skeleton: route
   transitions through the root `loading.tsx`, a form submitting, a video
   processing. Use the mascot for every visible wait, including compact labels,
-  upload progress, video buffering, and page skeletons. Loading buttons use
-  a small 16px spinner instead.
+  upload progress, and video buffering — but never inside a page skeleton.
+  A wait that lives inside a block of its own carries it inline instead, on
+  the label's line and sized to that line (36px in the video upload block,
+  24px in a sentence), still `look`: a video processing is a wait, not an
+  idle screen. Loading buttons use a small 16px spinner instead.
 - Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
   and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
   once the last usages are migrated.
@@ -803,6 +808,12 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   (`.toast-mascot`), then blinks into the expression of the message. Two
   parts, two moments: that stagger is what makes it read as a character
   speaking, not a box appearing.
+- The video upload block landing: "Uploading your video…" becomes "Video
+  uploaded !" in one beat. The mascot hops on its base, stretched on the way
+  up and squashed as it comes down (6 percent, volume kept), and the new
+  label rises 4px in behind it 60ms later (`.upload-status-cheer` and
+  `.upload-status-label` in globals.css). Both play once, both stop under
+  reduced motion.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
 - Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.

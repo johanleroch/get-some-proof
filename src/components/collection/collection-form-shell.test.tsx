@@ -415,7 +415,8 @@ describe("CollectionFormShellView", () => {
         "46",
       ),
     );
-    expect(screen.getByText("Uploading video — 46%")).toBeVisible();
+    expect(screen.getByText("Uploading your video…")).toBeVisible();
+    expect(screen.getByText("46%")).toBeVisible();
     const guardedNavigation = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(guardedNavigation);
     expect(guardedNavigation.defaultPrevented).toBe(true);

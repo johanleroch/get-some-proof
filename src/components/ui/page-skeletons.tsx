@@ -1,14 +1,5 @@
-import { AnimatedBlob } from "@/components/brand/animated-blob";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-function SkeletonMascot() {
-  return (
-    <div className="flex justify-center py-3">
-      <AnimatedBlob size={48} variant="look" />
-    </div>
-  );
-}
 
 function PageHeaderSkeleton({ action = false }: { action?: boolean }) {
   return (
@@ -76,7 +67,6 @@ function MembersPageSkeleton({ className }: { className?: string }) {
       className={cn("space-y-8", className)}
       role="status"
     >
-      <SkeletonMascot />
       <PageHeaderSkeleton action />
       <MemberListSkeleton />
       <InvitationSkeleton />
@@ -88,7 +78,6 @@ function MembersPageSkeleton({ className }: { className?: string }) {
 function InvitationsLoadingSkeleton() {
   return (
     <div aria-label="Loading Invitations" role="status">
-      <SkeletonMascot />
       <InvitationSkeleton />
       <span className="sr-only">Loading Invitations</span>
     </div>
@@ -102,7 +91,6 @@ function DirectoryLoadingSkeleton() {
       className="space-y-6"
       role="status"
     >
-      <SkeletonMascot />
       <PageHeaderSkeleton action />
       <MemberListSkeleton />
       <span className="sr-only">Loading Member directory</span>
@@ -117,7 +105,6 @@ function OverviewPageSkeleton() {
       className="space-y-6"
       role="status"
     >
-      <SkeletonMascot />
       <PageHeaderSkeleton action />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
@@ -148,7 +135,6 @@ function OverviewPageSkeleton() {
 function ProjectsPageSkeleton() {
   return (
     <div aria-label="Loading Projects" className="space-y-6" role="status">
-      <SkeletonMascot />
       <PageHeaderSkeleton action />
       <div className="dashboard-panel overflow-hidden">
         <div className="flex gap-3 border-b p-4">
@@ -176,7 +162,6 @@ function ProjectsPageSkeleton() {
 function AuditPageSkeleton() {
   return (
     <div aria-label="Loading Audit Log" className="space-y-6" role="status">
-      <SkeletonMascot />
       <PageHeaderSkeleton />
       <div className="dashboard-panel divide-y overflow-hidden">
         {Array.from({ length: 5 }).map((_, index) => (
@@ -200,7 +185,6 @@ function AuditPageSkeleton() {
 function AuditListSkeleton() {
   return (
     <div aria-label="Loading activity" role="status">
-      <SkeletonMascot />
       {Array.from({ length: 5 }).map((_, index) => (
         <div
           className="flex items-start justify-between gap-4 border-b p-5 last:border-b-0"
@@ -219,7 +203,6 @@ function AuditListSkeleton() {
 }
 
 export {
-  SkeletonMascot,
   AuditListSkeleton,
   AuditPageSkeleton,
   DirectoryLoadingSkeleton,
