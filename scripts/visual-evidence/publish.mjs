@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { appendFile, readFile } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout } from "node:timers/promises";
 
 import { loadAndValidateArtifact, validateTrustedConfig } from "./core.mjs";
 import { publishEvidence, uploadAttachments } from "./github-attachments.mjs";
@@ -71,6 +72,10 @@ if (ci) {
     );
 }
 async function github(pathname, options = {}) {
+  // GitHub recommends at least one second between content-creating requests.
+  // https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api
+  if (["POST", "PATCH", "PUT", "DELETE"].includes(options.method))
+    await setTimeout(1000);
   const response = await fetch(`https://api.github.com${pathname}`, {
     ...options,
     headers: {
