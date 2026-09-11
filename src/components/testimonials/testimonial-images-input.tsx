@@ -5,8 +5,8 @@ import { IconPhotoPlus, IconX } from "@tabler/icons-react";
 import {
   type TestimonialImage,
   maximumTestimonialImages,
-  maximumTestimonialImageBytes,
-  testimonialImageMimeTypes,
+  maximumTestimonialImageInputBytes,
+  testimonialImageInputMimeTypes,
 } from "@convex/domain/testimonialImage";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +45,7 @@ export function TestimonialImagesInput({
   disabled?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const allowedTypes = new Set(testimonialImageMimeTypes);
+  const allowedTypes = new Set(testimonialImageInputMimeTypes);
   const [error, setError] = useState<string>();
   const count = files.length + images.length;
   return (
@@ -103,7 +103,7 @@ export function TestimonialImagesInput({
         </div>
       ) : null}
       <input
-        accept={testimonialImageMimeTypes.join(",")}
+        accept={testimonialImageInputMimeTypes.join(",")}
         aria-label="Attach testimonial images"
         className="sr-only"
         disabled={disabled || count >= maximumTestimonialImages}
@@ -119,11 +119,13 @@ export function TestimonialImagesInput({
             selected.some(
               (file) =>
                 !allowedTypes.has(file.type) ||
-                file.size > maximumTestimonialImageBytes ||
+                file.size > maximumTestimonialImageInputBytes ||
                 file.size === 0,
             )
           ) {
-            setError("Choose JPG, PNG or WebP images smaller than 5 MB.");
+            setError(
+              "Choose JPEG, PNG, WebP, or AVIF images smaller than 20 MB.",
+            );
             return;
           }
           setError(undefined);

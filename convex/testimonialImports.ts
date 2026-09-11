@@ -36,6 +36,7 @@ import {
 } from "./testimonialImportVideo";
 import { queueImportedAvatar } from "./testimonialImportAvatar";
 import { isProjectActive } from "./projectActivity";
+import { attachImageAssetToTestimonial } from "./imageAssetRegistry";
 
 const previewLimiter = new RateLimiter(components.rateLimiter, {
   wallPreviewOwner: { kind: "fixed window", rate: 10, period: HOUR },
@@ -391,20 +392,21 @@ export async function confirmOwnedImport(
       continue;
     }
     const now = Date.now();
+    const identityCorrection = item.identityCorrection;
     const testimonialId = await ctx.db.insert("testimonials", {
       importJobId: job._id,
       organizationId: job.organizationId,
       clientSubmissionId: `import:${id}`,
       submissionType: "text",
-      avatarStorageId: item.identityCorrection?.avatarStorageId ?? undefined,
+      avatarStorageId: identityCorrection?.avatarStorageId ?? undefined,
       moderationStatus: "pending",
-      submitterName: item.identityCorrection?.authorName ?? item.authorName,
+      submitterName: identityCorrection?.authorName ?? item.authorName,
       text: item.text,
       richText: item.richText,
       company: item.company,
       rating: item.rating,
-      role: item.identityCorrection
-        ? item.identityCorrection.tagline || undefined
+      role: identityCorrection
+        ? identityCorrection.tagline || undefined
         : item.tagline,
       importSourceKey: sourceKey,
       importOrigin: {
@@ -427,6 +429,12 @@ export async function confirmOwnedImport(
       createdAt: now,
       updatedAt: now,
     });
+    if (identityCorrection?.avatarStorageId)
+      await attachImageAssetToTestimonial(
+        ctx,
+        identityCorrection.avatarStorageId,
+        testimonialId,
+      );
     await ctx.db.patch(item._id, { outcome: "imported", testimonialId });
     await queueImportedAvatar(ctx, item, testimonialId);
     result.imported++;

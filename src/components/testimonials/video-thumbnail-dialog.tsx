@@ -5,7 +5,6 @@ import { ConvexError } from "convex/values";
 import { IconPhotoUp, IconX } from "@tabler/icons-react";
 
 import { defaultPrimaryColor } from "@convex/domain/brand";
-import { maximumStoredImageBytes } from "@convex/domain/profileImage";
 import type { TestimonialCardVideoValue } from "@convex/testimonialCardValue";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +20,10 @@ import {
   videoAspectRatioStyle,
 } from "@/components/testimonials/testimonial-card-markup";
 import { WallCardMiniature } from "@/components/testimonials/wall-card-miniature";
+import {
+  acceptedImageInputTypes,
+  maximumImageInputBytes,
+} from "@/lib/image-assets";
 import { cn } from "@/lib/utils";
 
 /** The miniature's width on screen: `w-52`, the preview column. */
@@ -31,7 +34,7 @@ export type VideoThumbnailChoice =
 
 /** Eight moments across the video, on half seconds so Mux has them ready. */
 const frameCount = 8;
-const imageTypes = ["image/jpeg", "image/png", "image/webp"];
+const imageTypes = acceptedImageInputTypes;
 
 function saveError(error: unknown) {
   if (error instanceof ConvexError && typeof error.data === "string") {
@@ -149,12 +152,12 @@ export function VideoThumbnailDialog({
   function chooseFile(next: File | undefined) {
     setError(undefined);
     if (!next) return;
-    if (!imageTypes.includes(next.type)) {
-      setError("Choose a JPEG, PNG or WebP image.");
-      return;
-    }
-    if (next.size > maximumStoredImageBytes) {
-      setError("Choose an image smaller than 5 MB.");
+    if (
+      !(imageTypes as readonly string[]).includes(next.type) ||
+      next.size > maximumImageInputBytes ||
+      next.size === 0
+    ) {
+      setError("Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.");
       return;
     }
     setFile(next);
@@ -257,7 +260,7 @@ export function VideoThumbnailDialog({
                     </label>
                   </Button>
                   <p className="type-small text-ink-2">
-                    JPEG, PNG or WebP, 5 MB max.
+                    JPEG, PNG, WebP or AVIF, 20 MB max.
                   </p>
                 </>
               )}

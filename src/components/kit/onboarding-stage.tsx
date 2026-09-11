@@ -350,7 +350,22 @@ function CreateBrandStep({
           if (scenario === "logo-fails") {
             throw new Error("The upload was refused.");
           }
-          return "playground-logo" as Id<"_storage">;
+          return {
+            storageId: "playground-logo" as Id<"_storage">,
+            verificationId:
+              "playground-logo-verification" as Id<"directImageVerifications">,
+            metadata: {
+              contentType: "image/webp" as const,
+              height: 128,
+              kind: "brandLogo" as const,
+              originalContentType: "image/png",
+              originalSize: 1024,
+              size: 512,
+              source: "direct" as const,
+              transformVersion: "webp-v1" as const,
+              width: 128,
+            },
+          };
         }}
       />
     </OrganizationOnboardingScreen>

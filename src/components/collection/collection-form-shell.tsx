@@ -799,11 +799,11 @@ function IdentityStep({
             {avatar ? "Replace photo" : "Choose a photo"}
           </Button>
           <span className="text-ink-2 type-small min-w-0 truncate">
-            {avatar ? avatar.name : "PNG, JPG or WebP, up to 5 MB."}
+            {avatar ? avatar.name : "JPEG, PNG, WebP or AVIF, up to 20 MB."}
           </span>
         </div>
         <input
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,image/avif"
           aria-describedby={avatarError ? "submitter-avatar-error" : undefined}
           aria-invalid={avatarError ? true : undefined}
           className="hidden"
@@ -817,11 +817,12 @@ function IdentityStep({
             // photo already accepted so the consent text below matches what
             // will actually be published.
             const accepted =
-              ["image/png", "image/jpeg", "image/webp"].includes(file.type) &&
-              file.size <= 5 * 1024 * 1024;
+              ["image/png", "image/jpeg", "image/webp", "image/avif"].includes(
+                file.type,
+              ) && file.size <= 20 * 1024 * 1024;
             if (!accepted) {
               setAvatarError(
-                "Choose a PNG, JPG, or WebP image smaller than 5 MB.",
+                "Choose a JPEG, PNG, WebP, or AVIF image smaller than 20 MB.",
               );
               event.target.value = "";
               onAvatarChange(undefined);
@@ -1556,6 +1557,7 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
   const generateImageUpload = useMutation(
     api.testimonialImages.generateUploadUrl,
   );
+  const processImage = useAction(api.imageAssetProcessing.processDirectUpload);
   const registerImageUpload = useMutation(api.testimonialImages.registerUpload);
   const createDirectUpload = useAction(api.video.createDirectUpload);
   const submitVideo = useAction(api.video.submit);
@@ -1655,8 +1657,18 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
           ...identity,
           admissionToken: await uploadAdmission(clientSubmissionId),
         });
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        return registerImageUpload({ ...identity, imageId, storageId });
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "testimonialImage",
+          processImage,
+          { kind: "testimonialImage", imageId },
+        );
+        return registerImageUpload({
+          ...identity,
+          imageId,
+          verificationId: image.verificationId,
+        });
       }}
       uploadAvatar={async (file, clientSubmissionId) => {
         const { reservationId, uploadUrl } = await generateAvatarUploadUrl({
@@ -1664,9 +1676,18 @@ export function CollectionFormShell({ publicSlug }: { publicSlug: string }) {
           publicSlug,
           admissionToken: await uploadAdmission(clientSubmissionId),
         });
-        const storageId = await uploadProfileImage(file, uploadUrl);
-        await registerAvatarUpload({ reservationId, storageId });
-        return { reservationId, storageId };
+        const image = await uploadProfileImage(
+          file,
+          uploadUrl,
+          "submitterPhoto",
+          processImage,
+          { kind: "submitterPhoto", reservationId },
+        );
+        await registerAvatarUpload({
+          reservationId,
+          verificationId: image.verificationId,
+        });
+        return { reservationId, storageId: image.storageId };
       }}
     />
   );

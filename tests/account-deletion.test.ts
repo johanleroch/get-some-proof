@@ -5,6 +5,7 @@ import {
   addStripeSubscription,
   authenticatedUser,
   createConvexTest,
+  testImageMetadata,
 } from "./convex-test-helpers";
 
 vi.mock("@convex/stripeBillingProvider", async (importOriginal) => ({
@@ -61,6 +62,37 @@ describe("Account closure", () => {
       publicSlug: "other",
     });
     const account = await owner.client.query(api.accounts.getMine, {});
+    const { migrationStorageId, verificationStorageId } = await t.run(
+      async (ctx) => {
+        const now = Date.now();
+        const verificationStorageId = await ctx.storage.store(
+          new Blob(["pending-owner-photo"], { type: "image/webp" }),
+        );
+        await ctx.db.insert("directImageVerifications", {
+          createdAt: now,
+          expiresAt: now + 60_000,
+          metadata: testImageMetadata("ownerPhoto", 19),
+          ownerUserId: owner.actorId,
+          storageId: verificationStorageId,
+          target: { kind: "ownerPhoto" },
+        });
+        const migrationStorageId = await ctx.storage.store(
+          new Blob(["legacy-owner-photo"], { type: "image/png" }),
+        );
+        await ctx.db.insert("imageAssetMigrationJobs", {
+          attempts: 0,
+          createdAt: now,
+          kind: "ownerPhoto",
+          ownerUserId: owner.actorId,
+          referenceId: owner.actorId,
+          referenceTable: "userProfiles",
+          status: "queued",
+          storageId: migrationStorageId,
+          updatedAt: now,
+        });
+        return { migrationStorageId, verificationStorageId };
+      },
+    );
     const deletionId = await owner.client.mutation(api.accountDeletion.remove, {
       confirmation: "DELETE ACCOUNT",
       irreversibleConfirmed: true,
@@ -115,6 +147,18 @@ describe("Account closure", () => {
     expect(await t.run((ctx) => ctx.db.get(first.id))).toBeNull();
     expect(await t.run((ctx) => ctx.db.get(second.id))).toBeNull();
     expect(await t.run((ctx) => ctx.db.get(otherProject.id))).not.toBeNull();
+    expect(
+      await t.run((ctx) => ctx.db.query("directImageVerifications").collect()),
+    ).toEqual([]);
+    expect(
+      await t.run((ctx) => ctx.db.query("imageAssetMigrationJobs").collect()),
+    ).toEqual([]);
+    await expect(
+      t.run((ctx) => ctx.db.system.get("_storage", verificationStorageId)),
+    ).resolves.toBeNull();
+    await expect(
+      t.run((ctx) => ctx.db.system.get("_storage", migrationStorageId)),
+    ).resolves.toBeNull();
     expect(
       await t.run((ctx) =>
         ctx.db

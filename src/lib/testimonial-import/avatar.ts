@@ -1,6 +1,11 @@
 import type { WallProvider } from "./source";
+import {
+  acceptedImageInputTypes,
+  detectRasterImage,
+  maximumImageInputBytes,
+} from "../image-assets";
 
-export const maximumImportAvatarBytes = 5 * 1024 * 1024;
+export const maximumImportAvatarBytes = maximumImageInputBytes;
 
 const avatarHosts: Record<WallProvider, ReadonlySet<string>> = {
   "testimonial-to": new Set(["cdn.testimonial.to"]),
@@ -15,16 +20,7 @@ export class ImportAvatarError extends Error {
 }
 
 export function imageType(bytes: Uint8Array): string | null {
-  const starts = (...signature: number[]) =>
-    signature.every((value, index) => bytes[index] === value);
-  if (starts(0xff, 0xd8, 0xff)) return "image/jpeg";
-  if (starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
-    return "image/png";
-  const ascii = (from: number, to: number) =>
-    String.fromCharCode(...bytes.subarray(from, to));
-  if (ascii(0, 6) === "GIF87a" || ascii(0, 6) === "GIF89a") return "image/gif";
-  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
-  return null;
+  return detectRasterImage(bytes)?.contentType ?? null;
 }
 
 /** Fetch only observed provider image hosts, without credentials or redirects. */
@@ -49,7 +45,7 @@ export async function downloadImportAvatar(
 
   try {
     const response = await fetch(url, {
-      headers: { Accept: "image/jpeg,image/png,image/webp,image/gif" },
+      headers: { Accept: acceptedImageInputTypes.join(",") },
       credentials: "omit",
       redirect: "error",
       signal: AbortSignal.timeout(15_000),
@@ -57,7 +53,7 @@ export async function downloadImportAvatar(
     const contentType = response.headers.get("content-type")?.split(";")[0];
     if (
       !response.ok ||
-      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+      !(acceptedImageInputTypes as readonly string[]).includes(
         contentType ?? "",
       ) ||
       Number(response.headers.get("content-length")) > maximumImportAvatarBytes
@@ -90,9 +86,7 @@ export async function downloadImportAvatar(
       reader.releaseLock();
     }
     const blob = new Blob(chunks, { type: contentType });
-    const detected = imageType(
-      new Uint8Array(await blob.slice(0, 12).arrayBuffer()),
-    );
+    const detected = imageType(new Uint8Array(await blob.arrayBuffer()));
     if (!detected) throw new ImportAvatarError("UNRECOGNIZED_IMAGE");
     // Provider objects can be mislabeled (e.g. Senja JPEG bytes served as PNG).
     // Store the recognized raster type, never the source filename/header alone.

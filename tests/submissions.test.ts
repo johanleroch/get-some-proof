@@ -1,4 +1,3 @@
-import { admittedUpload } from "./convex-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "@convex/_generated/api";
@@ -8,8 +7,11 @@ import {
 } from "@convex/domain/submission";
 import {
   addMemberWithRole,
+  admittedUpload,
   authenticatedUser,
   createConvexTest,
+  testDirectImageVerification,
+  testImageMetadata,
 } from "./convex-test-helpers";
 
 const consent = buildPublicationConsent({
@@ -325,12 +327,18 @@ describe("text Submission collection", () => {
     );
     const storageId = await t.run(async (ctx) => {
       const id = await ctx.storage.store(new Blob(["avatar"]));
-      await ctx.db.patch(id, { contentType: "image/jpeg" });
+      await ctx.db.patch(id, { contentType: "image/webp" });
       return id;
     });
+    const metadata = testImageMetadata("submitterPhoto", 6);
     await t.mutation(api.submissions.registerAvatarUpload, {
       reservationId: upload.reservationId,
-      storageId,
+      verificationId: await testDirectImageVerification(
+        t,
+        { kind: "submitterPhoto", reservationId: upload.reservationId },
+        storageId,
+        metadata,
+      ),
     });
 
     await t.action(api.submissions.submitText, {

@@ -16,10 +16,14 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   setLogo: vi.fn(),
   uploadProfileImage: vi.fn(),
+  useAction: vi.fn(() => vi.fn()),
   useMutation: vi.fn(),
 }));
 
-vi.mock("convex/react", () => ({ useMutation: mocks.useMutation }));
+vi.mock("convex/react", () => ({
+  useAction: mocks.useAction,
+  useMutation: mocks.useMutation,
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
@@ -45,6 +49,7 @@ describe("OrganizationOnboardingForm", () => {
     mocks.push.mockReset();
     mocks.setLogo.mockReset();
     mocks.uploadProfileImage.mockReset();
+    mocks.useAction.mockClear();
     mocks.useMutation.mockReset();
     let mutationCall = 0;
     const mutations = [mocks.create, mocks.generateUploadUrl, mocks.setLogo];
@@ -56,7 +61,21 @@ describe("OrganizationOnboardingForm", () => {
       publicSlug: "visual-studio",
       slug: "visual-studio-ab12",
     });
-    mocks.uploadProfileImage.mockResolvedValue("storage-1");
+    mocks.uploadProfileImage.mockResolvedValue({
+      storageId: "storage-1",
+      verificationId: "verification-1",
+      metadata: {
+        contentType: "image/webp",
+        height: 128,
+        kind: "brandLogo",
+        originalContentType: "image/jpeg",
+        originalSize: 4,
+        size: 4,
+        source: "direct",
+        transformVersion: "webp-v1",
+        width: 128,
+      },
+    });
     mocks.setLogo.mockResolvedValue(null);
   });
 
@@ -164,7 +183,7 @@ describe("OrganizationOnboardingForm", () => {
       });
       expect(mocks.setLogo).toHaveBeenCalledWith({
         organizationId: "organization-1",
-        storageId: "storage-1",
+        verificationId: "verification-1",
       });
     });
     expect(mocks.push).toHaveBeenCalledWith(

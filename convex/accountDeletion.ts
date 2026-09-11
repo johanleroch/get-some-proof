@@ -310,6 +310,53 @@ export const advance = internalMutation({
       return { kind: "continue" as const };
     }
     await assertMediaDeleted(ctx, deletion._id);
+    const verifications = await ctx.db
+      .query("directImageVerifications")
+      .withIndex("by_owner_user_id", (q) =>
+        q.eq("ownerUserId", deletion.ownerUserId),
+      )
+      .take(batchSize);
+    if (verifications.length) {
+      await Promise.all(
+        verifications.map(async (verification) => {
+          await ctx.storage.delete(verification.storageId);
+          await ctx.db.delete(verification._id);
+        }),
+      );
+      return { kind: "continue" as const };
+    }
+    const migrationJobs = await ctx.db
+      .query("imageAssetMigrationJobs")
+      .withIndex("by_owner_user_id", (q) =>
+        q.eq("ownerUserId", deletion.ownerUserId),
+      )
+      .take(batchSize);
+    if (migrationJobs.length) {
+      await Promise.all(
+        migrationJobs.map(async (job) => {
+          await ctx.storage.delete(job.storageId);
+          if (job.replacementStorageId)
+            await ctx.storage.delete(job.replacementStorageId);
+          await ctx.db.delete(job._id);
+        }),
+      );
+      return { kind: "continue" as const };
+    }
+    const imageAssets = await ctx.db
+      .query("imageAssets")
+      .withIndex("by_owner_user_and_kind", (q) =>
+        q.eq("ownerUserId", deletion.ownerUserId),
+      )
+      .take(batchSize);
+    if (imageAssets.length) {
+      await Promise.all(
+        imageAssets.map(async (asset) => {
+          if (asset.storageId) await ctx.storage.delete(asset.storageId);
+          await ctx.db.delete(asset._id);
+        }),
+      );
+      return { kind: "continue" as const };
+    }
     const userProfile = await ctx.db
       .query("userProfiles")
       .withIndex("by_user_id", (q) => q.eq("userId", deletion.ownerUserId))

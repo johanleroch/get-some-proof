@@ -108,6 +108,9 @@ export function PublicTestimonialImport({
   const request = useRef(0);
   const previewSource = useAction(api.testimonialImportSource.previewAnonymous);
   const uploadPhoto = useAction(api.importAvatarUpload.upload);
+  const generatePhotoUploadUrl = useMutation(
+    api.importAvatarUpload.generateUploadUrl,
+  );
   const removePhoto = useMutation(api.importAvatarUpload.remove);
   const correctIdentity = useMutation(api.anonymousWallImports.correctIdentity);
   const select = useMutation(api.anonymousWallImports.select);
@@ -377,9 +380,19 @@ export function PublicTestimonialImport({
           token: session!.token,
           position: Number(itemId.slice("preview-".length)),
         };
-        if (photo)
-          await uploadPhoto({ target, bytes: await photo.arrayBuffer() });
-        else await removePhoto({ target });
+        if (photo) {
+          const uploadUrl = await generatePhotoUploadUrl({ target });
+          const response = await fetch(uploadUrl, {
+            body: photo,
+            headers: { "Content-Type": photo.type },
+            method: "POST",
+          });
+          if (!response.ok) throw new Error("IMAGE_UPLOAD_FAILED");
+          const { storageId } = (await response.json()) as {
+            storageId: Id<"_storage">;
+          };
+          await uploadPhoto({ target, temporaryStorageId: storageId });
+        } else await removePhoto({ target });
       }}
       onCorrectIdentity={async (itemId, identity) => {
         if (!session) throw new Error("The preview is unavailable.");

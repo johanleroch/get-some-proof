@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api, internal } from "@convex/_generated/api";
-import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+import {
+  authenticatedUser,
+  createConvexTest,
+  testPngBytes,
+} from "./convex-test-helpers";
 import { withTestimonialIds } from "./testimonial-source-fixture";
 
 beforeEach(() => {
@@ -56,7 +60,7 @@ async function imported(confirm = true) {
 
 it("copies a source avatar into independent storage after text confirmation", async () => {
   const { t, itemId, testimonialId } = await imported();
-  const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  const bytes = await testPngBytes();
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(
@@ -79,7 +83,24 @@ it("copies a source avatar into independent storage after text confirmation", as
   const file = await t.run(async (ctx) =>
     (await ctx.storage.get(testimonial.avatarStorageId!))!.arrayBuffer(),
   );
-  expect(new Uint8Array(file)).toEqual(bytes);
+  expect(new Uint8Array(file).subarray(0, 4)).toEqual(
+    new Uint8Array([82, 73, 70, 70]),
+  );
+  expect(
+    await t.run((ctx) =>
+      ctx.db
+        .query("imageAssets")
+        .withIndex("by_storage_id", (q) =>
+          q.eq("storageId", testimonial.avatarStorageId),
+        )
+        .unique(),
+    ),
+  ).toMatchObject({
+    contentType: "image/webp",
+    kind: "submitterPhoto",
+    originalContentType: "image/png",
+    status: "attached",
+  });
   expect((await t.run((ctx) => ctx.db.get(itemId)))?.avatarStatus).toBe(
     "ready",
   );
@@ -134,7 +155,7 @@ it("retries only an owned failed photo and reports its recovery", async () => {
     "fetch",
     vi.fn().mockImplementation(
       async () =>
-        new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
+        new Response(await testPngBytes(), {
           headers: { "content-type": "image/png" },
         }),
     ),
@@ -213,8 +234,8 @@ it("keeps a newer photo and deletes the stale downloaded copy", async () => {
 
 it("keeps a manually uploaded avatar through identity edits and confirmation", async () => {
   const { t, owner, itemId, jobId } = await imported(false);
-  const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer;
-  await owner.client.action(api.importAvatarUpload.upload, {
+  const bytes = (await testPngBytes()).buffer;
+  await owner.client.action(api.importAvatarUpload.uploadSmallBytes, {
     target: { itemId },
     bytes,
   });
@@ -247,7 +268,7 @@ it("refuses another Owner's photo upload before storing a file", async () => {
   const { t, itemId } = await imported(false);
   const other = await authenticatedUser(t, { email: "outsider@example.test" });
   await expect(
-    other.client.action(api.importAvatarUpload.upload, {
+    other.client.action(api.importAvatarUpload.uploadSmallBytes, {
       target: { itemId },
       bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]).buffer,
     }),
@@ -309,7 +330,7 @@ it("expires an interrupted attempt and fences its late result from a retry", asy
     "fetch",
     vi.fn().mockImplementation(
       async () =>
-        new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
+        new Response(await testPngBytes(), {
           headers: { "content-type": "image/png" },
         }),
     ),
