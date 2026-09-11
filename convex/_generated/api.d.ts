@@ -33,10 +33,13 @@ import type * as collectionQuotas from "../collectionQuotas.js";
 import type * as collectionRateLimit from "../collectionRateLimit.js";
 import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
+import type * as deletionMedia from "../deletionMedia.js";
+import type * as deletionMediaActions from "../deletionMediaActions.js";
 import type * as domain_brand from "../domain/brand.js";
 import type * as domain_colorContrast from "../domain/colorContrast.js";
 import type * as domain_importAccessToken from "../domain/importAccessToken.js";
 import type * as domain_invitation from "../domain/invitation.js";
+import type * as domain_mediaDeletionProgress from "../domain/mediaDeletionProgress.js";
 import type * as domain_muxWebhook from "../domain/muxWebhook.js";
 import type * as domain_organizationSlug from "../domain/organizationSlug.js";
 import type * as domain_profileImage from "../domain/profileImage.js";
@@ -71,6 +74,7 @@ import type * as security_organizationAccess from "../security/organizationAcces
 import type * as security_principal from "../security/principal.js";
 import type * as security_publicWallAccess from "../security/publicWallAccess.js";
 import type * as seed from "../seed.js";
+import type * as sharedDeletionImages from "../sharedDeletionImages.js";
 import type * as storageCleanup from "../storageCleanup.js";
 import type * as stripeBillingProvider from "../stripeBillingProvider.js";
 import type * as stripeConfiguration from "../stripeConfiguration.js";
@@ -81,6 +85,7 @@ import type * as submissions from "../submissions.js";
 import type * as system from "../system.js";
 import type * as testimonialCardValue from "../testimonialCardValue.js";
 import type * as testimonialDeletion from "../testimonialDeletion.js";
+import type * as testimonialDeletionInventory from "../testimonialDeletionInventory.js";
 import type * as testimonialImages from "../testimonialImages.js";
 import type * as testimonialImportAvatar from "../testimonialImportAvatar.js";
 import type * as testimonialImportSource from "../testimonialImportSource.js";
@@ -97,6 +102,7 @@ import type * as videoRetryLinks from "../videoRetryLinks.js";
 import type * as videoWebhooks from "../videoWebhooks.js";
 import type * as wallCustomization from "../wallCustomization.js";
 import type * as workspaceDeletion from "../workspaceDeletion.js";
+import type * as workspaceDeletionInventory from "../workspaceDeletionInventory.js";
 
 import type {
   ApiFromModules,
@@ -130,10 +136,13 @@ declare const fullApi: ApiFromModules<{
   collectionRateLimit: typeof collectionRateLimit;
   crons: typeof crons;
   dashboard: typeof dashboard;
+  deletionMedia: typeof deletionMedia;
+  deletionMediaActions: typeof deletionMediaActions;
   "domain/brand": typeof domain_brand;
   "domain/colorContrast": typeof domain_colorContrast;
   "domain/importAccessToken": typeof domain_importAccessToken;
   "domain/invitation": typeof domain_invitation;
+  "domain/mediaDeletionProgress": typeof domain_mediaDeletionProgress;
   "domain/muxWebhook": typeof domain_muxWebhook;
   "domain/organizationSlug": typeof domain_organizationSlug;
   "domain/profileImage": typeof domain_profileImage;
@@ -168,6 +177,7 @@ declare const fullApi: ApiFromModules<{
   "security/principal": typeof security_principal;
   "security/publicWallAccess": typeof security_publicWallAccess;
   seed: typeof seed;
+  sharedDeletionImages: typeof sharedDeletionImages;
   storageCleanup: typeof storageCleanup;
   stripeBillingProvider: typeof stripeBillingProvider;
   stripeConfiguration: typeof stripeConfiguration;
@@ -178,6 +188,7 @@ declare const fullApi: ApiFromModules<{
   system: typeof system;
   testimonialCardValue: typeof testimonialCardValue;
   testimonialDeletion: typeof testimonialDeletion;
+  testimonialDeletionInventory: typeof testimonialDeletionInventory;
   testimonialImages: typeof testimonialImages;
   testimonialImportAvatar: typeof testimonialImportAvatar;
   testimonialImportSource: typeof testimonialImportSource;
@@ -194,6 +205,7 @@ declare const fullApi: ApiFromModules<{
   videoWebhooks: typeof videoWebhooks;
   wallCustomization: typeof wallCustomization;
   workspaceDeletion: typeof workspaceDeletion;
+  workspaceDeletionInventory: typeof workspaceDeletionInventory;
 }>;
 
 /**

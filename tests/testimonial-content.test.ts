@@ -338,7 +338,7 @@ describe("Rich Testimonials and images across their lifecycle", () => {
     const first = await setup();
     const image = await first.upload();
     const proof = await first.submit([image.id]);
-    await first.owner.client.mutation(api.testimonialModeration.remove, {
+    await first.owner.client.action(api.videoMedia.remove, {
       organizationId: first.brand.id,
       testimonialId: proof.testimonialId,
     });

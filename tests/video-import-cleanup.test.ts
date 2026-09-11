@@ -82,7 +82,7 @@ async function copyFixture() {
     await ctx.db.patch(itemId, { videoAssetId: assetId });
     return { assetId, reservationId, testimonialId, accountId };
   });
-  return { t, project, ...ids };
+  return { t, owner, project, ...ids };
 }
 
 it("cleans up a late copy after its testimonial, reservation and Project have been deleted", async () => {
@@ -188,7 +188,7 @@ it("starts a copy at most once and refuses an expired reservation", async () => 
   ).toBeNull();
 });
 
-it("keeps a cleanup job created between the workspace media snapshot and its purge", async () => {
+it("retains an asset that changed after the workspace media snapshot", async () => {
   const { t, project, assetId } = await copyFixture();
   await t.mutation(internal.testimonialImportVideo.getCopyContext, { assetId });
   const deletionId = await t.run((ctx) =>
@@ -212,15 +212,20 @@ it("keeps a cleanup job created between the workspace media snapshot and its pur
   );
   await t.mutation(internal.workspaceDeletion.completeMediaBatch, {
     deletionId,
-    assetIds: [assetId],
+    targets: snapshot,
   });
-  await t.run((ctx) => ctx.db.patch(deletionId, { phase: "videoCleanupJobs" }));
-  await t.mutation(internal.workspaceDeletion.purgeBatch, { deletionId });
-  const jobs = await t.run((ctx) =>
-    ctx.db.query("videoProviderCleanupJobs").collect(),
-  );
-  expect(jobs).toHaveLength(1);
-  expect(jobs[0]!.providerAssetId).toBe("arrived-during-deletion");
+  expect(await t.run((ctx) => ctx.db.get(assetId))).toMatchObject({
+    providerAssetId: "arrived-during-deletion",
+  });
+  const next = await t.query(internal.workspaceDeletion.readMediaBatch, {
+    deletionId,
+  });
+  expect(next[0]!.providerAssetIds).toEqual(["arrived-during-deletion"]);
+  await t.mutation(internal.workspaceDeletion.completeMediaBatch, {
+    deletionId,
+    targets: next,
+  });
+  expect(await t.run((ctx) => ctx.db.get(assetId))).toBeNull();
 });
 
 it("finds an orphan on a later inventory page and holds capacity until provider deletion succeeds", async () => {
@@ -351,4 +356,97 @@ it("recovers expired leases, ignores stale workers and keeps empty scans unresol
   expect(
     await t.run((ctx) => getVideoStorageAvailability(ctx, project.id)),
   ).toMatchObject({ used: 1 });
+});
+
+it("does not recreate a resolved copy intent when Owner deletion is retried", async () => {
+  const { t, owner, project, assetId, reservationId, testimonialId } =
+    await copyFixture();
+  await t.run((ctx) =>
+    ctx.db.patch(assetId, {
+      provider: "fake",
+      importCopyStartedAt: Date.now(),
+    }),
+  );
+  const args = { organizationId: project.id, testimonialId };
+  const prepared = await owner.client.mutation(
+    internal.videoMedia.prepareRemoval,
+    args,
+  );
+  const intent = await t.run((ctx) =>
+    ctx.db.query("videoImportCleanupIntents").first(),
+  );
+  expect(intent).not.toBeNull();
+  await t.run((ctx) => ctx.db.patch(intent!._id, { probe: 1 }));
+  await t.mutation(internal.videoImportCleanup.finishProbe, {
+    intentId: intent!._id,
+    probe: 1,
+    matches: [{ id: "reconciled-copy", passthrough: String(reservationId) }],
+    nextCursor: null,
+    failed: false,
+  });
+  expect(await t.run((ctx) => ctx.db.get(testimonialId))).not.toBeNull();
+  await owner.client.action(api.videoMedia.remove, args);
+  expect(await t.run((ctx) => ctx.db.get(testimonialId))).toBeNull();
+  expect(
+    await t.run((ctx) => ctx.db.query("videoImportCleanupIntents").first()),
+  ).toBeNull();
+  expect(
+    (await t.run((ctx) => ctx.db.get(prepared.deletionId)))?.mediaProgress,
+  ).toMatchObject({ videosTotal: 1, videosDeleted: 1 });
+});
+
+it("keeps Project testimonials while an imported copy is unresolved", async () => {
+  const { t, owner, project, assetId, testimonialId } = await copyFixture();
+  await t.run((ctx) =>
+    ctx.db.patch(assetId, {
+      importCopyStartedAt: Date.now(),
+      provider: "fake",
+    }),
+  );
+  const { deletionId } = await owner.client.mutation(
+    internal.workspaceDeletion.prepare,
+    {
+      organizationId: project.id,
+      brandName: "Willow Ceramics",
+      irreversibleConfirmed: true,
+    },
+  );
+  for (let step = 0; step < 40; step++) {
+    await t.action(internal.workspaceDeletion.processDeletion, { deletionId });
+    if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "failed")
+      break;
+  }
+  expect((await t.run((ctx) => ctx.db.get(deletionId)))?.status).toBe("failed");
+  expect(await t.run((ctx) => ctx.db.get(testimonialId))).not.toBeNull();
+  expect(await t.run((ctx) => ctx.db.get(project.id))).not.toBeNull();
+  // Reconciliation can discover the asset after the workflow reached record purge.
+  const intent = await t.run((ctx) =>
+    ctx.db.query("videoImportCleanupIntents").first(),
+  );
+  await t.run((ctx) => ctx.db.patch(intent!._id, { probe: 1 }));
+  await t.mutation(internal.videoImportCleanup.finishProbe, {
+    intentId: intent!._id,
+    probe: 1,
+    matches: [
+      { id: "late-project-copy", passthrough: String(intent!.reservationId) },
+    ],
+    nextCursor: null,
+    failed: false,
+  });
+  const cleanup = await t.run((ctx) =>
+    ctx.db.query("videoProviderCleanupJobs").first(),
+  );
+  await t.action(internal.videoMedia.processProviderCleanup, {
+    cleanupJobId: cleanup!._id,
+  });
+  for (let step = 0; step < 100; step++) {
+    await t.action(internal.workspaceDeletion.processDeletion, { deletionId });
+    if ((await t.run((ctx) => ctx.db.get(deletionId)))?.status === "deleted")
+      break;
+  }
+  expect((await t.run((ctx) => ctx.db.get(deletionId)))?.status).toBe(
+    "deleted",
+  );
+  expect(await t.run((ctx) => ctx.db.get(project.id))).toBeNull();
+  expect(await t.run((ctx) => ctx.db.get(testimonialId))).toBeNull();
 });

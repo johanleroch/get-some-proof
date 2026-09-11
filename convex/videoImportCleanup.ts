@@ -39,7 +39,8 @@ export async function rememberUnresolvedImportCopy(
   if (
     !asset.importItemId ||
     asset.importCopyStartedAt === undefined ||
-    asset.providerAssetId
+    asset.providerAssetId ||
+    asset.importCopyCleanupResolvedAt !== undefined
   )
     return;
   const existing = await ctx.db
@@ -69,7 +70,11 @@ export async function resolveImportCleanup(
     .withIndex("by_reservation", (q) => q.eq("reservationId", reservationId))
     .unique();
   if (!intent) return false;
+  const asset = await ctx.db.get(intent.assetId);
+  if (asset)
+    await ctx.db.patch(asset._id, { importCopyCleanupResolvedAt: Date.now() });
   await enqueueAssetCleanup(ctx, {
+    testimonialId: asset?.testimonialId,
     accountId: intent.accountId,
     organizationId: intent.organizationId,
     provider: intent.provider,
@@ -140,12 +145,18 @@ export const finishProbe = internalMutation({
     )
       throw new Error("Import reconciliation reference mismatch.");
     if (args.matches.length) {
+      const source = await ctx.db.get(intent.assetId);
+      if (source)
+        await ctx.db.patch(source._id, {
+          importCopyCleanupResolvedAt: Date.now(),
+        });
       for (const asset of args.matches)
         await enqueueAssetCleanup(ctx, {
           accountId: intent.accountId,
           organizationId: intent.organizationId,
           provider: intent.provider,
           providerAssetId: asset.id,
+          testimonialId: source?.testimonialId,
         });
       await ctx.db.delete(intent._id);
       return null;

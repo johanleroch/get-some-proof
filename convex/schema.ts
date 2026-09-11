@@ -1,3 +1,4 @@
+import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { richTextValidator } from "./domain/testimonialRichText";
 import {
   importResult,
@@ -199,6 +200,9 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_owner", ["ownerUserId"]),
   accountDeletions: defineTable({
+    inventoryCursor: v.optional(v.string()),
+    projectsInventoried: v.optional(v.boolean()),
+    mediaProgress: v.optional(mediaDeletionProgress),
     accountId: v.id("accounts"),
     ownerUserId: v.string(),
     status: v.union(
@@ -601,6 +605,8 @@ export default defineSchema({
     expiresAt: v.number(),
   })
     .index("by_storage_id", ["storageId"])
+    .index("by_management_testimonial", ["managementTestimonialId"])
+    .index("by_storage_organization", ["storageId", "organizationId"])
     .index("by_testimonial", ["testimonialId"])
     .index("by_organization", ["organizationId"]),
   testimonials: defineTable({
@@ -666,7 +672,15 @@ export default defineSchema({
     ])
     .index("by_management_token_hash", ["managementTokenHash"])
     .index("by_avatar_storage_id", ["avatarStorageId"])
-    .index("by_poster_storage_id", ["posterStorageId"]),
+    .index("by_poster_storage_id", ["posterStorageId"])
+    .index("by_avatar_storage_organization", [
+      "avatarStorageId",
+      "organizationId",
+    ])
+    .index("by_poster_storage_organization", [
+      "posterStorageId",
+      "organizationId",
+    ]),
   collectionCredits: defineTable({
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
@@ -926,6 +940,7 @@ export default defineSchema({
     assistantImport: v.optional(v.boolean()),
     importedFileVerified: v.optional(v.boolean()),
     importCopyStartedAt: v.optional(v.number()),
+    importCopyCleanupResolvedAt: v.optional(v.number()),
     importItemId: v.optional(v.id("testimonialImportItems")),
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
@@ -1016,6 +1031,9 @@ export default defineSchema({
     .index("by_reservation", ["reservationId"])
     .index("by_organization", ["organizationId"]),
   videoMediaDeletions: defineTable({
+    inventoryStage: v.optional(v.number()),
+    inventoryCursor: v.optional(v.string()),
+    mediaProgress: v.optional(mediaDeletionProgress),
     organizationId: v.id("organizations"),
     testimonialId: v.id("testimonials"),
     providerAssets: v.array(
@@ -1090,6 +1108,11 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_key", ["key"]),
   workspaceDeletions: defineTable({
+    accountDeletionId: v.optional(v.id("accountDeletions")),
+    inventoryStage: v.optional(v.number()),
+    inventoryCursor: v.optional(v.string()),
+    mediaInventoryComplete: v.optional(v.boolean()),
+    mediaProgress: v.optional(mediaDeletionProgress),
     accountId: v.optional(v.id("accounts")),
     organizationId: v.id("organizations"),
     actorUserId: v.string(),
@@ -1109,7 +1132,36 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_actor", ["actorUserId"]),
+    .index("by_actor", ["actorUserId"])
+    .index("by_account_inventory", [
+      "accountDeletionId",
+      "mediaInventoryComplete",
+    ]),
+  deletionMediaTargets: defineTable({
+    deletionId: v.union(
+      v.id("workspaceDeletions"),
+      v.id("videoMediaDeletions"),
+      v.id("accountDeletions"),
+    ),
+    provider: v.union(
+      v.literal("storage"),
+      v.literal("mux"),
+      v.literal("fake"),
+    ),
+    kind: v.union(v.literal("image"), v.literal("video"), v.literal("upload")),
+    resourceId: v.string(),
+    sharingStage: v.optional(v.number()),
+    sharingCursor: v.optional(v.string()),
+    retained: v.optional(v.boolean()),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_deletion_resource", [
+      "deletionId",
+      "provider",
+      "kind",
+      "resourceId",
+    ])
+    .index("by_deletion_pending", ["deletionId", "deletedAt"]),
   workspaceDeletionSubscriptions: defineTable({
     deletionId: v.id("workspaceDeletions"),
     stripeSubscriptionId: v.string(),

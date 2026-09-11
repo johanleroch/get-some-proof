@@ -631,6 +631,24 @@
       "theme": "light"
     },
     {
+      "slug": "testimonial-deletion-progress",
+      "title": "Testimonial media cleanup",
+      "path": "/org/:organizationSlug/testimonials",
+      "fixturePath": "/visual-evidence/testimonial-deletion-progress",
+      "heading": "Deleting Remy Jupille's Testimonial",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
+      "slug": "account-deletion-progress",
+      "title": "Account media cleanup",
+      "path": "/account",
+      "fixturePath": "/visual-evidence/account-deletion-progress",
+      "heading": "Deleting your account",
+      "theme": "light",
+      "requiresAuth": true
+    },
+    {
       "slug": "testimonial-inbox-bulk",
       "title": "Inbox bulk selection",
       "path": "/org/:organizationSlug/inbox",
