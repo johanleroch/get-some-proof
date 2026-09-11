@@ -937,10 +937,6 @@ function useInboxData(
   moderationStatus: InboxCategory,
 ) {
   const organization = useQuery(api.organizations.getBySlug, { slug });
-  const assistantEntitlement = useQuery(
-    api.billing.getProjectEntitlement,
-    organization ? { organizationId: organization.id } : "skip",
-  );
 
   const importFilter = importJobId !== undefined ? { importJobId } : {};
   const counts = useQuery(
@@ -963,7 +959,6 @@ function useInboxData(
   );
   return {
     organization,
-    assistantEntitlement,
     counts,
     loadMore,
     testimonials,
@@ -983,7 +978,6 @@ export function TestimonialInbox({
   const moderationStatus = inboxCategoryFromUrl(searchParams);
   const {
     organization,
-    assistantEntitlement,
     counts,
     loadMore,
     testimonials,
@@ -1238,7 +1232,6 @@ export function TestimonialInbox({
           <InboxImportActions
             slug={slug}
             publicSlug={organization.publicSlug}
-            paid={assistantEntitlement?.effectivePlan === "premium"}
           />
         }
         description="Review private Submissions and choose what becomes public."
@@ -1460,24 +1453,12 @@ export function TestimonialInbox({
 export function InboxImportActions({
   slug,
   publicSlug,
-  paid,
 }: {
   slug: string;
   publicSlug: string;
-  paid: boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <Button
-        asChild
-        variant="ghost"
-        className={paid ? undefined : "text-ink-2"}
-      >
-        <Link href={`/org/${slug}/mcp` as Route}>
-          Import with an assistant
-          {!paid ? " · Pro" : ""}
-        </Link>
-      </Button>
       <Button asChild>
         <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
       </Button>
