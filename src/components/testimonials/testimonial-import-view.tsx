@@ -445,6 +445,20 @@ export function TestimonialImportView({
               />
             )}
           </form>
+          {!publicPreview && (
+            <div className="border-line grid gap-4 border-t pt-6 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="grid gap-1">
+                <h2 className="type-heading">Import with an assistant</h2>
+                <p className="type-body text-ink-2 max-w-prose">
+                  Use Claude Code or Codex to bring testimonials from another
+                  page.
+                </p>
+              </div>
+              <Button asChild variant="outline">
+                <a href={`/org/${slug}/mcp`}>Import with an assistant</a>
+              </Button>
+            </div>
+          )}
         </section>
       ) : preview === null ? (
         <EmptyState
