@@ -303,6 +303,11 @@ export function BrandDashboardView({
         {/* The column reorders itself around the work that is waiting. With
             an empty queue the link is the whole job, so it comes first. */}
         <section aria-label="Brand overview" className="space-y-6">
+          {addressesLoading ? (
+            <p className="sr-only" role="status">
+              Loading Collection Form and Public Wall addresses.
+            </p>
+          ) : null}
           {waiting ? (
             <ReviewQueue inboxPath={inboxPath} pendingCount={pendingCount} />
           ) : null}

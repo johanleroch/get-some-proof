@@ -1,15 +1,21 @@
 "use client";
 import { useState } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { defaultPrimaryColor } from "@convex/domain/brand";
 import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { getPublicEnvironment } from "@/lib/env/public-env";
+import {
+  setStudioChoosingFilter,
+  studioChoosingFromUrl,
+} from "@/lib/studio-route-state";
 import { StudioView } from "./studio-view";
 
 export function Studio({ slug }: { slug: string }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const initialChoosing = studioChoosingFromUrl(useSearchParams());
   const projectShell = useProjectShell();
   const shellProject = projectShell?.slug === slug ? projectShell : null;
   const queriedOrganization = useQuery(
@@ -68,6 +74,8 @@ export function Studio({ slug }: { slug: string }) {
       candidates={candidates}
       hasMore={status === "CanLoadMore"}
       loadingMore={status === "LoadingMore"}
+      initialChoosing={initialChoosing}
+      onChoosingChange={setStudioChoosingFilter}
       onLoadMore={() => loadMore(20)}
       onOpen={setActiveId}
       origin={env.configured ? env.siteUrl.replace(/\/$/, "") : ""}

@@ -10,9 +10,11 @@ import { InboxListSkeleton } from "@/components/ui/page-skeletons";
 import {
   InboxCategoryTabs,
   InboxImportActions,
+} from "@/components/testimonials/inbox-chrome";
+import {
   inboxCategoryFromUrl,
   setModerationStatusFilter,
-} from "@/components/testimonials/testimonial-inbox";
+} from "@/lib/inbox-route-state";
 
 export function InboxRouteLoading() {
   const project = useProjectShell();

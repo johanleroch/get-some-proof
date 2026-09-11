@@ -21,7 +21,6 @@ import {
   IconArrowBackUp,
   IconArrowDown,
   IconArrowUp,
-  IconExternalLink,
   IconEyeOff,
   IconGripVertical,
   IconSend,
@@ -57,7 +56,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BlobLoader } from "@/components/brand/blob-loader";
 import { SpeechBubbleStars, WallFrames } from "@/components/doodles";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { convexErrorMessage } from "@/lib/convex-error-message";
 import { formatShortDate } from "@/lib/format-date";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -68,10 +66,18 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { cn } from "@/lib/utils";
 import {
+  inboxCategoryFromUrl,
+  setModerationStatusFilter,
+  type InboxRouteCategory,
+} from "@/lib/inbox-route-state";
+import {
+  InboxCategoryTabs,
+  InboxImportActions,
+} from "@/components/testimonials/inbox-chrome";
+import {
   InboxListSkeleton,
   InboxPageSkeleton,
 } from "@/components/ui/page-skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { TestimonialCardValue } from "@/components/testimonials/testimonial-card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -160,11 +166,7 @@ export const inboxCategories = [
   },
 ] as const;
 
-export type InboxCategory = (typeof inboxCategories)[number]["key"];
-export type InboxCounts = Record<InboxCategory, number>;
-/** Mirrors `inboxCountCeiling` in convex/testimonialModeration.ts. */
-const inboxCountCeiling = 500;
-
+export type InboxCategory = InboxRouteCategory;
 function categoryOf(key: InboxCategory) {
   return inboxCategories.find((category) => category.key === key)!;
 }
@@ -777,66 +779,6 @@ export function TestimonialDeleteDialog({
   );
 }
 
-/**
- * The four categories as tabs, each with how many Testimonials wait in it.
- * A category is where you are, not a filter you set; nothing else cuts
- * across them, so the tabs are the whole navigation of the page.
- */
-export function InboxCategoryTabs({
-  children,
-  counts,
-  moderationStatus,
-  onModerationStatusChange,
-  syncIndicator,
-}: {
-  syncIndicator?: ReactNode;
-  /** The category's own panel: only the open one is rendered. */
-  children: ReactNode;
-  counts?: InboxCounts;
-  moderationStatus: InboxCategory;
-  onModerationStatusChange: (value: InboxCategory) => void;
-}) {
-  return (
-    <Tabs
-      className="gap-6"
-      onValueChange={(value) =>
-        onModerationStatusChange(value as InboxCategory)
-      }
-      value={moderationStatus}
-    >
-      <div className="relative">
-        <TabsList aria-label="Testimonial categories">
-          {inboxCategories.map((category) => {
-            const count = counts?.[category.key] ?? 0;
-            return (
-              <TabsTrigger key={category.key} value={category.key}>
-                {category.label}{" "}
-                {counts === undefined ? (
-                  <Skeleton aria-hidden="true" className="h-3 w-4" />
-                ) : count > 0 ? (
-                  // Inherits the tab's colour so an inactive count keeps AA
-                  // contrast; weight alone separates it from the label.
-                  <span className="font-medium tabular-nums">
-                    {count > inboxCountCeiling
-                      ? `${inboxCountCeiling}+`
-                      : count}
-                  </span>
-                ) : null}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-        <div className="absolute -top-5 right-0 flex size-4 items-center justify-center">
-          {syncIndicator}
-        </div>
-      </div>
-      <TabsContent className="space-y-6" value={moderationStatus}>
-        {children}
-      </TabsContent>
-    </Tabs>
-  );
-}
-
 export function InboxFeedback({
   error,
   message,
@@ -912,30 +854,6 @@ async function runInboxAction({
   } finally {
     onFinish();
   }
-}
-
-export function inboxCategoryFromUrl(searchParams: {
-  getAll: (name: string) => string[];
-}): InboxCategory {
-  const requestedCategory = searchParams.getAll("tab");
-  return (
-    (requestedCategory.length === 1
-      ? inboxCategories.find(
-          (category) => category.key === requestedCategory[0],
-        )?.key
-      : undefined) ?? "pending"
-  );
-}
-
-export function setModerationStatusFilter(category: InboxCategory) {
-  const url = new URL(window.location.href);
-  if (
-    url.searchParams.getAll("tab").length === 1 &&
-    url.searchParams.get("tab") === category
-  )
-    return;
-  url.searchParams.set("tab", category);
-  window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function useInboxData(
@@ -1465,24 +1383,4 @@ export function TestimonialInbox({
   );
 }
 
-export function InboxImportActions({
-  slug,
-  publicSlug,
-}: {
-  slug: string;
-  publicSlug: string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      <Button asChild>
-        <Link href={`/org/${slug}/import` as Route}>Import testimonials</Link>
-      </Button>
-      <Button asChild variant="outline">
-        <Link href={`/w/${publicSlug}` as Route} target="_blank">
-          Open Public Wall
-          <IconExternalLink aria-hidden="true" />
-        </Link>
-      </Button>
-    </div>
-  );
-}
+export { InboxCategoryTabs, InboxImportActions } from "./inbox-chrome";

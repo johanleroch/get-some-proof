@@ -9,7 +9,7 @@ import { StudioRouteLoading } from "@/components/studio/studio-route-loading";
 import { InboxRouteLoading } from "@/components/testimonials/inbox-route-loading";
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams("?tab=archived"),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 const project = {
@@ -27,7 +27,10 @@ function renderInProject(component: ReactNode) {
 }
 
 describe("instant page route shells", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    window.history.replaceState(null, "", "/");
+  });
 
   it("keeps the Overview identity, bounded queue, and relative links real", () => {
     renderInProject(<OverviewRouteLoading />);
@@ -45,6 +48,7 @@ describe("instant page route shells", () => {
   });
 
   it("keeps Inbox actions and the URL-selected accessible tab real", () => {
+    window.history.replaceState(null, "", "/org/atrakt/inbox?tab=archived");
     renderInProject(<InboxRouteLoading />);
 
     expect(
@@ -72,5 +76,15 @@ describe("instant page route shells", () => {
     expect(
       screen.getByRole("button", { name: /Horizontal carousel/ }),
     ).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading Studio. Templates will be available shortly.",
+    );
+    expect(window.location.search).toBe("?create=widget");
+
+    cleanup();
+    renderInProject(<StudioRouteLoading />);
+    expect(
+      screen.getByRole("heading", { name: "Choose a template" }),
+    ).toBeVisible();
   });
 });
