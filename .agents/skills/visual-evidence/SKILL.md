@@ -25,7 +25,7 @@ Prove the visible change with the smallest useful set of screenshots.
 
 1. Read `visual-evidence.config.json` and add the smallest canonical screen that proves the change when the existing list is insufficient.
 2. Put deterministic setup in the Playwright test. Use synthetic data and mask volatile or sensitive regions.
-3. Run only the selected capture tests, using a filter matching their actual `captures <screen.title>` names. Use a fresh task-specific `VISUAL_EVIDENCE_DIR` so earlier screenshots cannot enter the manifest. An unfiltered full-suite run is reserved for an explicitly requested full visual audit.
+3. Put the selected slugs in the pull-request body marker `<!-- visual-evidence-screens: slug-one, slug-two -->`, or use `none` when the diff has no visual impact. Run only those screens locally with the same comma-separated `VISUAL_EVIDENCE_SLUGS`. Use a fresh task-specific `VISUAL_EVIDENCE_DIR` so earlier screenshots cannot enter the manifest. The explicit value `all` is reserved for an explicitly requested full visual audit; an absent selection is rejected.
 4. Keep the images tied to the exact Git commit. Re-capture after any UI-affecting edit.
 5. Frame the changed component or relevant viewport with enough context to understand it. Use full-page screenshots only when the change concerns the whole page. Inspect every selected desktop/mobile image and remove redundant or unrelated captures before building the manifest.
 
@@ -36,5 +36,5 @@ Prove the visible change with the smallest useful set of screenshots.
 - Local publication: build the exact-commit manifest for `pull` or `issue`, then run `pnpm visual:publish` from a clean reviewed checkout. Re-check the remote PR head before reporting success.
 - Keep the manifest and marked comment limited to the selected evidence, with a short explanation of what changed. Replace the existing marked comment instead of appending another gallery.
 - Verify every selected desktop/mobile image is embedded in the marked comment with the current full SHA, and no unrelated screen is included. A GitHub artifact alone is not published evidence.
-- Check automatic capture scope too: a workflow running the whole catalog can overwrite targeted local evidence. Report that mismatch explicitly; changing this skill alone does not change workflow behavior.
+- Check that the automatic workflow resolved the same explicit selection and that its marked comment contains nothing else. Editing the pull-request body reruns selection and replaces the previous comment for the current head.
 - Report local publication and automatic workflow success separately. A default-branch publisher change runs automatically only once merged; prove it before that by dispatching `Visual evidence publish` on its branch with the capture run id.

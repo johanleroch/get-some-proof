@@ -25,7 +25,27 @@ const config = JSON.parse(
   ),
 ) as VisualEvidenceConfig;
 
-for (const screen of config.screens) {
+const requestedSlugs = process.env.VISUAL_EVIDENCE_SLUGS;
+if (!requestedSlugs) {
+  throw new Error(
+    "VISUAL_EVIDENCE_SLUGS is required. Select explicit slugs, or use all only for an intentional full visual audit.",
+  );
+}
+const selectedSlugs = new Set(requestedSlugs.split(",").filter(Boolean));
+const selectedScreens =
+  requestedSlugs === "all"
+    ? config.screens
+    : config.screens.filter((screen) => selectedSlugs.has(screen.slug));
+const missingSlugs = [...selectedSlugs].filter(
+  (slug) => !config.screens.some((screen) => screen.slug === slug),
+);
+if (missingSlugs.length > 0) {
+  throw new Error(
+    `Unknown visual evidence screens: ${missingSlugs.join(", ")}`,
+  );
+}
+
+for (const screen of selectedScreens) {
   test(`captures ${screen.title}`, async ({ page }, testInfo) => {
     const fixtureMode = process.env.VISUAL_EVIDENCE_FIXTURES === "true";
     test.skip(
