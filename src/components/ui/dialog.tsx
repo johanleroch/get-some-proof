@@ -40,9 +40,11 @@ function DialogContent({
   onOpenAutoFocus,
   onKeyDown,
   showCloseButton = true,
+  zoom = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  zoom?: boolean;
 }) {
   // Radix gives focus back to its own DialogTrigger only. Every dialog in
   // the product opens from state (a row's still, a menu item, a button
@@ -75,7 +77,9 @@ function DialogContent({
           onOpenAutoFocus?.(event);
         }}
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-[0.98] data-[state=open]:zoom-in-[0.98] shadow-float fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 data-[state=closed]:duration-[160ms] data-[state=closed]:ease-[var(--ease-exit)] data-[state=open]:duration-[260ms] data-[state=open]:ease-[var(--ease-settle-soft)]",
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 shadow-float fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 data-[state=closed]:duration-[160ms] data-[state=closed]:ease-[var(--ease-exit)] data-[state=open]:duration-[260ms] data-[state=open]:ease-[var(--ease-settle-soft)]",
+          zoom &&
+            "data-[state=closed]:zoom-out-[0.98] data-[state=open]:zoom-in-[0.98]",
           className,
         )}
         {...props}

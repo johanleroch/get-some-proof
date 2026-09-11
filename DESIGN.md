@@ -820,7 +820,9 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   reduced motion.
 - Menus, popovers, selects and tooltips: fade and scale from 95 percent with
   `--ease-settle`, from the trigger's origin.
-- Dialogs: fade and scale from 0.98 with `--ease-settle-soft`.
+- Dialogs: fade and scale from 0.98 with `--ease-settle-soft`. Dense utility
+  dialogs whose controls are immediately interactive may keep the fade and
+  omit the scale so an early click cannot appear to resize their contents.
 - Sidebar navigation: the amber rail in the gutter is the only thing that
   travels. Its leading edge leaves at once and its trailing edge follows
   90ms later (`.nav-indicator-rail`, `--motion-base`, `--ease-out-soft`), so
