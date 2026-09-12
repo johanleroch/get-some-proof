@@ -124,7 +124,7 @@ export function StudioView(props: StudioViewProps) {
   if (props.loadingActive)
     return <StudioEditorSkeleton onBack={() => props.onOpen(null)} />;
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
+    <div className="space-y-8">
       <PageHeader
         title={choosing ? "Choose a template" : "Studio"}
         description={

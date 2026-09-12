@@ -8,6 +8,8 @@ import {
 } from "@/components/studio/studio-view";
 import { initialWidgetConfig } from "@/components/studio/catalog";
 
+import { WorkspacePageShell } from "./instant-page-shells-fixture";
+
 const primaryStudioCandidates: StudioCandidate[] = [
   {
     testimonialId: "maya",
@@ -169,69 +171,71 @@ export function StudioFixture({
     editor ? seed._id : null,
   );
   return (
-    <StudioView
-      initialChoosing={choosing}
-      initialPreview={preview}
-      brandName="Cedar Workshop"
-      accentColor="#ffbb16"
-      attributionRequired={false}
-      widgets={widgets}
-      active={widgets.find((item) => item._id === activeId) ?? null}
-      candidates={studioCandidates.slice(0, candidateCount)}
-      hasMore={candidateCount < studioCandidates.length}
-      loadingMore={false}
-      onLoadMore={() => setCandidateCount(studioCandidates.length)}
-      onOpen={setActiveId}
-      inboxHref="/visual-evidence/testimonial-inbox"
-      origin="https://getsomeproof.example"
-      onCreate={async (name, config) => {
-        const id = `fixture-${widgets.length}`;
-        setWidgets([
-          ...widgets,
-          {
-            _id: id,
-            name,
-            publicId: `12345678-1234-4234-8234-${String(widgets.length).padStart(12, "0")}`,
-            revision: 0,
-            draft: { config, testimonialIds: [] },
-          },
-        ]);
-        return id;
-      }}
-      onSave={async (id, draft, revision, publish) => {
-        setWidgets(
-          widgets.map((item) =>
-            item._id === id
-              ? {
-                  ...item,
-                  name: draft.name,
-                  draft: {
-                    config: draft.config,
-                    testimonialIds: draft.testimonialIds,
-                  },
-                  revision: revision + 1,
-                  ...(publish ? { published: { ...draft } } : {}),
-                }
-              : item,
-          ),
-        );
-      }}
-      onUnpublish={async (id) => {
-        const nextRevision =
-          (widgets.find((item) => item._id === id)?.revision ?? 0) + 1;
-        setWidgets(
-          widgets.map((item) =>
-            item._id === id
-              ? { ...item, published: undefined, revision: nextRevision }
-              : item,
-          ),
-        );
-        return nextRevision;
-      }}
-      onRemove={async (id) => {
-        setWidgets(widgets.filter((item) => item._id !== id));
-      }}
-    />
+    <WorkspacePageShell pathname="/org/atrakt/studio">
+      <StudioView
+        initialChoosing={choosing}
+        initialPreview={preview}
+        brandName="Cedar Workshop"
+        accentColor="#ffbb16"
+        attributionRequired={false}
+        widgets={widgets}
+        active={widgets.find((item) => item._id === activeId) ?? null}
+        candidates={studioCandidates.slice(0, candidateCount)}
+        hasMore={candidateCount < studioCandidates.length}
+        loadingMore={false}
+        onLoadMore={() => setCandidateCount(studioCandidates.length)}
+        onOpen={setActiveId}
+        inboxHref="/visual-evidence/testimonial-inbox"
+        origin="https://getsomeproof.example"
+        onCreate={async (name, config) => {
+          const id = `fixture-${widgets.length}`;
+          setWidgets([
+            ...widgets,
+            {
+              _id: id,
+              name,
+              publicId: `12345678-1234-4234-8234-${String(widgets.length).padStart(12, "0")}`,
+              revision: 0,
+              draft: { config, testimonialIds: [] },
+            },
+          ]);
+          return id;
+        }}
+        onSave={async (id, draft, revision, publish) => {
+          setWidgets(
+            widgets.map((item) =>
+              item._id === id
+                ? {
+                    ...item,
+                    name: draft.name,
+                    draft: {
+                      config: draft.config,
+                      testimonialIds: draft.testimonialIds,
+                    },
+                    revision: revision + 1,
+                    ...(publish ? { published: { ...draft } } : {}),
+                  }
+                : item,
+            ),
+          );
+        }}
+        onUnpublish={async (id) => {
+          const nextRevision =
+            (widgets.find((item) => item._id === id)?.revision ?? 0) + 1;
+          setWidgets(
+            widgets.map((item) =>
+              item._id === id
+                ? { ...item, published: undefined, revision: nextRevision }
+                : item,
+            ),
+          );
+          return nextRevision;
+        }}
+        onRemove={async (id) => {
+          setWidgets(widgets.filter((item) => item._id !== id));
+        }}
+      />
+    </WorkspacePageShell>
   );
 }
 export function StudioEditorFixture() {
