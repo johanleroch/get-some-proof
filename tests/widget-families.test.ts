@@ -26,7 +26,9 @@ describe("the embed never re-crops a video", () => {
        nothing inside the shadow root. Without the rule below, a narrow video
        pushes its own play button out of the card and the name runs past the
        edge - and every family that narrows a video hits it. */
-    expect(runtime).toContain(".video-overlay > span { min-width: 0; }");
+    expect(runtime).toMatch(
+      /\.video-overlay\s*>\s*span\s*\{[^}]*min-width:\s*0/,
+    );
   });
 
   it("bounds a tall video by narrowing the card, not by reshaping it", () => {

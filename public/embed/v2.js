@@ -798,7 +798,8 @@
     .grid.stack > .card[data-active="true"] { opacity:1; visibility:visible; }
     .widget[data-layout="spotlight"] .grid { max-width:560px; margin-inline:auto; }
     .widget[data-layout="spotlight"] .dots { display:flex; justify-content:center; gap:8px; margin-top:16px; }
-    .widget[data-layout="spotlight"] .dot { width:8px; height:8px; min-width:0; min-height:0; padding:0; border:0; border-radius:999px; background:var(--gsp-border); cursor:pointer; transition:background-color 200ms ease; }
+    .widget[data-layout="spotlight"] .dot::after { content:""; position:absolute; top:50%; left:50%; width:44px; height:44px; translate:-50% -50%; }
+    .widget[data-layout="spotlight"] .dot { position:relative; width:8px; height:8px; min-width:0; min-height:0; padding:0; border:0; border-radius:999px; background:var(--gsp-border); cursor:pointer; transition:background-color 200ms ease; }
     .widget[data-layout="spotlight"] .dot[aria-current="true"] { background:var(--gsp-accent); }
 
     /* Bubble: the corner of the client's page. Inline mode exists only so a
@@ -827,6 +828,7 @@
       background:var(--gsp-surface); color:var(--gsp-muted);
       font-size:15px; line-height:1; cursor:pointer;
     }
+    .widget[data-layout="bubble"] .bubble-close::after { content:""; position:absolute; top:50%; left:50%; width:44px; height:44px; translate:-50% -50%; }
     .widget[data-layout="bubble"] .bubble-close:hover { color:var(--gsp-text); }
 
     /* --- D. Where the proof came from -------------------------------- */
@@ -910,7 +912,7 @@
     .widget[data-layout="hero"] .identity { gap:14px; }
     .widget[data-layout="hero"] [data-gsp-source] { width:32px !important; height:32px !important; }
     .widget[data-layout="hero"] .identity { margin-top:28px; }
-    .widget[data-layout="hero"] .person { flex:0 1 auto; text-align:left; }
+    .widget[data-layout="hero"] .person { flex:0 1 auto; }
     .widget[data-layout="hero"] .quote-mark { display:none; }
     .widget[data-layout="hero"] .avatar { width:44px; height:44px; flex-basis:44px; }
     .widget[data-layout="hero"] .name { font-size:15px; }
@@ -959,7 +961,7 @@
        system has one accent and warm neutrals, so it reads as print. */
     .widget[data-layout="blocks"] { padding:0; }
     .widget[data-layout="blocks"] .grid { display:grid; grid-auto-flow:dense; grid-template-columns:1fr; gap:0; column-count:1; }
-    .widget[data-layout="blocks"] .card { height:100%; margin:0; border:0; border-radius:0; }
+    .widget[data-layout="blocks"] .card, .widget[data-hand="drawn"][data-layout="blocks"] .grid > .card { height:100%; margin:0; border:0; border-radius:0; }
     .widget[data-layout="blocks"] .content { padding:32px; }
     .widget[data-layout="blocks"] .card.video-card { display:flex; align-items:center; background:#000; }
     .widget[data-layout="blocks"] .video-shell { flex:1; }
@@ -1101,21 +1103,37 @@
     );
   }
   function ratingBadge(payload, drawn) {
+    const rated = payload.testimonials.filter(
+      (testimonial) =>
+        typeof testimonial.rating === "number" && testimonial.rating > 0,
+    );
     const average = averageRating(payload.testimonials);
     const badge = element("div", "badge");
-    const score = element(
-      "span",
-      "badge-score",
-      average ? average.toFixed(1) : "—",
-    );
+    const body = element("div", "badge-body");
+    /* With nothing rated the badge used to show a dash beside five empty
+       stars and announce "0.0 out of 5": it states the count alone instead. */
+    if (!average) {
+      const total = payload.testimonials.length;
+      body.append(
+        element(
+          "p",
+          "badge-copy",
+          `${total} ${total === 1 ? "testimonial" : "testimonials"}`,
+        ),
+      );
+      badge.append(body);
+      return badge;
+    }
+    const score = element("span", "badge-score", average.toFixed(1));
     if (drawn) score.append(ringMark());
     const stars = element("div", "badge-stars");
     stars.setAttribute("role", "img");
     stars.setAttribute("aria-label", `${average.toFixed(1)} out of 5 stars`);
     for (let index = 0; index < 5; index += 1)
       stars.append(starSvg(index < Math.round(average)));
-    const body = element("div", "badge-body");
-    const count = payload.testimonials.length;
+    /* The count has to be the count the average was taken over, or the badge
+       makes a claim about Testimonials that never carried a rating. */
+    const count = rated.length;
     body.append(
       stars,
       element(
@@ -1309,7 +1327,12 @@
     return () => observer.disconnect();
   }
   /** The kind of Testimonial a family can honestly show, when it is not all. */
-  const familySelection = { band: "text", marquee: "text", videos: "video" };
+  const familySelection = {
+    band: "text",
+    chips: "text",
+    marquee: "text",
+    videos: "video",
+  };
   const reducedMotion = () =>
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**

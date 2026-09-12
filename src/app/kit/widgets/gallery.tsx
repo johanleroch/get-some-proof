@@ -343,7 +343,7 @@ export function WidgetGallery() {
   const [hand, setHand] = useState<HandChoice>("clean");
   const [accentColor, setAccentColor] = useState("#ffbb16");
   return (
-    <div className="bg-paper min-h-dvh">
+    <div className="bg-paper min-h-svh">
       <header className="border-line bg-paper/95 sticky top-0 z-10 border-b backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-8 py-5">
           <div>
