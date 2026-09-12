@@ -702,9 +702,15 @@
     .widget button:disabled { opacity:.4; cursor:default; }
     .widget button:focus-visible,.widget a:focus-visible { outline:3px solid var(--gsp-accent); outline-offset:3px; }
     .faces { display:flex; flex-wrap:wrap; padding-left:10px; align-items:center; }
-    .face { margin-left:-10px; border:3px solid var(--gsp-surface); width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:var(--gsp-border); color:var(--gsp-text); overflow:hidden; }
+    .face { position:relative; margin-left:-10px; border:3px solid var(--gsp-surface); width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:var(--gsp-border); color:var(--gsp-text); overflow:hidden; transition:transform 200ms cubic-bezier(0.22,1,0.36,1), margin-left 200ms cubic-bezier(0.22,1,0.36,1); }
     .face img { width:100%; height:100%; object-fit:cover; }
-    .widget .avatar-copy { margin:12px 0 0; }
+    /* The row opens as the cursor arrives, and the face under it steps out
+       in front of its neighbours. */
+    .faces:hover .face { margin-left:-4px; }
+    .face:hover { z-index:1; transform:translateY(-4px) scale(1.06); }
+    .face.more { background:color-mix(in srgb, var(--gsp-text) 8%, var(--gsp-surface)); color:var(--gsp-muted); font-size:13px; font-weight:600; }
+    .widget .avatar-copy { margin:16px 0 0; color:var(--gsp-muted); font-size:15px; }
+    .avatar-names { color:var(--gsp-text); font-weight:600; }
     .widget > .promo-card { display:block; max-width:340px; margin:24px 0 0; }
     @container (min-width:576px) { .widget[data-layout="masonry"] .grid {column-count:2;} .widget[data-layout="highlights"] .grid {grid-template-columns:repeat(2,1fr);} }
     @container (min-width:850px) { .widget[data-layout="masonry"] .grid {column-count:3;} }
@@ -758,10 +764,13 @@
     .metric { display:flex; align-items:baseline; gap:16px; }
     .metric-value { position:relative; font-size:64px; font-weight:700; line-height:1; letter-spacing:-0.03em; color:var(--gsp-text); }
     .metric-copy { margin:0; max-width:22ch; color:var(--gsp-muted); font-size:16px; line-height:1.45; }
-    .metric-foot { display:flex; align-items:center; gap:14px; }
+    .metric-foot { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
     .metric-foot .faces { padding-left:8px; }
     .metric-foot .face { width:34px; height:34px; margin-left:-8px; border-width:2px; font-size:12px; }
-    .metric-note { margin:0; color:var(--gsp-muted); font-size:14px; }
+    .metric-foot .face.more { background:color-mix(in srgb, var(--gsp-text) 8%, var(--gsp-surface)); color:var(--gsp-muted); font-size:12px; font-weight:600; letter-spacing:-0.01em; }
+    .metric-score { display:flex; align-items:center; gap:8px; }
+    .metric-score .badge-stars svg { width:15px; height:15px; }
+    .metric-average { color:var(--gsp-text); font-size:15px; font-weight:600; }
 
     /* --- C. Proof that moves ---------------------------------------- */
 
@@ -1015,6 +1024,9 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .face { transition:none; }
+      .faces:hover .face { margin-left:-10px; }
+      .face:hover { transform:none; }
       .widget[data-layout="chips"] .row { animation:none; }
       .widget[data-layout="chips"] .track { overflow-x:auto; }
       .widget[data-layout="faces"] .face-button { transition:none; }
@@ -1140,16 +1152,30 @@
     );
     if (shown.length > 1) {
       const foot = element("div", "metric-foot");
-      foot.append(faceStack(shown, 6));
-      const rest = shown.length - Math.min(shown.length, 6);
+      /* Four faces and a chip saying how many more. The overflow belongs in
+         the row it overflows, not in a sentence beside the rating: one
+         string carrying a count and a score is two facts and no meaning. */
+      const faces = faceStack(shown, 4);
+      const rest = shown.length - Math.min(shown.length, 4);
+      if (rest > 0) faces.append(moreFace(rest));
+      foot.append(faces);
       const average = averageRating(payload.testimonials);
-      const note = [
-        rest > 0 ? `+${rest}` : "",
-        average ? `${average.toFixed(1)} out of 5` : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      if (note) foot.append(element("p", "metric-note", note));
+      if (average) {
+        const score = element("div", "metric-score");
+        const stars = element("div", "badge-stars");
+        stars.setAttribute("role", "img");
+        stars.setAttribute(
+          "aria-label",
+          `${average.toFixed(1)} out of 5 stars`,
+        );
+        for (let index = 0; index < 5; index += 1)
+          stars.append(starSvg(index < Math.round(average)));
+        score.append(
+          stars,
+          element("span", "metric-average", average.toFixed(1)),
+        );
+        foot.append(score);
+      }
       block.append(foot);
     }
     return block;
@@ -1204,6 +1230,42 @@
       faces.append(face);
     });
     return faces;
+  }
+  /** The face-shaped chip that says how many the row did not show. */
+  function moreFace(rest) {
+    const more = element("span", "face more", `+${rest}`);
+    more.setAttribute(
+      "aria-label",
+      `${rest} more ${rest === 1 ? "customer" : "customers"}`,
+    );
+    return more;
+  }
+  /**
+   * "Priya, Alice, Alex and 6 others" rather than "9 customer testimonials".
+   * A count is a statistic; first names are people, which is the whole point
+   * of a row of faces sitting beside a call to action.
+   */
+  function nameList(testimonials, limit) {
+    const names = [
+      ...new Set(
+        testimonials
+          .map((testimonial) => testimonial.name.trim().split(/\s+/)[0])
+          .filter(Boolean),
+      ),
+    ];
+    const lead = names.slice(0, limit);
+    const rest = names.length - lead.length;
+    if (!lead.length) return undefined;
+    if (rest > 0)
+      return {
+        lead: lead.join(", "),
+        tail: ` and ${rest} ${rest === 1 ? "other" : "others"}`,
+      };
+    if (lead.length === 1) return { lead: lead[0], tail: "" };
+    return {
+      lead: `${lead.slice(0, -1).join(", ")} and ${lead[lead.length - 1]}`,
+      tail: "",
+    };
   }
   /** One baseline height, each poster as wide as its own shape asks. */
   function contactSheet(cards, tileHeight) {
@@ -1637,14 +1699,20 @@
     if (!payload.testimonials.length) {
       grid.append(element("p", "", "No testimonials to display yet."));
     } else if (config.layout === "avatars") {
-      grid.append(
-        faceStack(payload.testimonials),
-        element(
-          "p",
-          "avatar-copy",
-          `${payload.testimonials.length} customer testimonials`,
-        ),
+      const shown = payload.testimonials.filter(
+        (testimonial) => testimonial.avatarVisible !== false,
       );
+      const faces = faceStack(shown, 5);
+      const rest = shown.length - Math.min(shown.length, 5);
+      if (rest > 0) faces.append(moreFace(rest));
+      grid.append(faces);
+      const names = nameList(shown, 3);
+      if (names) {
+        const copy = element("p", "avatar-copy");
+        copy.append(element("span", "avatar-names", names.lead));
+        if (names.tail) copy.append(element("span", "", names.tail));
+        grid.append(copy);
+      }
     } else if (config.layout === "rating") {
       grid.append(ratingBadge(payload, drawn));
     } else if (config.layout === "metric") {
