@@ -70,6 +70,7 @@ const previous: Partial<
 /** Where each shipped mark comes from, so provenance is never a guess. */
 const origin: Record<SourcePlatform, string> = {
   google: "Google brand assets",
+  trustpilot: "Simple Icons 16.30.0",
   x: "Simple Icons 16.30.0, stroked",
   linkedin: "Simple Icons 13.21.0",
   facebook: "Facebook brand artwork, uncased",
@@ -83,6 +84,8 @@ const origin: Record<SourcePlatform, string> = {
 
 const note: Record<SourcePlatform, string> = {
   google: "The official multicolour G. The one mark that was already right.",
+  trustpilot:
+    "The star from Trustpilot\u2019s own brand assets, in their green. The first platform placed by pnpm icon:fit alone.",
   x: "The official X, stroked 0.7 wider: their mark is thin and went weightless beside nine solid ones. Any bolder and the slivers between the arms close up.",
   linkedin:
     "The official in bug. LinkedIn had it pulled from the public set, so this is the last published file: swap it for the download from brand.linkedin.com.",

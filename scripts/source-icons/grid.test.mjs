@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { BOX, classify, fitFor, looksLikeLetter } from "./grid.mjs";
 
 /**
- * The ten marks the wall ships, as `pnpm icon:fit` measures them: visual ink
+ * Every mark the wall ships, as `pnpm icon:fit` measures them: visual ink
  * bounds in the coordinates of each brand's own file, and how much of their own
  * corners they fill. `shape` is what the badge uses - `letter` is the one call
  * asked for by hand, so `auto` records what the classifier says on its own.
@@ -16,6 +16,14 @@ const MARKS = {
     width: 21.6,
     height: 22.05,
     cornerRatio: 0.066,
+    shape: "circle",
+  },
+  trustpilot: {
+    x: 0.019,
+    y: 0.581,
+    width: 23.963,
+    height: 22.838,
+    cornerRatio: 0,
     shape: "circle",
   },
   x: {
@@ -117,6 +125,9 @@ function parse(transform) {
 
 describe("the source badge grid", () => {
   it("places every shipped mark, and nothing is hand-tuned off the grid", () => {
+    // A platform added to the badge lands here too: run `pnpm icon:fit
+    // <file.svg> --json` and record what it measured, so its mark is held to
+    // the grid like the rest.
     expect(Object.keys(shipped).sort()).toEqual(Object.keys(MARKS).sort());
     for (const [slug, mark] of Object.entries(MARKS)) {
       const computed = parse(fitFor(mark, mark.shape).transform);

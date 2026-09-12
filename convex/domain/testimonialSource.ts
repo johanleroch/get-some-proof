@@ -3,6 +3,7 @@ import { safeTestimonialHref } from "./testimonialRichText";
 
 export const sourcePlatforms = [
   "google",
+  "trustpilot",
   "x",
   "linkedin",
   "facebook",
@@ -20,6 +21,7 @@ export const testimonialSourceValidator = v.object({
 export type TestimonialSource = Infer<typeof testimonialSourceValidator>;
 const domains: Record<TestimonialSource["platform"], string[]> = {
   google: ["google.com", "maps.google.com", "g.page", "maps.app.goo.gl"],
+  trustpilot: ["trustpilot.com"],
   x: ["x.com", "twitter.com"],
   linkedin: ["linkedin.com"],
   facebook: ["facebook.com", "fb.com"],
