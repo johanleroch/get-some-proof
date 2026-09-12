@@ -135,13 +135,6 @@
       cursor: pointer;
       background: #000;
     }
-    @container (max-width: 300px) {
-      .video-overlay { gap: 10px; padding: 14px; }
-      .video-overlay .stars { margin-bottom: 8px; }
-      .star { width: 12px; height: 12px; }
-      .play { width: 40px; height: 40px; flex-basis: 40px; }
-      .play-icon svg { width: 17px; height: 17px; }
-    }
     .video-shell mux-player {
       display: block;
       width: 100%;
@@ -320,6 +313,23 @@
       text-wrap: pretty;
     }
     @container (min-width: 42rem) { .grid { column-count: 2; } }
+    /* The shell is its own container, so a video card that narrowed to keep
+       its shape tightens its overlay instead of crushing it. Placed last:
+       these match the base rules' specificity and win on order alone. */
+    @container (max-width: 300px) {
+      .video-overlay { gap: 10px; padding: 14px; }
+      .video-overlay .stars { margin-bottom: 8px; }
+      .star { width: 12px; height: 12px; }
+      .play { width: 40px; height: 40px; flex-basis: 40px; }
+      .play-icon svg { width: 17px; height: 17px; }
+    }
+    @container (max-width: 220px) {
+      .video-overlay { gap: 8px; padding: 12px; }
+      .video-overlay .quote-mark { display: none; }
+      .video-meta { display: none; }
+      .play { width: 36px; height: 36px; flex-basis: 36px; }
+      .play-icon svg { width: 15px; height: 15px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       .play, .play-icon, .promo-cta, .video-shade, .video-overlay { transition: none; }
       .video-loader svg { animation: none; }
@@ -722,8 +732,8 @@
     .widget[data-layout="mosaic"] .card { margin:0; height:100%; }
 
     /* Video gallery: posters first, every tile the same shape. */
-    .widget[data-layout="videos"] .grid { column-count:1; column-gap:16px; }
-    .widget[data-layout="videos"] .card { margin:0 0 16px; }
+    .widget[data-layout="videos"] .grid { display:flex; flex-wrap:wrap; gap:12px; column-count:1; }
+    .widget[data-layout="videos"] .card { flex:0 0 auto; margin:0; }
 
     /* --- B. Supporting proof ---------------------------------------- */
 
@@ -757,7 +767,7 @@
     .widget[data-layout="marquee"] .content > .stars { margin-bottom:12px; }
     .widget[data-layout="marquee"] .quote { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:4; font-size:15px; line-height:23px; }
     .widget[data-layout="marquee"] .identity { margin-top:auto; padding-top:12px; }
-    .widget[data-layout="marquee"] .testimonial-images { display:none; }
+    .widget[data-layout="marquee"] .testimonial-images { display:none !important; }
 
     .widget[data-layout="marquee"] .track:hover .grid, .widget[data-layout="marquee"] .track:focus-within .grid { animation-play-state:paused; }
     .widget[data-layout="marquee"] .grid > [aria-hidden="true"] { pointer-events:none; }
@@ -790,7 +800,7 @@
     .widget[data-layout="bubble"] .quote { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:15px; line-height:23px; }
     .widget[data-layout="bubble"] .content > .stars { margin-bottom:12px; }
     .widget[data-layout="bubble"] .identity { margin-top:16px; }
-    .widget[data-layout="bubble"] .testimonial-images { display:none; }
+    .widget[data-layout="bubble"] .testimonial-images { display:none !important; }
     .widget[data-layout="bubble"] .video-overlay { padding:16px; }
     .widget[data-layout="bubble"] .bubble-close {
       position:absolute; top:-10px; right:-10px; z-index:2;
@@ -824,8 +834,7 @@
     @container (min-width:850px) {
       .widget[data-layout="mosaic"] .grid { grid-template-columns:repeat(3,1fr); }
     }
-    @container (min-width:576px) { .widget[data-layout="videos"] .grid { column-count:2; } }
-    @container (min-width:850px) { .widget[data-layout="videos"] .grid { column-count:3; } }
+
 
     @media (prefers-reduced-motion: reduce) {
       .widget[data-layout="marquee"] .grid { animation:none; }
@@ -904,7 +913,7 @@
     .widget[data-layout="band"] .quote { grid-area:quote; }
     .widget[data-layout="band"] .person { grid-area:person; margin-top:8px; }
     .widget[data-layout="band"] [data-gsp-source] { grid-area:source; }
-    .widget[data-layout="band"] .testimonial-images { display:none; }
+    .widget[data-layout="band"] .testimonial-images { display:none !important; }
 
     /* Chips: the marked words alone, as pills, on two rows that pass each
        other in opposite directions. */
@@ -929,12 +938,17 @@
     .widget[data-layout="blocks"] .grid { display:grid; grid-auto-flow:dense; grid-template-columns:1fr; gap:0; column-count:1; }
     .widget[data-layout="blocks"] .card { height:100%; margin:0; border:0; border-radius:0; }
     .widget[data-layout="blocks"] .content { padding:32px; }
+    .widget[data-layout="blocks"] .card.video-card { display:flex; align-items:center; background:#000; }
+    .widget[data-layout="blocks"] .video-shell { flex:1; }
+    /* An attached screenshot brings its own colours into a wall built on
+       three tones, so this family shows the words alone. */
+    .widget[data-layout="blocks"] .testimonial-images { display:none !important; }
     .widget[data-layout="blocks"] .quote { font-size:19px; font-weight:600; line-height:28px; }
-    .widget[data-layout="blocks"] .card:nth-child(3n+2) { background:var(--gsp-promo-surface); }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2):not(.video-card) { background:var(--gsp-promo-surface); }
     .widget[data-layout="blocks"] .card:nth-child(3n+2) .quote, .widget[data-layout="blocks"] .card:nth-child(3n+2) .name { color:var(--gsp-promo-text); }
     .widget[data-layout="blocks"] .card:nth-child(3n+2) .meta { color:color-mix(in srgb, var(--gsp-promo-text) 72%, transparent); }
     .widget[data-layout="blocks"] .card:nth-child(3n+2) .avatar { background:color-mix(in srgb, var(--gsp-promo-text) 16%, transparent); color:var(--gsp-promo-text); }
-    .widget[data-layout="blocks"] .card:nth-child(6n+4) { background:var(--gsp-accent); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4):not(.video-card) { background:var(--gsp-accent); }
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote, .widget[data-layout="blocks"] .card:nth-child(6n+4) .name, .widget[data-layout="blocks"] .card:nth-child(6n+4) .meta { color:var(--gsp-accent-ink); }
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .stars, .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote-mark { color:var(--gsp-accent-ink); }
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .avatar { background:color-mix(in srgb, var(--gsp-accent-ink) 14%, transparent); }
@@ -1113,6 +1127,47 @@
       card.style.marginInline = "auto";
     });
   }
+  /** One baseline height, each poster as wide as its own shape asks. */
+  function contactSheet(cards, tileHeight) {
+    cards.forEach((card) => {
+      const aspect = cardAspect(card);
+      if (!aspect) return;
+      card.style.width = `${Math.round((tileHeight * aspect[0]) / aspect[1])}px`;
+      card.style.maxWidth = "100%";
+    });
+  }
+  /**
+   * A wall of blocks that ends mid-row is a wall with a hole in it, and the
+   * whole point of this family is the flush edge. The last block takes the
+   * cells the row has left. Recomputed only when the column count actually
+   * changes, so growing the block cannot feed the observer its own result.
+   */
+  function fillBlockRow(grid, cards) {
+    let columnCount = 0;
+    const apply = () => {
+      const columns = getComputedStyle(grid)
+        .gridTemplateColumns.split(" ")
+        .filter(Boolean).length;
+      if (columns === columnCount) return;
+      columnCount = columns;
+      const last = cards[cards.length - 1];
+      last.style.gridColumn = "";
+      if (columns < 2 || last.classList.contains("video-card")) return;
+      /* A video block spans two rows, so it eats two cells of the flow. */
+      const cells = cards.reduce(
+        (total, card) =>
+          total + (card.classList.contains("video-card") ? 2 : 1),
+        0,
+      );
+      const remainder = cells % columns;
+      if (remainder) last.style.gridColumn = `span ${columns - remainder + 1}`;
+    };
+    apply();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(apply);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }
   /** The kind of Testimonial a family can honestly show, when it is not all. */
   const familySelection = { marquee: "text", videos: "video" };
   const reducedMotion = () =>
@@ -1227,6 +1282,9 @@
       spotlight: 440,
     };
     if (caps[config.layout]) boundVideoCards(cards, caps[config.layout]);
+    if (config.layout === "videos") contactSheet(cards, 340);
+    if (config.layout === "blocks" && cards.length)
+      return fillBlockRow(grid, cards);
     if (config.layout === "chips" && cards.length) {
       const rows = element("div", "rows");
       grid.replaceWith(rows);
