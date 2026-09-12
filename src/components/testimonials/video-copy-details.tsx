@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 function sourceLabel(sourceUrl: string) {
   try {
@@ -48,14 +49,15 @@ export function VideoCopyDetails({
     <>
       <button
         aria-label={`Video copy details for ${testimonialName}`}
-        className="focus-visible:ring-ring inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+        className="focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
         onClick={() => setOpen(true)}
         type="button"
       >
         <span
-          className={badgeVariants({
-            variant: processing ? "warning" : "danger",
-          })}
+          className={cn(
+            badgeVariants({ variant: processing ? "warning" : "danger" }),
+            "pl-2",
+          )}
         >
           <span
             aria-hidden="true"
