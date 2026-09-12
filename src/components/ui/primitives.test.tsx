@@ -92,11 +92,9 @@ describe("design primitives", () => {
       <PageHeader
         actions={<Button>Copy collection link</Button>}
         description="Review proof privately."
-        eyebrow="Workspace"
         title="Northwind Bakery"
       />,
     );
-    expect(screen.getByText("Workspace")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 1, name: "Northwind Bakery" }),
     ).toBeInTheDocument();

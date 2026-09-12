@@ -62,7 +62,6 @@ export function McpSetupView({
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-8">
       <PageHeader
-        eyebrow="Integrations"
         title="Import with your assistant"
         description="Bring existing testimonials from a page into your Inbox with an MCP connection."
       />

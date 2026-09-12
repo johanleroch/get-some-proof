@@ -78,7 +78,6 @@ export function AssistantImportRecoveryFixture() {
   return (
     <main className="bg-paper text-ink min-h-svh space-y-6 p-5 md:p-8">
       <PageHeader
-        eyebrow="Workspace"
         title="Inbox"
         description="Review private Submissions and choose what becomes public."
       />

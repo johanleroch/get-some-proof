@@ -42,7 +42,6 @@ export function InboxRouteLoading() {
           )
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
       <InboxCategoryTabs

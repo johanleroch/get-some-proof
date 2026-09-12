@@ -375,7 +375,6 @@ export function OrganizationSettingsView({
     <section aria-labelledby="settings-heading" className="space-y-8">
       <PageHeader
         description="Update the identity shared across your public proof surfaces."
-        eyebrow="Workspace"
         title={<span id="settings-heading">Brand settings</span>}
       />
 

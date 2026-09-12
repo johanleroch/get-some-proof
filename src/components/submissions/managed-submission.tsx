@@ -325,7 +325,6 @@ export function ManagedSubmissionView({
   return (
     <section className="mx-auto w-full max-w-2xl space-y-8">
       <header className="space-y-1.5">
-        <p className="type-micro text-ink-2">{submission.brandName}</p>
         <h1 className="type-heading">Manage your testimonial</h1>
         <p className="type-body text-ink-2">
           Current status:{" "}

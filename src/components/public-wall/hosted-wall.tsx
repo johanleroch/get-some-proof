@@ -66,7 +66,6 @@ export function HostedWall({
       <div className="mx-auto w-full max-w-7xl">
         <header className="mb-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-12">
           <div className="max-w-2xl space-y-3">
-            <p className="type-micro text-muted-foreground">Customer proof</p>
             <h1 className="type-display-xl flex items-start gap-3 text-balance">
               <span>{wall.brandName}</span>
               <Sparkle className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10" />

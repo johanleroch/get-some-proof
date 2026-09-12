@@ -291,7 +291,6 @@ export function TestimonialImportView({
       className={`mx-auto grid w-full max-w-[1200px] gap-8 pb-24 max-md:[&_[data-slot=button]]:min-h-11 ${publicPreview ? "[&_[data-slot=button]]:min-h-11" : ""}`}
     >
       <PageHeader
-        eyebrow={publicPreview ? undefined : "Workspace"}
         title={
           result
             ? result.processing

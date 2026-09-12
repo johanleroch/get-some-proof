@@ -158,7 +158,6 @@ export function AccountProfileView({
     <div className="space-y-6">
       <PageHeader
         description="Update the identity used for your Owner account."
-        eyebrow="Account"
         title="Profile"
       />
       <Link className="text-sm underline" href="/account/billing">

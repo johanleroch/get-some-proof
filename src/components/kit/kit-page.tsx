@@ -797,7 +797,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Every dashboard page opens with this: an eyebrow, a display title, one sentence, and at most one primary action."
+            description="Every dashboard page opens with a display title, one sentence, and at most one primary action."
             id="shell"
             title="Page header"
           >
@@ -805,7 +805,6 @@ export function KitPage() {
               <PageHeader
                 actions={<Button>Copy collection link</Button>}
                 description="Collect customer proof, review it privately, and publish only what you choose."
-                eyebrow="Workspace"
                 title="Northwind Bakery"
               />
             </div>

@@ -15,7 +15,6 @@ export function BrandPrivacyNoticeView({ brand }: { brand: PrivacyBrand }) {
   return (
     <article className="mx-auto w-full max-w-2xl space-y-6">
       <header className="space-y-1.5">
-        <p className="type-micro text-ink-2">{brand.name}</p>
         <h1 className="type-heading">Testimonial privacy notice</h1>
       </header>
       <div className="type-body text-ink-2 space-y-5">

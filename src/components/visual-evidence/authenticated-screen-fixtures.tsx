@@ -489,7 +489,6 @@ export function TestimonialInboxScreenFixture({
           />
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
       <InboxFeedback error={null} message={null} />

@@ -179,7 +179,7 @@ export function QuoteMark({
   );
 }
 
-/** The hosted Wall header: eyebrow, Brand name, sparkle, count. */
+/** The hosted Wall header: Brand name, sparkle, count. */
 export function WallHeader({
   brandName,
   count,
@@ -189,8 +189,7 @@ export function WallHeader({
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-      <div className="space-y-2">
-        <p className="type-micro text-muted-foreground">Customer proof</p>
+      <div>
         <p className="type-display flex items-start gap-3 text-balance">
           <span>{brandName}</span>
           <Sparkle className="mt-1 size-8 shrink-0 text-(--wall-accent)" />

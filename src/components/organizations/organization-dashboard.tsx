@@ -286,7 +286,6 @@ export function BrandDashboardView({
           lets the whole header paint before the queue has answered. */}
       <PageHeader
         description="Share your Collection Form, read what comes in, publish what you choose."
-        eyebrow="Overview"
         title={name}
       />
 

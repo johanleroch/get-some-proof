@@ -200,7 +200,6 @@ function OverviewPageSkeleton({ name }: { name?: string }) {
     <div className="space-y-8">
       <PageHeader
         description="Share your Collection Form, read what comes in, publish what you choose."
-        eyebrow="Overview"
         title={
           name ?? (
             <span
@@ -259,7 +258,6 @@ function InboxPageSkeleton() {
           </>
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
       <Tabs defaultValue="pending">
