@@ -57,9 +57,13 @@ test("Pro switches independent projects while keeping the Account plan and share
   );
   await expect(usage).toContainText("9 / 25");
   await expect(usage).toContainText("1 video slot held while processing");
-  const sidebarUsage = page.locator('[data-slot="sidebar-pro-plan-card"]');
-  await expect(sidebarUsage).toContainText("9/25");
-  await expect(sidebarUsage).toContainText("16 slots left · 1 processing");
+  // The same figure sits in the sidebar footer, which below md is a sheet
+  // this test has just closed: check it where it is on screen.
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    const sidebarUsage = page.locator('[data-slot="sidebar-pro-plan-card"]');
+    await expect(sidebarUsage).toContainText("9/25");
+    await expect(sidebarUsage).toContainText("16 slots left · 1 processing");
+  }
   await expect(
     page.getByRole("link", { name: "Open Collection Form" }),
   ).toHaveAttribute("href", "/c/northwind-coffee");
