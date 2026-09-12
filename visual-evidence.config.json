@@ -766,6 +766,13 @@
       "title": "Testimonial sources hidden",
       "path": "/visual-evidence/testimonial-sources",
       "heading": "Public Wall appearance"
+    },
+    {
+      "slug": "social-card",
+      "title": "Branded link preview",
+      "path": "/visual-evidence/social-card",
+      "heading": "Link preview",
+      "theme": "light"
     }
   ]
 }

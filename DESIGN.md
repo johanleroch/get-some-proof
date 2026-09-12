@@ -275,7 +275,9 @@ marks and the illustrations share one hand; never edit `marks.tsx` or
   sidebar's signature element, and loaders or toasts in the main region keep
   theirs. A third (2026-09-10): the Pro offer on the billing page carries it
   at 400px, cropped and tilted the same way, because that poster is the
-  sidebar card told in full. In motion
+  sidebar card told in full. The Open Graph sharing poster also uses the
+  mascot at 440px beside the Gelica wordmark, as requested by the founder
+  on 2026-09-12. In motion
   (`AnimatedBlob`, six behaviours at `/kit/blob`), it is a jelly: 2 to 5%
   amplitudes, volume kept in every squash, pivot on its base, frozen by
   reduced motion. Loaders use `look` or `bounce`, idle screens `breathe` or

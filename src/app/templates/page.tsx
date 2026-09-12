@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { TemplatesPage } from "@/components/templates/templates-page";
 
 export const metadata: Metadata = {
-  description:
-    "Walls, sliders, spotlights and compact badges: preview every design in your Brand's color. These layouts are previews, not yet available for your Wall.",
-  title: "Testimonial templates",
+  ...publicPageMetadata({
+    title: "Testimonial templates",
+    description:
+      "Explore testimonial walls, sliders, spotlights and badges. Preview Get Some Proof layouts in your brand’s color.",
+    path: "/templates",
+  }),
+  robots: { index: true, follow: true },
 };
 
 export default function TemplatesRoute() {
