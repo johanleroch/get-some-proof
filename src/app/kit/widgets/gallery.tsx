@@ -18,6 +18,8 @@ import { galleryTestimonials } from "./fixtures";
  */
 
 type Hand = "clean" | "drawn";
+/** "both" is not a hand: it puts the two side by side so the gap is visible. */
+type HandChoice = Hand | "both";
 
 type Family = {
   /** Unique on this page: a family can share a layout with another entry. */
@@ -310,7 +312,7 @@ function Frame({ family, children }: { family: Family; children: ReactNode }) {
 }
 
 export function WidgetGallery() {
-  const [hand, setHand] = useState<Hand>("clean");
+  const [hand, setHand] = useState<HandChoice>("clean");
   const [accentColor, setAccentColor] = useState("#ffbb16");
   return (
     <div className="bg-paper min-h-dvh">
@@ -342,6 +344,7 @@ export function WidgetGallery() {
               options={[
                 { key: "clean", label: "Clean" },
                 { key: "drawn", label: "Drawn" },
+                { key: "both", label: "Side by side" },
               ]}
               value={hand}
             />
@@ -385,13 +388,32 @@ export function WidgetGallery() {
                         : family.layout}
                     </code>
                   </div>
-                  <Frame family={family}>
-                    <GalleryWidget
-                      accentColor={accentColor}
-                      family={family}
-                      hand={hand}
-                    />
-                  </Frame>
+                  {hand === "both" ? (
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      {(["clean", "drawn"] as const).map((side) => (
+                        <div key={side} className="min-w-0">
+                          <p className="text-muted-foreground mb-3 text-[11px] tracking-[0.08em] uppercase">
+                            {side === "clean" ? "Clean" : "Drawn"}
+                          </p>
+                          <Frame family={family}>
+                            <GalleryWidget
+                              accentColor={accentColor}
+                              family={family}
+                              hand={side}
+                            />
+                          </Frame>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Frame family={family}>
+                      <GalleryWidget
+                        accentColor={accentColor}
+                        family={family}
+                        hand={hand}
+                      />
+                    </Frame>
+                  )}
                 </article>
               ))}
             </div>

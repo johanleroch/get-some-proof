@@ -845,6 +845,19 @@
       background:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
     }
     .widget[data-hand="drawn"] .dot { border-radius:48% 52% 51% 49%; }
+    .widget[data-hand="drawn"] .stars { gap:3px; }
+    .widget[data-hand="drawn"] .star { rotate:-7deg; }
+    .widget[data-hand="drawn"] .star:nth-child(2n) { rotate:5deg; translate:0 -1px; }
+    .widget[data-hand="drawn"] .star:nth-child(3n) { rotate:-3deg; translate:0 1px; scale:1.08; }
+    .widget[data-hand="drawn"] .star:nth-child(5n) { rotate:9deg; scale:0.94; }
+    /* The families with no border to soften get the hand on the signature
+       instead: a stroke under the name, drawn once and a bit past the end. */
+    .widget[data-hand="drawn"][data-layout="hero"] .name,
+    .widget[data-hand="drawn"][data-layout="editorial"] .name {
+      display:inline-block;
+      padding-bottom:5px;
+      background:no-repeat left bottom/100% 6px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'%3E%3Cpath d='M2 4.1C22 2.2 42 4.6 62 3.2c20-1.4 38 1.9 56 .4' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
 
     /* --- E. The families the competition made us look at ------------- */
 
