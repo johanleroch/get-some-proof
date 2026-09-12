@@ -20,7 +20,7 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
     const button = dialog.getByRole("button", { name: label, exact: true });
     await button.click();
     await expect(button).toHaveAttribute("data-copy-state", "copied");
-    await expect(page.locator("[data-sonner-toast]")).toContainText(
+    await expect(page.locator("[data-sonner-toast]").first()).toContainText(
       "Copied to clipboard.",
     );
     const value = await page.locator("html").getAttribute("data-copied-value");
@@ -30,8 +30,10 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
     await expect(button).toHaveAttribute("data-copy-state", "idle");
   }
   await expect(
-    page.locator('[data-slot="studio-editor"] > [role="status"]'),
-  ).not.toContainText("Copied");
+    page
+      .locator('[data-slot="studio-editor"] > [role="status"]')
+      .filter({ hasText: "Copied" }),
+  ).toHaveCount(0);
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -46,7 +48,7 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
   await expect(
     dialog.getByRole("button", { name: "Copy link", exact: true }),
   ).toHaveAttribute("data-copy-state", "idle");
-  await expect(page.locator("[data-sonner-toast]")).toContainText(
+  await expect(page.locator("[data-sonner-toast]").first()).toContainText(
     "Could not copy.",
   );
 });
@@ -73,7 +75,7 @@ test("Studio fills the viewport and keeps editing and preview accessible", async
       page.getByRole("button", { name: "Widget actions" }),
     ).toBeInViewport();
     await expect(
-      page.getByText("Live preview", { exact: true }),
+      page.getByRole("group", { name: "Preview width", exact: true }),
     ).toBeInViewport();
   }
   expect(await page.locator("body").evaluate((body) => body.scrollWidth)).toBe(
@@ -94,10 +96,10 @@ test("Studio fills the viewport and keeps editing and preview accessible", async
     "Maya Laurent",
   );
   await page
-    .getByRole("button", { name: "Mobile preview", exact: true })
+    .getByRole("button", { name: "Phone preview", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Mobile preview", exact: true }),
+    page.getByRole("button", { name: "Phone preview", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   if (testInfo.project.name.startsWith("mobile")) {
     await page
@@ -115,15 +117,16 @@ test("Studio fills the viewport and keeps editing and preview accessible", async
   await expect(page.getByLabel("Widget name", { exact: true })).toHaveValue(
     "Homepage stories",
   );
-  await page
-    .getByRole("button", { name: "Widget actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Save draft", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved.");
   await page
     .getByRole("button", { name: "Back to Studio", exact: true })
     .click();
   await expect(
-    page.getByRole("link", { name: "Back to project", exact: true }),
+    page.getByRole("heading", { name: "Studio", exact: true }),
   ).toBeVisible();
+  // Below md the sidebar is a sheet behind the menu button, so only a wide
+  // viewport can prove the dashboard shell came back around the widget grid.
+  if (!testInfo.project.name.startsWith("mobile"))
+    await expect(page.locator('[data-slot="sidebar"]')).not.toHaveCount(0);
 });

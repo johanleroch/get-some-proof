@@ -235,9 +235,14 @@ export function ColorPicker({
   );
 
   return (
+    /* `relative` so the visually hidden legend, which is absolutely
+       positioned, resolves against this fieldset. Without a positioned
+       ancestor it lands in the initial containing block, escapes whatever
+       scroll container holds the picker, and lengthens the document: three of
+       them added 132px of page scroll to the full-screen Studio. */
     <fieldset
       aria-labelledby={labelledBy}
-      className={cn("flex items-center", className)}
+      className={cn("relative flex items-center", className)}
     >
       <legend className="sr-only">{legend}</legend>
       {presets.map((preset) => {

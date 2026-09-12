@@ -681,9 +681,42 @@
     .face img { width:100%; height:100%; object-fit:cover; }
     .widget .avatar-copy { margin:12px 0 0; }
     .widget > .promo-card { display:block; max-width:340px; margin:24px 0 0; }
-    @container (min-width:576px) { .widget[data-layout="masonry"] .grid {column-count:2;} .widget[data-layout="highlights"] .grid {grid-template-columns:repeat(2,1fr);} }
-    @container (min-width:850px) { .widget[data-layout="masonry"] .grid {column-count:3;} }
+    .widget[data-layout="masonry"] .grid { display:flex; align-items:flex-start; gap:20px; column-count:auto; }
+    .widget[data-layout="masonry"] .grid > .column { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
+    .widget[data-layout="masonry"] .card { margin:0; }
+    @container (min-width:576px) { .widget[data-layout="highlights"] .grid {grid-template-columns:repeat(2,1fr);} }
   `;
+
+  /**
+   * Masonry that answers the content: every card goes to whichever column is
+   * shortest when it is placed, so a tall card never drags its neighbours down
+   * and no column is left with a hole under it. CSS `column-count` cannot do
+   * this — it pours each column full in document order, which put the first
+   * and third testimonials in one column under a tall card and left the second
+   * alone beside them.
+   *
+   * The cards are measured once, all inside the first column, which already
+   * has its final width because the columns share the row equally whatever
+   * they hold.
+   */
+  function balanceMasonry(grid, cards) {
+    const width = grid.clientWidth;
+    const count = width >= 850 ? 3 : width >= 576 ? 2 : 1;
+    const columns = [];
+    for (let index = 0; index < count; index += 1)
+      columns.push(element("div", "column"));
+    grid.replaceChildren(...columns);
+    columns[0].append(...cards);
+    const heights = cards.map((card) => card.getBoundingClientRect().height);
+    const filled = new Array(count).fill(0);
+    cards.forEach((card, index) => {
+      let target = 0;
+      for (let column = 1; column < count; column += 1)
+        if (filled[column] < filled[target] - 0.5) target = column;
+      columns[target].append(card);
+      filled[target] += heights[index] + 20;
+    });
+  }
 
   const widgetCleanups = new WeakMap();
   const widgetFontRequests = new WeakMap();
@@ -787,6 +820,7 @@
     if (config.layout === "wall")
       wall.append(element("h2", "", payload.brand.name));
     const grid = element("div", "grid");
+    let masonryCards = null;
     if (!payload.testimonials.length) {
       grid.append(element("p", "", "No testimonials to display yet."));
     } else if (config.layout === "avatars") {
@@ -819,11 +853,11 @@
         ),
       );
     } else {
-      grid.append(
-        ...payload.testimonials.map((testimonial) =>
-          renderCard(testimonial, payload.brand),
-        ),
+      const cards = payload.testimonials.map((testimonial) =>
+        renderCard(testimonial, payload.brand),
       );
+      if (config.layout === "masonry") masonryCards = cards;
+      grid.append(...cards);
     }
     wall.append(grid);
     if (config.layout === "carousel" && payload.testimonials.length > 1) {
@@ -885,6 +919,21 @@
     if (payload.brand.attributionRequired && payload.testimonials.length)
       wall.append(renderPromotionCard());
     shadow.replaceChildren(element("style", "", styles + widgetStyles), wall);
+    if (masonryCards) {
+      const cards = masonryCards;
+      const rebalance = () => balanceMasonry(grid, cards);
+      rebalance();
+      // A card grows when its image or video finishes loading, and the column
+      // count changes with the room the widget is given: both make the balance
+      // stale, so it is redone rather than computed once.
+      const resize = new ResizeObserver(rebalance);
+      resize.observe(grid);
+      grid.addEventListener("load", rebalance, { capture: true });
+      widgetCleanups.set(host, () => {
+        resize.disconnect();
+        grid.removeEventListener("load", rebalance, { capture: true });
+      });
+    }
     setState(host, "ready");
   }
 

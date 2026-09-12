@@ -63,3 +63,80 @@ export function WidgetPreviewPlaceholders({
     </div>
   );
 }
+
+/**
+ * The layout as a miniature, for a widget that has no testimonials yet and for
+ * a card that has not come near the viewport. Same grammar as the template
+ * chooser's sketch, one size smaller.
+ */
+export function WidgetLayoutSketch({
+  layout,
+  tiny = false,
+}: {
+  layout: WidgetConfig["layout"];
+  /** For the 56px thumbnail beside a control rather than a card's canvas. */
+  tiny?: boolean;
+}) {
+  if (layout === "avatars") {
+    return (
+      <div
+        aria-hidden="true"
+        className="flex items-center justify-center -space-x-2"
+      >
+        {[0, 1, 2, 3].map((index) => (
+          <span
+            className={cn(
+              "border-surface-2 bg-paper block rounded-full border-2",
+              tiny ? "size-4" : "size-9",
+            )}
+            key={index}
+          />
+        ))}
+      </div>
+    );
+  }
+  const cells = layout === "individual" ? 1 : layout === "carousel" ? 3 : 4;
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "grid w-full items-center",
+        tiny ? "max-w-full gap-1" : "max-w-56 gap-2",
+        layout === "individual"
+          ? "grid-cols-1"
+          : layout === "carousel"
+            ? "grid-cols-3"
+            : "grid-cols-2",
+      )}
+    >
+      {Array.from({ length: cells }, (_, index) => (
+        <div
+          className={cn(
+            "bg-paper border-line rounded-md border",
+            tiny ? "p-1" : "p-2.5",
+            layout === "masonry" &&
+              index % 2 === 0 &&
+              (tiny ? "-translate-y-0.5" : "-translate-y-2"),
+          )}
+          key={index}
+        >
+          <div
+            className={cn(
+              "bg-brand-soft-2 w-2/3 rounded-full",
+              tiny ? "mb-1 h-0.5" : "mb-2 h-1.5",
+            )}
+          />
+          <div
+            className={cn(
+              "bg-line w-full rounded-full",
+              tiny ? "h-0.5" : "h-1.5",
+            )}
+          />
+          {tiny ? null : (
+            <div className="bg-line mt-1 h-1.5 w-1/2 rounded-full" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}

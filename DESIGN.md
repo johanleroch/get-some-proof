@@ -333,19 +333,99 @@ on public pages scale with `clamp(3rem, 8vw, 6rem)`.
 
 ## 6. Layout
 
-Studio exception (founder request, 2026-09-12): Studio fills the viewport
-without the dashboard sidebar, outer frame, or 1200px content limit. Its editor
-has one compact top bar with back navigation, widget name, publication state,
-and save/publish/share actions. A 320px settings column and a flexible preview
-canvas scroll independently below it. The preview toolbar stays visible.
-The preview canvas has a subtle 24px square grid using the `--line` token at
-55% opacity, in both themes. The grid belongs to the editor background only.
-Masonry grid is the first and default Studio template, available on Free.
+Studio exception (founder request, 2026-09-12, narrowed 2026-09-13): the
+**editor** fills the viewport without the dashboard sidebar, outer frame, or
+1200px content limit. The widget grid and the template chooser keep the shell:
+clicking Studio in the sidebar and watching the sidebar evaporate under the
+cursor reads as a fault, while opening a widget into full screen reads as
+opening a file, and the back arrow is the way out. Chosen by the founder on
+2026-09-13 over taking the whole section full screen.
+The editor has one compact top bar with back navigation, widget name,
+publication state, and **Save draft / Embed / Publish**, in that order — the
+frequent harmless gesture, then the rare committing one, and neither hidden in
+a menu: buried behind the dots, Save draft was the one thing nobody would ever
+find (founder, 2026-09-13). The dots keep only Unpublish. A 320px settings column and a
+flexible preview canvas scroll independently below it, and nothing else on the
+page scrolls: the full-screen shell is `overflow-hidden`, because letting the
+page scroll too carried the top bar off screen under the cursor. The preview
+toolbar stays visible. The button that opens the embed code says **Embed**, not
+Share, and carries the code icon: the dialog it opens holds a snippet and a
+link, and its first field is already called Embed code.
+Masonry grid is the first and default Studio template, available on Free. It
+balances: every card goes to whichever column is shortest when it is placed, so
+a tall card never drags its neighbours down and no column is left with a hole
+under it. CSS `column-count` cannot do that — it pours each column full in
+document order, which put the first and third testimonials in one column under
+a tall card and left the second alone beside them. The embed runtime does the
+placing and redoes it when the widget is resized or a card's image or video
+finishes loading.
 Wall of Fame is no longer offered; existing wall embeds stay compatible and
 open as Masonry in the editor for their next save.
 Below `lg`, Edit and Preview switch between full-width panels; the save actions
-remain visible. The widget list and template chooser have a "Back to project"
-link. The development preview at `/kit/studio` uses the real Studio components.
+remain visible. The development preview at `/kit/studio` uses the real Studio
+components.
+
+- Studio, the widget grid: the one place in the dashboard where data lives in
+  cards rather than in a list, because the data _is_ a picture — a row that
+  names "Masonry grid" tells an Owner nothing, and the product exists to make
+  something they look at. Chosen by the founder on 2026-09-13 from four drafts
+  (rows with a thumbnail, a table, a list beside a preview, this gallery),
+  knowingly against the rule two paragraphs down. One or two columns, never three: at three the
+  preview shrank and the line under it truncated. The card is the widget: its own preview rendered by the real embed runtime
+  at half size on the canvas surface, cropped to 224px so the top of the
+  widget stays readable instead of shrinking into grey noise. A widget with no
+  testimonials yet shows the layout sketch instead, and so does a card that
+  has not come near the viewport — a project may hold a hundred widgets and
+  each preview mounts the runtime. Publication state sits as a `--paper` chip
+  in the card's top right corner, over the preview, never in the footer line
+  where it crowded the name. Three states, not two: Draft, Published, and
+  **Unpublished changes** for a widget that is live while carrying edits
+  nobody has published, which is the state an Owner has to notice and the old
+  binary badge could not say. The footer is the name, then what the widget is
+  made of and when it last changed, then one menu holding the embed code, the
+  widget page and Delete. The whole card opens the editor.
+- Studio, the settings column: four named groups in the order the work
+  happens — **Content** (the chosen testimonials, then the widget's name),
+  **Layout**, **Appearance**, **Behaviour** — each a `micro` eyebrow over its
+  controls, separated by a hairline. Before, three groups ran together with
+  only one of them titled, so the middle one, holding the widget's own name and
+  its template, belonged to nothing. Content **names** the testimonials it
+  holds, up to five with avatars and then "and N more", because "3 selected" in
+  grey said nothing about the one thing the widget is made of. The template is
+  a thumbnail of its own layout beside its name, opening the same chooser grid
+  the widget was created from, rather than a dropdown of words: the picture is
+  how it was picked, so the picture is how it changes. The links switch leaves
+  Appearance for Behaviour, where it belongs, and says "Clickable links".
+  Chosen by the founder on 2026-09-13 from three drafts (these groups, two
+  tabs, an accordion), because tabs and an accordion tidy the column at the
+  cost of the link between a setting and the effect you are watching.
+- Studio, the canvas: the editor's preview surface is a real grid of 56px
+  cells rather than a painted background, after Aceternity's background ripple
+  effect and rebuilt on our tokens (founder request, 2026-09-13). A tile keeps
+  the `--surface-2` canvas tone on a `--line-2` hairline at 65%, so the white
+  widget still separates from it; the tile lifts to `--paper` under the
+  cursor; and a click sends a circular wave of `--brand-soft-2` out from it,
+  each ring 22ms later and 14ms slower than the one inside it, the whole wave
+  landing inside a second. Aceternity's own 55ms and 80ms per cell ran for
+  over three seconds on a canvas this size. A radial mask keeps the grid whole
+  where the widget sits and softens it at the far corners; Aceternity's top
+  fade cut the canvas into two materials. The 24px rule it replaces read as
+  graph paper. Only opacity animates, the wave plays once, the grid never
+  takes a click meant for the widget, and it holds still under reduced motion.
+  The widget cards paint the same 56px module without the interaction.
+  On it, the widget sits on a **page sheet**: a `--paper` card at one of four
+  real page widths — Desktop 1280, Laptop 1024, Tablet 768, Phone 390 — chosen
+  in the toolbar, which also says the width in figures. The editor used to
+  render the widget across the whole panel, some 1415px, which is the width of
+  no site anyone embeds it in, pinned to the top with 385px of void beneath it.
+  The sheet is centred both ways and **snaps to the grid**: a whole number of
+  cells wide and tall less 16px, and the grid shifts its own phase so every edge
+  sits exactly **8px inside** its line rather than across it or drawn on it.
+  Landing the edges on the rules themselves read as glued (founder,
+  2026-09-13); the 8px is what makes the sheet sit in its cells. Founder's call on 2026-09-13, from three drafts (this sheet, a
+  measured artboard, a plain centred widget): the sheet is the only one that
+  answers "what will this look like on my page", and it is the frame the
+  in-place preview on the customer's own site will reuse.
 
 Containers: dashboard content max 1200px, public Wall max 1280px, Collection
 Form max 1040px in its split layout. CSS Grid for page structure, flex for
@@ -378,7 +458,10 @@ pages still start at the top and scroll normally.
   Page header is left-aligned: eyebrow (micro), `display` title, one primary
   action on the right. Data lives in lists and tables with `--surface-2` row
   hover, not in stacks of cards. Three-equal-cards rows are banned; use a
-  2:1 or 1:2 split. The product ships in the light theme with no theme control
+  2:1 or 1:2 split. The Studio widget grid is the one exception, and it is an
+  exception because its rows would carry a picture rather than a figure: see
+  the Studio entry below. Wanting a gallery is not enough — a card grid has to
+  be the only honest way to show the thing. The product ships in the light theme with no theme control
   for now (decided 2026-09-09); the dark tokens stay in `globals.css` and the
   development pages (`/kit`, `/screens`, the quick access) keep the switch so
   both themes stay reviewed.
