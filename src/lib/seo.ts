@@ -4,9 +4,12 @@ import { productDescription, productName } from "./brand";
 
 /** Public origin only: never derive crawler URLs from incoming request headers. */
 export function getMetadataBase(): URL {
-  return new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://www.getsomeproof.com",
-  );
+  const configured = URL.parse(process.env.NEXT_PUBLIC_SITE_URL ?? "");
+  if (configured && ["http:", "https:"].includes(configured.protocol)) {
+    return new URL(configured.origin);
+  }
+  // Preserve the existing SetupRequired screen when configuration is invalid.
+  return new URL("https://www.getsomeproof.com");
 }
 
 export const socialImage = {
