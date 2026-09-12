@@ -19,6 +19,18 @@ describe("design primitives", () => {
     expect(button).toHaveAttribute("data-loading", "true");
   });
 
+  it("keeps the status chip borderless, round and filled with --chip", () => {
+    render(<Badge variant="danger">Failed</Badge>);
+    const chip = screen.getByText("Failed");
+    expect(chip.className).toContain("bg-chip");
+    expect(chip.className).toContain("rounded-full");
+    expect(chip.className).not.toMatch(/(^|\s)border($|\s)/);
+    expect(chip.className).not.toContain("shadow");
+    expect(chip.querySelector("span[aria-hidden]")?.className).toContain(
+      "bg-(--chip-dot)",
+    );
+  });
+
   it("renders tonal badges with an optional status dot", () => {
     const { container } = render(
       <Badge dot variant="success">

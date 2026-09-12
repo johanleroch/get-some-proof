@@ -3,7 +3,7 @@
 import { IconExternalLink } from "@tabler/icons-react";
 import { useState } from "react";
 
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 function sourceLabel(sourceUrl: string) {
   try {
@@ -53,22 +52,9 @@ export function VideoCopyDetails({
         onClick={() => setOpen(true)}
         type="button"
       >
-        <span
-          className={cn(
-            badgeVariants({ variant: processing ? "warning" : "danger" }),
-            "pl-2",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className={
-              processing
-                ? "bg-warning size-1.5 rounded-full"
-                : "bg-danger size-1.5 rounded-full"
-            }
-          />
+        <Badge variant={processing ? "warning" : "danger"}>
           {processing ? "Processing" : "Failed"}
-        </span>
+        </Badge>
       </button>
 
       <Dialog onOpenChange={setOpen} open={open}>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { TestimonialImportDetailsValue } from "./testimonial-inbox";
-import { badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,10 +69,10 @@ export function TestimonialImportDetails({
               onClick={() => setOpen(true)}
               type="button"
             >
-              <span className={badgeVariants({ variant: "outline" })}>
+              <Badge variant="outline">
                 <IconFileImport aria-hidden="true" />
                 Imported
-              </span>
+              </Badge>
             </button>
           </TooltipTrigger>
           <TooltipContent>Imported from {hostname}</TooltipContent>
