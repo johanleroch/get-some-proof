@@ -900,7 +900,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Where a testimonial came from, stamped on its card. Ten platforms, one 20px glyph on a white chip inside a 44px target. Three are still outlines among seven solid marks, and two draw the platform container while the rest draw the mark alone."
+            description="Where a testimonial came from, stamped on its card. Ten platforms, one 20px mark on a white chip inside a 44px target. Every mark is now the brand’s own artwork instead of an icon set’s redraw, held here against the glyph it replaces."
             id="source-icons"
             title="Source icons"
           >
