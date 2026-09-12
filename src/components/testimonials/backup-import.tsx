@@ -4,6 +4,7 @@ import { useAction, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { blobToast } from "@/components/brand/blob-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,6 @@ export function BackupImport({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
-  const [error, setError] = useState("");
   const [done, setDone] = useState(0);
   const [total, setTotal] = useState(0);
   const abort = useRef<AbortController | null>(null);
@@ -47,7 +47,6 @@ export function BackupImport({
     setBusy(true);
     setTotal(0);
     setDone(0);
-    setError("");
     setStatus("Reading backup…");
     setPreview(null);
     try {
@@ -64,7 +63,7 @@ export function BackupImport({
       );
       setStatus("");
     } catch {
-      setError(
+      blobToast.error(
         "This backup could not be read. Choose a Get Some Proof ZIP with data.json and its media files.",
       );
       setStatus("");
@@ -80,7 +79,6 @@ export function BackupImport({
     const controller = new AbortController();
     abort.current = controller;
     setBusy(true);
-    setError("");
     setDone(0);
     setTotal(items.length);
     let imported = 0;
@@ -152,12 +150,12 @@ export function BackupImport({
           setDone((value) => value + 1);
         }
       }
-      setStatus(
+      blobToast.success(
         `${imported} testimonials restored to the Inbox. ${skipped} duplicates skipped. Videos may still be processing.`,
       );
     } catch (cause) {
       if (!controller.signal.aborted)
-        setError(
+        blobToast.error(
           convexErrorMessage(
             cause,
             "Import interrupted. Completed testimonials remain in your Inbox.",
@@ -166,6 +164,7 @@ export function BackupImport({
     } finally {
       setBusy(false);
       abort.current = null;
+      setStatus("");
     }
   }
   return (
@@ -249,14 +248,9 @@ export function BackupImport({
           />
         </div>
       ) : null}
-      {status ? (
+      {busy && status ? (
         <p role="status" className="text-ink-2 text-sm">
           {status}
-        </p>
-      ) : null}
-      {error ? (
-        <p role="alert" className="text-danger text-sm">
-          {error}
         </p>
       ) : null}
     </section>
