@@ -89,13 +89,15 @@ test("protects unsaved edits when following an internal link", async ({
     page.locator("[data-widget-preview] .card").first(),
   ).toBeAttached();
   await page.getByLabel("Widget name", { exact: true }).fill("Unsaved name");
-  // Represent the app-shell link that sits outside the isolated gallery editor.
-  await page.evaluate(() => {
-    const link = document.createElement("a");
-    link.href = "/visual-evidence/studio";
-    link.textContent = "Sidebar Studio";
-    document.body.prepend(link);
-  });
+  // Keep the navigation probe inside the scrollable shell, outside the editor.
+  await page
+    .getByRole("region", { name: "Page content" })
+    .evaluate((region) => {
+      const link = document.createElement("a");
+      link.href = "/visual-evidence/studio";
+      link.textContent = "Sidebar Studio";
+      region.prepend(link);
+    });
   await page.getByRole("link", { name: "Sidebar Studio" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
