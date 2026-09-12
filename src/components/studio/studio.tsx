@@ -1,6 +1,10 @@
 "use client";
-import { useState } from "react";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -14,8 +18,20 @@ import {
 import { StudioView } from "./studio-view";
 
 export function Studio({ slug }: { slug: string }) {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const initialChoosing = studioChoosingFromUrl(useSearchParams());
+  const searchParams = useSearchParams();
+  const activeId = searchParams.get("widget");
+  const initialChoosing = studioChoosingFromUrl(searchParams);
+  function setActiveId(id: string | null) {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("widget", id);
+    else url.searchParams.delete("widget");
+    url.searchParams.delete("create");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }
   const projectShell = useProjectShell();
   const shellProject = projectShell?.slug === slug ? projectShell : null;
   const queriedOrganization = useQuery(
@@ -42,6 +58,9 @@ export function Studio({ slug }: { slug: string }) {
     scope ?? "skip",
     { initialNumItems: 20 },
   );
+  const fontLibrary = useQuery(api.widgetFonts.list, scope ?? "skip");
+  const uploadFont = useAction(api.widgetFonts.upload);
+  const removeFont = useMutation(api.widgetFonts.remove);
   const create = useMutation(api.widgets.create);
   const save = useMutation(api.widgets.save);
   const unpublish = useMutation(api.widgets.unpublish);
@@ -63,6 +82,19 @@ export function Studio({ slug }: { slug: string }) {
   ];
   return (
     <StudioView
+      fontLibrary={fontLibrary}
+      onUploadFont={async (file) => {
+        if (!scope) throw new Error("Studio is still loading.");
+        return await uploadFont({
+          ...scope,
+          name: file.name.replace(/\.woff2$/i, ""),
+          bytes: await file.arrayBuffer(),
+        });
+      }}
+      onRemoveFont={async (id) => {
+        if (!scope) throw new Error("Studio is still loading.");
+        await removeFont({ ...scope, fontId: id as Id<"widgetFonts"> });
+      }}
       brandName={organization?.name ?? ""}
       accentColor={settings?.accentColor ?? defaultPrimaryColor}
       attributionRequired={settings ? !settings.canHideAttribution : true}
@@ -80,6 +112,7 @@ export function Studio({ slug }: { slug: string }) {
       onOpen={setActiveId}
       origin={env.configured ? env.siteUrl.replace(/\/$/, "") : ""}
       inboxHref={`/org/${slug}/inbox`}
+      projectHref={`/org/${slug}/dashboard`}
       onCreate={(name, config) => {
         if (!scope) throw new Error("Studio is still loading.");
         return create({ ...scope, name, config });

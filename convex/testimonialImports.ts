@@ -171,7 +171,12 @@ export const expirePreview = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
-    if (!job || job.expiresAt > Date.now() || job.provider === "assistant")
+    if (
+      !job ||
+      job.expiresAt > Date.now() ||
+      job.provider === "assistant" ||
+      job.provider === "backup"
+    )
       return null;
     const items = await ctx.db
       .query("testimonialImportItems")
@@ -293,7 +298,7 @@ export async function confirmOwnedImport(
     }),
   };
   let blockAssistantVideos = false;
-  if (job.provider === "assistant") {
+  if (job.provider === "assistant" || job.provider === "backup") {
     const sourceIds = new Set<string>();
     for (const id of new Set(args.itemIds)) {
       const item = await ctx.db.get(id);
@@ -329,7 +334,10 @@ export async function confirmOwnedImport(
     requireStableTextIdentity(job.provider, item);
     if (
       item.unavailableReason ||
-      (job.provider !== "assistant" && item.type === "video" && !item.videoUrl)
+      (job.provider !== "assistant" &&
+        job.provider !== "backup" &&
+        item.type === "video" &&
+        !item.videoUrl)
     ) {
       result.unavailable++;
       await ctx.db.patch(item._id, { outcome: "unavailable" });
@@ -364,7 +372,10 @@ export async function confirmOwnedImport(
       continue;
     }
     if (item.type === "video") {
-      if (job.provider === "assistant" && !item.videoUrl) {
+      if (
+        (job.provider === "assistant" || job.provider === "backup") &&
+        !item.videoUrl
+      ) {
         await retainCapacityBlockedVideo(
           ctx,
           job,

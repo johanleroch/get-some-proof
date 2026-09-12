@@ -6,6 +6,8 @@ import { testimonialCardHtml } from "@/components/testimonials/testimonial-card-
 
 export type WidgetPresentation = {
   config: WidgetConfig;
+  googleFont?: string | null;
+  customFont?: { id: string; url: string } | null;
   brandName: string;
   attributionRequired: boolean;
   testimonials: TestimonialCardValue[];
@@ -58,6 +60,8 @@ export function widgetPayload(value: WidgetPresentation) {
   return {
     schemaVersion: 1,
     config: value.config,
+    customFont: value.customFont ?? null,
+    googleFont: value.googleFont ?? null,
     brand: {
       name: value.brandName,
       accentColor: value.config.accentColor,

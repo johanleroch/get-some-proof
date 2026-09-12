@@ -6,6 +6,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import schema from "./schema";
+import { requireWidgetFontAccess } from "./widgetFonts";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { requirePublicWallServer } from "./security/publicWallAccess";
 import { isProjectActive } from "./projectActivity";
@@ -38,7 +39,8 @@ async function requireTemplateAccess(
   organizationId: Id<"organizations">,
   config: WidgetConfig,
 ) {
-  if (config.layout === "wall") return;
+  await requireWidgetFontAccess(ctx, organizationId, config);
+  if (config.layout === "wall" || config.layout === "masonry") return;
   const entitlement = await getOrganizationBillingEntitlement(
     ctx,
     organizationId,
@@ -47,7 +49,7 @@ async function requireTemplateAccess(
     throw new ConvexError({
       code: "PREMIUM_REQUIRED",
       message:
-        "This template requires Pro. Wall of Fame is available for free.",
+        "This template requires Pro. Masonry grid is available for free.",
     });
 }
 
@@ -345,7 +347,10 @@ async function publicWidget(ctx: QueryCtx, publicId: string) {
   if (!widget?.published) return null;
   const brand = await ctx.db.get(widget.organizationId);
   if (!brand || !(await isProjectActive(ctx, brand))) return null;
-  if (widget.published.config.layout !== "wall") {
+  if (
+    widget.published.config.layout !== "wall" &&
+    widget.published.config.layout !== "masonry"
+  ) {
     const entitlement = await getOrganizationBillingEntitlement(ctx, brand._id);
     if (entitlement.effectivePlan !== "premium") return null;
   }
@@ -384,6 +389,11 @@ export const getPublished = query({
       brandName: v.string(),
       publicSlug: v.string(),
       config: widgetConfigValidator,
+      googleFont: v.union(v.null(), v.string()),
+      customFont: v.union(
+        v.null(),
+        v.object({ id: v.id("widgetFonts"), url: v.string() }),
+      ),
       testimonials: v.array(testimonialCardValueValidator),
       attributionRequired: v.boolean(),
       privacyRevision: v.number(),
@@ -400,6 +410,21 @@ export const getPublished = query({
       publicId: widget.publicId,
       brandName: brand.name,
       publicSlug: brand.publicSlug,
+      googleFont:
+        entitlement.effectivePlan === "premium"
+          ? (snapshot.config.googleFont ?? null)
+          : null,
+      customFont: await (async () => {
+        if (
+          !snapshot.config.customFontId ||
+          entitlement.effectivePlan !== "premium"
+        )
+          return null;
+        const font = await ctx.db.get(snapshot.config.customFontId);
+        if (!font || font.organizationId !== brand._id) return null;
+        const url = await ctx.storage.getUrl(font.storageId);
+        return url ? { id: font._id, url } : null;
+      })(),
       config: snapshot.config,
       testimonials: (
         await selected(ctx, brand, snapshot.testimonialIds, snapshot.config)

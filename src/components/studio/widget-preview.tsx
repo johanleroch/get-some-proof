@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { blobToast } from "@/components/brand/blob-toast";
 import {
   widgetPayload,
   type WidgetPayload,
@@ -32,7 +33,6 @@ function loadRuntime() {
 }
 export function WidgetPreview({ value }: { value: WidgetPresentation }) {
   const host = useRef<HTMLDivElement>(null);
-  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
     void loadRuntime()
@@ -44,18 +44,15 @@ export function WidgetPreview({ value }: { value: WidgetPresentation }) {
           );
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!cancelled)
+          blobToast.error(
+            "Preview unavailable. Reload this page to try again.",
+            { id: "widget-preview-error" },
+          );
       });
     return () => {
       cancelled = true;
     };
   }, [value]);
-  return (
-    <div>
-      {failed ? (
-        <p role="alert">Preview unavailable. Reload this page to try again.</p>
-      ) : null}
-      <div ref={host} data-widget-preview="" />
-    </div>
-  );
+  return <div ref={host} data-widget-preview="" />;
 }

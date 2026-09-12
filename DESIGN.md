@@ -333,6 +333,20 @@ on public pages scale with `clamp(3rem, 8vw, 6rem)`.
 
 ## 6. Layout
 
+Studio exception (founder request, 2026-09-12): Studio fills the viewport
+without the dashboard sidebar, outer frame, or 1200px content limit. Its editor
+has one compact top bar with back navigation, widget name, publication state,
+and save/publish/share actions. A 320px settings column and a flexible preview
+canvas scroll independently below it. The preview toolbar stays visible.
+The preview canvas has a subtle 24px square grid using the `--line` token at
+55% opacity, in both themes. The grid belongs to the editor background only.
+Masonry grid is the first and default Studio template, available on Free.
+Wall of Fame is no longer offered; existing wall embeds stay compatible and
+open as Masonry in the editor for their next save.
+Below `lg`, Edit and Preview switch between full-width panels; the save actions
+remain visible. The widget list and template chooser have a "Back to project"
+link. The development preview at `/kit/studio` uses the real Studio components.
+
 Containers: dashboard content max 1200px, public Wall max 1280px, Collection
 Form max 1040px in its split layout. CSS Grid for page structure, flex for
 rows. No `calc()` percentage hacks. Full-height sections use `min-h-svh`.
@@ -390,9 +404,13 @@ pages still start at the top and scroll normally.
   size, and the blob peeking over the bottom right corner, big (128px,
   starstruck, tilted 8 degrees left, cropped by the panel as on
   `/templates`, its eyes well inside the card). It never says "Free plan":
-  the sale says it. A Pro Account shows nothing there, only the user row: a
-  paying customer is not sold to from the sidebar, and the subscription
-  lives on the billing page. Two things move on it, the founder's call: the
+  the sale says it. A Pro Account shows a matching amber poster, "You're Pro!",
+  with the animated blob at 104px in the upper-right corner and account-wide
+  usage: stored videos, reserved slots, remaining video capacity, text
+  testimonials, and Projects. It has no billing link (founder request,
+  2026-09-12). Bounded totals carry a visible plus sign; missing usage never
+  appears as zero. Two things move
+  on the Free card, the founder's call: the
   blob's eyes change every few seconds (starstruck to happy and back, the
   `Blob` transition, so the corner of the eye catches it), and a soft light
   sweeps the button (`.cta-shine`, the one moving gradient in the interface,

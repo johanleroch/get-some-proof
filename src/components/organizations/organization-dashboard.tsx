@@ -1,4 +1,13 @@
 "use client";
+import { BrandUnavailable } from "@/components/organizations/brand-unavailable";
+import { EmbeddedWallSnippet } from "./embedded-wall-snippet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
@@ -19,7 +28,6 @@ import { PublicAddress } from "@/components/organizations/public-address";
 import { PageHeader } from "@/components/page-header";
 import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   AccountPlanSkeleton,
@@ -244,6 +252,7 @@ export function BrandDashboardView({
   publicSlug,
   slug,
 }: BrandDashboardViewProps) {
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const collectionPath = `/c/${publicSlug}` as Route;
@@ -260,7 +269,6 @@ export function BrandDashboardView({
   }, [justCreated]);
   const inboxPath = `/org/${slug}/inbox` as Route;
   const wallPath = `/w/${publicSlug}` as Route;
-  const embedPath = `/org/${slug}/settings#embed` as Route;
   const wallUrl = collectionUrl
     ? wallUrlFrom(collectionUrl, publicSlug)
     : undefined;
@@ -391,12 +399,38 @@ export function BrandDashboardView({
                       <IconExternalLink aria-hidden="true" />
                     </Link>
                   </Button>
-                  <Button asChild variant="ghost">
-                    <Link href={embedPath}>
+                  <Dialog open={embedOpen} onOpenChange={setEmbedOpen}>
+                    <Button
+                      variant="ghost"
+                      aria-haspopup="dialog"
+                      onClick={() => setEmbedOpen(true)}
+                    >
                       Embed on your site
                       <IconCode aria-hidden="true" />
-                    </Link>
-                  </Button>
+                    </Button>
+                    <DialogContent className="max-h-[90svh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Embed on your site</DialogTitle>
+                        <DialogDescription>
+                          Add your Public Wall to your website. Only published
+                          testimonials appear.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <EmbeddedWallSnippet
+                        compact
+                        embedOrigin={
+                          collectionUrl
+                            ? new URL(
+                                collectionUrl.includes("://")
+                                  ? collectionUrl
+                                  : `https://${collectionUrl}`,
+                              ).origin
+                            : ""
+                        }
+                        publicSlug={publicSlug}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </div>
@@ -454,15 +488,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   }
 
   if (organization === null) {
-    return (
-      <section className="grid min-h-[50vh] place-items-center px-6">
-        <EmptyState
-          description="This Brand does not exist or you no longer have access to it."
-          illustration={<WallFrames className="h-32" />}
-          title="Brand unavailable"
-        />
-      </section>
-    );
+    return <BrandUnavailable />;
   }
 
   const collectionUrl = origin

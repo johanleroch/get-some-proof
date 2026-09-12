@@ -28,6 +28,11 @@ export const getMine = query({
         freeVideoUsed: v.number(),
         readyVideos: v.number(),
         reservedVideos: v.number(),
+        videoLimit: v.number(),
+        textTestimonials: v.number(),
+        textTestimonialsIsLowerBound: v.boolean(),
+        organizations: v.number(),
+        organizationsIsLowerBound: v.boolean(),
       }),
     }),
   ),
@@ -40,15 +45,17 @@ export const getMine = query({
       )
       .unique();
     if (!account) return null;
-    const entitlement = await getAccountBillingEntitlement(ctx, account._id);
     const [
+      entitlement,
       textCredits,
       videoCredits,
       ready,
       reserved,
       cleanup,
       pendingCredits,
+      uncertainCleanup,
     ] = await Promise.all([
+      getAccountBillingEntitlement(ctx, account._id),
       ctx.db
         .query("collectionCredits")
         .withIndex("by_account_type_restored", (q) =>
@@ -89,7 +96,32 @@ export const getMine = query({
           q.eq("accountId", account._id).eq("freeCreditPending", true),
         )
         .take(freeVideoCreditLimit),
+      ctx.db
+        .query("videoImportCleanupIntents")
+        .withIndex("by_account", (q) => q.eq("accountId", account._id))
+        .take(premiumReadyVideoLimit),
     ]);
+    // Bound sidebar reads across the entire Account, never per-project times
+    // the text limit. The UI marks a lower bound instead of claiming a total.
+    const organizationLimit = 100;
+    const textLimit = 500;
+    const organizations = await ctx.db
+      .query("organizations")
+      .withIndex("by_account_open", (q) =>
+        q.eq("accountId", account._id).eq("deletionStartedAt", undefined),
+      )
+      .take(organizationLimit + 1);
+    let textTestimonials = 0;
+    for (const organization of organizations.slice(0, organizationLimit)) {
+      const texts = await ctx.db
+        .query("testimonials")
+        .withIndex("by_organization_submission_type", (q) =>
+          q.eq("organizationId", organization._id).eq("submissionType", "text"),
+        )
+        .take(textLimit + 1 - textTestimonials);
+      textTestimonials += texts.length;
+      if (textTestimonials > textLimit) break;
+    }
     const freeProject = await resolveFreeProject(ctx, account);
     return {
       id: account._id,
@@ -112,7 +144,18 @@ export const getMine = query({
         reservedVideos:
           reserved.length +
           cleanup.length +
+          uncertainCleanup.length +
           (entitlement.effectivePlan === "free" ? pendingCredits.length : 0),
+        videoLimit:
+          entitlement.effectivePlan === "premium"
+            ? premiumReadyVideoLimit
+            : freeVideoCreditLimit,
+        textTestimonials: Math.min(textTestimonials, textLimit),
+        textTestimonialsIsLowerBound:
+          textTestimonials > textLimit ||
+          organizations.length > organizationLimit,
+        organizations: Math.min(organizations.length, organizationLimit),
+        organizationsIsLowerBound: organizations.length > organizationLimit,
       },
     };
   },

@@ -165,6 +165,9 @@ export function StudioFixture({
   choosing?: boolean;
   preview?: boolean;
 }) {
+  const [fonts, setFonts] = useState<
+    Array<{ id: string; name: string; url: string }>
+  >([]);
   const [candidateCount, setCandidateCount] = useState(4);
   const [widgets, setWidgets] = useState<StudioWidget[]>([seed]);
   const [activeId, setActiveId] = useState<string | null>(
@@ -173,6 +176,24 @@ export function StudioFixture({
   return (
     <WorkspacePageShell pathname="/org/atrakt/studio">
       <StudioView
+        fontLibrary={{ canUpload: true, fonts }}
+        onUploadFont={async (file) => {
+          const id = `fixturefont${fonts.length + 1}`;
+          setFonts((current) => [
+            ...current,
+            {
+              id,
+              name: file.name.replace(/\.woff2$/i, ""),
+              url: URL.createObjectURL(file),
+            },
+          ]);
+          return id;
+        }}
+        onRemoveFont={async (id) => {
+          const font = fonts.find((font) => font.id === id);
+          if (font) URL.revokeObjectURL(font.url);
+          setFonts((current) => current.filter((font) => font.id !== id));
+        }}
         initialChoosing={choosing}
         initialPreview={preview}
         brandName="Cedar Workshop"
@@ -186,6 +207,7 @@ export function StudioFixture({
         onLoadMore={() => setCandidateCount(studioCandidates.length)}
         onOpen={setActiveId}
         inboxHref="/visual-evidence/testimonial-inbox"
+        projectHref="/visual-evidence/dashboard"
         origin="https://getsomeproof.example"
         onCreate={async (name, config) => {
           const id = `fixture-${widgets.length}`;

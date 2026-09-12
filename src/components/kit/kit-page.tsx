@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 
 import { MediaDeletionProgress } from "@/components/ui/media-deletion-progress";
+import { SidebarProPlanCard } from "@/components/account/sidebar-plan-card";
 import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { blobToast } from "@/components/brand/blob-toast";
@@ -917,6 +918,17 @@ export function KitPage() {
               <Badge variant="brand">Pro</Badge>
               <Badge variant="neutral">Draft</Badge>
               <Badge variant="outline">12 proofs</Badge>
+            </div>
+            <div className="bg-sidebar mt-6 max-w-[17rem] rounded-lg">
+              <SidebarProPlanCard
+                usage={{
+                  readyVideos: 8,
+                  reservedVideos: 1,
+                  videoLimit: 25,
+                  textTestimonials: 42,
+                  organizations: 3,
+                }}
+              />
             </div>
           </KitSection>
 

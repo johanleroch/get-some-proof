@@ -98,6 +98,12 @@ export default defineSchema({
     .index("by_organization_id", ["organizationId"])
     .index("by_owner_user_id", ["ownerUserId"])
     .index("by_storage_id", ["storageId"]),
+  widgetFonts: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    storageId: v.id("_storage"),
+    createdAt: v.number(),
+  }).index("by_organizationId", ["organizationId"]),
   widgets: defineTable({
     organizationId: v.id("organizations"),
     publicId: v.string(),
@@ -753,6 +759,10 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_submission_type", [
+      "organizationId",
+      "submissionType",
+    ])
     .index("by_organization_client_submission", [
       "organizationId",
       "clientSubmissionId",

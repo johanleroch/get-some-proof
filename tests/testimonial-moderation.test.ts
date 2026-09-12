@@ -443,6 +443,7 @@ describe("Testimonial moderation and Public Projection", () => {
     const wall = brandInfo && { ...brandInfo, testimonials: wallPage.page };
 
     expect(wall).toEqual({
+      logoUrl: null,
       accentColor: "#123abc",
       accentInk: "#ffffff",
       attributionRequired: true,

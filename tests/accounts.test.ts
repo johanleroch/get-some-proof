@@ -8,6 +8,68 @@ import {
 } from "./convex-test-helpers";
 
 describe("Owner Account", () => {
+  it("counts text and Projects across only the owner's open Account spaces", async () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_accounts");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_accounts");
+    const t = createConvexTest();
+    const owner = await authenticatedUser(t);
+    const other = await authenticatedUser(t, {
+      email: "other-owner@example.test",
+    });
+    const first = await owner.client.mutation(api.organizations.create, {
+      name: "Fernhill",
+    });
+    await addStripeSubscription(t, first.id, "active");
+    const second = await owner.client.mutation(api.organizations.create, {
+      name: "Northwind",
+    });
+    const foreign = await other.client.mutation(api.organizations.create, {
+      name: "Other studio",
+    });
+    await t.run(async (ctx) => {
+      for (const [index, organizationId] of [
+        first.id,
+        first.id,
+        second.id,
+        foreign.id,
+      ].entries()) {
+        await ctx.db.insert("testimonials", {
+          organizationId,
+          clientSubmissionId: `sidebar-${index}`,
+          submissionType: "text",
+          moderationStatus: "pending",
+          text: "The workshop gave our team a clear next step.",
+          submitterName: "Alex Morgan",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
+    });
+    expect(
+      (await owner.client.query(api.accounts.getMine, {}))?.usage,
+    ).toMatchObject({
+      organizations: 2,
+      textTestimonials: 3,
+      videoLimit: 25,
+      textTestimonialsIsLowerBound: false,
+      organizationsIsLowerBound: false,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(second.id, { deletionStartedAt: Date.now() });
+    });
+    expect(
+      (await owner.client.query(api.accounts.getMine, {}))?.usage,
+    ).toMatchObject({
+      organizations: 1,
+      textTestimonials: 2,
+    });
+    expect(
+      (await other.client.query(api.accounts.getMine, {}))?.usage,
+    ).toMatchObject({
+      organizations: 1,
+      textTestimonials: 1,
+    });
+  });
   it("counts unfinished Free video credits across Projects after choosing a different Free Project", async () => {
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_accounts");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test_accounts");

@@ -5,9 +5,9 @@ export const widgetTemplates: {
   description: string;
 }[] = [
   {
-    layout: "wall",
-    title: "Wall of fame",
-    description: "A complete wall with your project name.",
+    layout: "masonry",
+    title: "Masonry grid",
+    description: "Text and video, in their natural shape.",
   },
   {
     layout: "individual",
@@ -18,11 +18,6 @@ export const widgetTemplates: {
     layout: "carousel",
     title: "Horizontal carousel",
     description: "Browse your proof, one swipe at a time.",
-  },
-  {
-    layout: "masonry",
-    title: "Masonry grid",
-    description: "Text and video, in their natural shape.",
   },
   {
     layout: "highlights",
@@ -36,7 +31,7 @@ export const widgetTemplates: {
   },
 ];
 export const initialWidgetConfig: WidgetConfig = {
-  layout: "wall",
+  layout: "masonry",
   font: "inherit",
   accentColor: "#ffbb16",
   backgroundColor: "#ffffff",

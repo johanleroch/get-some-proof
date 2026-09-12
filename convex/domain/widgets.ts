@@ -17,6 +17,8 @@ export const widgetConfigValidator = v.object({
     v.literal("serif"),
     v.literal("mono"),
   ),
+  googleFont: v.optional(v.string()),
+  customFontId: v.optional(v.id("widgetFonts")),
   accentColor: v.string(),
   backgroundColor: v.string(),
   textColor: v.string(),

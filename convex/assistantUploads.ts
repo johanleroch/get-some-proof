@@ -65,7 +65,7 @@ export const prepare = internalMutation({
     ]);
     if (
       !job ||
-      job.provider !== "assistant" ||
+      (job.provider !== "assistant" && job.provider !== "backup") ||
       job.createdBy !== principal.actorId ||
       !item ||
       item.jobId !== job._id ||

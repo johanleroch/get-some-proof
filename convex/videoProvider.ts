@@ -360,3 +360,49 @@ export async function listMuxImportCandidates(cursor?: string): Promise<{
     nextCursor: typeof nextCursor === "string" ? nextCursor : null,
   };
 }
+
+/** Mux's temporary master download is independent of public playback URLs. */
+export async function prepareVideoDownload(assetId: string): Promise<string> {
+  const endpoint = `https://api.mux.com/video/v1/assets/${encodeURIComponent(assetId)}`;
+  const headers = {
+    Authorization: muxAuthorization(),
+    "Content-Type": "application/json",
+  };
+  async function read(method: string, suffix = "", body?: string) {
+    const response = await fetch(endpoint + suffix, {
+      method,
+      headers,
+      body,
+      redirect: "error",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new Error("Video download unavailable.");
+    return (await response.json()).data as {
+      master?: { status: string; url?: string };
+    };
+  }
+  let asset = await read("GET");
+  if (!asset.master || asset.master.status === "errored")
+    asset = await read(
+      "PUT",
+      "/master-access",
+      JSON.stringify({ master_access: "temporary" }),
+    );
+  const deadline = Date.now() + 90000;
+  while (asset.master?.status !== "ready" && Date.now() < deadline) {
+    if (asset.master?.status === "errored")
+      throw new Error("Video download failed.");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    asset = await read("GET");
+  }
+  const url = asset.master?.url ? new URL(asset.master.url) : null;
+  if (
+    !url ||
+    url.protocol !== "https:" ||
+    url.hostname !== "mezzanine.mux.com" ||
+    url.username ||
+    url.password
+  )
+    throw new Error("Video download is not ready. Retry shortly.");
+  return url.href;
+}

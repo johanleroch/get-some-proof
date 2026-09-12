@@ -5,14 +5,27 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import {
   IconArrowLeft,
-  IconCopy,
   IconDeviceDesktop,
   IconDeviceMobile,
+  IconDots,
+  IconSend,
+  IconShare,
+  IconDeviceFloppy,
+  IconEyeOff,
 } from "@tabler/icons-react";
 import type { WidgetConfig } from "@convex/domain/widgets";
+import { SketchArrow } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { CopyButton } from "@/components/ui/copy-button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Textarea } from "@/components/ui/textarea";
+import { EmbedCode } from "@/components/ui/embed-code";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -43,7 +56,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { widgetTemplates } from "./catalog";
+import { blobToast } from "@/components/brand/blob-toast";
 import { WidgetPreview } from "./widget-preview";
+import { WidgetPreviewPlaceholders } from "./widget-preview-placeholders";
+import { WidgetFontControl } from "./widget-font-control";
 import { WidgetSelectionDialog } from "./widget-selection-dialog";
 import { hasHighlight } from "./selection-rules";
 
@@ -55,24 +71,30 @@ export function WidgetEditor(
   const { widget } = props;
   const router = useRouter();
   const leaveHref = useRef<string | null>(null);
-  const [draft, setDraft] = useState<StudioDraft>({
+  const initialDraft: StudioDraft = {
     name: widget.name,
     ...widget.draft,
-  });
+    config: {
+      ...widget.draft.config,
+      layout:
+        widget.draft.config.layout === "wall"
+          ? "masonry"
+          : widget.draft.config.layout,
+    },
+  };
+  const [draft, setDraft] = useState<StudioDraft>(initialDraft);
   const revision = useRef(widget.revision);
   const [mobile, setMobile] = useState(false);
   const [panel, setPanel] = useState<"edit" | "preview">(
-    props.initialPreview ? "preview" : "edit",
+    props.initialPreview || !widget.draft.testimonialIds.length
+      ? "preview"
+      : "edit",
   );
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [share, setShare] = useState(false);
   const [leave, setLeave] = useState(false);
   const [selectionOpen, setSelectionOpen] = useState(false);
-  const dirty =
-    JSON.stringify(draft) !==
-    JSON.stringify({ name: widget.name, ...widget.draft });
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -136,12 +158,13 @@ export function WidgetEditor(
       ...current,
       config: { ...current.config, ...patch },
     }));
-    setNotice("");
   }
   async function save(publish: boolean) {
+    if (publish && eligibility) {
+      blobToast.error(eligibility);
+      return;
+    }
     setBusy(true);
-    setError("");
-    setNotice("");
     try {
       await props.onSave(widget._id, draft, revision.current, publish);
       revision.current += 1;
@@ -149,32 +172,28 @@ export function WidgetEditor(
         ...current,
         name: current.name === draft.name ? draft.name.trim() : current.name,
       }));
-      setNotice(
+      blobToast.success(
         publish ? "Published. Your embed is up to date." : "Draft saved.",
+        { id: "studio-widget-action" },
       );
       if (publish) setShare(true);
     } catch (error) {
-      setError(
+      blobToast.error(
         error instanceof Error ? error.message : "Could not save. Try again.",
       );
     } finally {
       setBusy(false);
     }
   }
-  async function copy(value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setNotice("Copied.");
-    } catch {
-      setError("Could not copy. Select and copy the code below.");
-    }
-  }
   const url = `${props.origin}/widgets/${widget.publicId}`;
   const snippet = `<div data-gsp-widget="${widget.publicId}"></div>\n<script src="${props.origin}/embed/v2.js" async></script>`;
   return (
-    <div className="w-full min-w-0">
-      <header className="border-line mb-6 space-y-4 border-b pb-5">
-        <div className="flex items-start gap-3">
+    <div
+      className="flex h-full min-h-0 w-full min-w-0 flex-col"
+      data-slot="studio-editor"
+    >
+      <header className="border-line bg-surface flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3 md:px-6">
+        <div className="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-0">
           <Button
             variant="ghost"
             size="icon"
@@ -188,53 +207,83 @@ export function WidgetEditor(
           >
             <IconArrowLeft className="size-5" />
           </Button>
-          <h1 className="type-display min-w-0 flex-1 break-words">
-            {widget.name}
-          </h1>
+          <h1 className="type-heading min-w-0 truncate">{widget.name}</h1>
           <Badge variant={widget.published ? "success" : "neutral"}>
             {widget.published ? "Published" : "Draft"}
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="outline"
-            loading={busy}
-            disabled={busy || !draft.name.trim()}
-            onClick={() => void save(false)}
-          >
-            Save draft
-          </Button>
-          <Button
             loading={busy}
             disabled={
-              busy ||
-              !draft.name.trim() ||
-              !draft.testimonialIds.length ||
-              !!eligibility
+              busy || !draft.name.trim() || !draft.testimonialIds.length
             }
             onClick={() => void save(true)}
           >
+            <IconSend className="size-4" />
             {widget.published ? "Publish changes" : "Publish"}
           </Button>
           {widget.published ? (
-            <Button variant="ghost" onClick={() => setShare(true)}>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => setShare(true)}
+            >
+              <IconShare className="size-4" />
               Share
             </Button>
           ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Widget actions"
+                disabled={busy}
+              >
+                <IconDots className="size-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                disabled={busy || !draft.name.trim()}
+                onSelect={() => void save(false)}
+              >
+                <IconDeviceFloppy className="size-4" />
+                Save draft
+              </DropdownMenuItem>
+              {widget.published ? <DropdownMenuSeparator /> : null}
+              {widget.published ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={busy}
+                  onSelect={() => {
+                    setBusy(true);
+                    void props
+                      .onUnpublish(widget._id)
+                      .then((nextRevision) => {
+                        revision.current = nextRevision;
+                        setShare(false);
+                        blobToast.success("Widget unpublished.", {
+                          id: "studio-widget-action",
+                        });
+                      })
+                      .catch(() =>
+                        blobToast.error("Could not unpublish. Try again."),
+                      )
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  <IconEyeOff className="size-4" />
+                  Unpublish widget
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
-      {error ? (
-        <p role="alert" className="text-danger type-small mb-4">
-          {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p role="status" className="text-success type-small mb-4">
-          {notice}
-        </p>
-      ) : null}
       <div
-        className="bg-paper sticky top-0 z-10 mb-5 flex gap-2 py-2 lg:hidden"
+        className="bg-surface border-line flex shrink-0 gap-2 border-b px-4 py-2 lg:hidden"
         role="group"
         aria-label="Studio editor view"
       >
@@ -255,15 +304,33 @@ export function WidgetEditor(
           Preview widget
         </Button>
       </div>
-      <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
         <fieldset
           id="widget-edit-panel"
           disabled={busy}
           className={cn(
-            "min-w-0 space-y-6 disabled:opacity-70 lg:block",
+            "border-line bg-surface min-h-0 min-w-0 space-y-6 overflow-y-auto p-5 disabled:opacity-70 lg:block lg:border-r",
             panel !== "edit" && "hidden",
           )}
         >
+          <section
+            className="border-line space-y-3 border-b pb-5"
+            aria-label="Testimonial selection"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="type-subheading">Testimonials</h2>
+              <span className="text-ink-2 type-small">
+                {draft.testimonialIds.length} selected
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setSelectionOpen(true)}
+            >
+              Manage selection
+            </Button>
+          </section>
           <section className="space-y-3">
             <Label htmlFor="widget-name">Widget name</Label>
             <Input
@@ -291,11 +358,11 @@ export function WidgetEditor(
                     key={item.layout}
                     value={item.layout}
                     disabled={
-                      props.attributionRequired && item.layout !== "wall"
+                      props.attributionRequired && item.layout !== "masonry"
                     }
                   >
                     {item.title}
-                    {item.layout !== "wall" ? " · Pro" : ""}
+                    {item.layout !== "masonry" ? " · Pro" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -320,26 +387,13 @@ export function WidgetEditor(
                 </p>
               </div>
             ) : null}
-            <div className="space-y-2">
-              <Label htmlFor="widget-font">Font</Label>
-              <Select
-                disabled={busy}
-                value={draft.config.font}
-                onValueChange={(font) =>
-                  setConfig({ font: font as WidgetConfig["font"] })
-                }
-              >
-                <SelectTrigger id="widget-font" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inherit">Match your website</SelectItem>
-                  <SelectItem value="sans">Sans serif</SelectItem>
-                  <SelectItem value="serif">Serif</SelectItem>
-                  <SelectItem value="mono">Monospace</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <WidgetFontControl
+              config={draft.config}
+              onChange={setConfig}
+              library={props.fontLibrary}
+              onUpload={props.onUploadFont}
+              onRemove={props.onRemoveFont}
+            />
             {(
               [
                 ["accentColor", "Accent"],
@@ -367,39 +421,17 @@ export function WidgetEditor(
               </div>
             ))}
           </section>
-          <section className="border-line space-y-3 border-t pt-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="type-subheading">Testimonials</h2>
-              <span className="text-ink-2 type-small">
-                {draft.testimonialIds.length} selected
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={(event) => {
-                event.currentTarget.focus();
-                setSelectionOpen(true);
-              }}
-            >
-              Manage selection
-            </Button>
-            {eligibility ? (
-              <p role="status" className="text-warning type-small">
-                {eligibility}
-              </p>
-            ) : null}
-          </section>
         </fieldset>
         <section
           id="widget-preview-panel"
           className={cn(
-            "border-line bg-surface-2 overflow-hidden rounded-lg border lg:sticky lg:top-6 lg:block",
+            "bg-surface-2 min-h-0 min-w-0 flex-col overflow-hidden lg:flex",
             panel !== "preview" && "hidden",
+            panel === "preview" && "flex",
           )}
           aria-label="Widget preview"
         >
-          <div className="border-line bg-surface flex items-center justify-between gap-3 border-b p-3">
+          <div className="border-line bg-paper flex shrink-0 items-center justify-between gap-3 border-b px-5 py-2">
             <span className="type-ui">Live preview</span>
             <div className="flex gap-1">
               <Button
@@ -422,26 +454,76 @@ export function WidgetEditor(
               </Button>
             </div>
           </div>
-          <div className="min-h-80 p-3 sm:p-5">
-            <div
-              className="mx-auto overflow-hidden rounded-lg"
-              style={{ maxWidth: mobile ? 390 : "100%" }}
-            >
-              <WidgetPreview
-                value={{
-                  config: draft.config,
-                  brandName: props.brandName,
-                  attributionRequired: props.attributionRequired,
-                  testimonials: selected.map(({ card }) => card),
-                }}
-              />
-            </div>
+          <div
+            className="studio-preview-canvas min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+            tabIndex={0}
+            aria-label="Preview canvas"
+            role="region"
+          >
+            {!draft.testimonialIds.length ? (
+              <div className="flex min-h-full flex-col items-center justify-center gap-6 py-6">
+                <WidgetPreviewPlaceholders layout={draft.config.layout} />
+                <div
+                  className="bg-brand-soft w-full max-w-sm space-y-3 rounded-xl p-8"
+                  aria-label="Add testimonials"
+                  role="region"
+                >
+                  <h2 className="type-subheading text-center">
+                    {draft.config.layout === "avatars"
+                      ? "Put faces to your proof"
+                      : "Your testimonials go here"}
+                  </h2>
+                  <p className="type-small text-ink-2 text-center">
+                    {draft.config.layout === "avatars"
+                      ? "Select testimonials to show your customers’ faces."
+                      : "Select testimonials to see them in this layout."}
+                  </p>
+                  <div
+                    className="studio-selection-hint pointer-events-none ml-[50%] w-14"
+                    aria-hidden="true"
+                  >
+                    <SketchArrow
+                      shape="curve"
+                      className="text-brand-text h-10 w-14 -scale-x-100"
+                    />
+                  </div>
+                  <Button
+                    className="cta-shine relative w-full overflow-hidden"
+                    size="lg"
+                    disabled={busy}
+                    onClick={() => setSelectionOpen(true)}
+                  >
+                    Add testimonials
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="mx-auto overflow-hidden rounded-lg"
+                style={{ maxWidth: mobile ? 390 : "100%" }}
+              >
+                <WidgetPreview
+                  value={{
+                    config: draft.config,
+                    googleFont: props.fontLibrary?.canUpload
+                      ? (draft.config.googleFont ?? null)
+                      : null,
+                    customFont: (() => {
+                      const font = props.fontLibrary?.canUpload
+                        ? props.fontLibrary.fonts.find(
+                            (font) => font.id === draft.config.customFontId,
+                          )
+                        : null;
+                      return font?.url ? { id: font.id, url: font.url } : null;
+                    })(),
+                    brandName: props.brandName,
+                    attributionRequired: props.attributionRequired,
+                    testimonials: selected.map(({ card }) => card),
+                  }}
+                />
+              </div>
+            )}
           </div>
-          <p className="text-ink-2 type-small px-5 pb-4">
-            {dirty
-              ? "Previewing your changes. Publish when ready."
-              : "Your saved draft. Publish to make it live."}
-          </p>
         </section>
       </div>
       <WidgetSelectionDialog
@@ -459,7 +541,6 @@ export function WidgetEditor(
         onChange={(testimonialIds) => {
           if (!busy) {
             setDraft((current) => ({ ...current, testimonialIds }));
-            setNotice("");
           }
         }}
       />
@@ -473,45 +554,17 @@ export function WidgetEditor(
             </DialogDescription>
           </DialogHeader>
           <Label htmlFor="widget-code">Embed code</Label>
-          <Textarea
-            id="widget-code"
-            readOnly
-            value={snippet}
-            className="border-line bg-surface-2 min-h-28 w-full rounded-md border p-3 font-mono text-xs"
-          />
-          <Button onClick={() => void copy(snippet)}>
-            <IconCopy className="size-4" />
-            Copy embed code
-          </Button>
+          <EmbedCode id="widget-code" code={snippet} />
+          <CopyButton value={snippet}>Copy embed code</CopyButton>
           <Label htmlFor="widget-link">Public link</Label>
           <Input id="widget-link" readOnly value={url} />
-          <Button variant="outline" onClick={() => void copy(url)}>
+          <CopyButton variant="outline" value={url}>
             Copy link
-          </Button>
+          </CopyButton>
           <p className="type-small text-ink-2">
             Published changes appear on the next load. Your installation code
             stays the same.
           </p>
-          {widget.published ? (
-            <Button
-              variant="ghost"
-              disabled={busy}
-              onClick={() => {
-                setBusy(true);
-                void props
-                  .onUnpublish(widget._id)
-                  .then((nextRevision) => {
-                    revision.current = nextRevision;
-                    setShare(false);
-                    setNotice("Widget unpublished.");
-                  })
-                  .catch(() => setError("Could not unpublish. Try again."))
-                  .finally(() => setBusy(false));
-              }}
-            >
-              Unpublish widget
-            </Button>
-          ) : null}
         </DialogContent>
       </Dialog>
       <AlertDialog open={leave} onOpenChange={setLeave}>

@@ -5,6 +5,7 @@ import { AppShell, AppShellView } from "./app-shell";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/org/acme-1234/dashboard",
+  search: "",
   readBilling: true,
   readAudit: true,
   updateOrganization: true,
@@ -16,6 +17,13 @@ const mocks = vi.hoisted(() => ({
 vi.mock("convex/react", () => ({
   useQuery: () => ({
     effectivePlan: mocks.effectivePlan,
+    usage: {
+      readyVideos: 8,
+      reservedVideos: 1,
+      videoLimit: 25,
+      textTestimonials: 42,
+      organizations: 2,
+    },
     pending: mocks.pending,
     can: {
       manageOwnership: mocks.manageOwnership,
@@ -28,6 +36,7 @@ vi.mock("convex/react", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
+  useSearchParams: () => new URLSearchParams(mocks.search),
 }));
 
 vi.mock("next/link", () => ({
@@ -53,6 +62,45 @@ vi.mock("@/components/organizations/organization-switcher", () => ({
 }));
 
 describe("AppShell", () => {
+  it("keeps the Studio listing in the dashboard layout", () => {
+    mocks.pathname = "/org/bumpr-1234/studio";
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
+      >
+        Studio canvas
+      </AppShell>,
+    );
+    expect(
+      container.querySelector('[data-slot="studio-workspace"]'),
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-slot="sidebar"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Studio canvas")).toBeVisible();
+  });
+  it("keeps the widget editor in the full viewport layout", () => {
+    mocks.pathname = "/org/bumpr-1234/studio";
+    mocks.search = "widget=example";
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
+      >
+        Editor canvas
+      </AppShell>,
+    );
+    expect(
+      container.querySelector('[data-slot="studio-workspace"]'),
+    ).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+    mocks.search = "";
+  });
   it("sells Pro above the user menu on a Free Account, without naming Free", () => {
     render(
       <AppShell
@@ -71,7 +119,7 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "/account/billing");
   });
 
-  it("shows no plan card at all on a Pro Account", () => {
+  it("shows shared Pro usage above the user menu without a billing link", () => {
     mocks.effectivePlan = "premium";
     const { container } = render(
       <AppShell
@@ -87,7 +135,13 @@ describe("AppShell", () => {
       container.querySelector('[data-slot="sidebar-plan-card"]'),
     ).toBeNull();
     expect(screen.queryByText("Collect without limits")).toBeNull();
-    expect(screen.queryByText("Pro plan")).toBeNull();
+    expect(screen.getByText("You're Pro!")).toBeInTheDocument();
+    expect(screen.getByText("16 video slots left")).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Manage subscription" }),
+    ).toBeNull();
     expect(screen.queryByRole("link", { name: "Upgrade to Pro" })).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });

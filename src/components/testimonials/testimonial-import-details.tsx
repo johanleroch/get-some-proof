@@ -30,6 +30,7 @@ const providerLabels: Record<
   string
 > = {
   assistant: "your assistant",
+  backup: "a Get Some Proof backup",
   senja: "Senja",
   "testimonial-to": "Testimonial.to",
 };

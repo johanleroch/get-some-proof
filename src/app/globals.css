@@ -531,6 +531,41 @@ body {
   color: var(--foreground);
 }
 
+.studio-preview-canvas {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklch, var(--line) 55%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--line) 55%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 24px 24px;
+}
+
+.studio-selection-hint {
+  animation: studio-selection-nudge 2200ms ease-in-out infinite;
+}
+
+@keyframes studio-selection-nudge {
+  0%,
+  100% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-selection-hint {
+    animation: none;
+  }
+}
+
 /* Legacy page header classes, remapped to the type scale until every screen uses the utilities directly. */
 .dashboard-page-title {
   color: var(--foreground);

@@ -562,6 +562,16 @@ describe("Workspace deletion", () => {
       ctx.db.query("workspaceDeletions").unique(),
     );
     expect(failed).toMatchObject({ status: "failed" });
+    await expect(t.run((ctx) => ctx.db.get(brand.id))).resolves.not.toBeNull();
+    await expect(
+      owner.client.query(api.workspaceDeletion.getByOrganizationSlug, {
+        slug: brand.slug,
+      }),
+    ).resolves.toMatchObject({
+      deletionId: started.deletionId,
+      status: "failed",
+    });
+
     await t.mutation(components.betterAuth.adapter.updateOne, {
       input: {
         model: "session",

@@ -1,4 +1,9 @@
 "use client";
+import { BrandUnavailable } from "@/components/organizations/brand-unavailable";
+import type { ExportProgress } from "@/lib/export-progress";
+import { ExportProgressDialog } from "./export-progress-dialog";
+import { downloadProjectExport } from "@/lib/download-project-export";
+import { EmbeddedWallSnippet } from "./embedded-wall-snippet";
 import {
   MediaDeletionProgress,
   type MediaDeletionCounts,
@@ -15,6 +20,8 @@ import { AnimatedBlob } from "@/components/brand/animated-blob";
 
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
+import { securityErrorMessage } from "@/lib/security-error-message";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -42,7 +49,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
 
 function initials(name: string) {
@@ -52,65 +58,6 @@ function initials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-}
-
-function EmbeddedWallSnippet({
-  embedOrigin,
-  publicSlug,
-}: {
-  embedOrigin: string;
-  publicSlug: string;
-}) {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const snippet = embedOrigin
-    ? `<div data-gsp-wall data-public-slug="${publicSlug}" data-theme="system"></div>\n<script async src="${embedOrigin}/embed/v1.js" data-api-origin="${embedOrigin}"></script>`
-    : "";
-
-  async function copy() {
-    setError(null);
-    setSuccess(null);
-    try {
-      await navigator.clipboard.writeText(snippet);
-      setSuccess("Embed snippet copied.");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Copy failed.");
-    }
-  }
-
-  return (
-    <div
-      className="bg-card scroll-mt-24 space-y-4 rounded-lg border p-5"
-      id="embed"
-    >
-      <div>
-        <h2 className="type-subheading">Embedded Wall</h2>
-        <p className="text-ink-2 mt-1 text-sm">
-          Paste this snippet where your website accepts custom HTML. It inherits
-          the host font and never uses an iframe.
-        </p>
-      </div>
-      <Field>
-        <Label htmlFor="embed-snippet">Embed snippet</Label>
-        <Textarea
-          className="min-h-28 font-mono text-xs"
-          id="embed-snippet"
-          readOnly
-          value={snippet}
-        />
-      </Field>
-      {error ? <ErrorToast message={error} /> : null}
-      {success ? <SuccessToast message={success} /> : null}
-      <Button
-        disabled={!snippet}
-        onClick={() => void copy()}
-        type="button"
-        variant="outline"
-      >
-        Copy embed snippet
-      </Button>
-    </div>
-  );
 }
 
 export function OrganizationSettings({
@@ -150,8 +97,17 @@ export function OrganizationSettings({
     organization ? { organizationId: organization.id } : "skip",
   );
   const updateWallSettings = useMutation(api.wallCustomization.updateSettings);
-  const exportWorkspace = useAction(api.workspaceDeletion.exportData);
   const deleteWorkspace = useAction(api.workspaceDeletion.remove);
+
+  // Keep the operation independently of the organization, including after reload.
+  // The slug lookup disappears when the final purge removes the organization.
+  if (deletionBySlug && !startedDeletion) {
+    setStartedDeletion({
+      brandName: deletionBySlug.brandName,
+      deletionId: deletionBySlug.deletionId,
+      organizationId: deletionBySlug.organizationId,
+    });
+  }
 
   if (deletionStatus?.status === "deleted") redirect("/dashboard");
 
@@ -160,7 +116,7 @@ export function OrganizationSettings({
         ...startedDeletion,
         mediaProgress:
           deletionStatus?.mediaProgress ?? deletionBySlug?.mediaProgress,
-        lastError: deletionStatus?.lastError,
+        lastError: deletionStatus?.lastError ?? deletionBySlug?.lastError,
         phase: deletionStatus?.phase ?? deletionBySlug?.phase ?? "queued",
         status:
           deletionStatus?.status ??
@@ -202,16 +158,7 @@ export function OrganizationSettings({
   }
 
   if (organization === null) {
-    return (
-      <section className="grid min-h-[50vh] place-items-center px-6 text-center">
-        <div>
-          <h1 className="text-2xl font-semibold">Brand unavailable</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            This Brand does not exist or you no longer have access to it.
-          </p>
-        </div>
-      </section>
-    );
+    return <BrandUnavailable />;
   }
 
   const organizationId = organization.id;
@@ -269,16 +216,12 @@ export function OrganizationSettings({
                   organizationId,
                 });
               },
-              onExport: async () => {
-                const data = await exportWorkspace({ organizationId });
-                const url = URL.createObjectURL(
-                  new Blob([data], { type: "application/json" }),
+              onExport: async (onProgress) => {
+                await downloadProjectExport(
+                  organizationId,
+                  organization.publicSlug,
+                  onProgress,
                 );
-                const link = document.createElement("a");
-                link.download = `${organization.publicSlug}-export.json`;
-                link.href = url;
-                link.click();
-                URL.revokeObjectURL(url);
               },
             }
           : undefined
@@ -287,38 +230,16 @@ export function OrganizationSettings({
   );
 }
 
-const settingsLoadingAction = async () => {};
-
 export function OrganizationSettingsSkeleton() {
   return (
-    <OrganizationSettingsView
-      loading
-      canChangePublicSlug
-      canManageWall
-      canUpdate
-      embedOrigin=""
-      logoUrl={null}
-      name=""
-      publicSlug=""
-      publicSlugCanChange
-      onChangePublicSlug={settingsLoadingAction}
-      onRemoveLogo={settingsLoadingAction}
-      onRename={settingsLoadingAction}
-      onUploadLogo={settingsLoadingAction}
-      onUpdateWallSettings={settingsLoadingAction}
-      wallSettings={{
-        accentColor: "#ffbb16",
-        canHideAttribution: false,
-        hideAttribution: false,
-        theme: "system",
-        transparentEmbed: false,
-        visibility: { avatar: true, company: true, rating: true, role: true },
-      }}
-      workspaceDeletion={{
-        onDelete: settingsLoadingAction,
-        onExport: settingsLoadingAction,
-      }}
-    />
+    <section
+      aria-label="Loading project"
+      className="grid min-h-[50vh] place-items-center px-6"
+      role="status"
+    >
+      <AnimatedBlob size={96} />
+      <span className="sr-only">Loading project</span>
+    </section>
   );
 }
 
@@ -359,7 +280,9 @@ export function OrganizationSettingsView({
   wallSettings?: PublicWallSettingsValue;
   workspaceDeletion?: {
     onDelete: (brandName: string) => Promise<void>;
-    onExport: () => Promise<void>;
+    onExport: (
+      onProgress?: (progress: ExportProgress) => void,
+    ) => Promise<void>;
   };
 }) {
   const [pending, setPending] = useState(false);
@@ -633,18 +556,36 @@ export function WorkspaceDeletionSection({
   initialConfirmation?: string;
   initialDialogOpen?: boolean;
   onDelete: (brandName: string) => Promise<void>;
-  onExport: () => Promise<void>;
+  onExport: (onProgress?: (progress: ExportProgress) => void) => Promise<void>;
 }) {
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress>({
+    phase: "preparing",
+    processed: 0,
+    total: 0,
+    failed: 0,
+  });
   const [confirmation, setConfirmation] = useState(initialConfirmation);
   const [dialogOpen, setDialogOpen] = useState(initialDialogOpen);
   const [pending, setPending] = useState<"delete" | "export" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [signInHref, setSignInHref] = useState<
+    `/sign-in?callbackURL=${string}` | null
+  >(null);
 
   async function download() {
+    setExportOpen(true);
+    setExportProgress({
+      phase: "preparing",
+      processed: 0,
+      total: 0,
+      failed: 0,
+    });
     setPending("export");
     setError(null);
     try {
-      await onExport();
+      await onExport(setExportProgress);
+      setExportProgress((current) => ({ ...current, phase: "done" }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Export failed.");
     } finally {
@@ -658,7 +599,19 @@ export function WorkspaceDeletionSection({
     try {
       await onDelete(confirmation);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Deletion failed.");
+      const data = cause instanceof ConvexError ? cause.data : null;
+      const failure = securityErrorMessage(
+        data && typeof data === "object" && typeof data.code === "string"
+          ? { code: data.code }
+          : null,
+        "Unable to delete this project. Try again in a moment.",
+      );
+      setError(failure.message);
+      setSignInHref(
+        failure.needsSignIn
+          ? `/sign-in?callbackURL=${encodeURIComponent(window.location.pathname + window.location.search + "#danger")}`
+          : null,
+      );
       setDialogOpen(false);
       setPending(null);
     }
@@ -669,6 +622,14 @@ export function WorkspaceDeletionSection({
       className="border-danger/40 bg-card scroll-mt-24 space-y-4 rounded-lg border p-5"
       id="danger"
     >
+      <ExportProgressDialog
+        open={exportOpen}
+        pending={pending === "export"}
+        progress={exportProgress}
+        error={error}
+        onClose={() => setExportOpen(false)}
+        onRetry={() => void download()}
+      />
       <div>
         <h2 className="type-subheading">Delete Project</h2>
         <p className="text-ink-2 mt-1 text-sm">
@@ -686,9 +647,17 @@ export function WorkspaceDeletionSection({
           type="button"
           variant="outline"
         >
-          Download data first
+          Download ZIP backup
         </Button>
       </div>
+      <p
+        className="text-ink-2 text-sm"
+        role={pending === "export" ? "status" : undefined}
+      >
+        {pending === "export"
+          ? "Preparing your ZIP with images, videos and data. Keep this page open; videos may take several minutes."
+          : "Includes hosted images, videos, data.json and an export report. Check the archive before deleting this project."}
+      </p>
       <Link className="text-sm underline" href="/account/billing">
         Manage subscription
       </Link>
@@ -704,6 +673,17 @@ export function WorkspaceDeletionSection({
         />
       </Field>
       {error ? <ErrorToast message={error} /> : null}
+      {signInHref ? (
+        <div className="space-y-3">
+          <p className="text-ink-2 text-sm">
+            Your project has not been deleted. Sign in again, then return here
+            to confirm deletion.
+          </p>
+          <Button asChild variant="outline">
+            <Link href={signInHref}>Sign in again</Link>
+          </Button>
+        </div>
+      ) : null}
       <Button
         disabled={confirmation !== brandName || pending !== null}
         onClick={() => setDialogOpen(true)}

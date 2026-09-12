@@ -3,7 +3,7 @@
 import { type CSSProperties, type ReactNode, useState } from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   type Icon,
   IconArrowLeft,
@@ -24,7 +24,11 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
-import { SidebarPlanCard } from "@/components/account/sidebar-plan-card";
+import {
+  SidebarPlanCard,
+  SidebarProPlanCard,
+  type SidebarPlanUsage,
+} from "@/components/account/sidebar-plan-card";
 import { BrandMark } from "@/components/brand-mark";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ProjectShellProvider } from "@/components/organizations/project-shell-context";
@@ -395,12 +399,55 @@ export function AppShellView({
   account?: {
     effectivePlan: "free" | "premium";
     freeProjectId: Id<"organizations"> | null;
+    usage?: SidebarPlanUsage;
   } | null;
   connected: boolean;
   userMenu: ReactNode;
   projectSwitcher: ReactNode;
 }) {
+  const searchParams = useSearchParams();
   const accountContext = pathname.startsWith("/account");
+  if (
+    pathname === `/org/${organizationSlug}/studio` &&
+    searchParams.has("widget")
+  ) {
+    return (
+      <ProjectShellProvider
+        value={{
+          brandName: organizationName,
+          organizationId,
+          pendingCount: inboxCount,
+          publicSlug: organizationPublicSlug,
+          slug: organizationSlug,
+        }}
+      >
+        <div
+          className="bg-paper flex h-svh min-w-0 flex-col overflow-hidden"
+          data-slot="studio-workspace"
+        >
+          {account?.effectivePlan === "free" &&
+          account.freeProjectId &&
+          account.freeProjectId !== organizationId ? (
+            <section
+              aria-label="Inactive project"
+              className="bg-surface-2 type-small shrink-0 px-5 py-3"
+            >
+              This project is inactive. Collection, the public Wall, and embeds
+              are disabled.
+            </section>
+          ) : null}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
+            role="region"
+            aria-label="Page content"
+            tabIndex={0}
+          >
+            {children}
+          </div>
+        </div>
+      </ProjectShellProvider>
+    );
+  }
   const productNavigation: NavigationItem[] = [
     {
       label: "Overview",
@@ -483,6 +530,9 @@ export function AppShellView({
           </SidebarContent>
           <SidebarFooter className="gap-3">
             {account?.effectivePlan === "free" ? <SidebarPlanCard /> : null}
+            {account?.effectivePlan === "premium" ? (
+              <SidebarProPlanCard usage={account.usage} />
+            ) : null}
             {userMenu}
           </SidebarFooter>
         </Sidebar>

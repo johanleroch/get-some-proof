@@ -61,6 +61,7 @@ const inboxIdentityValidator = {
       jobId: v.optional(v.id("testimonialImportJobs")),
       provider: v.union(
         v.literal("assistant"),
+        v.literal("backup"),
         v.literal("senja"),
         v.literal("testimonial-to"),
       ),

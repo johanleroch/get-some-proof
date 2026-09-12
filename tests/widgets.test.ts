@@ -7,7 +7,7 @@ import {
 } from "./convex-test-helpers";
 
 const config = {
-  layout: "wall" as const,
+  layout: "masonry" as const,
   font: "inherit" as const,
   accentColor: "#123abc",
   backgroundColor: "#ffffff",
@@ -60,12 +60,11 @@ async function setup() {
   return { t, owner, brand, testimonialId, widgetId, args };
 }
 describe("Studio widgets", () => {
-  it("allows the free Wall of Fame and rejects Pro templates on create and save", async () => {
+  it("allows the free Masonry grid and rejects Pro templates on create and save", async () => {
     const s = await setup();
     for (const layout of [
       "individual",
       "carousel",
-      "masonry",
       "highlights",
       "avatars",
     ] as const) {

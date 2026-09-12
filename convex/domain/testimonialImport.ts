@@ -22,7 +22,11 @@ export const wallProvider = v.union(
   v.literal("testimonial-to"),
   v.literal("senja"),
 );
-export const importProvider = v.union(wallProvider, v.literal("assistant"));
+export const importProvider = v.union(
+  wallProvider,
+  v.literal("assistant"),
+  v.literal("backup"),
+);
 export const assistantOutcome = v.object({
   sourceId: v.string(),
   itemId: v.id("testimonialImportItems"),
@@ -106,7 +110,7 @@ export function hasUnchangedImportContent(
     (origin.originalType ?? existing.submissionType) !== candidate.type
   )
     return false;
-  if (candidate.type === "text") return true;
+  if (candidate.type === "text" || origin.provider === "backup") return true;
   // Legacy imports without a source-media snapshot cannot prove equivalence.
   return (
     !!origin.originalVideoUrl &&

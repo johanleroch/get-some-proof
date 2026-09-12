@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { blobToast } from "@/components/brand/blob-toast";
 import { IconArrowLeft, IconPlus, IconTrash } from "@tabler/icons-react";
 import type { WidgetConfig } from "@convex/domain/widgets";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
@@ -48,6 +49,12 @@ export type StudioDraft = {
   testimonialIds: string[];
 };
 export type StudioViewProps = {
+  fontLibrary?: {
+    canUpload: boolean;
+    fonts: Array<{ id: string; name: string; url: string | null }>;
+  };
+  onUploadFont?: (file: File) => Promise<string>;
+  onRemoveFont?: (id: string) => Promise<void>;
   initialChoosing?: boolean;
   onChoosingChange?: (choosing: boolean) => void;
   initialPreview?: boolean;
@@ -75,9 +82,11 @@ export type StudioViewProps = {
   loadingActive?: boolean;
   origin: string;
   inboxHref: string;
+  projectHref?: string;
 };
 
 function templateName(layout: WidgetConfig["layout"]) {
+  if (layout === "wall") return "Masonry grid";
   return (
     widgetTemplates.find((item) => item.layout === layout)?.title ?? layout
   );
@@ -85,7 +94,6 @@ function templateName(layout: WidgetConfig["layout"]) {
 export function StudioView(props: StudioViewProps) {
   const [choosing, setChoosing] = useState(props.initialChoosing ?? false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   const [deleting, setDeleting] = useState<StudioWidget | null>(null);
   function setTemplateChoice(next: boolean) {
     setChoosing(next);
@@ -93,7 +101,6 @@ export function StudioView(props: StudioViewProps) {
   }
   async function performAction(template?: StudioTemplate) {
     setBusy(true);
-    setError("");
     try {
       if (template) {
         const id = await props.onCreate(template.title, {
@@ -106,9 +113,10 @@ export function StudioView(props: StudioViewProps) {
       } else if (deleting) {
         await props.onRemove(deleting._id);
         setDeleting(null);
+        blobToast.success("Widget deleted.");
       }
     } catch (error) {
-      setError(
+      blobToast.error(
         error instanceof Error
           ? error.message
           : "Something went wrong. Please try again.",
@@ -146,11 +154,6 @@ export function StudioView(props: StudioViewProps) {
           )
         }
       />
-      {error ? (
-        <p role="alert" className="text-danger type-small">
-          {error}
-        </p>
-      ) : null}
       {choosing ? (
         <>
           {props.loading ? (
@@ -226,6 +229,7 @@ export function StudioView(props: StudioViewProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep widget</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               disabled={busy}
               onClick={() => void performAction()}
             >
