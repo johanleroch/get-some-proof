@@ -166,7 +166,10 @@ export function SourceIconsShowcase() {
         <p className="text-muted-foreground type-small max-w-prose">
           Every glyph here is the exact markup the card and the embed render.
           Each tile holds the redraw we shipped against the official mark that
-          replaces it, then both at the size the wall serves.
+          replaces it, then both at the size the wall serves. The brands crop
+          their files differently, so each mark is placed from its measured
+          bounds onto one keyline grid: 20 of live area in a 24 box, squares at
+          18, bare letters at 18.5, centred on the shape itself.
         </p>
       </div>
 
