@@ -15,11 +15,14 @@ Reddit and Product Hunt hold the mark without its container: the contours of
 the official artwork, minus the bubble and the disc, holes cut by evenodd.
 GitHub publishes no such version - its mark is the cat in negative space - so
 the badge masks GitHub's own mark with the disc it is drawn in, which leaves
-that exact cat and nothing else. Both read as the mark itself, never a redraw.
+that exact cat and nothing else. That circle is r=10.6 because Octicons draws
+its disc at r=11 centred on 12,12, and the tenth of a unit keeps the rim's
+antialiasing out: swapping that artwork means measuring its disc again. Both read as the mark itself, never a redraw.
 
 The one deliberate deviation: X draws a thin mark that goes weightless beside
-nine solid ones, so its official outline is stroked 0.7 wider. Past that the
-slivers between the arms close up and the X turns into a blob.
+ten solid ones, so its official outline is stroked wider - 0.7 in the file's
+own units, which its fit then scales to about half a unit of the 24 box. Past
+that the slivers between the arms close up and the X turns into a blob.
 
 Marks are drawn as fills on a 24x24 grid, so the family carries one optical
 weight at the 20px the wall ships.
@@ -74,7 +77,7 @@ export const sourceIcons = {
     fit: "translate(3.028 3.028) scale(0.7477)",
     label: "Instagram",
     markup:
-      '<defs><radialGradient id="gsp-src-ig-warm" cx="158.429" cy="578.088" r="65" fx="158.429" fy="578.088" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000000 -0.360349 0.335244 0.000000 -187.521954 82.543680)"><stop offset="0" stop-color="#fd5"/><stop offset=".1" stop-color="#fd5"/><stop offset=".5" stop-color="#ff543e"/><stop offset="1" stop-color="#c837ab"/></radialGradient><radialGradient id="gsp-src-ig-blue" cx="147.694" cy="473.455" r="65" fx="147.694" fy="473.455" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.031624 0.157944 -0.651217 0.130392 299.690555 -83.359838)"><stop offset="0" stop-color="#3771c8"/><stop offset=".128" stop-color="#3771c8"/><stop offset="1" stop-color="#60f" stop-opacity="0"/></radialGradient></defs><path fill="url(#gsp-src-ig-warm)" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/><path fill="url(#gsp-src-ig-blue)" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/>',
+      '<defs><radialGradient id="gsp-src-ig-warm" cx="158.429" cy="578.088" r="65" fx="158.429" fy="578.088" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000000 -0.360349 0.335244 0.000000 -187.521954 82.543680)"><stop offset="0" stop-color="#fd5"/><stop offset=".1" stop-color="#fd5"/><stop offset=".5" stop-color="#ff543e"/><stop offset="1" stop-color="#c837ab"/></radialGradient><radialGradient id="gsp-src-ig-blue" cx="147.694" cy="473.455" r="65" fx="147.694" fy="473.455" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.031624 0.157944 -0.651217 0.130392 299.690555 -83.359838)"><stop offset="0" stop-color="#3771c8"/><stop offset=".128" stop-color="#3771c8"/><stop offset="1" stop-color="#60f" stop-opacity="0"/></radialGradient><path id="gsp-src-ig-glyph" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></defs><use href="#gsp-src-ig-glyph" xlink:href="#gsp-src-ig-glyph" fill="url(#gsp-src-ig-warm)"/><use href="#gsp-src-ig-glyph" xlink:href="#gsp-src-ig-glyph" fill="url(#gsp-src-ig-blue)"/>',
   },
   youtube: {
     color: "#ff0000",
@@ -122,11 +125,28 @@ export type SourcePlatform = keyof typeof sourceIcons;
  */
 export function sourceIconSvg(
   platform: SourcePlatform,
-  { chip = true, size = 20 }: { chip?: boolean; size?: number } = {},
+  {
+    chip = true,
+    key,
+    size = 20,
+  }: { chip?: boolean; key?: string; size?: number } = {},
 ) {
   const { color, fit, markup } = sourceIcons[platform];
+  // Instagram's gradients and GitHub's mask are reached by id, and this markup
+  // is injected into pages we do not own: two cards from the same platform
+  // would put the same id twice, where url(#id) takes whichever came first.
+  // The caller passes something stable - a testimonial id - so the badge keeps
+  // one drawing per card and the same bytes on every render.
+  const drawing = key
+    ? markup.replaceAll(
+        "gsp-src-",
+        `gsp-src-${key.replace(/[^A-Za-z0-9_-]/g, "")}-`,
+      )
+    : markup;
+  // The chip is a 3px surround at the 20px the wall ships, and stays that
+  // surround at any other size the kit asks for.
   const chipStyle = chip
-    ? ";background:white;border-radius:4px;padding:3px;box-sizing:content-box"
+    ? `;background:white;border-radius:${(size / 20) * 4}px;padding:${(size / 20) * 3}px;box-sizing:content-box`
     : "";
-  return `<svg aria-hidden="true" style="color:${color}${chipStyle}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><g transform="${fit}">${markup}</g></svg>`;
+  return `<svg aria-hidden="true" style="color:${color}${chipStyle}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><g transform="${fit}">${drawing}</g></svg>`;
 }

@@ -175,7 +175,7 @@ function sourceMarkup(testimonial: TestimonialCardValue) {
     : undefined;
   if (!source) return "";
   const { label } = sourceIcons[source.platform];
-  const icon = sourceIconSvg(source.platform);
+  const icon = sourceIconSvg(source.platform, { key: testimonial.id });
   const attributes = `data-gsp-source="${source.platform}" aria-label="Source: ${label}" title="Source: ${label}" style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:44px;height:44px;color:inherit"`;
   return source.url
     ? `<a ${attributes} href="${escapeHtml(source.url)}" target="_blank" rel="ugc nofollow noopener noreferrer">${icon}</a>`

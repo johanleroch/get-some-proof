@@ -48,6 +48,14 @@ function readSvg(source) {
     .replace(/<desc>[\s\S]*?<\/desc>/g, "");
   const open = cleaned.match(/<svg\b([^>]*)>/i);
   if (!open) throw new Error("No <svg> element found");
+  if (/<style[\s>]/i.test(cleaned)) {
+    // An SVG <style> is scoped to the document, not the svg, and this markup is
+    // injected into pages we do not own: a .fil0 rule would repaint theirs.
+    throw new Error(
+      "This file paints through a <style> block. Inline its fills onto the shapes " +
+        "(most editors export that way) and run the tool again.",
+    );
+  }
   const inner = cleaned
     .slice(open.index + open[0].length, cleaned.lastIndexOf("</svg>"))
     .trim();
@@ -70,15 +78,22 @@ function readSvg(source) {
  * A mark in one colour inherits `currentColor` like the rest of the family, so
  * the chip can tint it. A mark that carries several keeps every one of them.
  */
+const COLOUR = "(#[0-9a-fA-F]{3,8}|[a-z]+)";
+
 function monochrome(markup) {
-  const fills = [...markup.matchAll(/fill="(#[0-9a-fA-F]{3,8}|[a-z]+)"/g)]
+  const fills = [
+    ...markup.matchAll(new RegExp(`fill="${COLOUR}"`, "g")),
+    ...markup.matchAll(new RegExp(`fill:\\s*${COLOUR}`, "g")),
+  ]
     .map((match) => match[1])
     .filter((value) => value !== "none" && value !== "currentColor");
   const distinct = [...new Set(fills.map((value) => value.toLowerCase()))];
   if (distinct.length !== 1)
     return { markup, color: distinct[0], multicolour: distinct.length > 1 };
   return {
-    markup: markup.replace(/\s*fill="(?!none|currentColor)[^"]*"/g, ""),
+    markup: markup
+      .replace(/\s*fill="(?!none|currentColor)[^"]*"/g, "")
+      .replace(/\s*fill:\s*(?!none|currentColor)[^;"]*;?/g, ""),
     color: distinct[0],
     multicolour: false,
   };
@@ -175,6 +190,12 @@ const slug =
     .basename(args.file)
     .replace(/\.svg$/i, "")
     .toLowerCase();
+if (!/^[a-z][a-z0-9]*$/.test(slug)) {
+  console.error(
+    `"${slug}" cannot be the key of an entry. Pass --slug with letters and digits only.`,
+  );
+  process.exit(1);
+}
 const label = args.label ?? slug[0].toUpperCase() + slug.slice(1);
 const { inner, view } = readSvg(await readFile(args.file, "utf8"));
 const { markup, color, multicolour } = monochrome(
@@ -182,19 +203,25 @@ const { markup, color, multicolour } = monochrome(
 );
 
 const browser = await chromium.launch();
-const page = await browser.newPage();
-await page.setContent("<!doctype html><body>");
-
-const bounds = await measure(page, markup, view, { padded: true });
-const shape = args.shape ?? classify(bounds);
-const fit = fitFor(bounds, shape);
-const placed = await measure(
-  page,
-  `<g transform="${fit.transform}">${markup}</g>`,
-  { x: 0, y: 0, width: 24, height: 24 },
-  { padded: true },
-);
-await browser.close();
+let bounds;
+let shape;
+let fit;
+let placed;
+try {
+  const page = await browser.newPage();
+  await page.setContent("<!doctype html><body>");
+  bounds = await measure(page, markup, view, { padded: true });
+  shape = args.shape ?? classify(bounds);
+  fit = fitFor(bounds, shape);
+  placed = await measure(
+    page,
+    `<g transform="${fit.transform}">${markup}</g>`,
+    { x: 0, y: 0, width: 24, height: 24 },
+    { padded: true },
+  );
+} finally {
+  await browser.close();
+}
 
 const entry =
   `  ${slug}: {\n` +

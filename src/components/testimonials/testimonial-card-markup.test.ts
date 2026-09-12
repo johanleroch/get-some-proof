@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { sourcePlatforms } from "@convex/domain/testimonialSource";
+
+import { sourceIcons } from "./source-icons";
 import {
   testimonialCardHtml,
   testimonialPoster,
@@ -35,6 +38,25 @@ describe("testimonialPoster", () => {
       }),
     ).toBe("https://files.example/poster.jpg");
   });
+});
+
+it.each(sourcePlatforms)("stamps a card with the %s mark", (platform) => {
+  const html = testimonialCardHtml({
+    accentColor: "#123abc",
+    testimonial: {
+      avatarUrl: null,
+      id: "card-1",
+      name: "Maya Chen",
+      publishedAt: 1,
+      source: { platform },
+      text: "Original words",
+      type: "text",
+    },
+  });
+  expect(html).toContain(`data-gsp-source="${platform}"`);
+  expect(html).toContain(`aria-label="Source: ${sourceIcons[platform].label}"`);
+  // Drawn through its fit, so no mark can reach a card off the grid.
+  expect(html).toContain(`<g transform="${sourceIcons[platform].fit}">`);
 });
 
 it.each(["text", "video"] as const)(
