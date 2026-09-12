@@ -131,8 +131,16 @@
       position: relative;
       width: 100%;
       overflow: hidden;
+      container-type: inline-size;
       cursor: pointer;
       background: #000;
+    }
+    @container (max-width: 300px) {
+      .video-overlay { gap: 10px; padding: 14px; }
+      .video-overlay .stars { margin-bottom: 8px; }
+      .star { width: 12px; height: 12px; }
+      .play { width: 40px; height: 40px; flex-basis: 40px; }
+      .play-icon svg { width: 17px; height: 17px; }
     }
     .video-shell mux-player {
       display: block;
@@ -208,6 +216,7 @@
       pointer-events: none;
       transition: opacity 200ms ease-out;
     }
+    .video-overlay > span { min-width: 0; }
     @media (hover: hover) and (pointer: fine) {
       .video-shell[data-video-playing] .video-shade,
       .video-shell[data-video-playing] .video-overlay { opacity: 0; }
@@ -1209,7 +1218,7 @@
     /* The height caps, per family. None of them change a video's shape. */
     const caps = {
       band: 360,
-      carousel: 420,
+      carousel: 520,
       bubble: 360,
       editorial: 520,
       faces: 440,

@@ -11,14 +11,13 @@ import type { TestimonialCardValue } from "@convex/testimonialCardValue";
  */
 
 /** Public Mux demo asset, shared with the visual-evidence fixtures. It was
- *  filmed portrait, so an entry that claims another shape has to carry a
- *  poster already framed that way: a layout must never be reviewed against a
- *  video whose declared ratio and picture disagree. */
+ *  filmed portrait, and every video here says so: dressing one entry up as
+ *  landscape only ever produced a cropped face, which is exactly what the
+ *  layouts must never do. Landscape runs the same ratio-driven code path -
+ *  the cap binds on width instead of height - and needs no lie to prove it. */
 const playbackId = "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y";
 const face = (time: number) =>
   `https://image.mux.com/${playbackId}/thumbnail.webp?width=160&height=160&fit_mode=smartcrop&time=${time}`;
-/** A landscape Testimonial, the one shape the demo asset cannot give on its own. */
-const landscapePoster = `https://image.mux.com/${playbackId}/thumbnail.webp?width=960&height=540&fit_mode=smartcrop&time=30`;
 
 export const galleryTestimonials: TestimonialCardValue[] = [
   {
@@ -124,7 +123,7 @@ export const galleryTestimonials: TestimonialCardValue[] = [
     type: "text",
   },
   {
-    aspectRatio: "16:9",
+    aspectRatio: "9:16",
     avatarUrl: face(30),
     captionsAvailable: true,
     company: "RemyWeb Agency",
@@ -132,7 +131,6 @@ export const galleryTestimonials: TestimonialCardValue[] = [
     name: "Remy Jupille",
     playbackId,
     posterTimeSeconds: 30,
-    posterUrl: landscapePoster,
     publishedAt: Date.UTC(2026, 7, 24),
     rating: 5,
     role: "Founder",

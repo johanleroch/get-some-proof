@@ -21,6 +21,14 @@ describe("the embed never re-crops a video", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("lets the overlay's text column shrink so the play button survives", () => {
+    /* The markup carries Tailwind's min-w-0 on that column, which buys
+       nothing inside the shadow root. Without the rule below, a narrow video
+       pushes its own play button out of the card and the name runs past the
+       edge - and every family that narrows a video hits it. */
+    expect(runtime).toContain(".video-overlay > span { min-width: 0; }");
+  });
+
   it("bounds a tall video by narrowing the card, not by reshaping it", () => {
     expect(runtime).toContain("function boundVideoCards");
     /* The width follows the ratio the markup carries, so the shape survives. */
