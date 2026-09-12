@@ -23,7 +23,7 @@ export function McpSetupFixture({
   return (
     <main className="bg-paper text-ink min-h-svh p-5 md:p-8">
       <McpSetupView
-        origin="https://proof.example"
+        origin="https://getsomeproof.com"
         connections={connections}
         onRevoke={async (clientId) =>
           setConnections((current) =>

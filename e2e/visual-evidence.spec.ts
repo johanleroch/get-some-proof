@@ -117,6 +117,12 @@ for (const screen of selectedScreens) {
         page.getByRole("heading", { name: screen.heading, exact: true }),
       ).toBeVisible();
     }
+    if (screen.slug === "mcp-setup") {
+      await page.getByRole("tab", { name: "Codex", exact: true }).click();
+      await expect(page.getByRole("tabpanel")).toContainText(
+        "codex mcp add get-some-proof --url https://www.getsomeproof.com/mcp",
+      );
+    }
     if (fixtureMode && screen.slug === "account-security-error") {
       await page.getByLabel("Current password").fill("synthetic-password");
       await page.getByRole("button", { name: "Enable 2FA" }).click();
