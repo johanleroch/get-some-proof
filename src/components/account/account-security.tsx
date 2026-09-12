@@ -5,24 +5,24 @@ import { securityErrorMessage } from "@/lib/security-error-message";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import {
   IconDeviceLaptop,
   IconDeviceMobile,
-  IconKey,
   IconShieldCheck,
 } from "@tabler/icons-react";
 
+import { authenticatorBackHref } from "@/components/account/authenticator-view";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { SuccessToast } from "@/components/ui/error-toast";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+
+/** The Authenticator lives on its own page; this is the way in. */
+const authenticatorHref = `${authenticatorBackHref}/authenticator` as Route;
 
 type Session = {
   id: string;
@@ -51,11 +51,6 @@ export function AccountSecurity() {
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
   const [sessions, setSessions] = useState<Session[] | null>(null);
-  const [setup, setSetup] = useState<{
-    totpURI: string;
-    backupCodes: string[];
-  } | null>(null);
-  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -114,6 +109,7 @@ export function AccountSecurity() {
 
   const twoFactorEnabled = Boolean(session.data?.user.twoFactorEnabled);
   const currentToken = session.data?.session.token;
+  const methodsLoading = providers === null && !providerError;
 
   function reportError(
     error: Parameters<typeof securityErrorMessage>[0],
@@ -133,138 +129,6 @@ export function AccountSecurity() {
           }
         : {}),
     });
-  }
-
-  async function enableTwoFactor(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    setPending(true);
-    setSuccess(null);
-    try {
-      const password = String(new FormData(form).get("password"));
-      const result = await authClient.twoFactor.enable({
-        password,
-        issuer: "Get Some Proof",
-      });
-      form.reset();
-      if (result.error) {
-        reportError(
-          result.error,
-          "We couldn’t start two-factor setup. Please try again in a moment.",
-        );
-        return;
-      }
-      if (result.data) {
-        setSetup({
-          totpURI: result.data.totpURI,
-          backupCodes: result.data.backupCodes,
-        });
-        setBackupCodes(result.data.backupCodes);
-        blobToast.dismiss("account-security-error");
-        setSuccess(
-          "Add the authenticator, then enter its code to finish setup.",
-        );
-      }
-    } catch {
-      reportError(
-        null,
-        "Unable to complete this action. Check your connection and try again.",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function verifyTwoFactor(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const code = String(new FormData(event.currentTarget).get("code"));
-    setPending(true);
-    setSuccess(null);
-    try {
-      const result = await authClient.twoFactor.verifyTotp({ code });
-      if (result.error) {
-        reportError(
-          result.error,
-          "We couldn’t verify your authenticator code. Please try again.",
-        );
-        return;
-      }
-      setSetup(null);
-      await session.refetch();
-      await refreshSessions();
-      blobToast.dismiss("account-security-error");
-      setSuccess("Two-factor authentication enabled.");
-    } catch {
-      reportError(
-        null,
-        "Unable to verify the code. Check your connection and try again.",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function disableTwoFactor(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    setPending(true);
-    setSuccess(null);
-    try {
-      const password = String(new FormData(form).get("password"));
-      const result = await authClient.twoFactor.disable({ password });
-      form.reset();
-      if (result.error) {
-        reportError(
-          result.error,
-          "We couldn’t disable two-factor authentication. Please try again.",
-        );
-        return;
-      }
-      setSetup(null);
-      setBackupCodes(null);
-      await session.refetch();
-      await refreshSessions();
-      blobToast.dismiss("account-security-error");
-      setSuccess("Two-factor authentication disabled.");
-    } catch {
-      reportError(
-        null,
-        "Unable to complete this action. Check your connection and try again.",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function regenerateCodes(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    setPending(true);
-    setSuccess(null);
-    try {
-      const password = String(new FormData(form).get("password"));
-      const result = await authClient.twoFactor.generateBackupCodes({
-        password,
-      });
-      form.reset();
-      if (result.error) {
-        reportError(
-          result.error,
-          "We couldn’t generate new recovery codes. Please try again.",
-        );
-        return;
-      }
-      setBackupCodes(result.data?.backupCodes ?? []);
-      blobToast.dismiss("account-security-error");
-      setSuccess("Previous recovery codes were invalidated.");
-    } catch {
-      reportError(
-        null,
-        "Unable to complete this action. Check your connection and try again.",
-      );
-    } finally {
-      setPending(false);
-    }
   }
 
   async function revokeSession(token: string) {
@@ -322,7 +186,11 @@ export function AccountSecurity() {
     }
   }
 
-  const visibleCodes = backupCodes;
+  const authenticatorStatus = !hasPassword
+    ? "Your external sign-in provider carries the second step for this account."
+    : twoFactorEnabled
+      ? "On. Your app is asked for a six-digit code after your password."
+      : "Off. Add a second step so a stolen password is never enough on its own.";
 
   return (
     <div className="space-y-6">
@@ -334,164 +202,40 @@ export function AccountSecurity() {
       {success ? <SuccessToast message={success} /> : null}
 
       <section className="bg-card rounded-lg border p-5">
-        <div className="flex items-start gap-4">
-          <div className="bg-brand-soft text-brand-text grid size-10 place-items-center rounded-md">
-            <IconShieldCheck aria-hidden="true" className="size-5" />
-          </div>
-          <div>
-            <h2 className="type-subheading">Authenticator app</h2>
-            <p className="text-ink-2 mt-1 text-sm">
-              Status:{" "}
-              {providers === null ? (
-                <Skeleton className="inline-block h-4 w-20 align-middle" />
-              ) : twoFactorEnabled ? (
-                "enabled"
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+          <div className="flex items-start gap-4">
+            <div className="bg-brand-soft text-brand-text grid size-10 shrink-0 place-items-center rounded-md">
+              <IconShieldCheck aria-hidden="true" className="size-5" />
+            </div>
+            <div className="max-w-prose">
+              <h2 className="type-subheading">Authenticator app</h2>
+              {providerError ? (
+                <p className="text-ink-2 mt-1 text-sm" role="alert">
+                  We couldn’t load your sign-in methods. Open the page to try
+                  again.
+                </p>
+              ) : methodsLoading ? (
+                <Skeleton className="mt-2 h-4 w-64 max-w-full" />
               ) : (
-                "not enabled"
+                <p className="text-ink-2 mt-1 text-sm">{authenticatorStatus}</p>
               )}
-            </p>
+            </div>
           </div>
-        </div>
-
-        {providerError ? (
-          <p className="mt-6 text-sm" role="alert">
-            Unable to load sign-in methods. Reload this page to try again.
-          </p>
-        ) : providers === null ? (
-          <div
-            className="mt-6 space-y-3"
-            role="status"
-            aria-label="Loading sign-in methods"
-          >
-            <Skeleton className="h-10 w-full max-w-md" />
-            <Skeleton className="h-10 w-44" />
-          </div>
-        ) : !hasPassword ? (
-          <div className="mt-6 space-y-3 text-sm">
-            <p>
-              You sign in with{" "}
-              {providers.includes("google") ? "Google" : "an external provider"}
-              . Two-step verification for this sign-in is managed by that
-              provider, not by a Get Some Proof password.
-            </p>
-            {providers.includes("google") ? (
-              <Button asChild variant="outline">
-                <a
-                  href="https://myaccount.google.com/security"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Manage Google security
-                </a>
-              </Button>
-            ) : null}
-          </div>
-        ) : !twoFactorEnabled && !setup ? (
-          <form
-            className="mt-6 flex max-w-md items-end gap-3"
-            onSubmit={enableTwoFactor}
-          >
-            <Field className="flex-1">
-              <Label htmlFor="enable-2fa-password">Current password</Label>
-              <PasswordInput
-                id="enable-2fa-password"
-                name="password"
-                required
-              />
-            </Field>
-            <Button loading={pending} type="submit">
-              Enable 2FA
-            </Button>
-          </form>
-        ) : twoFactorEnabled ? (
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <form className="space-y-3" onSubmit={regenerateCodes}>
-              <Label htmlFor="codes-password">Regenerate recovery codes</Label>
-              <PasswordInput id="codes-password" name="password" required />
-              <Button loading={pending} type="submit" variant="outline">
-                <IconKey aria-hidden="true" className="size-4" />
-                Generate new codes
-              </Button>
-            </form>
-            <form className="space-y-3" onSubmit={disableTwoFactor}>
-              <Label htmlFor="disable-2fa-password">
-                Disable with password
-              </Label>
-              <PasswordInput
-                id="disable-2fa-password"
-                name="password"
-                required
-              />
-              <Button loading={pending} type="submit" variant="outline">
-                Disable 2FA
-              </Button>
-            </form>
-          </div>
-        ) : null}
-
-        {hasPassword && providers?.includes("google") ? (
-          <p className="text-ink-2 mt-4 text-sm">
-            This authenticator protects email and password sign-in. Google
-            sign-in uses your Google account’s two-step verification.
-          </p>
-        ) : null}
-        {setup ? (
-          <div className="bg-surface-2 mt-6 rounded-md border p-4">
-            <p className="text-sm font-medium">Authenticator setup URI</p>
-            <code className="text-ink-2 mt-2 block text-xs break-all">
-              {setup.totpURI}
-            </code>
-            <p className="mt-3 text-sm">
-              Add this setup key to your authenticator app:
-            </p>
-            <code className="mt-2 block text-sm break-all">
-              {new URL(setup.totpURI).searchParams.get("secret")}
-            </code>
-            <form
-              className="mt-4 max-w-sm space-y-3"
-              onSubmit={verifyTwoFactor}
-            >
-              <Label htmlFor="authenticator-code">Authenticator code</Label>
-              <Input
-                id="authenticator-code"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                required
-              />
-              <Button loading={pending} type="submit">
-                Verify and enable 2FA
-              </Button>
-            </form>
-          </div>
-        ) : null}
-
-        {visibleCodes ? (
-          <div className="border-warning/30 bg-warning-soft text-ink mt-6 rounded-md border p-4">
-            <h3 className="font-semibold">Save these recovery codes now</h3>
-            <p className="mt-1 text-sm">
-              Each code works once. They will not remain visible after you
-              dismiss them.
-            </p>
-            <ul className="mt-4 grid gap-2 font-mono text-sm sm:grid-cols-2">
-              {visibleCodes.map((code) => (
-                <li key={code}>{code}</li>
-              ))}
-            </ul>
+          {methodsLoading ? (
+            <Skeleton className="h-10 w-28" />
+          ) : (
             <Button
-              className="mt-4"
-              onClick={() => {
-                setBackupCodes(null);
-              }}
-              type="button"
-              variant="outline"
+              asChild
+              variant={twoFactorEnabled || !hasPassword ? "outline" : "default"}
             >
-              I saved these codes
+              <Link href={authenticatorHref}>
+                {twoFactorEnabled || !hasPassword
+                  ? "Manage authenticator"
+                  : "Set up"}
+              </Link>
             </Button>
-          </div>
-        ) : null}
+          )}
+        </div>
       </section>
 
       <section className="bg-card rounded-lg border p-5">

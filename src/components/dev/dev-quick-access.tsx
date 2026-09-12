@@ -171,6 +171,10 @@ function QuickAccessMenu({
         { href: `/org/${organization.slug}/billing`, label: "Billing" },
         { href: "/account/profile", label: "Profile" },
         { href: "/account/security", label: "Security" },
+        {
+          href: "/account/security/authenticator",
+          label: "Authenticator",
+        },
       ]
     : [];
   const publicPages: QuickLink[] = [
