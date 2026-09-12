@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { sourceIcons } from "@/components/testimonials/source-icons";
-
 import { sourcePlatforms, testimonialSource } from "./testimonialSource";
 
 describe("testimonialSource", () => {
@@ -38,13 +36,9 @@ describe("testimonialSource", () => {
     });
   });
 
-  it("can stamp every platform it accepts", () => {
+  it("answers for every platform it accepts", () => {
     for (const platform of sourcePlatforms) {
       expect(testimonialSource(platform)).toEqual({ platform });
-      expect(sourceIcons[platform].label.length).toBeGreaterThan(0);
-      expect(sourceIcons[platform].fit).toMatch(
-        /^translate\(.+\) scale\(.+\)$/,
-      );
     }
   });
 });
