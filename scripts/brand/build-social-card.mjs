@@ -9,14 +9,6 @@ const font = await asset(
   "font/woff2",
 );
 const mascot = await asset("public/brand/blob/happy.svg", "image/svg+xml");
-// Figtree is the same OFL body face used by next/font in the application.
-// It is baked into the PNG; crawlers never need to fetch a font.
-const bodyFontResponse = await fetch(
-  "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_d_QF5e.ttf",
-);
-if (!bodyFontResponse.ok)
-  throw new Error("Could not load Figtree for the social card");
-const bodyFont = `data:font/ttf;base64,${Buffer.from(await bodyFontResponse.arrayBuffer()).toString("base64")}`;
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({
@@ -25,18 +17,15 @@ try {
   });
   await page.setContent(`<!doctype html><html lang="en"><meta charset="utf-8"><style>
     @font-face{font-family:Gelica;src:url('${font}');font-weight:900}
-    @font-face{font-family:Figtree;src:url('${bodyFont}');font-weight:400}
     *{box-sizing:border-box}body{margin:0;background:#FCFAF5;color:#2E2A25}
     main{position:relative;width:1200px;height:630px;overflow:hidden;padding:65px 70px}
-    h1{position:relative;z-index:1;font-family:Gelica,serif;font-weight:900;font-size:100px;line-height:1.02;letter-spacing:-2px;margin:46px 0 0}
-    .label,.footer{font:20px Figtree,sans-serif;letter-spacing:3px;text-transform:uppercase}
-    .footer{position:absolute;bottom:58px;letter-spacing:0;text-transform:none;font-size:23px}
+    h1{position:relative;z-index:1;font-family:Gelica,serif;font-weight:900;font-size:100px;line-height:1.02;letter-spacing:-2px;margin:70px 0 0}
     .mascot{position:absolute;right:30px;top:150px;width:440px;height:440px;transform:rotate(-8deg)}
     .underline{position:absolute;left:65px;top:350px;width:440px;height:24px}
-  </style><main><div class="label">Customer testimonials. All in one place.</div><h1>Get Some<br>Proof.</h1>
+  </style><main><h1>Get Some<br>Proof.</h1>
   <svg class="underline" viewBox="0 0 575 24" fill="none"><path d="M5 14 Q170 1 315 12 T566 9" stroke="#FFBB16" stroke-width="12" stroke-linecap="round"/></svg>
   <img class="mascot" src="${mascot}" alt="Happy amber Get Some Proof mascot">
-  <div class="footer">Collect it. Show it. Let your customers do the talking.</div></main></html>`);
+  </main></html>`);
   await page.evaluate(async () => {
     await document.fonts.ready;
     await Promise.all([...document.images].map((image) => image.decode()));
