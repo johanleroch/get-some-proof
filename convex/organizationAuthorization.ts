@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { query } from "./_generated/server";
 import { authzForOrganization, type OrganizationRole } from "./authorization";
-import { requireActiveOrganizationAccess } from "./security/organizationAccess";
+import { findActiveOrganizationAccess } from "./security/organizationAccess";
 
 const roleValidator = v.union(
   v.literal("owner"),
@@ -31,9 +31,26 @@ export const getMine = query({
     }),
   }),
   handler: async (ctx, args) => {
-    const access = await requireActiveOrganizationAccess(ctx, {
+    const access = await findActiveOrganizationAccess(ctx, {
       organizationId: args.organizationId,
     });
+    // Live subscribers can outlast deletion or membership revocation.
+    // Report no permissions; protected operations still enforce access themselves.
+    if (!access) {
+      return {
+        role: null,
+        can: {
+          updateOrganization: false,
+          createProjects: false,
+          deleteProjects: false,
+          manageMembers: false,
+          manageOwnership: false,
+          readAudit: false,
+          readBilling: false,
+          manageBilling: false,
+        },
+      };
+    }
     const scopedAuthz = authzForOrganization(access.tenantId);
     const [
       assignedRoles,

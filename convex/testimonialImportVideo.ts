@@ -146,7 +146,10 @@ export async function queueImportedVideo(
     testimonialId,
     importItemId: item._id,
     provider: env.MUX_PROVIDER,
-    assistantImport: (job.provider === "assistant" || job.provider === "backup") ? true : undefined,
+    assistantImport:
+      job.provider === "assistant" || job.provider === "backup"
+        ? true
+        : undefined,
     status: "processing",
     mimeType: "video/mp4",
     captionsStatus: "requested",

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioView, type StudioViewProps } from "./studio-view";
+import { initialWidgetConfig, widgetTemplates } from "./catalog";
 
 const base: StudioViewProps = {
   active: null,
@@ -24,6 +25,16 @@ const base: StudioViewProps = {
 
 describe("StudioView loading shells", () => {
   afterEach(cleanup);
+  it("offers Masonry first and free, with no Wall of Fame option", () => {
+    expect(initialWidgetConfig.layout).toBe("masonry");
+    expect(widgetTemplates[0].layout).toBe("masonry");
+    render(<StudioView {...base} initialChoosing attributionRequired />);
+    expect(screen.getByRole("button", { name: /Masonry grid/ })).toBeEnabled();
+    expect(screen.queryByText(/Wall of fame/i)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Horizontal carousel/ }),
+    ).toBeDisabled();
+  });
 
   it("keeps the real Studio header and an interactive template entry point", () => {
     render(<StudioView {...base} loading />);

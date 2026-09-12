@@ -308,9 +308,13 @@ function StudioWidgetListSkeleton({ rows = 3 }: { rows?: number }) {
 
 function StudioEditorSkeleton({ onBack }: { onBack?: () => void }) {
   return (
-    <div aria-label="Opening widget" className="w-full min-w-0" role="status">
-      <header className="border-line mb-6 space-y-4 border-b pb-5">
-        <div className="flex items-center gap-3">
+    <div
+      aria-label="Opening widget"
+      className="flex h-full min-h-0 w-full min-w-0 flex-col"
+      role="status"
+    >
+      <header className="border-line bg-surface flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3 md:px-6">
+        <div className="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-0">
           <Button
             aria-label="Back to Studio"
             disabled={!onBack}
@@ -329,8 +333,8 @@ function StudioEditorSkeleton({ onBack }: { onBack?: () => void }) {
           <Skeleton className="h-9 w-24" />
         </div>
       </header>
-      <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="space-y-5">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="border-line bg-surface space-y-5 overflow-y-auto p-5 lg:border-r">
           {Array.from({ length: 5 }).map((_, index) => (
             <div className="space-y-2" key={index}>
               <Skeleton className="h-3 w-24" />
@@ -338,7 +342,7 @@ function StudioEditorSkeleton({ onBack }: { onBack?: () => void }) {
             </div>
           ))}
         </div>
-        <Skeleton className="min-h-[32rem] w-full" />
+        <Skeleton className="hidden h-full w-full rounded-none lg:block" />
       </div>
       <span className="sr-only">Opening widget</span>
     </div>

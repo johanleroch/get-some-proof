@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
+import { readBackup, backupMediaBlob } from "./read-backup";
 import { readFile } from "node:fs/promises";
 import {
   buildProjectArchive,
@@ -9,10 +10,13 @@ import {
 
 afterEach(() => vi.unstubAllGlobals());
 const document = (): ExportDocument => ({
+  schemaVersion: 2,
   organization: { _id: "project", publicSlug: "atelier" },
   testimonials: [
     {
       _id: "review",
+      submitterName: "Maya Chen",
+      submissionType: "video",
       text: "Customer proof",
       importOrigin: { originalAvatarUrl: "https://old.example/avatar.jpg" },
     },
@@ -52,14 +56,21 @@ it("archives actual image and video bytes and portable paths, without signed dow
   try {
     const bytes = await readFile(result.path);
     expect(result.complete).toBe(true);
+    const backup = await readBackup(new Blob([new Uint8Array(bytes)]));
+    expect(backup.items[0].missing).toBe(0);
+    expect(backup.items[0].candidate.authorName).toBe("Maya Chen");
+    expect(await (await backupMediaBlob(backup.items[0].media[1])).text()).toBe(
+      "VIDEO-BYTES",
+    );
+    await backup.close();
     for (const content of [
       "IMAGE-BYTES",
       "VIDEO-BYTES",
       "data.json",
       "export-report.json",
       "mediaPaths",
-      "images/review/avatar.png",
-      "videos/review.mp4",
+      "images/maya-chen/avatar.png",
+      "videos/maya-chen.mp4",
     ])
       expect(bytes.includes(Buffer.from(content))).toBe(true);
     expect(bytes.includes(Buffer.from("signature=secret"))).toBe(false);

@@ -219,9 +219,17 @@ describe("Brand onboarding", () => {
       bob.client.query(api.organizationAuthorization.getMine, {
         organizationId: created.id,
       }),
-    ).rejects.toMatchObject({
-      data: {
-        code: "ORGANIZATION_UNAVAILABLE",
+    ).resolves.toEqual({
+      role: null,
+      can: {
+        updateOrganization: false,
+        createProjects: false,
+        deleteProjects: false,
+        manageMembers: false,
+        manageOwnership: false,
+        readAudit: false,
+        readBilling: false,
+        manageBilling: false,
       },
     });
   });

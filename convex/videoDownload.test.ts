@@ -35,15 +35,13 @@ it("rejects a master download pointing outside Mux", async () => {
   vi.stubEnv("MUX_TOKEN_SECRET", "test");
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          data: {
-            master: { status: "ready", url: "http://127.0.0.1/private" },
-          },
-        }),
-      ),
+    vi.fn().mockResolvedValue(
+      Response.json({
+        data: {
+          master: { status: "ready", url: "http://127.0.0.1/private" },
+        },
+      }),
+    ),
   );
   await expect(prepareVideoDownload("asset")).rejects.toThrow();
 });

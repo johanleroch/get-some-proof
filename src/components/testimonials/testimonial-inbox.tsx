@@ -1,4 +1,5 @@
 "use client";
+import { BrandUnavailable } from "@/components/organizations/brand-unavailable";
 
 import type { CSSProperties, ReactNode } from "react";
 import {
@@ -55,7 +56,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BlobLoader } from "@/components/brand/blob-loader";
-import { SpeechBubbleStars, WallFrames } from "@/components/doodles";
+import { SpeechBubbleStars } from "@/components/doodles";
 import { convexErrorMessage } from "@/lib/convex-error-message";
 import { formatShortDate } from "@/lib/format-date";
 import { uploadProfileImage } from "@/lib/upload-profile-image";
@@ -96,7 +97,7 @@ import { VideoCopyDetails } from "./video-copy-details";
 export type TestimonialImportDetailsValue = {
   importedAt: number;
   jobId?: Id<"testimonialImportJobs">;
-  provider: "assistant" | "senja" | "testimonial-to";
+  provider: "assistant" | "senja" | "testimonial-to" | "backup";
   sourceUrl: string;
 };
 
@@ -406,9 +407,7 @@ function InboxRow({
       <div
         className={cn(
           "col-span-2 min-w-0 xl:col-span-1 xl:col-start-2",
-          testimonial.submissionType === "text"
-            ? "row-start-3"
-            : "row-start-2",
+          testimonial.submissionType === "text" ? "row-start-3" : "row-start-2",
         )}
       >
         {video ? (
@@ -1076,15 +1075,7 @@ export function TestimonialInbox({
   if (organization === null) {
     // Checked before the list's own loading state: with no Brand the list
     // query is skipped and would otherwise keep the skeleton up forever.
-    return (
-      <section className="grid min-h-[50vh] place-items-center px-6">
-        <EmptyState
-          description="This Brand does not exist, or you no longer have access to it."
-          illustration={<WallFrames className="h-32" />}
-          title="Brand unavailable"
-        />
-      </section>
-    );
+    return <BrandUnavailable />;
   }
   const activeOrganization = organization;
   const wallVisibility: WallVisibility | undefined = wallSettings?.visibility;

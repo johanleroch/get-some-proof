@@ -157,11 +157,7 @@ export function BulkTestimonialInbox({
     <div className="ml-auto shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={blocked}
-          >
+          <Button variant="outline" size="sm" disabled={blocked}>
             <IconFilter aria-hidden="true" />
             Filter{filters.length > 0 ? ` (${filters.length})` : ""}
           </Button>

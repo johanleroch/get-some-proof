@@ -26,11 +26,11 @@ export function ExportProgressDialog({
   onRetry: () => void;
 }) {
   const known = progress.phase !== "preparing";
-  const percent = progress.total
-    ? Math.round((progress.processed / progress.total) * 100)
-    : known
-      ? 100
-      : 0;
+  const percent = !known
+    ? 0
+    : progress.total
+      ? Math.round((progress.processed / progress.total) * 100)
+      : 100;
   const labels = {
     preparing: "Collecting your data…",
     media: progress.current ?? "Collecting media…",
@@ -83,12 +83,12 @@ export function ExportProgressDialog({
             aria-label="Media processed"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={known ? percent : undefined}
+            aria-valuenow={percent}
             className="bg-surface-2 h-2 overflow-hidden rounded-full"
           >
             <div
-              className={`bg-brand h-full rounded-full ${known ? "transition-[width] duration-200 motion-reduce:transition-none" : "w-1/3 animate-pulse motion-reduce:animate-none"}`}
-              style={known ? { width: `${percent}%` } : undefined}
+              className="bg-brand h-full rounded-full transition-[width] duration-200 motion-reduce:transition-none"
+              style={{ width: `${percent}%` }}
             />
           </div>
           <p className="text-ink-2 min-h-5 text-sm" role="status">

@@ -51,7 +51,9 @@ const respond = (value: PublicWallResponse) =>
 describe("Public Wall mediated refresh", () => {
   it("renders the company logo from the public response", () => {
     render(element());
-    expect(screen.getByRole("img", { name: "Mira Studio logo" })).toHaveAttribute("src", page.brand.logoUrl);
+    expect(
+      screen.getByRole("img", { name: "Mira Studio logo" }),
+    ).toHaveAttribute("src", page.brand.logoUrl);
   });
   beforeEach(() => {
     vi.useFakeTimers();

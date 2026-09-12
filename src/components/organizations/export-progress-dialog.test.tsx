@@ -28,16 +28,25 @@ it("shows real counts and the current asset without offering deletion", () => {
   expect(screen.getByRole("button", { name: "Done" })).toBeDisabled();
   expect(screen.getByText(/1 media could not/)).toBeVisible();
 });
-it("keeps the initial inventory indeterminate", () => {
-  render(
-    <ExportProgressDialog
-      open
-      pending
-      progress={{ phase: "preparing", total: 0, processed: 0, failed: 0 }}
-      error={null}
-      onClose={vi.fn()}
-      onRetry={vi.fn()}
-    />,
-  );
-  expect(screen.getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
-});
+it.each([null, "Export cancelled. No file was saved."])(
+  "keeps the initial inventory at zero (error: %s)",
+  (error) => {
+    render(
+      <ExportProgressDialog
+        open
+        pending={!error}
+        progress={{ phase: "preparing", total: 0, processed: 0, failed: 0 }}
+        error={error}
+        onClose={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
+      width: "0%",
+    });
+  },
+);

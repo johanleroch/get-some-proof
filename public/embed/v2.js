@@ -686,6 +686,8 @@
   `;
 
   const widgetCleanups = new WeakMap();
+  const widgetFontRequests = new WeakMap();
+  const widgetFontLoads = new Map();
   function renderWidget(host, payload) {
     widgetCleanups.get(host)?.();
     host.querySelectorAll?.("mux-player").forEach((player) => player.pause?.());
@@ -704,6 +706,81 @@
       mono: "monospace",
     };
     host.style.fontFamily = fonts[config.font] || "inherit";
+    const fontRequest = {};
+    widgetFontRequests.set(host, fontRequest);
+    const customFont = payload.customFont;
+    if (
+      customFont &&
+      /^[a-zA-Z0-9_-]+$/.test(customFont.id) &&
+      typeof FontFace !== "undefined"
+    ) {
+      try {
+        const fontUrl = new URL(customFont.url);
+        if (
+          fontUrl.protocol === "https:" ||
+          fontUrl.origin === location.origin
+        ) {
+          const family = `gsp-custom-${customFont.id}`;
+          let loading = widgetFontLoads.get(family);
+          if (!loading) {
+            const face = new FontFace(
+              family,
+              `url(${JSON.stringify(fontUrl.href)})`,
+              { display: "swap" },
+            );
+            loading = face.load().then((loaded) => {
+              document.fonts.add(loaded);
+              return loaded;
+            });
+            widgetFontLoads.set(family, loading);
+            loading.catch(() => widgetFontLoads.delete(family));
+          }
+          void loading
+            .then(() => {
+              if (widgetFontRequests.get(host) !== fontRequest) return;
+              host.style.fontFamily = `"${family}", ${fonts[config.font] === "inherit" ? "sans-serif" : fonts[config.font] || "sans-serif"}`;
+            })
+            .catch(() => {});
+        }
+      } catch {
+        /* Keep the selected fallback when a font is unavailable. */
+      }
+    }
+
+    if (
+      !customFont &&
+      typeof payload.googleFont === "string" &&
+      /^[\w -]{1,100}$/.test(payload.googleFont)
+    ) {
+      const family = payload.googleFont;
+      const key = `google:${family}`;
+      let loading = widgetFontLoads.get(key);
+      if (!loading) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&display=swap`;
+        loading = new Promise((resolve, reject) => {
+          link.onload = () => {
+            document.fonts
+              .load(`16px ${JSON.stringify(family)}`)
+              .then(resolve, reject);
+          };
+          link.onerror = () => reject(new Error("Google font unavailable"));
+          document.head.append(link);
+        });
+        widgetFontLoads.set(key, loading);
+        loading.catch(() => {
+          widgetFontLoads.delete(key);
+          link.remove();
+        });
+      }
+      void loading
+        .then(() => {
+          if (widgetFontRequests.get(host) !== fontRequest) return;
+          host.style.fontFamily = `${JSON.stringify(family)}, ${fonts[config.font] === "inherit" ? "sans-serif" : fonts[config.font] || "sans-serif"}`;
+        })
+        .catch(() => {});
+    }
     const wall = element("section", "wall widget");
     wall.dataset.layout = config.layout;
     wall.setAttribute("aria-label", `${payload.brand.name} testimonials`);

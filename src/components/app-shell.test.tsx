@@ -5,6 +5,7 @@ import { AppShell, AppShellView } from "./app-shell";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/org/acme-1234/dashboard",
+  search: "",
   readBilling: true,
   readAudit: true,
   updateOrganization: true,
@@ -35,6 +36,7 @@ vi.mock("convex/react", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
+  useSearchParams: () => new URLSearchParams(mocks.search),
 }));
 
 vi.mock("next/link", () => ({
@@ -60,6 +62,45 @@ vi.mock("@/components/organizations/organization-switcher", () => ({
 }));
 
 describe("AppShell", () => {
+  it("keeps the Studio listing in the dashboard layout", () => {
+    mocks.pathname = "/org/bumpr-1234/studio";
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
+      >
+        Studio canvas
+      </AppShell>,
+    );
+    expect(
+      container.querySelector('[data-slot="studio-workspace"]'),
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-slot="sidebar"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Studio canvas")).toBeVisible();
+  });
+  it("keeps the widget editor in the full viewport layout", () => {
+    mocks.pathname = "/org/bumpr-1234/studio";
+    mocks.search = "widget=example";
+    const { container } = render(
+      <AppShell
+        organizationId={"organization-1" as never}
+        organizationName="Bumpr"
+        organizationPublicSlug="bumpr"
+        organizationSlug="bumpr-1234"
+      >
+        Editor canvas
+      </AppShell>,
+    );
+    expect(
+      container.querySelector('[data-slot="studio-workspace"]'),
+    ).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+    mocks.search = "";
+  });
   it("sells Pro above the user menu on a Free Account, without naming Free", () => {
     render(
       <AppShell

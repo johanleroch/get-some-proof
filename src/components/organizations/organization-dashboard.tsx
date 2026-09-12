@@ -1,4 +1,5 @@
 "use client";
+import { BrandUnavailable } from "@/components/organizations/brand-unavailable";
 import { EmbeddedWallSnippet } from "./embedded-wall-snippet";
 import {
   Dialog,
@@ -27,7 +28,6 @@ import { PublicAddress } from "@/components/organizations/public-address";
 import { PageHeader } from "@/components/page-header";
 import { useProjectShell } from "@/components/organizations/project-shell-context";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 import {
   AccountPlanSkeleton,
@@ -488,15 +488,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
   }
 
   if (organization === null) {
-    return (
-      <section className="grid min-h-[50vh] place-items-center px-6">
-        <EmptyState
-          description="This Brand does not exist or you no longer have access to it."
-          illustration={<WallFrames className="h-32" />}
-          title="Brand unavailable"
-        />
-      </section>
-    );
+    return <BrandUnavailable />;
   }
 
   const collectionUrl = origin

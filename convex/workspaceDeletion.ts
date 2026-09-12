@@ -58,6 +58,7 @@ const purgePhases = [
   "videoReservations",
   "publicProjections",
   "widgets",
+  "widgetFonts",
   "projects",
   "invitations",
   "billingEmails",
@@ -879,6 +880,16 @@ async function deletePhaseBatch(
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
+      break;
+    case "widgetFonts":
+      records = await ctx.db
+        .query("widgetFonts")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      for (const font of records)
+        await ctx.storage.delete(font.storageId as Id<"_storage">);
       break;
     case "projects":
       records = await ctx.db

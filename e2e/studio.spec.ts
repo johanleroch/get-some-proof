@@ -23,7 +23,10 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
       .locator("[data-widget-preview]")
       .getByText("Maya Laurent", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Widget actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();

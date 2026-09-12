@@ -226,14 +226,23 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                           key={testimonialId}
                           data-studio-testimonial={testimonialId}
                           className={cn(
-                            "relative grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4",
+                            "has-focus-visible:ring-ring relative grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 has-focus-visible:ring-2 has-focus-visible:ring-inset",
                             checked ? "bg-brand-soft/30" : "hover:bg-surface-2",
                             disabled && "cursor-default opacity-60",
                           )}
                         >
-                          <div className="flex items-center gap-3">
+                          <label
+                            htmlFor={`studio-select-${testimonialId}`}
+                            aria-label={`Select ${card.name}`}
+                            className={cn(
+                              "absolute inset-0 z-10",
+                              disabled ? "cursor-default" : "cursor-pointer",
+                            )}
+                          />
+                          <div className="flex items-center gap-3 [&_button]:z-20 [&_button:not([role=checkbox])]:relative">
                             <Checkbox
-                              className="absolute top-4 right-4 size-6 sm:static"
+                              id={`studio-select-${testimonialId}`}
+                              className="absolute top-4 right-4 z-20 size-6 sm:static"
                               checked={checked}
                               disabled={disabled}
                               aria-label={`Select ${card.name}`}

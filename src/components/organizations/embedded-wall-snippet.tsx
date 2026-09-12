@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { EmbedCode } from "@/components/ui/embed-code";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 
 export function EmbeddedWallSnippet({
@@ -50,12 +50,7 @@ export function EmbeddedWallSnippet({
       </div>
       <Field>
         <Label htmlFor="embed-snippet">Embed snippet</Label>
-        <Textarea
-          className="min-h-28 font-mono text-xs"
-          id="embed-snippet"
-          readOnly
-          value={snippet}
-        />
+        <EmbedCode id="embed-snippet" code={snippet} />
       </Field>
       {error ? <ErrorToast message={error} /> : null}
       {success ? <SuccessToast message={success} /> : null}

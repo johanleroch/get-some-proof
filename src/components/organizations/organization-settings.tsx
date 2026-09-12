@@ -1,4 +1,5 @@
 "use client";
+import { BrandUnavailable } from "@/components/organizations/brand-unavailable";
 import type { ExportProgress } from "@/lib/export-progress";
 import { ExportProgressDialog } from "./export-progress-dialog";
 import { downloadProjectExport } from "@/lib/download-project-export";
@@ -19,6 +20,8 @@ import { AnimatedBlob } from "@/components/brand/animated-blob";
 
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
+import { securityErrorMessage } from "@/lib/security-error-message";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -96,6 +99,16 @@ export function OrganizationSettings({
   const updateWallSettings = useMutation(api.wallCustomization.updateSettings);
   const deleteWorkspace = useAction(api.workspaceDeletion.remove);
 
+  // Keep the operation independently of the organization, including after reload.
+  // The slug lookup disappears when the final purge removes the organization.
+  if (deletionBySlug && !startedDeletion) {
+    setStartedDeletion({
+      brandName: deletionBySlug.brandName,
+      deletionId: deletionBySlug.deletionId,
+      organizationId: deletionBySlug.organizationId,
+    });
+  }
+
   if (deletionStatus?.status === "deleted") redirect("/dashboard");
 
   const activeDeletion = startedDeletion
@@ -103,7 +116,7 @@ export function OrganizationSettings({
         ...startedDeletion,
         mediaProgress:
           deletionStatus?.mediaProgress ?? deletionBySlug?.mediaProgress,
-        lastError: deletionStatus?.lastError,
+        lastError: deletionStatus?.lastError ?? deletionBySlug?.lastError,
         phase: deletionStatus?.phase ?? deletionBySlug?.phase ?? "queued",
         status:
           deletionStatus?.status ??
@@ -145,16 +158,7 @@ export function OrganizationSettings({
   }
 
   if (organization === null) {
-    return (
-      <section className="grid min-h-[50vh] place-items-center px-6 text-center">
-        <div>
-          <h1 className="text-2xl font-semibold">Brand unavailable</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            This Brand does not exist or you no longer have access to it.
-          </p>
-        </div>
-      </section>
-    );
+    return <BrandUnavailable />;
   }
 
   const organizationId = organization.id;
@@ -226,38 +230,16 @@ export function OrganizationSettings({
   );
 }
 
-const settingsLoadingAction = async () => {};
-
 export function OrganizationSettingsSkeleton() {
   return (
-    <OrganizationSettingsView
-      loading
-      canChangePublicSlug
-      canManageWall
-      canUpdate
-      embedOrigin=""
-      logoUrl={null}
-      name=""
-      publicSlug=""
-      publicSlugCanChange
-      onChangePublicSlug={settingsLoadingAction}
-      onRemoveLogo={settingsLoadingAction}
-      onRename={settingsLoadingAction}
-      onUploadLogo={settingsLoadingAction}
-      onUpdateWallSettings={settingsLoadingAction}
-      wallSettings={{
-        accentColor: "#ffbb16",
-        canHideAttribution: false,
-        hideAttribution: false,
-        theme: "system",
-        transparentEmbed: false,
-        visibility: { avatar: true, company: true, rating: true, role: true },
-      }}
-      workspaceDeletion={{
-        onDelete: settingsLoadingAction,
-        onExport: settingsLoadingAction,
-      }}
-    />
+    <section
+      aria-label="Loading project"
+      className="grid min-h-[50vh] place-items-center px-6"
+      role="status"
+    >
+      <AnimatedBlob size={96} />
+      <span className="sr-only">Loading project</span>
+    </section>
   );
 }
 
@@ -587,6 +569,9 @@ export function WorkspaceDeletionSection({
   const [dialogOpen, setDialogOpen] = useState(initialDialogOpen);
   const [pending, setPending] = useState<"delete" | "export" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [signInHref, setSignInHref] = useState<
+    `/sign-in?callbackURL=${string}` | null
+  >(null);
 
   async function download() {
     setExportOpen(true);
@@ -614,7 +599,19 @@ export function WorkspaceDeletionSection({
     try {
       await onDelete(confirmation);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Deletion failed.");
+      const data = cause instanceof ConvexError ? cause.data : null;
+      const failure = securityErrorMessage(
+        data && typeof data === "object" && typeof data.code === "string"
+          ? { code: data.code }
+          : null,
+        "Unable to delete this project. Try again in a moment.",
+      );
+      setError(failure.message);
+      setSignInHref(
+        failure.needsSignIn
+          ? `/sign-in?callbackURL=${encodeURIComponent(window.location.pathname + window.location.search + "#danger")}`
+          : null,
+      );
       setDialogOpen(false);
       setPending(null);
     }
@@ -676,6 +673,17 @@ export function WorkspaceDeletionSection({
         />
       </Field>
       {error ? <ErrorToast message={error} /> : null}
+      {signInHref ? (
+        <div className="space-y-3">
+          <p className="text-ink-2 text-sm">
+            Your project has not been deleted. Sign in again, then return here
+            to confirm deletion.
+          </p>
+          <Button asChild variant="outline">
+            <Link href={signInHref}>Sign in again</Link>
+          </Button>
+        </div>
+      ) : null}
       <Button
         disabled={confirmation !== brandName || pending !== null}
         onClick={() => setDialogOpen(true)}
