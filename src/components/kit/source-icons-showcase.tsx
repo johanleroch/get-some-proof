@@ -73,11 +73,11 @@ const origin: Record<SourcePlatform, string> = {
   x: "Simple Icons 16.30.0",
   linkedin: "Simple Icons 13.21.0",
   facebook: "Simple Icons 16.30.0",
-  instagram: "Simple Icons 16.30.0",
+  instagram: "Instagram brand artwork",
   youtube: "Simple Icons 16.30.0",
-  reddit: "Simple Icons 16.30.0",
-  producthunt: "Simple Icons 16.30.0",
-  github: "Simple Icons 16.30.0",
+  reddit: "Simple Icons 16.30.0, uncased",
+  producthunt: "Simple Icons 16.30.0, uncased",
+  github: "Octicons 19.15.1, masked",
   tiktok: "Simple Icons 16.30.0",
 };
 
@@ -89,13 +89,13 @@ const note: Record<SourcePlatform, string> = {
   facebook:
     "The official f knocked out of Meta\u2019s blue disc, and their current blue: #0866ff replaces the #1877f2 we carried.",
   instagram:
-    "The official camera glyph in Instagram\u2019s current pink, #ff0069 for the old #e4405f. Their gradient is the other sanctioned option.",
+    "The official gradient glyph: both radial gradients and the knocked-out camera, carried over from the 132px artwork.",
   youtube:
     "The official play badge: a wider rounded rectangle, triangle on the optical centre.",
-  reddit:
-    "The official Snoo in its orange disc, in place of the outlined cartoon.",
-  producthunt: "The official disc with the P knocked out of it.",
-  github: "The official Octocat, tail and paws included.",
+  reddit: "The official Snoo, lifted out of the speech bubble it is drawn in.",
+  producthunt: "The official P, lifted out of its disc.",
+  github:
+    "GitHub draws its cat as negative space inside a disc. Masking that mark with its own disc leaves that cat alone, with no line redrawn.",
   tiktok:
     "The official note in black. The cyan-and-pink logo is brand artwork, not three copies nudged apart.",
 };
