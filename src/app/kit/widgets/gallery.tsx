@@ -18,6 +18,8 @@ import { galleryTestimonials } from "./fixtures";
  */
 
 type Hand = "clean" | "drawn";
+/** The third axis: stars, quote and signature move together. */
+type Align = "left" | "center" | "right";
 /** "both" is not a hand: it puts the two side by side so the gap is visible. */
 type HandChoice = Hand | "both";
 
@@ -28,6 +30,8 @@ type Family = {
   layout: string;
   /** The entrance is orthogonal to the layout, like the hand. */
   entrance?: "stagger";
+  /** The poster quote alone takes one; the three variants are the family. */
+  align?: Align;
   /**
    * The shipped layout the payload is serialised as. Chips need the excerpt
    * pass the highlights layout triggers; everything else keeps its own shape.
@@ -134,21 +138,38 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
         key: "metric",
         layout: "metric",
         title: "Key figure",
-        note: "One number and a short line. The drawn hand rings the number.",
+        note: "The number, then the faces behind it and the average. A figure on its own is an assertion; the row under it is the evidence.",
         frame: "narrow",
       },
       {
-        key: "hero",
+        key: "hero-center",
         layout: "hero",
-        title: "Poster quote",
-        note: "One quote at the scale of a headline. At this size the marker swash is the design.",
+        align: "center",
+        title: "Poster quote, centred",
+        note: "One quote at the scale of a headline. At this size the marker swash is the design. Stars, quote and signature align as one.",
+        take: 1,
+      },
+      {
+        key: "hero-left",
+        layout: "hero",
+        align: "left",
+        title: "Poster quote, ranged left",
+        note: "The same quote against a left margin, for a page built on a column.",
+        take: 1,
+      },
+      {
+        key: "hero-right",
+        layout: "hero",
+        align: "right",
+        title: "Poster quote, ranged right",
+        note: "The mirror, for a quote that sits beside something on its left.",
         take: 1,
       },
       {
         key: "band",
         layout: "band",
         title: "Band",
-        note: "The photo runs the full height on the left, the quote reads on the right. No gradient behind the face.",
+        note: "The photo runs the full height on the left, the quote reads on the right. Written testimonials only: a video has no words to set beside the face.",
         take: 3,
       },
       {
@@ -238,10 +259,12 @@ function loadRuntime() {
 
 function GalleryWidget({
   accentColor,
+  align,
   family,
   hand,
 }: {
   accentColor: string;
+  align?: Align;
   family: Family;
   hand: Hand;
 }) {
@@ -265,10 +288,15 @@ function GalleryWidget({
       attributionRequired: false,
       testimonials: galleryTestimonials.slice(0, family.take ?? 9),
     };
+    const base = widgetPayload(value);
     const payload = {
-      ...widgetPayload(value),
+      ...base,
+      /* A widget on someone else's page should not paint a white box behind
+         itself; the review page judges the widget, not its container. */
+      brand: { ...base.brand, transparentEmbed: true },
       config: {
         ...value.config,
+        ...(align ? { align } : {}),
         entrance: family.entrance,
         hand,
         layout: family.layout,
@@ -287,14 +315,14 @@ function GalleryWidget({
     return () => {
       cancelled = true;
     };
-  }, [accentColor, family, hand]);
+  }, [accentColor, align, family, hand]);
   return <div ref={host} />;
 }
 
 function Frame({ family, children }: { family: Family; children: ReactNode }) {
   if (family.frame === "page")
     return (
-      <div className="border-line bg-surface-2 relative h-[320px] overflow-hidden rounded-lg border">
+      <div className="border-line bg-surface-2 relative h-[420px] overflow-hidden rounded-lg border">
         <div className="space-y-3 p-6 opacity-40">
           <div className="bg-line h-6 w-40 rounded" />
           <div className="bg-line h-3 w-full rounded" />
@@ -398,6 +426,7 @@ export function WidgetGallery() {
                           <Frame family={family}>
                             <GalleryWidget
                               accentColor={accentColor}
+                              align={family.align}
                               family={family}
                               hand={side}
                             />
@@ -409,6 +438,7 @@ export function WidgetGallery() {
                     <Frame family={family}>
                       <GalleryWidget
                         accentColor={accentColor}
+                        align={family.align}
                         family={family}
                         hand={hand}
                       />
