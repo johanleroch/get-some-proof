@@ -70,10 +70,10 @@ const previous: Partial<
 /** Where each shipped mark comes from, so provenance is never a guess. */
 const origin: Record<SourcePlatform, string> = {
   google: "Google brand assets",
-  x: "Simple Icons 16.30.0",
+  x: "Simple Icons 16.30.0, stroked",
   linkedin: "Simple Icons 13.21.0",
   facebook: "Simple Icons 16.30.0",
-  instagram: "Instagram brand artwork",
+  instagram: "Simple Icons 16.30.0",
   youtube: "Simple Icons 16.30.0",
   reddit: "Simple Icons 16.30.0, uncased",
   producthunt: "Simple Icons 16.30.0, uncased",
@@ -83,13 +83,13 @@ const origin: Record<SourcePlatform, string> = {
 
 const note: Record<SourcePlatform, string> = {
   google: "The official multicolour G. The one mark that was already right.",
-  x: "The official X: thin-to-thick diagonals with cut tips, not a geometric cross.",
+  x: "The official X, stroked 0.7 wider: their mark is thin and went weightless beside nine solid ones. Any bolder and the slivers between the arms close up.",
   linkedin:
     "The official in bug. LinkedIn had it pulled from the public set, so this is the last published file: swap it for the download from brand.linkedin.com.",
   facebook:
     "The official f knocked out of Meta\u2019s blue disc, and their current blue: #0866ff replaces the #1877f2 we carried.",
   instagram:
-    "The official gradient glyph: both radial gradients and the knocked-out camera, carried over from the 132px artwork.",
+    "The official camera glyph, kept simple and monochrome in Instagram\u2019s current pink: #ff0069 replaces the #e4405f we carried.",
   youtube:
     "The official play badge: a wider rounded rectangle, triangle on the optical centre.",
   reddit: "The official Snoo, lifted out of the speech bubble it is drawn in.",
