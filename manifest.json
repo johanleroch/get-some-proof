@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 154
+  },
+  "headSha": "cdd61aa4f73d431dc41e97c3ddfd4f289c57ff88",
+  "runId": "34692322144",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/brand-settings.png",
+      "title": "Brand settings",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import.png",
+      "title": "Wall import selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/brand-settings.png",
+      "title": "Brand settings",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import.png",
+      "title": "Wall import selection",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
