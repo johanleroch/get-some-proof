@@ -756,6 +756,12 @@
       "theme": "light"
     },
     {
+      "slug": "testimonial-source-marks",
+      "title": "Testimonial source marks",
+      "path": "/visual-evidence/testimonial-source-marks",
+      "heading": "Source marks"
+    },
+    {
       "slug": "testimonial-sources-visible",
       "title": "Testimonial sources visible",
       "path": "/visual-evidence/testimonial-sources",
