@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 155
+  },
+  "headSha": "1f315c2351eb63abc65bac981266ceae8168bf46",
+  "runId": "34695246487",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/workspace-billing.png",
+      "title": "Workspace Billing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/workspace-billing.png",
+      "title": "Workspace Billing",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
