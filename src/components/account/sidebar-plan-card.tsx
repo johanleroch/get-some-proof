@@ -6,6 +6,11 @@ import Link from "next/link";
 
 import { Blob, type BlobExpressionName } from "@/components/brand/blob";
 import { Button } from "@/components/ui/button";
+import {
+  videoSlotsBarWidth,
+  videoSlotsLeft,
+  videoSlotsShown,
+} from "@/lib/video-usage";
 
 const BILLING_HREF = "/account/billing" as Route;
 
@@ -93,28 +98,25 @@ function count(value?: number, lowerBound?: boolean) {
   return value === undefined ? "—" : `${value}${lowerBound ? "+" : ""}`;
 }
 
-/** Stored videos plus the slots held while an upload finishes processing. */
-function storedVideos(usage?: SidebarPlanUsage) {
-  return usage === undefined
+/**
+ * The allowance only reads as a figure once the server has said what it is:
+ * until then every part of it stays unknown rather than half-drawn.
+ */
+function allowance(usage?: SidebarPlanUsage) {
+  return usage === undefined || usage.videoLimit === undefined
     ? undefined
-    : usage.readyVideos + usage.reservedVideos;
-}
-
-function remainingVideos(usage?: SidebarPlanUsage) {
-  const stored = storedVideos(usage);
-  return usage?.videoLimit === undefined || stored === undefined
-    ? undefined
-    : Math.max(0, usage.videoLimit - stored);
+    : { limit: usage.videoLimit, slots: usage };
 }
 
 /** What the figures cannot say: what is left, and what is holding a slot. */
 function storageNote(usage?: SidebarPlanUsage) {
-  const remaining = remainingVideos(usage);
-  if (remaining === undefined) return "Reading your usage…";
+  const allowed = allowance(usage);
+  if (allowed === undefined) return "Reading your usage…";
+  const remaining = videoSlotsLeft(allowed.slots, allowed.limit);
   if (remaining === 0) return "Storage full — delete a video to free a slot";
   const slots = `${remaining} slot${remaining === 1 ? "" : "s"} left`;
-  return usage && usage.reservedVideos > 0
-    ? `${slots} · ${usage.reservedVideos} processing`
+  return allowed.slots.reservedVideos > 0
+    ? `${slots} · ${allowed.slots.reservedVideos} processing`
     : slots;
 }
 
@@ -124,8 +126,8 @@ function storageNote(usage?: SidebarPlanUsage) {
  * looking. An unknown allowance shows the empty track, never a zero fill.
  */
 function VideoQuotaBar({ usage }: { usage?: SidebarPlanUsage }) {
-  const stored = storedVideos(usage);
-  if (usage?.videoLimit === undefined || stored === undefined) {
+  const allowed = allowance(usage);
+  if (allowed === undefined) {
     return (
       <div
         aria-hidden="true"
@@ -133,15 +135,14 @@ function VideoQuotaBar({ usage }: { usage?: SidebarPlanUsage }) {
       />
     );
   }
-  const filled = Math.min(usage.videoLimit, stored);
   return (
     <>
       <meter
         aria-label="Video storage used"
         className="sr-only"
-        max={usage.videoLimit}
+        max={allowed.limit}
         min={0}
-        value={filled}
+        value={videoSlotsShown(allowed.slots, allowed.limit)}
       />
       <div
         aria-hidden="true"
@@ -150,7 +151,7 @@ function VideoQuotaBar({ usage }: { usage?: SidebarPlanUsage }) {
         <div
           className="bg-brand h-full rounded-full"
           style={{
-            width: `${Math.max(2, (filled / usage.videoLimit) * 100)}%`,
+            width: `${videoSlotsBarWidth(allowed.slots, allowed.limit)}%`,
           }}
         />
       </div>
@@ -175,35 +176,37 @@ function VideoQuotaBar({ usage }: { usage?: SidebarPlanUsage }) {
  * rows, then four ways of opening them.
  */
 export function SidebarProPlanCard({ usage }: { usage?: SidebarPlanUsage }) {
-  const stored = storedVideos(usage);
+  const allowed = allowance(usage);
   return (
-    <div className="px-3 py-2" data-slot="sidebar-pro-plan-card">
-      <div className="type-ui flex items-baseline justify-between gap-2">
-        <span>Videos</span>
-        <span className="font-mono tabular-nums">
-          {count(usage?.videoLimit === undefined ? undefined : stored)}
+    <dl
+      className="type-ui space-y-1 px-3 py-2"
+      data-slot="sidebar-pro-plan-card"
+    >
+      <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-2">
+        <dt>Videos</dt>
+        <dd className="text-right font-mono tabular-nums">
+          {count(
+            allowed ? videoSlotsShown(allowed.slots, allowed.limit) : undefined,
+          )}
           <span className="text-ink-3">/{count(usage?.videoLimit)}</span>
-        </span>
+        </dd>
+        <dd className="col-span-2">
+          <VideoQuotaBar usage={usage} />
+          <p className="type-small text-ink-3 mt-1.5">{storageNote(usage)}</p>
+        </dd>
       </div>
-      <VideoQuotaBar usage={usage} />
-      <p className="type-small text-ink-3 mt-1.5">{storageNote(usage)}</p>
-      <dl className="type-ui mt-2 space-y-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-ink-2 font-normal">Text Testimonials</dt>
-          <dd className="font-mono tabular-nums">
-            {count(
-              usage?.textTestimonials,
-              usage?.textTestimonialsIsLowerBound,
-            )}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-ink-2 font-normal">Projects</dt>
-          <dd className="font-mono tabular-nums">
-            {count(usage?.organizations, usage?.organizationsIsLowerBound)}
-          </dd>
-        </div>
-      </dl>
-    </div>
+      <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-2 pt-1">
+        <dt className="text-ink-2 font-normal">Text Testimonials</dt>
+        <dd className="text-right font-mono tabular-nums">
+          {count(usage?.textTestimonials, usage?.textTestimonialsIsLowerBound)}
+        </dd>
+      </div>
+      <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-2">
+        <dt className="text-ink-2 font-normal">Projects</dt>
+        <dd className="text-right font-mono tabular-nums">
+          {count(usage?.organizations, usage?.organizationsIsLowerBound)}
+        </dd>
+      </div>
+    </dl>
   );
 }

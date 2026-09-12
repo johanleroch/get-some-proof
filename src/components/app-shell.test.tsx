@@ -139,7 +139,8 @@ describe("AppShell", () => {
     expect(
       container.querySelector('[data-slot="sidebar-pro-plan-card"]'),
     ).not.toBeNull();
-    expect(screen.queryByText(/plan/i)).toBeNull();
+    expect(screen.queryByText("You're Pro!")).toBeNull();
+    expect(screen.queryByText("Across all your projects")).toBeNull();
     expect(screen.getByText("Videos")).toBeInTheDocument();
     expect(
       screen.getByText("16 slots left · 1 processing"),

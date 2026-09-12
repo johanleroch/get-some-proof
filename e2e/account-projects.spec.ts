@@ -49,12 +49,17 @@ test("Pro switches independent projects while keeping the Account plan and share
   const usage = page.getByRole("region", { name: "Account plan and usage" });
   await expect(usage).toContainText("Pro plan");
   await expect(usage).toContainText("Unlimited Projects");
+  // Stored plus held: the slot a processing upload holds cannot take another
+  // video, so the plan panel, the sidebar and the backend all spend it.
   await expect(usage.getByLabel("Videos stored")).toHaveAttribute(
     "aria-valuenow",
-    "8",
+    "9",
   );
-  await expect(usage).toContainText("8 / 25");
-  await expect(usage).toContainText("1 video slot reserved");
+  await expect(usage).toContainText("9 / 25");
+  await expect(usage).toContainText("1 video slot held while processing");
+  const sidebarUsage = page.locator('[data-slot="sidebar-pro-plan-card"]');
+  await expect(sidebarUsage).toContainText("9/25");
+  await expect(sidebarUsage).toContainText("16 slots left · 1 processing");
   await expect(
     page.getByRole("link", { name: "Open Collection Form" }),
   ).toHaveAttribute("href", "/c/northwind-coffee");

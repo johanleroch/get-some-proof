@@ -34,6 +34,7 @@ import {
   OverviewPageSkeleton,
 } from "@/components/ui/page-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { proVideoSlotLimit, videoSlotsShown } from "@/lib/video-usage";
 import {
   clearJustCreated,
   type CreatedNoun,
@@ -106,7 +107,6 @@ function wallUrlFrom(collectionUrl: string, publicSlug: string) {
 /** The allowances the plans promise (docs/product-scope.md). */
 const freeTextCredits = 13;
 const freeVideoCredits = 2;
-const proVideosStored = 25;
 
 /**
  * One allowance: the fraction in figures beside its name and, under them,
@@ -164,6 +164,7 @@ function AccountPlanPanel({
 }) {
   const pro = account.effectivePlan === "premium";
   const reserved = account.usage.reservedVideos;
+  const videoLimit = account.usage.videoLimit ?? proVideoSlotLimit;
   return (
     <section
       aria-label="Account plan and usage"
@@ -180,8 +181,8 @@ function AccountPlanPanel({
         {pro ? (
           <UsageMeter
             label="Videos stored"
-            total={proVideosStored}
-            used={account.usage.readyVideos + reserved}
+            total={videoLimit}
+            used={videoSlotsShown(account.usage, videoLimit)}
           />
         ) : (
           <>
@@ -230,6 +231,8 @@ export type BrandDashboardViewProps = {
       freeVideoUsed: number;
       readyVideos: number;
       reservedVideos: number;
+      /** The Account's own allowance when the server has sent it. */
+      videoLimit?: number;
     };
   } | null;
   accountLoading?: boolean;
