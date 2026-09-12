@@ -99,7 +99,7 @@ export const galleryTestimonials: TestimonialCardValue[] = [
     type: "text",
   },
   {
-    avatarUrl: null,
+    avatarUrl: face(18),
     company: "Cedar Workshop",
     id: "james",
     name: "James Carter",
@@ -139,7 +139,7 @@ export const galleryTestimonials: TestimonialCardValue[] = [
     type: "video",
   },
   {
-    avatarUrl: null,
+    avatarUrl: face(54),
     company: "Fernhill Studio",
     id: "sarah",
     name: "Sarah Reed",

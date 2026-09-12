@@ -20,8 +20,17 @@ import { galleryTestimonials } from "./fixtures";
 type Hand = "clean" | "drawn";
 
 type Family = {
+  /** Unique on this page: a family can share a layout with another entry. */
+  key: string;
   /** `data-layout` the runtime reads. */
   layout: string;
+  /** The entrance is orthogonal to the layout, like the hand. */
+  entrance?: "stagger";
+  /**
+   * The shipped layout the payload is serialised as. Chips need the excerpt
+   * pass the highlights layout triggers; everything else keeps its own shape.
+   */
+  base?: WidgetConfig["layout"];
   title: string;
   note: string;
   /** How much of the review set this family is given. */
@@ -36,32 +45,58 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
     blurb: "These take a whole section of the page.",
     families: [
       {
+        key: "masonry",
         layout: "masonry",
         title: "Column wall",
         note: "Text and video in their natural shape.",
         shipped: true,
       },
       {
+        key: "carousel",
         layout: "carousel",
         title: "Carousel",
         note: "One swipe at a time.",
         shipped: true,
       },
       {
+        key: "editorial",
         layout: "editorial",
         title: "Editorial list",
         note: "One narrow column, rules instead of cards. Reads like an article.",
         take: 5,
       },
       {
+        key: "mosaic",
         layout: "mosaic",
         title: "Mosaic",
         note: "A dense grid where sizes alternate, so it never falls into three equal tiles.",
       },
       {
+        key: "videos",
         layout: "videos",
         title: "Video gallery",
         note: "Posters first, each video at the shape it was filmed, plays in place.",
+      },
+      {
+        key: "blocks",
+        layout: "blocks",
+        title: "Blocks",
+        note: "Edge to edge, no gutter, no radius, the tone alternating paper, ink and accent. The competitor does this in neon on black. The one family the hand leaves alone: a block with wobbly corners is not a block.",
+        take: 6,
+      },
+      {
+        key: "faces",
+        layout: "faces",
+        title: "Face wall",
+        note: "The grid of customers is the navigation: touch a face, read what they said.",
+      },
+      {
+        key: "masonry-stagger",
+        layout: "masonry",
+        entrance: "stagger",
+        title: "Wall that fills in",
+        note: "The same wall, arriving as the visitor reaches it. The entrance is an option, not a family: any of these can wear it.",
+        take: 6,
       },
     ],
   },
@@ -70,6 +105,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
     blurb: "Small. Sits beside a button or a price.",
     families: [
       {
+        key: "individual",
         layout: "individual",
         title: "Single testimonial",
         note: "One voice, right where it matters.",
@@ -78,6 +114,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
         shipped: true,
       },
       {
+        key: "avatars",
         layout: "avatars",
         title: "Row of faces",
         note: "A familiar row beside a call to action.",
@@ -85,18 +122,35 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
         shipped: true,
       },
       {
+        key: "rating",
         layout: "rating",
         title: "Rating badge",
         note: "The average, the stars, the count. The drawn hand circles the score.",
         frame: "narrow",
       },
       {
+        key: "metric",
         layout: "metric",
         title: "Key figure",
         note: "One number and a short line. The drawn hand rings the number.",
         frame: "narrow",
       },
       {
+        key: "hero",
+        layout: "hero",
+        title: "Poster quote",
+        note: "One quote at the scale of a headline. At this size the marker swash is the design.",
+        take: 1,
+      },
+      {
+        key: "band",
+        layout: "band",
+        title: "Band",
+        note: "The photo runs the full height on the left, the quote reads on the right. No gradient behind the face.",
+        take: 3,
+      },
+      {
+        key: "highlights",
         layout: "highlights",
         title: "Marked passages",
         note: "Only the words the Owner marked.",
@@ -110,17 +164,27 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
     blurb: "Little room, catches the eye.",
     families: [
       {
+        key: "marquee",
         layout: "marquee",
         title: "Scrolling band",
         note: "One continuous row, seamless, pauses on hover.",
       },
       {
+        key: "chips",
+        layout: "chips",
+        base: "highlights",
+        title: "Chips",
+        note: "The marked words alone, as pills, on two rows that pass each other.",
+      },
+      {
+        key: "spotlight",
         layout: "spotlight",
         title: "Living wall",
         note: "One card, the testimonials take turns in a cross-fade.",
         frame: "narrow",
       },
       {
+        key: "bubble",
         layout: "bubble",
         title: "Floating bubble",
         note: "The corner of the page, after a beat. Shown here inside a frame.",
@@ -134,6 +198,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
     blurb: "The origin is the argument.",
     families: [
       {
+        key: "social",
         layout: "social",
         title: "Social feed",
         note: "The platform mark leads the card instead of trailing it.",
@@ -190,7 +255,8 @@ function GalleryWidget({
         accentColor,
         backgroundColor: "#ffffff",
         font: "inherit",
-        layout: shippedLayouts.has(layout) ? layout : "masonry",
+        layout:
+          family.base ?? (shippedLayouts.has(layout) ? layout : "masonry"),
         textColor: "#2e2a25",
       },
       brandName: "Fernhill Studio",
@@ -199,7 +265,12 @@ function GalleryWidget({
     };
     const payload = {
       ...widgetPayload(value),
-      config: { ...value.config, hand, layout: family.layout },
+      config: {
+        ...value.config,
+        entrance: family.entrance,
+        hand,
+        layout: family.layout,
+      },
       inlineOverlay: family.frame === "page",
     };
     void loadRuntime().then(() => {
@@ -250,7 +321,7 @@ export function WidgetGallery() {
               Widget families
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Every family through the real embed runtime. 14 of them, two
+              Every family through the real embed runtime. 20 of them, two
               hands.
             </p>
           </div>
@@ -291,7 +362,7 @@ export function WidgetGallery() {
             <div className="space-y-8">
               {group.families.map((family) => (
                 <article
-                  key={family.layout}
+                  key={family.key}
                   className="border-line bg-paper rounded-lg border p-6"
                 >
                   <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
@@ -309,7 +380,9 @@ export function WidgetGallery() {
                       </p>
                     </div>
                     <code className="text-muted-foreground text-[11px]">
-                      {family.layout}
+                      {family.entrance
+                        ? `${family.layout} + ${family.entrance}`
+                        : family.layout}
                     </code>
                   </div>
                   <Frame family={family}>

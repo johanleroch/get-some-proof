@@ -801,7 +801,6 @@
     .widget[data-layout="social"] .content > .stars { order:1; margin:16px 0 0; }
     .widget[data-layout="social"] .quote { order:0; font-size:16px; line-height:25px; }
     .widget[data-layout="social"] .testimonial-images { order:2; }
-    .widget[data-layout="social"] [data-gsp-source] { width:32px; height:32px; }
     @container (min-width:576px) { .widget[data-layout="social"] .grid { column-count:2; } }
     @container (min-width:850px) { .widget[data-layout="social"] .grid { column-count:3; } }
 
@@ -846,6 +845,115 @@
       background:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
     }
     .widget[data-hand="drawn"] .dot { border-radius:48% 52% 51% 49%; }
+
+    /* --- E. The families the competition made us look at ------------- */
+
+    /* Hero: one quote at the scale of a headline. At this size the marker
+       swash is the design - the words the Owner marked carry the accent in a
+       drawn stroke, where the competitor reaches for bold black. */
+    .widget[data-layout="hero"] .grid { column-count:1; max-width:760px; margin-inline:auto; text-align:center; }
+    .widget[data-layout="hero"] .card { margin:0; border:0; background:transparent; }
+    .widget[data-layout="hero"] .content { padding:0; }
+    .widget[data-layout="hero"] .content > .stars { justify-content:center; margin-bottom:20px; }
+    .widget[data-layout="hero"] .quote { font-size:clamp(26px,4.4cqi,42px); font-weight:600; letter-spacing:-0.02em; line-height:1.25; }
+    .widget[data-layout="hero"] .identity { justify-content:center; margin-top:28px; }
+    .widget[data-layout="hero"] .person { flex:0 1 auto; text-align:left; }
+    .widget[data-layout="hero"] .quote-mark { display:none; }
+    .widget[data-layout="hero"] .avatar { width:44px; height:44px; flex-basis:44px; }
+    .widget[data-layout="hero"] .name { font-size:15px; }
+
+    /* Band: the photo runs the full height on the left, the quote reads on
+       the right. display:contents lifts the signature row out of its own
+       box so the face can become a column of the card's grid. */
+    .widget[data-layout="band"] .grid { display:grid; max-width:720px; margin-inline:auto; column-count:1; gap:16px; }
+    .widget[data-layout="band"] .card { margin:0; }
+    .widget[data-layout="band"] .content {
+      display:grid; align-items:start; gap:4px 20px; padding:20px;
+      grid-template-areas:"photo stars source" "photo quote quote" "photo person person";
+      grid-template-columns:112px minmax(0,1fr) auto;
+    }
+    .widget[data-layout="band"] .identity { display:contents; }
+    .widget[data-layout="band"] .avatar { width:112px; height:112px; flex-basis:auto; align-self:center; border-radius:12px; grid-area:photo; }
+    .widget[data-layout="band"] .quote-mark { align-self:center; justify-self:center; font-size:64px; grid-area:photo; }
+    .widget[data-layout="band"] .content > .stars { margin:0 0 8px; grid-area:stars; }
+    .widget[data-layout="band"] .quote { grid-area:quote; }
+    .widget[data-layout="band"] .person { grid-area:person; margin-top:8px; }
+    .widget[data-layout="band"] [data-gsp-source] { grid-area:source; }
+    .widget[data-layout="band"] .testimonial-images { display:none; }
+
+    /* Chips: the marked words alone, as pills, on two rows that pass each
+       other in opposite directions. */
+    .widget[data-layout="chips"] { padding-inline:0; }
+    .widget[data-layout="chips"] .rows { display:grid; gap:12px; }
+    .widget[data-layout="chips"] .track { overflow:hidden; -webkit-mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent); mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent); }
+    .widget[data-layout="chips"] .row { display:flex; width:max-content; gap:12px; animation:gsp-marquee 52s linear infinite; }
+    .widget[data-layout="chips"] .row[data-direction="reverse"] { animation-direction:reverse; }
+    .widget[data-layout="chips"] .track:hover .row, .widget[data-layout="chips"] .track:focus-within .row { animation-play-state:paused; }
+    .widget[data-layout="chips"] .card { display:flex; width:auto; max-width:min(420px,70cqi); flex:0 0 auto; margin:0; border-radius:999px; }
+    .widget[data-layout="chips"] .content { display:flex; align-items:center; gap:12px; padding:10px 20px 10px 10px; }
+    .widget[data-layout="chips"] .identity { display:contents; }
+    .widget[data-layout="chips"] .content > .stars, .widget[data-layout="chips"] .person, .widget[data-layout="chips"] .quote-mark, .widget[data-layout="chips"] [data-gsp-source] { display:none !important; }
+    .widget[data-layout="chips"] .avatar { order:-1; width:32px; height:32px; flex-basis:32px; }
+    .widget[data-layout="chips"] .quote { font-size:15px; line-height:22px; white-space:nowrap; }
+    .widget[data-layout="chips"] .row > [aria-hidden="true"] { pointer-events:none; }
+
+    /* Blocks: edge to edge, no gutter, no radius, and the tone alternates -
+       paper, ink, accent. The competitor does this in neon on black; the
+       system has one accent and warm neutrals, so it reads as print. */
+    .widget[data-layout="blocks"] { padding:0; }
+    .widget[data-layout="blocks"] .grid { display:grid; grid-auto-flow:dense; grid-template-columns:1fr; gap:0; column-count:1; }
+    .widget[data-layout="blocks"] .card { height:100%; margin:0; border:0; border-radius:0; }
+    .widget[data-layout="blocks"] .content { padding:32px; }
+    .widget[data-layout="blocks"] .quote { font-size:19px; font-weight:600; line-height:28px; }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) { background:var(--gsp-promo-surface); }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) .quote, .widget[data-layout="blocks"] .card:nth-child(3n+2) .name { color:var(--gsp-promo-text); }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) .meta { color:color-mix(in srgb, var(--gsp-promo-text) 72%, transparent); }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) .avatar { background:color-mix(in srgb, var(--gsp-promo-text) 16%, transparent); color:var(--gsp-promo-text); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) { background:var(--gsp-accent); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote, .widget[data-layout="blocks"] .card:nth-child(6n+4) .name, .widget[data-layout="blocks"] .card:nth-child(6n+4) .meta { color:var(--gsp-accent-ink); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) .stars, .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote-mark { color:var(--gsp-accent-ink); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) .avatar { background:color-mix(in srgb, var(--gsp-accent-ink) 14%, transparent); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) mark { background:none !important; color:inherit; }
+
+    /* Faces: the grid of customers is the navigation, not an ornament. */
+    .widget[data-layout="faces"] .face-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(56px,1fr)); gap:8px; }
+    .widget[data-layout="faces"] .face-button {
+      display:block; overflow:hidden; width:100%; min-width:0; min-height:0;
+      aspect-ratio:1; padding:0; border:0; border-radius:999px;
+      background:color-mix(in srgb, var(--gsp-accent) 12%, var(--gsp-surface));
+      color:var(--gsp-text); font:inherit; font-weight:600; cursor:pointer;
+      opacity:0.55; transition:opacity 200ms ease, transform 200ms ease;
+    }
+    .widget[data-layout="faces"] .face-button img { display:block; width:100%; height:100%; object-fit:cover; }
+    .widget[data-layout="faces"] .face-button:hover { opacity:1; transform:translateY(-2px); }
+    .widget[data-layout="faces"] .face-button[aria-pressed="true"] { opacity:1; outline:2px solid var(--gsp-accent); outline-offset:2px; }
+    .widget[data-layout="faces"] .panel { margin-top:20px; }
+    .widget[data-layout="faces"] .grid { max-width:560px; }
+
+    /* The entrance, orthogonal like the hand: proof that arrives as the
+       visitor reaches it reads as accumulation rather than decoration. */
+    .widget[data-entrance="stagger"] .grid > .card { opacity:0; transform:translateY(14px); transition:opacity 320ms cubic-bezier(0.22,1,0.36,1), transform 320ms cubic-bezier(0.22,1,0.36,1); }
+    .widget[data-entrance="stagger"] .grid > .card[data-entered="true"] { opacity:1; transform:none; }
+
+    @container (min-width:576px) {
+      .widget[data-layout="blocks"] .grid { grid-template-columns:repeat(2,1fr); }
+      .widget[data-layout="blocks"] .card.video-card { grid-row:span 2; }
+    }
+    @container (min-width:850px) {
+      .widget[data-layout="blocks"] .grid { grid-template-columns:repeat(3,1fr); }
+    }
+    @container (max-width:479px) {
+      .widget[data-layout="band"] .content { grid-template-areas:"photo stars source" "quote quote quote" "person person person"; grid-template-columns:72px minmax(0,1fr) auto; }
+      .widget[data-layout="band"] .avatar { width:72px; height:72px; }
+      .widget[data-layout="band"] .quote { margin-top:12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .widget[data-layout="chips"] .row { animation:none; }
+      .widget[data-layout="chips"] .track { overflow-x:auto; }
+      .widget[data-layout="faces"] .face-button { transition:none; }
+      .widget[data-entrance="stagger"] .grid > .card { opacity:1; transform:none; transition:none; }
+    }
   `;
 
   const svgNS = "http://www.w3.org/2000/svg";
@@ -991,6 +1099,95 @@
   const reducedMotion = () =>
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**
+   * Two rows that pass each other. A short set would leave a gap at the seam,
+   * so the set repeats until the row is wide enough, then the whole row is
+   * doubled because the loop translates by half its width.
+   */
+  function chipRows(cards, rows) {
+    const even = cards.filter((_, index) => index % 2 === 0);
+    const odd = cards.filter((_, index) => index % 2 === 1);
+    [even, odd.length ? odd : []].forEach((set, index) => {
+      if (!set.length) return;
+      const track = element("div", "track");
+      const row = element("div", "row");
+      if (index) row.dataset.direction = "reverse";
+      const copies = Math.max(2, Math.ceil(8 / set.length));
+      for (let copy = 0; copy < copies; copy += 1)
+        row.append(
+          ...set.map((card) => {
+            if (!copy) return card;
+            const clone = card.cloneNode(true);
+            clone.setAttribute("aria-hidden", "true");
+            return clone;
+          }),
+        );
+      row.append(
+        ...[...row.children].map((node) => {
+          const clone = node.cloneNode(true);
+          clone.setAttribute("aria-hidden", "true");
+          return clone;
+        }),
+      );
+      track.append(row);
+      rows.append(track);
+    });
+  }
+  /** The face a Customer shows, read back off the card the server rendered. */
+  function faceButton(card, index) {
+    const button = element("button", "face-button");
+    button.type = "button";
+    const name = (
+      card.querySelector(".name")?.textContent ||
+      card.querySelector(".video-name")?.textContent ||
+      ""
+    ).trim();
+    button.setAttribute("aria-label", name || `Testimonial ${index + 1}`);
+    button.setAttribute("aria-pressed", "false");
+    const source = card.querySelector(".avatar img")?.getAttribute("src");
+    if (source) {
+      const image = element("img");
+      image.src = source;
+      image.alt = "";
+      image.loading = "lazy";
+      button.append(image);
+    } else
+      button.textContent = name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("");
+    return button;
+  }
+  /**
+   * Proof that arrives as the visitor reaches it. Each batch the observer
+   * hands over is staggered from its own first card, so a wall fills in
+   * rather than appearing whole, and a visitor who lands mid-page is not
+   * made to wait for a queue they never saw.
+   */
+  function applyEntrance(cards) {
+    if (reducedMotion() || typeof IntersectionObserver === "undefined") {
+      cards.forEach((card) => {
+        card.dataset.entered = "true";
+      });
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let position = 0;
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          entry.target.style.transitionDelay = `${Math.min(position, 6) * 60}ms`;
+          position += 1;
+          entry.target.dataset.entered = "true";
+        });
+      },
+      { threshold: 0.15 },
+    );
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }
+  /**
    * The layouts whose behaviour is not CSS alone. Each returns its own cleanup
    * so renderWidget can hand a single teardown to widgetCleanups.
    */
@@ -1001,13 +1198,46 @@
         .forEach((player) => player.pause?.());
     /* The height caps, per family. None of them change a video's shape. */
     const caps = {
+      band: 360,
       bubble: 360,
       editorial: 520,
+      faces: 440,
+      hero: 520,
       individual: 520,
       spotlight: 440,
     };
     if (caps[config.layout]) boundVideoCards(cards, caps[config.layout]);
     if (config.layout === "marquee") bandVideoCards(cards, 200);
+    if (config.layout === "chips" && cards.length) {
+      const rows = element("div", "rows");
+      grid.replaceWith(rows);
+      chipRows(cards, rows);
+      return undefined;
+    }
+    if (config.layout === "faces" && cards.length) {
+      const faceGrid = element("div", "face-grid");
+      const panel = element("div", "panel");
+      grid.replaceWith(faceGrid);
+      faceGrid.after(panel);
+      panel.append(grid);
+      grid.classList.add("stack");
+      const buttons = cards.map((card, index) => faceButton(card, index));
+      const show = (next) => {
+        pauseVideos();
+        cards.forEach((card, position) => {
+          card.dataset.active = String(position === next);
+        });
+        buttons.forEach((button, position) =>
+          button.setAttribute("aria-pressed", String(position === next)),
+        );
+      };
+      buttons.forEach((button, index) => {
+        button.onclick = () => show(index);
+        faceGrid.append(button);
+      });
+      show(0);
+      return undefined;
+    }
     if (config.layout === "marquee" && cards.length) {
       const track = element("div", "track");
       grid.replaceWith(track);
@@ -1189,6 +1419,7 @@
     wall.dataset.layout = config.layout;
     const drawn = config.hand === "drawn";
     if (drawn) wall.dataset.hand = "drawn";
+    if (config.entrance === "stagger") wall.dataset.entrance = "stagger";
     if (payload.inlineOverlay === true) wall.dataset.inline = "true";
     wall.setAttribute("aria-label", `${payload.brand.name} testimonials`);
     if (config.layout === "wall")
@@ -1253,7 +1484,19 @@
     }
     wall.append(grid);
     const familyCleanup = decorateFamily({ cards, config, grid, shadow, wall });
-    if (familyCleanup) widgetCleanups.set(host, familyCleanup);
+    /* The stacking families drive card opacity themselves, so the entrance
+       stays out of their way. */
+    const entranceCleanup =
+      config.entrance === "stagger" &&
+      cards.length &&
+      !grid.classList.contains("stack")
+        ? applyEntrance(cards)
+        : undefined;
+    if (familyCleanup || entranceCleanup)
+      widgetCleanups.set(host, () => {
+        familyCleanup?.();
+        entranceCleanup?.();
+      });
     if (config.layout === "carousel" && payload.testimonials.length > 1) {
       const controls = element("div", "controls");
       const previous = element("button", "", "←");
