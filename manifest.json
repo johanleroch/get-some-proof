@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 163
+  },
+  "headSha": "f8e19d1b3bd068bd591cc36124ea214bef85248c",
+  "runId": "34724705377",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
