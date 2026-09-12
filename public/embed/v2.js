@@ -685,6 +685,369 @@
     @container (min-width:850px) { .widget[data-layout="masonry"] .grid {column-count:3;} }
   `;
 
+  /**
+   * The widget families beyond the first five, plus the "drawn" hand that can
+   * be turned on for any of them. Layout and hand are orthogonal: a layout
+   * never styles itself as drawn, it reads the shared `[data-hand="drawn"]`
+   * layer below, so a new layout inherits the hand for free.
+   */
+  const widgetFamilyStyles = `
+    /* --- A. Section blocks ------------------------------------------ */
+
+    /* Editorial: one narrow column, rules instead of cards, so the quote
+       reads like a pull quote in an article rather than a tile. */
+    .widget[data-layout="editorial"] .grid { display:block; column-count:1; max-width:640px; margin-inline:auto; }
+    .widget[data-layout="editorial"] .card { display:block; margin:0; padding:32px 0; overflow:visible; border:0; border-top:1px solid var(--gsp-border); border-radius:0; background:transparent; }
+    .widget[data-layout="editorial"] .card:first-child { padding-top:0; border-top:0; }
+    .widget[data-layout="editorial"] .content { padding:0; }
+    .widget[data-layout="editorial"] .quote { font-size:20px; line-height:32px; }
+    .widget[data-layout="editorial"] .identity { margin-top:24px; }
+    .widget[data-layout="editorial"] .video-shell { aspect-ratio:16 / 9 !important; border-radius:12px; }
+
+    /* Mosaic: a dense grid where a marked card takes two columns and video
+       takes two rows, so the block never falls into three equal tiles. */
+    .widget[data-layout="mosaic"] .grid { display:grid; grid-auto-flow:dense; grid-template-columns:1fr; gap:16px; }
+    .widget[data-layout="mosaic"] .card { margin:0; height:100%; }
+
+    /* Video gallery: posters first, every tile the same shape. */
+    .widget[data-layout="videos"] .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:16px; }
+    .widget[data-layout="videos"] .card { margin:0; }
+    .widget[data-layout="videos"] .video-shell { aspect-ratio:3 / 4 !important; }
+
+    /* --- B. Supporting proof ---------------------------------------- */
+
+    .widget[data-layout="rating"], .widget[data-layout="metric"] { padding:0; }
+    .widget[data-layout="rating"] .grid, .widget[data-layout="metric"] .grid { display:block; column-count:1; }
+    .badge {
+      display:inline-flex; align-items:center; gap:16px;
+      padding:16px 20px;
+      border:1px solid var(--gsp-border); border-radius:12px;
+      background:var(--gsp-surface); color:var(--gsp-text);
+    }
+    .badge-score { position:relative; font-size:40px; font-weight:700; line-height:1; letter-spacing:-0.02em; }
+    .badge-body { display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .badge-stars { display:flex; gap:4px; color:var(--gsp-accent); }
+    .badge-stars svg { width:18px; height:18px; }
+    .badge-copy { margin:0; color:var(--gsp-muted); font-size:14px; line-height:1.4; }
+
+    .metric { display:flex; align-items:baseline; gap:16px; }
+    .metric-value { position:relative; font-size:56px; font-weight:700; line-height:1; letter-spacing:-0.03em; color:var(--gsp-text); }
+    .metric-copy { margin:0; max-width:24ch; color:var(--gsp-muted); font-size:16px; line-height:1.45; }
+
+    /* --- C. Proof that moves ---------------------------------------- */
+
+    /* Marquee: one continuous row. The track is duplicated so the loop has
+       no seam; the copy is inert so a clone can never swallow a click. */
+    .widget[data-layout="marquee"] { padding-inline:0; }
+    .widget[data-layout="marquee"] .track { overflow:hidden; -webkit-mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent); mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent); }
+    .widget[data-layout="marquee"] .grid { display:flex; width:max-content; gap:16px; column-count:1; animation:gsp-marquee 64s linear infinite; }
+    .widget[data-layout="marquee"] .card { flex:0 0 340px; height:200px; margin:0; align-self:flex-start; }
+    .widget[data-layout="marquee"] .content { display:flex; height:100%; flex-direction:column; padding:20px; }
+    .widget[data-layout="marquee"] .content > .stars { margin-bottom:12px; }
+    .widget[data-layout="marquee"] .quote { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:4; font-size:15px; line-height:23px; }
+    .widget[data-layout="marquee"] .identity { margin-top:auto; padding-top:12px; }
+    .widget[data-layout="marquee"] .testimonial-images { display:none; }
+    .widget[data-layout="marquee"] .video-shell { height:100%; aspect-ratio:auto !important; }
+    .widget[data-layout="marquee"] .track:hover .grid, .widget[data-layout="marquee"] .track:focus-within .grid { animation-play-state:paused; }
+    .widget[data-layout="marquee"] .grid > [aria-hidden="true"] { pointer-events:none; }
+    @keyframes gsp-marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+    /* Spotlight: the cards are stacked in one grid cell and cross-fade, so
+       the block keeps the height of the tallest and never jumps. */
+    /* Shared by spotlight and bubble: every card in one cell, one visible. */
+    .grid.stack { display:grid; column-count:1; }
+    .grid.stack > .card { grid-area:1 / 1; margin:0; opacity:0; visibility:hidden; transition:opacity 400ms ease; }
+    .grid.stack > .card[data-active="true"] { opacity:1; visibility:visible; }
+    .widget[data-layout="spotlight"] .grid { max-width:560px; margin-inline:auto; }
+    .widget[data-layout="spotlight"] .video-shell { aspect-ratio:16 / 9 !important; }
+    .widget[data-layout="spotlight"] .dots { display:flex; justify-content:center; gap:8px; margin-top:16px; }
+    .widget[data-layout="spotlight"] .dot { width:8px; height:8px; min-width:0; min-height:0; padding:0; border:0; border-radius:999px; background:var(--gsp-border); cursor:pointer; transition:background-color 200ms ease; }
+    .widget[data-layout="spotlight"] .dot[aria-current="true"] { background:var(--gsp-accent); }
+
+    /* Bubble: the corner of the client's page. Inline mode exists only so a
+       review page can show it inside a frame instead of over the viewport. */
+    .widget[data-layout="bubble"] { padding:0; }
+    .widget[data-layout="bubble"] .bubble {
+      position:fixed; z-index:2147483000; bottom:24px; left:24px;
+      width:min(320px,calc(100vw - 48px));
+      opacity:0; transform:translateY(12px) scale(0.98);
+      transition:opacity 240ms ease, transform 240ms cubic-bezier(0.22,1,0.36,1);
+    }
+    .widget[data-layout="bubble"][data-inline="true"] .bubble { position:absolute; }
+    .widget[data-layout="bubble"] .bubble[data-shown="true"] { opacity:1; transform:none; }
+    .widget[data-layout="bubble"] .card { margin:0; box-shadow:0 1px 2px rgb(46 42 37 / 0.06), 0 12px 32px rgb(46 42 37 / 0.12); }
+    .widget[data-layout="bubble"] .content { padding:20px; }
+    .widget[data-layout="bubble"] .quote { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:15px; line-height:23px; }
+    .widget[data-layout="bubble"] .content > .stars { margin-bottom:12px; }
+    .widget[data-layout="bubble"] .identity { margin-top:16px; }
+    .widget[data-layout="bubble"] .testimonial-images { display:none; }
+    .widget[data-layout="bubble"] .video-shell { aspect-ratio:16 / 9 !important; }
+    .widget[data-layout="bubble"] .video-overlay { padding:16px; }
+    .widget[data-layout="bubble"] .bubble-close {
+      position:absolute; top:-10px; right:-10px; z-index:2;
+      display:grid; width:28px; height:28px; min-width:0; min-height:0;
+      place-items:center; padding:0;
+      border:1px solid var(--gsp-border); border-radius:999px;
+      background:var(--gsp-surface); color:var(--gsp-muted);
+      font-size:15px; line-height:1; cursor:pointer;
+    }
+    .widget[data-layout="bubble"] .bubble-close:hover { color:var(--gsp-text); }
+
+    /* --- D. Where the proof came from -------------------------------- */
+
+    /* Social feed: the platform mark leads the card instead of trailing it,
+       because on this layout the origin is the argument. */
+    .widget[data-layout="social"] .grid { column-count:1; }
+    .widget[data-layout="social"] .card { border-radius:12px; }
+    .widget[data-layout="social"] .content { display:flex; flex-direction:column; padding:20px; }
+    .widget[data-layout="social"] .identity { order:-1; margin:0 0 16px; }
+    .widget[data-layout="social"] .content > .stars { order:1; margin:16px 0 0; }
+    .widget[data-layout="social"] .quote { order:0; font-size:16px; line-height:25px; }
+    .widget[data-layout="social"] .testimonial-images { order:2; }
+    .widget[data-layout="social"] [data-gsp-source] { width:32px; height:32px; }
+    @container (min-width:576px) { .widget[data-layout="social"] .grid { column-count:2; } }
+    @container (min-width:850px) { .widget[data-layout="social"] .grid { column-count:3; } }
+
+    @container (min-width:576px) {
+      .widget[data-layout="mosaic"] .grid { grid-template-columns:repeat(2,1fr); }
+      .widget[data-layout="mosaic"] .card[data-span="wide"] { grid-column:span 2; }
+      .widget[data-layout="mosaic"] .card.video-card { grid-row:span 2; }
+    }
+    @container (min-width:850px) {
+      .widget[data-layout="mosaic"] .grid { grid-template-columns:repeat(3,1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .widget[data-layout="marquee"] .grid { animation:none; }
+      .widget[data-layout="marquee"] .track { overflow-x:auto; }
+      .grid.stack > .card, .widget[data-layout="bubble"] .bubble, .widget[data-layout="spotlight"] .dot { transition:none; }
+    }
+
+    /* --- The drawn hand ---------------------------------------------- */
+    /* One layer, every layout. Nothing here changes structure: corners stop
+       being machined, rules become strokes, and the key figure gets circled.
+       DESIGN.md section 4 - restraint is the rule, so this is the whole of it. */
+
+    .widget[data-hand="drawn"] .card { border-radius:14px 10px 16px 11px; }
+    .widget[data-hand="drawn"] .grid > .card:nth-child(2n) { border-radius:11px 15px 10px 14px; }
+    .widget[data-hand="drawn"] .grid > .card:nth-child(3n) { border-radius:16px 12px 13px 10px; }
+    .widget[data-hand="drawn"] .video-shell, .widget[data-hand="drawn"] .testimonial-images img { border-radius:12px 9px 13px 10px; }
+    .widget[data-hand="drawn"] .quote-mark { font-size:52px; transform:translateY(0.2em) rotate(-4deg); }
+    .widget[data-hand="drawn"] .avatar { border-radius:48% 52% 50% 47%; }
+    .widget[data-hand="drawn"] .face { border-radius:49% 51% 48% 52%; }
+    .widget[data-hand="drawn"] .badge { border-radius:16px 11px 15px 12px; }
+    .widget[data-hand="drawn"] .badge-score, .widget[data-hand="drawn"] .metric-value { color:var(--gsp-text); }
+    .widget[data-hand="drawn"] .ring { position:absolute; top:50%; left:50%; width:calc(100% + 34px); height:calc(100% + 22px); translate:-50% -50%; color:var(--gsp-accent); pointer-events:none; }
+    .widget[data-hand="drawn"] .ring svg { display:block; width:100%; height:100%; overflow:visible; }
+    /* Editorial swaps its machined rule for a drawn one. */
+    .widget[data-hand="drawn"][data-layout="editorial"] .card { border-top:0; position:relative; }
+    .widget[data-hand="drawn"][data-layout="editorial"] .card + .card::before {
+      content:""; position:absolute; top:0; left:0; width:100%; height:9px;
+      color:var(--gsp-border);
+      background:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .widget[data-hand="drawn"] .dot { border-radius:48% 52% 51% 49%; }
+  `;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  function svgElement(tag, attributes) {
+    const node = document.createElementNS(svgNS, tag);
+    Object.entries(attributes).forEach(([name, value]) =>
+      node.setAttribute(name, value),
+    );
+    return node;
+  }
+  /** The same star the card markup draws, rebuilt for the summary badges. */
+  function starSvg(filled) {
+    const svg = svgElement("svg", {
+      "aria-hidden": "true",
+      fill: filled ? "currentColor" : "none",
+      stroke: "currentColor",
+      "stroke-linejoin": "round",
+      "stroke-width": "2",
+      viewBox: "0 0 24 24",
+    });
+    if (!filled) svg.style.opacity = "0.3";
+    svg.append(
+      svgElement("path", {
+        d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z",
+      }),
+    );
+    return svg;
+  }
+  /** Two passes of a ring that never quite closes (DESIGN.md, circle around). */
+  function ringMark() {
+    const ring = element("span", "ring");
+    const svg = svgElement("svg", {
+      "aria-hidden": "true",
+      fill: "none",
+      preserveAspectRatio: "none",
+      viewBox: "0 0 120 76",
+    });
+    [
+      [
+        "M62 6.2C31 4.4 10 19.4 9 36.4 8.1 52.6 27 69.4 58.6 70.4c29.7.9 51.6-13.8 52.2-31.6C111.4 21.4 91 7.6 60 6.2",
+        "2.4",
+      ],
+      ["M53 9.6C28 10.6 13.4 23.8 12.6 38.6", "1.5"],
+    ].forEach(([d, width]) =>
+      svg.append(
+        svgElement("path", {
+          d,
+          stroke: "currentColor",
+          "stroke-linecap": "round",
+          "stroke-width": width,
+        }),
+      ),
+    );
+    ring.append(svg);
+    return ring;
+  }
+  /** The average of the ratings that exist, ignoring Testimonials without one. */
+  function averageRating(testimonials) {
+    const rated = testimonials.filter(
+      (testimonial) =>
+        typeof testimonial.rating === "number" && testimonial.rating > 0,
+    );
+    if (!rated.length) return 0;
+    return (
+      rated.reduce((total, testimonial) => total + testimonial.rating, 0) /
+      rated.length
+    );
+  }
+  function ratingBadge(payload, drawn) {
+    const average = averageRating(payload.testimonials);
+    const badge = element("div", "badge");
+    const score = element(
+      "span",
+      "badge-score",
+      average ? average.toFixed(1) : "—",
+    );
+    if (drawn) score.append(ringMark());
+    const stars = element("div", "badge-stars");
+    stars.setAttribute("role", "img");
+    stars.setAttribute("aria-label", `${average.toFixed(1)} out of 5 stars`);
+    for (let index = 0; index < 5; index += 1)
+      stars.append(starSvg(index < Math.round(average)));
+    const body = element("div", "badge-body");
+    const count = payload.testimonials.length;
+    body.append(
+      stars,
+      element(
+        "p",
+        "badge-copy",
+        `from ${count} ${count === 1 ? "testimonial" : "testimonials"}`,
+      ),
+    );
+    badge.append(score, body);
+    return badge;
+  }
+  function metricBlock(payload, drawn) {
+    const metric = element("div", "metric");
+    const value = element(
+      "span",
+      "metric-value",
+      String(payload.testimonials.length),
+    );
+    if (drawn) value.append(ringMark());
+    metric.append(
+      value,
+      element("p", "metric-copy", "customers have told their story"),
+    );
+    return metric;
+  }
+  const reducedMotion = () =>
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /**
+   * The layouts whose behaviour is not CSS alone. Each returns its own cleanup
+   * so renderWidget can hand a single teardown to widgetCleanups.
+   */
+  function decorateFamily({ cards, config, grid, shadow, wall }) {
+    const pauseVideos = () =>
+      shadow
+        .querySelectorAll("mux-player")
+        .forEach((player) => player.pause?.());
+    if (config.layout === "marquee" && cards.length) {
+      const track = element("div", "track");
+      grid.replaceWith(track);
+      track.append(grid);
+      grid.append(
+        ...cards.map((card) => {
+          const clone = card.cloneNode(true);
+          clone.setAttribute("aria-hidden", "true");
+          clone
+            .querySelectorAll("a, button")
+            .forEach((node) => node.setAttribute("tabindex", "-1"));
+          return clone;
+        }),
+      );
+      return undefined;
+    }
+    if (
+      (config.layout === "spotlight" || config.layout === "bubble") &&
+      cards.length
+    ) {
+      grid.classList.add("stack");
+      let index = 0;
+      let timer;
+      const dots =
+        config.layout === "spotlight" ? element("div", "dots") : null;
+      const show = (next) => {
+        pauseVideos();
+        index = (next + cards.length) % cards.length;
+        cards.forEach((card, position) => {
+          card.dataset.active = String(position === index);
+        });
+        if (dots)
+          [...dots.children].forEach((dot, position) =>
+            dot.setAttribute("aria-current", String(position === index)),
+          );
+      };
+      const play = () => {
+        clearInterval(timer);
+        if (cards.length > 1 && !reducedMotion())
+          timer = setInterval(() => show(index + 1), 6000);
+      };
+      if (dots) {
+        cards.forEach((_, position) => {
+          const dot = element("button", "dot");
+          dot.type = "button";
+          dot.setAttribute("aria-label", `Testimonial ${position + 1}`);
+          dot.onclick = () => {
+            show(position);
+            play();
+          };
+          dots.append(dot);
+        });
+        if (cards.length > 1) wall.append(dots);
+      }
+      show(0);
+      play();
+      if (config.layout === "bubble") {
+        const bubble = element("div", "bubble");
+        grid.replaceWith(bubble);
+        const close = element("button", "bubble-close", "×");
+        close.type = "button";
+        close.setAttribute("aria-label", "Close");
+        close.onclick = () => {
+          clearInterval(timer);
+          pauseVideos();
+          bubble.remove();
+        };
+        bubble.append(close, grid);
+        const reveal = setTimeout(() => {
+          bubble.dataset.shown = "true";
+        }, 1200);
+        return () => {
+          clearInterval(timer);
+          clearTimeout(reveal);
+        };
+      }
+      return () => clearInterval(timer);
+    }
+    return undefined;
+  }
+
   const widgetCleanups = new WeakMap();
   const widgetFontRequests = new WeakMap();
   const widgetFontLoads = new Map();
@@ -783,10 +1146,14 @@
     }
     const wall = element("section", "wall widget");
     wall.dataset.layout = config.layout;
+    const drawn = config.hand === "drawn";
+    if (drawn) wall.dataset.hand = "drawn";
+    if (payload.inlineOverlay === true) wall.dataset.inline = "true";
     wall.setAttribute("aria-label", `${payload.brand.name} testimonials`);
     if (config.layout === "wall")
       wall.append(element("h2", "", payload.brand.name));
     const grid = element("div", "grid");
+    let cards = [];
     if (!payload.testimonials.length) {
       grid.append(element("p", "", "No testimonials to display yet."));
     } else if (config.layout === "avatars") {
@@ -818,14 +1185,34 @@
           `${payload.testimonials.length} customer testimonials`,
         ),
       );
+    } else if (config.layout === "rating") {
+      grid.append(ratingBadge(payload, drawn));
+    } else if (config.layout === "metric") {
+      grid.append(metricBlock(payload, drawn));
     } else {
-      grid.append(
-        ...payload.testimonials.map((testimonial) =>
-          renderCard(testimonial, payload.brand),
-        ),
+      /* The video gallery is the one family that narrows the selection: it
+         shows the videos in the widget and says so when there are none. */
+      const chosen =
+        config.layout === "videos"
+          ? payload.testimonials.filter(
+              (testimonial) => testimonial.type === "video",
+            )
+          : payload.testimonials;
+      cards = chosen.map((testimonial) =>
+        renderCard(testimonial, payload.brand),
       );
+      if (!cards.length)
+        grid.append(element("p", "", "No video testimonials to display yet."));
+      if (config.layout === "mosaic")
+        cards.forEach((card, index) => {
+          if (index % 4 === 0 && !card.classList.contains("video-card"))
+            card.dataset.span = "wide";
+        });
+      grid.append(...cards);
     }
     wall.append(grid);
+    const familyCleanup = decorateFamily({ cards, config, grid, shadow, wall });
+    if (familyCleanup) widgetCleanups.set(host, familyCleanup);
     if (config.layout === "carousel" && payload.testimonials.length > 1) {
       const controls = element("div", "controls");
       const previous = element("button", "", "←");
@@ -884,7 +1271,10 @@
     }
     if (payload.brand.attributionRequired && payload.testimonials.length)
       wall.append(renderPromotionCard());
-    shadow.replaceChildren(element("style", "", styles + widgetStyles), wall);
+    shadow.replaceChildren(
+      element("style", "", styles + widgetStyles + widgetFamilyStyles),
+      wall,
+    );
     setState(host, "ready");
   }
 
