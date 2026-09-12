@@ -101,6 +101,8 @@ const inboxItemValidator = v.union(
       v.literal("ready"),
       v.literal("failed"),
     ),
+    videoCopyFailureReason: v.optional(v.string()),
+    videoSourceUrl: v.optional(v.string()),
     submissionType: v.literal("video"),
     /** Known once the asset is ready; the thumbnail picker scrubs within it. */
     videoDurationSeconds: v.optional(v.number()),
@@ -239,6 +241,8 @@ async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
           })
         : null,
     captionsStatus: videoAsset.captionsStatus,
+    videoCopyFailureReason: videoAsset.failureReason,
+    videoSourceUrl: testimonial.importOrigin?.originalVideoUrl,
     submissionType: "video" as const,
     videoDurationSeconds: videoAsset.durationSeconds,
     videoStatus: videoAsset.status,

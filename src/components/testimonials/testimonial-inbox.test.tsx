@@ -246,6 +246,7 @@ describe("TestimonialInboxView", () => {
 
   it("says why a video cannot be Published yet, and opens the card once Ready", () => {
     const onAction = vi.fn();
+    const onRetryVideoCopy = vi.fn().mockResolvedValue(undefined);
     const video = {
       aspectRatio: "9:16",
       card: null,
@@ -316,6 +317,61 @@ describe("TestimonialInboxView", () => {
       expect(screen.queryByText(/link to replace the video/)).toBeNull();
       expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
     }
+
+    rerender(
+      <TestimonialInboxView
+        category="pending"
+        onAction={onAction}
+        onRetryVideoCopy={onRetryVideoCopy}
+        pendingId={null}
+        testimonials={[
+          {
+            ...video,
+            consentAcceptedAt: undefined,
+            requiresImportAttestation: true,
+            submitterEmail: undefined,
+            captionsStatus: "failed",
+            videoCopyFailureReason: "The source server refused the copy.",
+            videoSourceUrl: "https://video.example.test/lucien.mp4",
+            videoStatus: "failed",
+          },
+        ]}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Video copy details for Camille Test",
+      }),
+    );
+    expect(screen.getByRole("dialog", { name: "Video copy" })).toBeVisible();
+    expect(screen.getByText("video.example.test/lucien.mp4")).toBeVisible();
+    expect(
+      screen.getByText("The source server refused the copy."),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Retry copy" }));
+    expect(onRetryVideoCopy).toHaveBeenCalledWith(
+      expect.objectContaining({ testimonialId: video.testimonialId }),
+    );
+    rerender(
+      <TestimonialInboxView
+        category="pending"
+        onAction={onAction}
+        onRetryVideoCopy={onRetryVideoCopy}
+        pendingId={null}
+        testimonials={[
+          {
+            ...video,
+            consentAcceptedAt: undefined,
+            requiresImportAttestation: true,
+            submitterEmail: undefined,
+            videoSourceUrl: "https://video.example.test/lucien.mp4",
+            videoStatus: "processing",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText(/This dialog updates automatically/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Retry copy" })).toBeNull();
 
     const ready = {
       ...video,

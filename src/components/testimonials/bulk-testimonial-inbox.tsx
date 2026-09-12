@@ -19,7 +19,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { TestimonialInboxView } from "./testimonial-inbox";
+import {
+  TestimonialInboxView,
+  type InboxTestimonial,
+} from "./testimonial-inbox";
 import { useInboxSelection, type BulkInboxProps } from "./use-inbox-selection";
 import {
   actionLabels,
@@ -27,14 +30,57 @@ import {
   type BulkInboxAction,
 } from "./inbox-bulk";
 
+function BulkVideoRetryAction({
+  asMenuItem = false,
+  blocked,
+  items,
+  onRun,
+  perform,
+}: {
+  asMenuItem?: boolean;
+  blocked: boolean;
+  items: InboxTestimonial[];
+  onRun: (
+    items: InboxTestimonial[],
+    label: string,
+    perform: (item: InboxTestimonial) => Promise<unknown>,
+  ) => void;
+  perform?: (item: InboxTestimonial) => Promise<unknown>;
+}) {
+  const videos = items.filter(
+    (item) =>
+      item.submissionType === "video" &&
+      item.videoStatus === "failed" &&
+      Boolean(item.videoSourceUrl),
+  );
+  if (!perform || items.length === 0 || videos.length !== items.length)
+    return null;
+  const run = () =>
+    onRun(
+      videos,
+      videos.length === 1 ? "video copy restarted" : "video copies restarted",
+      perform,
+    );
+  return asMenuItem ? (
+    <DropdownMenuItem onSelect={run}>Retry video copies</DropdownMenuItem>
+  ) : (
+    <Button disabled={blocked} onClick={run} size="sm">
+      Retry video copies
+    </Button>
+  );
+}
+
 /** Shared by the live Inbox and interactive synthetic fixtures. Key by project/import/category. */
 export function BulkTestimonialInbox({
   totalCount,
   hasMore,
   loadPage,
   perform,
+  performVideoRetry,
   ...view
-}: BulkInboxProps) {
+}: BulkInboxProps & {
+  performVideoRetry?: (item: InboxTestimonial) => Promise<unknown>;
+}) {
   const {
     selected,
     setSelected,
@@ -58,9 +104,15 @@ export function BulkTestimonialInbox({
     clear,
     selectAll,
     run,
+    runCustom,
     request,
     toggle,
   } = useInboxSelection({ totalCount, hasMore, loadPage, perform, ...view });
+  const retrySelected = (
+    videos: InboxTestimonial[],
+    label: string,
+    retry: (item: InboxTestimonial) => Promise<unknown>,
+  ) => void runCustom(videos, label, retry);
   function actionItem(action: BulkInboxAction) {
     return (
       <DropdownMenuItem
@@ -115,6 +167,12 @@ export function BulkTestimonialInbox({
             {selected.size > 0 && (
               <>
                 <div className="hidden items-center gap-2 md:flex">
+                  <BulkVideoRetryAction
+                    blocked={blocked}
+                    items={items}
+                    onRun={retrySelected}
+                    perform={performVideoRetry}
+                  />
                   {primaryActions[view.category].map((action, index) => (
                     <Button
                       key={action}
@@ -157,6 +215,13 @@ export function BulkTestimonialInbox({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <BulkVideoRetryAction
+                        asMenuItem
+                        blocked={blocked}
+                        items={items}
+                        onRun={retrySelected}
+                        perform={performVideoRetry}
+                      />
                       {primaryActions[view.category].map(actionItem)}
                       <DropdownMenuSeparator />
                       {rare.map(actionItem)}
