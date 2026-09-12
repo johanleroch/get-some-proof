@@ -29,6 +29,7 @@ import type { StudioCandidate } from "./studio-view";
 import { hasHighlight, selectAllWithinLimit } from "./selection-rules";
 
 type SelectionProps = {
+  restoreFocus?: () => void;
   accentColor: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -156,6 +157,14 @@ export function WidgetSelectionDialog(props: SelectionProps) {
         }}
       >
         <DialogContent
+          onCloseAutoFocus={
+            props.restoreFocus
+              ? (event) => {
+                  event.preventDefault();
+                  props.restoreFocus?.();
+                }
+              : undefined
+          }
           zoom={false}
           className="flex h-[min(44rem,90dvh)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
           style={{ "--wall-accent": props.accentColor } as CSSProperties}
@@ -233,7 +242,6 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                         >
                           <label
                             htmlFor={`studio-select-${testimonialId}`}
-                            aria-label={`Select ${card.name}`}
                             className={cn(
                               "absolute inset-0 z-10",
                               disabled ? "cursor-default" : "cursor-pointer",

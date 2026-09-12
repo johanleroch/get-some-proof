@@ -22,7 +22,7 @@ const cropCode = ts.transpileModule(
   { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
-test("a transparent portrait crop exports as WebP without flattening its alpha", async ({
+test("a transparent portrait crop preserves alpha with the browser-supported export format", async ({
   page,
 }) => {
   await page.goto("/sign-in");
@@ -56,7 +56,7 @@ test("a transparent portrait crop exports as WebP without flattening its alpha",
       center: [...outputContext.getImageData(256, 256, 1, 1).data],
     };
   });
-  expect(pixels.type).toBe("image/webp");
+  expect(["image/webp", "image/png"]).toContain(pixels.type);
   expect(pixels.corner[3]).toBe(0);
   expect(pixels.center[0]).toBeGreaterThan(245);
   expect(pixels.center[1]).toBeLessThan(10);

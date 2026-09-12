@@ -8,8 +8,12 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
     .getByRole("button", { name: "Create widget", exact: true })
     .click();
   await page
-    .getByRole("button", { name: /Individual testimonial One voice/ })
+    .getByRole("button", { name: /Individual testimonial.*One voice/s })
     .click();
+  if ((page.viewportSize()?.width ?? 1440) < 1024)
+    await page
+      .getByRole("button", { name: "Edit widget", exact: true })
+      .click();
   await page.getByLabel("Widget name", { exact: true }).fill("Pricing proof");
   await page.getByRole("button", { name: "Manage selection" }).click();
   await page.getByRole("checkbox", { name: "Select Maya Laurent" }).check();
@@ -32,7 +36,7 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
   await expect(page.getByRole("dialog")).toBeVisible();
   const code = await page
     .getByLabel("Embed code", { exact: true })
-    .inputValue();
+    .textContent();
   expect(code).toContain("data-gsp-widget=");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back to Studio" }).click();
@@ -56,9 +60,7 @@ test("reorders selected proof and switches to real highlights", async ({
   ).toContainText("James Carter");
   await page.getByRole("button", { name: "Done", exact: true }).click();
   await page.getByLabel("Template", { exact: true }).click();
-  await page
-    .getByRole("option", { name: "Testimonial highlights", exact: true })
-    .click();
+  await page.getByRole("option", { name: /^Testimonial highlights/ }).click();
   if ((page.viewportSize()?.width ?? 1440) < 1024)
     await page
       .getByRole("button", { name: "Preview widget", exact: true })

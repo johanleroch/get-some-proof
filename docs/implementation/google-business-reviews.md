@@ -71,4 +71,18 @@ Google grant may require reconnecting other Projects using the same Google accou
 
 First full test run hit an unrelated five-second timeout in Account pagination
 while other tools were running. That file passed in isolation, then the full
-suite passed (1,134 tests) on the next run. No Account code was changed.
+suite passed (1,135 tests, including the added race regression) on the next run. No Account code was changed.
+
+## Existing browser failures repaired during delivery
+
+The full browser gate exposed failures reproduced at the original base commit
+`7346604`. The standalone MCP import widget bundled Next.js environment reads
+without a browser `process` object; its build now substitutes an empty environment
+and the production NODE_ENV literal, never host secrets. Studio selection keeps
+its checkbox accessible name and explicitly restores focus to its opener.
+
+Browser tests now follow the current unified Inbox Actions menu, assistant
+connection copy, shared embed-code block, and Studio application shell. Layout
+tests retain overflow, scrolling, and available-width checks. Crop export tests
+accept the browser's PNG fallback while still asserting transparent pixel data.
+Standards and Spec review requested stronger layout assertions; both were applied.

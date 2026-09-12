@@ -70,6 +70,7 @@ export function WidgetEditor(
 ) {
   const { widget } = props;
   const router = useRouter();
+  const selectionTrigger = useRef<HTMLButtonElement>(null);
   const leaveHref = useRef<string | null>(null);
   const initialDraft: StudioDraft = {
     name: widget.name,
@@ -324,6 +325,7 @@ export function WidgetEditor(
               </span>
             </div>
             <Button
+              ref={selectionTrigger}
               variant="outline"
               className="w-full"
               onClick={() => setSelectionOpen(true)}
@@ -527,6 +529,7 @@ export function WidgetEditor(
         </section>
       </div>
       <WidgetSelectionDialog
+        restoreFocus={() => selectionTrigger.current?.focus()}
         accentColor={draft.config.accentColor}
         open={selectionOpen}
         onOpenChange={setSelectionOpen}
