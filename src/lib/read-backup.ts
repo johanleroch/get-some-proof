@@ -36,6 +36,7 @@ export type BackupItem = {
     entry: FileEntry;
   }>;
   missing: number;
+  unavailableReason?: string;
 };
 export type BackupFile = {
   sourceProject: string;
@@ -80,7 +81,7 @@ export async function readBackup(file: Blob): Promise<BackupFile> {
         entry.encrypted ||
         entries.size >= 50002 ||
         size > 10 * 1024 ** 3 ||
-        entry.uncompressedSize > 512 * 1024 ** 2
+        entry.uncompressedSize > 2 * 1024 ** 3
       )
         throw new Error("This backup contains unsupported or oversized files.");
       entries.set(entry.filename, entry);
@@ -108,6 +109,7 @@ export async function readBackup(file: Blob): Promise<BackupFile> {
       ids.add(t._id);
       const media: BackupItem["media"] = [];
       let missing = 0;
+      let unavailableReason: string | undefined;
       const paths = new Set<string>();
       for (const asset of data.media.filter(
         (asset) => asset.ownerId === t._id,
@@ -130,6 +132,16 @@ export async function readBackup(file: Blob): Promise<BackupFile> {
                 ? "thumbnail"
                 : "image");
         if (!["avatar", "thumbnail", "image", "video"].includes(role)) continue;
+        if (
+          entry.uncompressedSize >
+          (role === "video" ? 512 : 25) * 1024 ** 2
+        ) {
+          unavailableReason =
+            role === "video"
+              ? "This video exceeds the 512 MB import limit. Keep the original backup; import a smaller video separately."
+              : "An image exceeds the 25 MB import limit. Keep the original backup; import a smaller image separately.";
+          continue;
+        }
         if (
           role === "video"
             ? !asset.path.startsWith("videos/") || !asset.path.endsWith(".mp4")
@@ -170,6 +182,7 @@ export async function readBackup(file: Blob): Promise<BackupFile> {
         },
         media,
         missing,
+        unavailableReason,
       };
     });
     return {

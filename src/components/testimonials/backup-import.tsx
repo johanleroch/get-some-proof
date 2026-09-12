@@ -57,7 +57,7 @@ export function BackupImport({
       setSelected(
         new Set(
           value.items
-            .filter((item) => !item.missing)
+            .filter((item) => !item.missing && !item.unavailableReason)
             .map((item) => item.candidate.sourceId),
         ),
       );
@@ -197,7 +197,9 @@ export function BackupImport({
               <li key={item.candidate.sourceId} className="px-4 py-3">
                 <label className="flex items-start gap-3">
                   <Checkbox
-                    disabled={busy || item.missing > 0}
+                    disabled={
+                      busy || item.missing > 0 || !!item.unavailableReason
+                    }
                     checked={selected.has(item.candidate.sourceId)}
                     onCheckedChange={(checked) =>
                       setSelected((previous) => {
@@ -215,9 +217,11 @@ export function BackupImport({
                     <span className="text-ink-2">
                       {item.candidate.type === "video" ? "Video" : "Text"} ·{" "}
                       {item.media.length} files
-                      {item.missing
-                        ? ` · ${item.missing} missing files: export again to restore this testimonial`
-                        : ""}
+                      {item.unavailableReason
+                        ? ` · ${item.unavailableReason}`
+                        : item.missing
+                          ? ` · ${item.missing} missing files: export again to restore this testimonial`
+                          : ""}
                     </span>
                   </span>
                 </label>
