@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
       "assistantImports:resumeVideos": resolved(),
       "imageAssetProcessing:processDirectUpload": resolved(),
       "testimonialImportAvatar:retry": resolved(),
+      "testimonialImportVideo:retryForTestimonial": resolved(),
       "testimonialModeration:generatePosterUploadUrl": resolved(),
       "testimonialModeration:markSpam": resolved(),
       "testimonialModeration:remove": resolved(),
@@ -1001,7 +1002,13 @@ describe("TestimonialInbox (live wiring)", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Archive" })[0]!);
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Actions", exact: true }),
+      { button: 0, ctrlKey: false },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Archive", exact: true }),
+    );
     await waitFor(() =>
       expect(
         mocks.functions["testimonialModeration:setStatus"],

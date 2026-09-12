@@ -199,7 +199,7 @@ describe("BrandDashboardView", () => {
     expect(
       screen.getByRole("dialog", { name: "Embed on your site" }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Embed snippet")).toHaveValue(
+    expect(screen.getByRole("region", { name: "Embed code" }).textContent).toBe(
       '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://getsomeproof.com/embed/v1.js" data-api-origin="https://getsomeproof.com"></script>',
     );
   });

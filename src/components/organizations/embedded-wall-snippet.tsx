@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Label } from "@/components/ui/label";
 import { EmbedCode } from "@/components/ui/embed-code";
 import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 
@@ -49,7 +48,7 @@ export function EmbeddedWallSnippet({
         </p>
       </div>
       <Field>
-        <Label htmlFor="embed-snippet">Embed snippet</Label>
+        <p className="text-sm font-medium">Embed snippet</p>
         <EmbedCode id="embed-snippet" code={snippet} />
       </Field>
       {error ? <ErrorToast message={error} /> : null}

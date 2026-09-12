@@ -598,7 +598,9 @@ describe("OrganizationBilling", () => {
   it("covers loading and unavailable Organization states", () => {
     mocks.organization = undefined;
     const { rerender } = render(<OrganizationBilling slug="acme-1234" />);
-    expect(screen.getByRole("status")).toHaveTextContent("Loading Billing…");
+    expect(
+      screen.getByRole("region", { name: "Loading Billing" }),
+    ).toHaveAttribute("aria-busy", "true");
 
     mocks.organization = null;
     rerender(<OrganizationBilling slug="missing-1234" />);

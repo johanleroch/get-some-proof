@@ -119,7 +119,7 @@ describe("OrganizationSettingsView", () => {
   it("provides the Owner a copyable versioned Embedded Wall snippet", () => {
     render(<OrganizationSettingsView {...baseProps} />);
 
-    expect(screen.getByLabelText("Embed snippet")).toHaveValue(
+    expect(screen.getByRole("region", { name: "Embed code" }).textContent).toBe(
       '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://proof.example/embed/v1.js" data-api-origin="https://proof.example"></script>',
     );
     expect(
