@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OnboardingStage } from "./onboarding-stage";
 
@@ -25,7 +25,7 @@ vi.mock("@/components/profile-image/profile-image-control", () => ({
 }));
 
 describe("OnboardingStage", () => {
-  beforeEach(() => cleanup());
+  afterEach(() => cleanup());
 
   it("plays the account form into the email notice with the typed account", async () => {
     render(<OnboardingStage initialStep="sign-up" />);
