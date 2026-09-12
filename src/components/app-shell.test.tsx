@@ -135,8 +135,15 @@ describe("AppShell", () => {
       container.querySelector('[data-slot="sidebar-plan-card"]'),
     ).toBeNull();
     expect(screen.queryByText("Collect without limits")).toBeNull();
-    expect(screen.getByText("You're Pro!")).toBeInTheDocument();
-    expect(screen.getByText("16 video slots left")).toBeInTheDocument();
+    // The usage opens on no title: the rows carry their own labels.
+    expect(
+      container.querySelector('[data-slot="sidebar-pro-plan-card"]'),
+    ).not.toBeNull();
+    expect(screen.queryByText(/plan/i)).toBeNull();
+    expect(screen.getByText("Videos")).toBeInTheDocument();
+    expect(
+      screen.getByText("16 slots left · 1 processing"),
+    ).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(

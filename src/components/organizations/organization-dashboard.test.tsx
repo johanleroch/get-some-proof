@@ -55,12 +55,16 @@ describe("BrandDashboardView", () => {
     expect(
       screen.getByText("Unlimited Projects, usage shared across them"),
     ).toBeVisible();
+    // Stored plus held: a slot held while a video processes cannot take
+    // another one, so it counts against the 25 here as it does in the sidebar.
     expect(screen.getByLabelText("Videos stored")).toHaveAttribute(
       "aria-valuenow",
-      "7",
+      "9",
     );
-    expect(screen.getByText("7 / 25")).toBeVisible();
-    expect(screen.getByText("2 video slots reserved")).toBeVisible();
+    expect(screen.getByText("9 / 25")).toBeVisible();
+    expect(
+      screen.getByText("2 video slots held while processing"),
+    ).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Manage subscription" }),
     ).toHaveAttribute("href", "/org/bumpr/billing");
@@ -98,7 +102,7 @@ describe("BrandDashboardView", () => {
     expect(
       screen.getByRole("link", { name: "Upgrade to Pro" }),
     ).toHaveAttribute("href", "/account/billing");
-    expect(screen.queryByText(/reserved/)).toBeNull();
+    expect(screen.queryByText(/held while processing/)).toBeNull();
   });
 
   it("keeps the plan column out of a view with no Account to show", () => {

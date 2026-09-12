@@ -111,6 +111,8 @@ const proVideosStored = 25;
 /**
  * One allowance: the fraction in figures beside its name and, under them,
  * how full the tank is. A meter, not a progress bar: nothing is loading.
+ * A video allowance counts the slots held while an upload processes, the
+ * same way the sidebar's usage lines do: a held slot cannot take a video.
  */
 function UsageMeter({
   label,
@@ -179,7 +181,7 @@ function AccountPlanPanel({
           <UsageMeter
             label="Videos stored"
             total={proVideosStored}
-            used={account.usage.readyVideos}
+            used={account.usage.readyVideos + reserved}
           />
         ) : (
           <>
@@ -197,7 +199,8 @@ function AccountPlanPanel({
         )}
         {reserved > 0 ? (
           <p className="type-small text-ink-2">
-            {reserved} video {reserved === 1 ? "slot" : "slots"} reserved
+            {reserved} video {reserved === 1 ? "slot" : "slots"} held while
+            processing
           </p>
         ) : null}
       </div>

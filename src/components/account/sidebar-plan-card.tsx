@@ -84,90 +84,122 @@ export type SidebarPlanUsage = {
   organizationsIsLowerBound?: boolean;
 };
 
+/**
+ * A count the backend may only have bounded, and which is never allowed to
+ * fall back to zero while it is unknown: an account that has collected
+ * nothing and an account whose usage has not loaded must not read alike.
+ */
 function count(value?: number, lowerBound?: boolean) {
   return value === undefined ? "—" : `${value}${lowerBound ? "+" : ""}`;
 }
 
-export function SidebarProPlanCard({ usage }: { usage?: SidebarPlanUsage }) {
-  const expression = useCyclingFace();
-  const remaining =
-    usage?.videoLimit === undefined
-      ? undefined
-      : Math.max(
-          0,
-          usage.videoLimit - usage.readyVideos - usage.reservedVideos,
-        );
-  return (
-    <div
-      className="bg-brand-soft relative overflow-hidden rounded-lg p-3"
-      data-slot="sidebar-pro-plan-card"
-    >
-      <div className="relative min-h-20 pr-20">
-        <p className="type-subheading">You&apos;re Pro!</p>
-        <p className="type-small text-ink-2 mt-1">Across all your projects</p>
-      </div>
-      <Blob
-        className="pointer-events-none absolute -top-2 -right-3 -rotate-[8deg]"
-        expression={expression}
-        size={104}
+/** Stored videos plus the slots held while an upload finishes processing. */
+function storedVideos(usage?: SidebarPlanUsage) {
+  return usage === undefined
+    ? undefined
+    : usage.readyVideos + usage.reservedVideos;
+}
+
+function remainingVideos(usage?: SidebarPlanUsage) {
+  const stored = storedVideos(usage);
+  return usage?.videoLimit === undefined || stored === undefined
+    ? undefined
+    : Math.max(0, usage.videoLimit - stored);
+}
+
+/** What the figures cannot say: what is left, and what is holding a slot. */
+function storageNote(usage?: SidebarPlanUsage) {
+  const remaining = remainingVideos(usage);
+  if (remaining === undefined) return "Reading your usage…";
+  if (remaining === 0) return "Storage full — delete a video to free a slot";
+  const slots = `${remaining} slot${remaining === 1 ? "" : "s"} left`;
+  return usage && usage.reservedVideos > 0
+    ? `${slots} · ${usage.reservedVideos} processing`
+    : slots;
+}
+
+/**
+ * The video allowance as a bar: an amber fill on a track one step darker
+ * than the paper, and a real `meter` for anyone listening rather than
+ * looking. An unknown allowance shows the empty track, never a zero fill.
+ */
+function VideoQuotaBar({ usage }: { usage?: SidebarPlanUsage }) {
+  const stored = storedVideos(usage);
+  if (usage?.videoLimit === undefined || stored === undefined) {
+    return (
+      <div
+        aria-hidden="true"
+        className="bg-surface-2 mt-1.5 h-1 rounded-full"
       />
-      <div className="mt-2">
-        <div className="type-ui flex items-baseline justify-between gap-2">
-          <span>Videos</span>
-          <span className="tabular-nums">
-            {count(usage?.readyVideos)}{" "}
-            <span className="text-ink-2">/ {count(usage?.videoLimit)}</span>
-          </span>
-        </div>
-        {usage?.videoLimit !== undefined ? (
-          <>
-            <meter
-              className="sr-only"
-              aria-label="Video slots used"
-              min={0}
-              max={usage.videoLimit}
-              value={Math.min(
-                usage.videoLimit,
-                usage.readyVideos + usage.reservedVideos,
-              )}
-            />
-            <div
-              className="bg-surface mt-2 h-1.5 overflow-hidden rounded-full"
-              aria-hidden="true"
-            >
-              <div
-                className="bg-brand h-full rounded-full"
-                style={{
-                  width: `${Math.min(100, ((usage.readyVideos + usage.reservedVideos) / usage.videoLimit) * 100)}%`,
-                }}
-              />
-            </div>
-          </>
-        ) : null}
-        <p className="type-small text-ink-2 mt-1.5">
-          {remaining === undefined
-            ? "Loading usage…"
-            : `${remaining} video ${remaining === 1 ? "slot" : "slots"} left`}
-        </p>
-        {usage && usage.reservedVideos > 0 ? (
-          <p className="type-small text-ink-2">
-            {usage.reservedVideos} reserved
-          </p>
-        ) : null}
+    );
+  }
+  const filled = Math.min(usage.videoLimit, stored);
+  return (
+    <>
+      <meter
+        aria-label="Video storage used"
+        className="sr-only"
+        max={usage.videoLimit}
+        min={0}
+        value={filled}
+      />
+      <div
+        aria-hidden="true"
+        className="bg-surface-2 mt-1.5 h-1 overflow-hidden rounded-full"
+      >
+        <div
+          className="bg-brand h-full rounded-full"
+          style={{
+            width: `${Math.max(2, (filled / usage.videoLimit) * 100)}%`,
+          }}
+        />
       </div>
-      <dl className="type-small mt-3 space-y-2">
-        <div className="flex justify-between gap-2">
-          <dt>Text testimonials</dt>
-          <dd className="font-semibold tabular-nums">
+    </>
+  );
+}
+
+/**
+ * On a Pro Account the footer sells nothing, so it is not a card: the usage
+ * sits on the sidebar's own paper as the last line before the user row, at
+ * the navigation's own inset. Three labelled rows share one right-hand
+ * column of tabular figures — Videos, capped, carries the bar that measures
+ * it; Text Testimonials and Projects are uncapped and simply counted. The
+ * row label is what gives the limit its unit (25 videos, not 25 of
+ * something), and one `--ink-3` line under the bar carries what a figure
+ * cannot: the slots left and the ones held while a video processes. It
+ * opens on no title at all — the rows are labelled, so a caption above them
+ * only announced that a block existed, and the plan is named on the
+ * dashboard's own plan panel. No blob, no sale, no billing link (founder,
+ * 2026-09-12); shape chosen by the founder on 2026-09-13 from four drafts
+ * (rows, one number, tinted strip, footnote), then four ways of grouping the
+ * rows, then four ways of opening them.
+ */
+export function SidebarProPlanCard({ usage }: { usage?: SidebarPlanUsage }) {
+  const stored = storedVideos(usage);
+  return (
+    <div className="px-3 py-2" data-slot="sidebar-pro-plan-card">
+      <div className="type-ui flex items-baseline justify-between gap-2">
+        <span>Videos</span>
+        <span className="font-mono tabular-nums">
+          {count(usage?.videoLimit === undefined ? undefined : stored)}
+          <span className="text-ink-3">/{count(usage?.videoLimit)}</span>
+        </span>
+      </div>
+      <VideoQuotaBar usage={usage} />
+      <p className="type-small text-ink-3 mt-1.5">{storageNote(usage)}</p>
+      <dl className="type-ui mt-2 space-y-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <dt className="text-ink-2 font-normal">Text Testimonials</dt>
+          <dd className="font-mono tabular-nums">
             {count(
               usage?.textTestimonials,
               usage?.textTestimonialsIsLowerBound,
             )}
           </dd>
         </div>
-        <div className="flex justify-between gap-2">
-          <dt>Projects</dt>
-          <dd className="font-semibold tabular-nums">
+        <div className="flex items-baseline justify-between gap-2">
+          <dt className="text-ink-2 font-normal">Projects</dt>
+          <dd className="font-mono tabular-nums">
             {count(usage?.organizations, usage?.organizationsIsLowerBound)}
           </dd>
         </div>
