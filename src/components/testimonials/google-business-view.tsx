@@ -99,84 +99,100 @@ export function GoogleBusinessView({
             )}
           </div>
           {page && (
-            <div aria-live="polite" className="grid gap-4">
-              <h3 className="font-semibold">
-                {location
-                  ? "Customer reviews"
-                  : account
-                    ? "Choose a business location"
-                    : "Choose an account"}
-              </h3>
-              {location && page.totalReviewCount !== undefined && (
-                <p className="text-muted-foreground text-sm">
-                  {page.totalReviewCount} reviews on Google
-                  {page.averageRating !== undefined
-                    ? ` · ${page.averageRating.toFixed(1)} out of 5`
-                    : ""}
-                </p>
-              )}
-              {page.items.length === 0 && (
-                <p className="text-muted-foreground text-sm">
-                  {location
-                    ? "No reviews found for this location."
-                    : "No accessible results. Check that this Google account manages a verified business."}
-                </p>
-              )}
-              <ul className="divide-border divide-y">
-                {page.items.map((entry) => (
-                  <li key={entry.name} className="py-4">
-                    {location ? (
-                      <article className="space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="font-semibold">{entry.title}</p>
-                          <p className="text-muted-foreground text-sm">
-                            {(
-                              {
-                                ONE: "1",
-                                TWO: "2",
-                                THREE: "3",
-                                FOUR: "4",
-                                FIVE: "5",
-                              } as Record<string, string>
-                            )[entry.rating ?? ""]
-                              ? `${({ ONE: "1", TWO: "2", THREE: "3", FOUR: "4", FIVE: "5" } as Record<string, string>)[entry.rating!]} / 5 · Google`
-                              : "Google review"}
-                          </p>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">
-                          {entry.comment || "Rating only"}
-                        </p>
-                      </article>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        className="h-auto max-w-full text-left whitespace-normal"
-                        disabled={busy}
-                        onClick={() =>
-                          account
-                            ? onRead(account, entry.name)
-                            : onRead(entry.name)
-                        }
-                      >
-                        {entry.title}
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {page.nextPageToken && (
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => onRead(account, location, page.nextPageToken!)}
-                >
-                  Next page
-                </Button>
-              )}
-            </div>
+            <GoogleResults {...{ page, account, location, busy, onRead }} />
           )}
         </>
       )}
     </section>
+  );
+}
+
+function GoogleResults({
+  page,
+  account,
+  location,
+  busy,
+  onRead,
+}: Pick<GoogleViewProps, "account" | "location" | "busy" | "onRead"> & {
+  page: GooglePage;
+}) {
+  return (
+    <div aria-live="polite" className="grid gap-4">
+      <h3 className="font-semibold">
+        {location
+          ? "Customer reviews"
+          : account
+            ? "Choose a business location"
+            : "Choose an account"}
+      </h3>
+      {location && page.totalReviewCount !== undefined && (
+        <p className="text-muted-foreground text-sm">
+          {page.totalReviewCount} reviews on Google
+          {page.averageRating !== undefined
+            ? ` · ${page.averageRating.toFixed(1)} out of 5`
+            : ""}
+        </p>
+      )}
+      {page.items.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          {location
+            ? "No reviews found for this location."
+            : "No accessible results. Check that this Google account manages a verified business."}
+        </p>
+      )}
+      <ul className="divide-border divide-y">
+        {page.items.map((entry) => (
+          <li key={entry.name} className="py-4">
+            {location ? (
+              <GoogleReview entry={entry} />
+            ) : (
+              <Button
+                variant="ghost"
+                className="h-auto max-w-full text-left whitespace-normal"
+                disabled={busy}
+                onClick={() =>
+                  account ? onRead(account, entry.name) : onRead(entry.name)
+                }
+              >
+                {entry.title}
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {page.nextPageToken && (
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() => onRead(account, location, page.nextPageToken!)}
+        >
+          Next page
+        </Button>
+      )}
+    </div>
+  );
+}
+
+const ratingLabels: Record<string, string> = {
+  ONE: "1",
+  TWO: "2",
+  THREE: "3",
+  FOUR: "4",
+  FIVE: "5",
+};
+function GoogleReview({ entry }: { entry: GooglePage["items"][number] }) {
+  const rating = ratingLabels[entry.rating ?? ""];
+  return (
+    <article className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-semibold">{entry.title}</p>
+        <p className="text-muted-foreground text-sm">
+          {rating ? `${rating} / 5 · Google` : "Google review"}
+        </p>
+      </div>
+      <p className="text-sm whitespace-pre-wrap">
+        {entry.comment || "Rating only"}
+      </p>
+    </article>
   );
 }

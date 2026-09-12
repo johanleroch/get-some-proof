@@ -53,10 +53,28 @@ function Connection({
     location?: string;
   }>({});
   const [page, setPage] = useState<GooglePage | null>(null);
-  async function run(fn: () => Promise<void>) {
+  async function perform(
+    operation: "connect" | "disconnect" | "read",
+    request: { account?: string; location?: string; pageToken?: string } = {},
+  ) {
     setBusy(true);
     try {
-      await fn();
+      if (operation === "connect") {
+        window.location.assign(await connect({ organizationId }));
+      } else if (operation === "disconnect") {
+        setPage(null);
+        const result = await disconnect({ organizationId });
+        if (result.revoked) toast.success("Google disconnected.");
+        else
+          toast.error(
+            "Disconnected here. Remove access in your Google Account's Connections page to finish revoking permission.",
+          );
+      } else {
+        setPage(null);
+        const result = await read({ organizationId, ...request });
+        setSelection({ account: request.account, location: request.location });
+        setPage(result);
+      }
     } catch (error) {
       toast.error(message(error));
     } finally {
@@ -72,34 +90,10 @@ function Connection({
         page,
         ...selection,
       }}
-      onConnect={() =>
-        void run(async () => {
-          window.location.assign(await connect({ organizationId }));
-        })
-      }
-      onDisconnect={() =>
-        void run(async () => {
-          setPage(null);
-          const result = await disconnect({ organizationId });
-          if (result.revoked) toast.success("Google disconnected.");
-          else
-            toast.error(
-              "Disconnected here. Remove access in your Google Account's Connections page to finish revoking permission.",
-            );
-        })
-      }
+      onConnect={() => void perform("connect")}
+      onDisconnect={() => void perform("disconnect")}
       onRead={(account, location, pageToken) =>
-        void run(async () => {
-          setPage(null);
-          const result = await read({
-            organizationId,
-            account,
-            location,
-            pageToken,
-          });
-          setSelection({ account, location });
-          setPage(result);
-        })
+        void perform("read", { account, location, pageToken })
       }
     />
   );

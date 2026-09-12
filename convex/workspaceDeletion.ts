@@ -745,17 +745,20 @@ async function deletePhaseBatch(
           q.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
-      for (const record of records) {
-        if (record.encryptedRefreshToken)
-          await ctx.scheduler.runAfter(
-            0,
-            internal.googleBusinessActions.revokeDeletedConnection,
-            {
-              organizationId,
-              encryptedRefreshToken: record.encryptedRefreshToken as string,
-            },
-          );
-      }
+      await Promise.all(
+        records.map((record) =>
+          record.encryptedRefreshToken
+            ? ctx.scheduler.runAfter(
+                0,
+                internal.googleBusinessActions.revokeDeletedConnection,
+                {
+                  organizationId,
+                  encryptedRefreshToken: record.encryptedRefreshToken as string,
+                },
+              )
+            : Promise.resolve(),
+        ),
+      );
       break;
     case "publicationConsents":
       records = await ctx.db
