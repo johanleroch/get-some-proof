@@ -70,6 +70,7 @@ export const getSettings = query({
     accentColor: v.string(),
     canHideAttribution: v.boolean(),
     hideAttribution: v.boolean(),
+    testimonialLinksEnabled: v.optional(v.boolean()),
     showSourceIcons: v.optional(v.boolean()),
     theme: themeValidator,
     transparentEmbed: v.boolean(),
@@ -85,6 +86,9 @@ export const getSettings = query({
       ctx,
       access.organization._id,
     );
+    const account = access.organization.accountId
+      ? await ctx.db.get(access.organization.accountId)
+      : null;
     const canHideAttribution = entitlement.effectivePlan === "premium";
     return {
       accentColor:
@@ -92,6 +96,10 @@ export const getSettings = query({
         access.organization.primaryColor,
       canHideAttribution,
       hideAttribution: canHideAttribution,
+      testimonialLinksEnabled:
+        access.organization.publicWallTestimonialLinksEnabled ??
+        account?.testimonialLinksEnabled ??
+        true,
       showSourceIcons: access.organization.publicWallShowSourceIcons ?? true,
       theme: access.organization.publicWallTheme ?? "system",
       transparentEmbed: access.organization.publicWallTransparentEmbed ?? false,
@@ -145,6 +153,7 @@ export const updateSettings = mutation({
   args: {
     accentColor: v.string(),
     hideAttribution: v.boolean(),
+    testimonialLinksEnabled: v.optional(v.boolean()),
     showSourceIcons: v.optional(v.boolean()),
     organizationId: v.id("organizations"),
     theme: themeValidator,
@@ -179,6 +188,9 @@ export const updateSettings = mutation({
         args.showSourceIcons ??
         access.organization.publicWallShowSourceIcons ??
         true,
+      ...(args.testimonialLinksEnabled !== undefined
+        ? { publicWallTestimonialLinksEnabled: args.testimonialLinksEnabled }
+        : {}),
       publicWallTheme: args.theme,
       publicWallTransparentEmbed: args.transparentEmbed,
       publicWallVisibility: args.visibility,

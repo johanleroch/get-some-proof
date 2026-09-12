@@ -10,11 +10,13 @@ export function PageHeader({
   actions,
   className,
   description,
+  leading,
   title,
 }: {
   actions?: ReactNode;
   className?: string;
   description?: ReactNode;
+  leading?: ReactNode;
   title: ReactNode;
 }) {
   return (
@@ -26,7 +28,10 @@ export function PageHeader({
       data-slot="page-header"
     >
       <div className="max-w-prose min-w-0 space-y-1.5">
-        <h1 className="type-display text-balance">{title}</h1>
+        <div className="flex items-center gap-3">
+          {leading}
+          <h1 className="type-display text-balance">{title}</h1>
+        </div>
         {description ? (
           <p className="type-body text-ink-2">{description}</p>
         ) : null}

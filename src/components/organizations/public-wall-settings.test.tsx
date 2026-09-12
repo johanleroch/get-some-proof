@@ -39,6 +39,7 @@ describe("PublicWallSettings", () => {
       expect(onSave).toHaveBeenCalledWith({
         accentColor: "#f97316",
         hideAttribution: false,
+        testimonialLinksEnabled: true,
         showSourceIcons: false,
         theme: "dark",
         transparentEmbed: true,

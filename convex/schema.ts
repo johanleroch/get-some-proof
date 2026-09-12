@@ -354,6 +354,7 @@ export default defineSchema({
     publicWallTransparentEmbed: v.optional(v.boolean()),
     publicWallHideAttribution: v.optional(v.boolean()),
     publicWallOrderVersion: v.optional(v.number()),
+    publicWallTestimonialLinksEnabled: v.optional(v.boolean()),
     publicWallShowSourceIcons: v.optional(v.boolean()),
     publicWallVisibility: v.optional(
       v.object({

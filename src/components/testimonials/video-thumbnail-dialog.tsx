@@ -110,6 +110,7 @@ export function VideoThumbnailDialog({
   const [timeSeconds, setTimeSeconds] = useState(
     Math.min(testimonial.posterTimeSeconds ?? duration / 2, duration),
   );
+  const [frameSelected, setFrameSelected] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -141,11 +142,9 @@ export function VideoThumbnailDialog({
   // The same URL the card already loaded, so opening the dialog is instant.
   const chosenSrc = usingImage
     ? fileUrl
-    : testimonialPoster({
-        ...testimonial,
-        posterTimeSeconds: timeSeconds,
-        posterUrl: undefined,
-      });
+    : frameSelected
+      ? frameUrl(testimonial.playbackId, timeSeconds)
+      : testimonialPoster(testimonial);
   const poster = useLoadedPoster(chosenSrc);
   const aspectRatio = videoAspectRatioStyle(testimonial.aspectRatio);
 
@@ -207,7 +206,10 @@ export function VideoThumbnailDialog({
                     )}
                     disabled={saving || usingImage}
                     key={frameTime}
-                    onClick={() => setTimeSeconds(frameTime)}
+                    onClick={() => {
+                      setTimeSeconds(frameTime);
+                      setFrameSelected(true);
+                    }}
                     role="radio"
                     style={{ aspectRatio }}
                     type="button"
@@ -274,11 +276,11 @@ export function VideoThumbnailDialog({
               testimonial={{
                 ...testimonial,
                 posterTimeSeconds: timeSeconds,
-                posterUrl: poster.loaded,
+                posterUrl: usingImage ? poster.loaded : chosenSrc,
               }}
               width={previewWidth}
             >
-              {poster.pending ? (
+              {usingImage && poster.pending ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

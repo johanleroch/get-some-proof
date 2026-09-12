@@ -36,7 +36,7 @@ export const widgetTemplates: {
   },
 ];
 export const initialWidgetConfig: WidgetConfig = {
-  layout: "masonry",
+  layout: "wall",
   font: "inherit",
   accentColor: "#ffbb16",
   backgroundColor: "#ffffff",

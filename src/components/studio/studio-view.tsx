@@ -159,6 +159,7 @@ export function StudioView(props: StudioViewProps) {
             </p>
           ) : null}
           <StudioTemplateChooser
+            freePlan={props.attributionRequired}
             disabled={busy || !!props.loading}
             onSelect={(template) => void performAction(template)}
           />

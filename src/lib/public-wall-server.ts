@@ -243,6 +243,7 @@ export async function publicWallResponse(
       accentInk: brand.accentInk,
       attributionRequired: brand.attributionRequired,
       name: brand.brandName,
+      logoUrl: brand.logoUrl,
       publicSlug: brand.publicSlug,
       theme: brand.theme,
       transparentEmbed: brand.transparentEmbed,

@@ -33,6 +33,24 @@ const candidateValidator = v.object({
 });
 const widgetValidator = schema.doc("widgets");
 
+async function requireTemplateAccess(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  config: WidgetConfig,
+) {
+  if (config.layout === "wall") return;
+  const entitlement = await getOrganizationBillingEntitlement(
+    ctx,
+    organizationId,
+  );
+  if (entitlement.effectivePlan !== "premium")
+    throw new ConvexError({
+      code: "PREMIUM_REQUIRED",
+      message:
+        "This template requires Pro. Wall of Fame is available for free.",
+    });
+}
+
 async function owned(
   ctx: QueryCtx,
   args: { organizationId: Id<"organizations">; widgetId: Id<"widgets"> },
@@ -107,7 +125,9 @@ async function selected(
         ctx,
         brand,
         projection,
-        account?.testimonialLinksEnabled !== false,
+        config.testimonialLinksEnabled ??
+          account?.testimonialLinksEnabled ??
+          true,
       ),
     });
   }
@@ -126,6 +146,7 @@ export const create = mutation({
       { organizationId: args.organizationId },
       "ownership:manage",
     );
+    await requireTemplateAccess(ctx, args.organizationId, args.config);
     const existing = await ctx.db
       .query("widgets")
       .withIndex("by_organizationId", (q) =>
@@ -160,6 +181,7 @@ export const save = mutation({
     const { widget, brand } = await owned(ctx, args, true);
     checkRevision(widget, args.expectedRevision);
     const config = normalizeWidgetConfig(args.config);
+    await requireTemplateAccess(ctx, brand._id, config);
     if (args.publish && !args.testimonialIds.length)
       invalidWidget("Select at least one testimonial before publishing.");
     await selected(ctx, brand, args.testimonialIds, config, true);
@@ -181,6 +203,7 @@ export const publish = mutation({
   handler: async (ctx, args) => {
     const { widget, brand } = await owned(ctx, args, true);
     checkRevision(widget, args.expectedRevision);
+    await requireTemplateAccess(ctx, brand._id, widget.draft.config);
     if (!widget.draft.testimonialIds.length)
       invalidWidget("Select at least one testimonial before publishing.");
     await selected(
@@ -245,13 +268,24 @@ export const get = query({
   ),
   handler: async (ctx, args) => {
     const { widget, brand } = await owned(ctx, args);
+    const account = brand.accountId ? await ctx.db.get(brand.accountId) : null;
     return {
       ...widget,
+      draft: {
+        ...widget.draft,
+        config: {
+          ...widget.draft.config,
+          testimonialLinksEnabled:
+            widget.draft.config.testimonialLinksEnabled ??
+            account?.testimonialLinksEnabled ??
+            true,
+        },
+      },
       draftTestimonials: await selected(
         ctx,
         brand,
         widget.draft.testimonialIds,
-        widget.draft.config,
+        { ...widget.draft.config, testimonialLinksEnabled: true },
       ),
     };
   },
@@ -291,12 +325,7 @@ export const candidates = query({
         .filter((projection) => projectionIsPublic(account, projection))
         .map(async (projection) => ({
           testimonialId: projection.testimonialId,
-          card: await hydratePublicProjection(
-            ctx,
-            brand,
-            projection,
-            account?.testimonialLinksEnabled !== false,
-          ),
+          card: await hydratePublicProjection(ctx, brand, projection, true),
         })),
     );
     return { ...page, page: items };
@@ -316,6 +345,10 @@ async function publicWidget(ctx: QueryCtx, publicId: string) {
   if (!widget?.published) return null;
   const brand = await ctx.db.get(widget.organizationId);
   if (!brand || !(await isProjectActive(ctx, brand))) return null;
+  if (widget.published.config.layout !== "wall") {
+    const entitlement = await getOrganizationBillingEntitlement(ctx, brand._id);
+    if (entitlement.effectivePlan !== "premium") return null;
+  }
   return { widget, brand };
 }
 async function revision(

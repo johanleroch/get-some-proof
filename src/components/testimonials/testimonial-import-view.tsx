@@ -3,6 +3,8 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { Route } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import { IconArrowLeft, IconBrandOpenai } from "@tabler/icons-react";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
@@ -291,6 +293,18 @@ export function TestimonialImportView({
       className={`mx-auto grid w-full max-w-[1200px] gap-8 pb-24 max-md:[&_[data-slot=button]]:min-h-11 ${publicPreview ? "[&_[data-slot=button]]:min-h-11" : ""}`}
     >
       <PageHeader
+        leading={
+          !publicPreview ? (
+            <Button asChild variant="ghost" size="icon" className="shrink-0">
+              <Link
+                href={`/org/${slug}/inbox` as Route}
+                aria-label="Back to Inbox"
+              >
+                <IconArrowLeft aria-hidden="true" />
+              </Link>
+            </Button>
+          ) : undefined
+        }
         title={
           result
             ? result.processing
@@ -316,7 +330,8 @@ export function TestimonialImportView({
                 : "Bring your existing Senja or Testimonial.to wall into Get Some Proof."
         }
         actions={
-          navigation ?? (
+          navigation ??
+          (publicPreview ? (
             <Button asChild variant="ghost">
               <Link
                 href={(publicPreview ? "/" : `/org/${slug}/inbox`) as Route}
@@ -324,7 +339,7 @@ export function TestimonialImportView({
                 {publicPreview ? "Get Some Proof" : "Back to Inbox"}
               </Link>
             </Button>
-          )
+          ) : undefined)
         }
       />
 
@@ -445,18 +460,33 @@ export function TestimonialImportView({
             )}
           </form>
           {!publicPreview && (
-            <div className="border-line grid gap-4 border-t pt-6 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="border-line grid gap-4 border-t pt-6 xl:grid-cols-[1fr_auto] xl:items-center">
               <div className="grid gap-1">
-                <h2 className="type-heading">Import with an assistant</h2>
+                <h2 className="type-heading">Connect your assistant via MCP</h2>
                 <p className="type-body text-ink-2 max-w-prose">
-                  Use Claude Code or Codex to bring testimonials from another
-                  page.
+                  Connect Claude, Codex or another MCP-compatible assistant to
+                  Get Some Proof, then ask it to import your existing
+                  testimonials.
                 </p>
+                <div className="type-small mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <span className="inline-flex items-center gap-2">
+                    <Image
+                      src="/integrations/claude.svg"
+                      width={20}
+                      height={20}
+                      alt=""
+                    />
+                    Claude
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <IconBrandOpenai className="size-5" aria-hidden="true" />
+                    Codex
+                  </span>
+                  <span className="text-ink-2">Other MCP assistants</span>
+                </div>
               </div>
               <Button asChild variant="outline">
-                <Link href={`/org/${slug}/mcp` as Route}>
-                  Import with an assistant
-                </Link>
+                <Link href={`/org/${slug}/mcp` as Route}>Connect via MCP</Link>
               </Button>
             </div>
           )}

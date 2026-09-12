@@ -1,3 +1,4 @@
+import { publicRichText } from "@convex/domain/testimonialRichText";
 import type { WidgetConfig } from "@convex/domain/widgets";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { accentInk } from "@convex/domain/colorContrast";
@@ -11,7 +12,22 @@ export type WidgetPresentation = {
 };
 
 export function widgetPayload(value: WidgetPresentation) {
-  const testimonials = value.testimonials.flatMap((testimonial) => {
+  const testimonials = value.testimonials.flatMap((original) => {
+    const linksEnabled = value.config.testimonialLinksEnabled !== false;
+    const testimonial = {
+      ...original,
+      ...(original.type === "text"
+        ? { richText: publicRichText(original.richText, linksEnabled) }
+        : {}),
+      ...(original.source
+        ? {
+            source: {
+              ...original.source,
+              url: linksEnabled ? original.source.url : undefined,
+            },
+          }
+        : {}),
+    };
     if (value.config.layout !== "highlights") return [testimonial];
     if (testimonial.type !== "text") return [];
     const excerpts =

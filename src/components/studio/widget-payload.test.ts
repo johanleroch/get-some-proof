@@ -8,41 +8,46 @@ const config = {
   textColor: "#2e2a25",
 };
 describe("widget public presentation", () => {
-  it("uses only existing highlighted phrases, without inventing a rating", () => {
-    const payload = widgetPayload({
-      config,
-      brandName: "Cedar Workshop",
-      attributionRequired: true,
-      testimonials: [
-        {
-          id: "one",
-          name: "Maya",
-          avatarUrl: null,
-          publishedAt: 1,
-          type: "text",
-          text: "Before. Saved us hours. After.",
-          richText: [
-            {
-              type: "p",
-              children: [
-                { text: "Before. " },
-                {
-                  text: "Saved us hours.",
-                  highlight: true,
-                  href: "https://example.com/review",
-                },
-                { text: " After." },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    expect(payload.testimonials[0].html).toContain("Saved us hours.");
-    expect(payload.testimonials[0].html).toContain(
-      'href="https://example.com/review"',
-    );
-    expect(payload.testimonials[0].html).not.toContain("Before.");
-    expect(payload.testimonials[0].html).not.toContain("out of 5 stars");
-  });
+  it.each([true, false])(
+    "respects links enabled=%s and uses only existing highlighted phrases, without inventing a rating",
+    (testimonialLinksEnabled) => {
+      const payload = widgetPayload({
+        config: { ...config, testimonialLinksEnabled },
+        brandName: "Cedar Workshop",
+        attributionRequired: true,
+        testimonials: [
+          {
+            id: "one",
+            name: "Maya",
+            avatarUrl: null,
+            publishedAt: 1,
+            type: "text",
+            text: "Before. Saved us hours. After.",
+            richText: [
+              {
+                type: "p",
+                children: [
+                  { text: "Before. " },
+                  {
+                    text: "Saved us hours.",
+                    highlight: true,
+                    href: "https://example.com/review",
+                  },
+                  { text: " After." },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      expect(payload.testimonials[0].html).toContain("Saved us hours.");
+      expect(
+        payload.testimonials[0].html.includes(
+          'href="https://example.com/review"',
+        ),
+      ).toBe(testimonialLinksEnabled);
+      expect(payload.testimonials[0].html).not.toContain("Before.");
+      expect(payload.testimonials[0].html).not.toContain("out of 5 stars");
+    },
+  );
 });

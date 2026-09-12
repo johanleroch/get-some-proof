@@ -1,6 +1,14 @@
 "use client";
 
-import { IconDots, IconChevronDown, IconX } from "@tabler/icons-react";
+import { useState } from "react";
+import {
+  IconChevronDown,
+  IconX,
+  IconFilter,
+  IconVideo,
+  IconPhoto,
+  IconAlignLeft,
+} from "@tabler/icons-react";
 import { importAttestationText } from "@convex/domain/testimonialImport";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,6 +16,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuCheckboxItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -81,6 +90,16 @@ export function BulkTestimonialInbox({
 }: BulkInboxProps & {
   performVideoRetry?: (item: InboxTestimonial) => Promise<unknown>;
 }) {
+  const [filters, setFilters] = useState<string[]>([]);
+  const visibleTestimonials = view.testimonials.filter((item) => {
+    const kind =
+      item.submissionType === "video"
+        ? "video"
+        : item.card?.type === "text" && item.card.images?.length
+          ? "image"
+          : "text";
+    return filters.length === 0 || filters.includes(kind);
+  });
   const {
     selected,
     setSelected,
@@ -107,7 +126,14 @@ export function BulkTestimonialInbox({
     runCustom,
     request,
     toggle,
-  } = useInboxSelection({ totalCount, hasMore, loadPage, perform, ...view });
+  } = useInboxSelection({
+    totalCount,
+    hasMore,
+    loadPage,
+    perform,
+    ...view,
+    testimonials: visibleTestimonials,
+  });
   const retrySelected = (
     videos: InboxTestimonial[],
     label: string,
@@ -127,9 +153,74 @@ export function BulkTestimonialInbox({
   }
   const rare: BulkInboxAction[] =
     view.category === "spam" ? ["delete"] : ["spam", "delete"];
+  const filterControls = (
+    <div className="ml-auto shrink-0">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={blocked}
+          >
+            <IconFilter aria-hidden="true" />
+            Filter{filters.length > 0 ? ` (${filters.length})` : ""}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60 space-y-1 p-1.5">
+          {[
+            { value: "video", label: "Video", Icon: IconVideo },
+            { value: "image", label: "Text with image", Icon: IconPhoto },
+            { value: "text", label: "Text without image", Icon: IconAlignLeft },
+          ].map(({ value, label, Icon }) => (
+            <DropdownMenuCheckboxItem
+              key={value}
+              className="data-[state=checked]:bg-brand-soft data-[state=checked]:text-brand-text min-h-10 gap-3 py-2 pr-8 pl-3 data-[state=checked]:font-medium [&>span.absolute]:right-3 [&>span.absolute]:left-auto"
+              checked={filters.includes(value!)}
+              onSelect={(event) => event.preventDefault()}
+              onCheckedChange={(checked) => {
+                clear();
+                setFilters((previous) =>
+                  checked
+                    ? [...previous, value!]
+                    : previous.filter((item) => item !== value),
+                );
+              }}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              {label}
+            </DropdownMenuCheckboxItem>
+          ))}
+          <DropdownMenuSeparator className="mx-0 my-1.5" />
+          <DropdownMenuItem
+            className="text-ink-2 min-h-10 gap-3 px-3 py-2"
+            disabled={!filters.length}
+            onSelect={() => {
+              clear();
+              setFilters([]);
+            }}
+          >
+            <IconX aria-hidden="true" className="size-4" />
+            Clear filters
+          </DropdownMenuItem>
+          {filters.length > 0 ? (
+            <p
+              className="type-small text-ink-2 max-w-64 px-2 py-2"
+              role="status"
+            >
+              {visibleTestimonials.length} matching
+              {hasMore
+                ? " among loaded testimonials. Load more to see more results."
+                : " testimonials"}
+            </p>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
   return (
     <div className="space-y-3">
       {(view.testimonials.length > 0 ||
+        filters.length > 0 ||
         selected.size > 0 ||
         outcome ||
         phase !== "idle") && (
@@ -144,11 +235,11 @@ export function BulkTestimonialInbox({
               <Checkbox
                 aria-label="Select displayed testimonials"
                 checked={checked}
-                disabled={blocked || view.testimonials.length === 0}
+                disabled={blocked || visibleTestimonials.length === 0}
                 onCheckedChange={(value) => {
                   setSelected((previous) => {
                     const next = new Map(previous);
-                    for (const item of view.testimonials) {
+                    for (const item of visibleTestimonials) {
                       if (value === true) next.set(item.testimonialId, item);
                       else next.delete(item.testimonialId);
                     }
@@ -166,51 +257,11 @@ export function BulkTestimonialInbox({
             </label>
             {selected.size > 0 && (
               <>
-                <div className="hidden items-center gap-2 md:flex">
-                  <BulkVideoRetryAction
-                    blocked={blocked}
-                    items={items}
-                    onRun={retrySelected}
-                    perform={performVideoRetry}
-                  />
-                  {primaryActions[view.category].map((action, index) => (
-                    <Button
-                      key={action}
-                      size="sm"
-                      variant={
-                        index === 0 && action === "publish"
-                          ? "default"
-                          : "outline"
-                      }
-                      disabled={
-                        blocked || (action === "publish" && ready.length === 0)
-                      }
-                      onClick={() => request(action)}
-                    >
-                      {actionLabels[action]}
-                    </Button>
-                  ))}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        aria-label="More bulk actions"
-                        size="icon-sm"
-                        variant="ghost"
-                        disabled={blocked}
-                      >
-                        <IconDots aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {rare.map(actionItem)}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="md:hidden">
+                <div className="shrink-0">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="outline" disabled={blocked}>
-                        Actions ({selected.size})
+                        Actions
                         <IconChevronDown aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -225,22 +276,38 @@ export function BulkTestimonialInbox({
                       {primaryActions[view.category].map(actionItem)}
                       <DropdownMenuSeparator />
                       {rare.map(actionItem)}
+                      {items.length > ready.length &&
+                      primaryActions[view.category].includes("publish") ? (
+                        <>
+                          <DropdownMenuSeparator />
+                          <p className="type-small text-ink-2 max-w-64 px-2 py-2">
+                            {ready.length} ready to publish ·{" "}
+                            {items.length - ready.length} videos not ready will
+                            stay selected.
+                          </p>
+                          <DropdownMenuItem
+                            onSelect={() => void selectAll(true)}
+                          >
+                            Refresh selected testimonials
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
                 <Button
                   aria-label="Clear selection"
-                  className="ml-auto size-9 p-0 md:h-9 md:w-auto md:px-3"
+                  className="size-9 shrink-0 p-0"
                   size="sm"
                   variant="ghost"
                   disabled={phase === "running"}
                   onClick={clear}
                 >
-                  <IconX aria-hidden="true" className="md:hidden" />
-                  <span className="hidden md:inline">Clear selection</span>
+                  <IconX aria-hidden="true" />
                 </Button>
               </>
             )}
+            {filterControls}
           </div>
           {phase === "selecting" ? (
             <p role="status" className="type-small text-ink-2 mt-2">
@@ -253,7 +320,7 @@ export function BulkTestimonialInbox({
             </p>
           ) : (
             <>
-              {hasMore && selected.size > 0 && (
+              {hasMore && filters.length === 0 && selected.size > 0 && (
                 <Button
                   className="h-auto min-h-11 justify-start px-0 text-left whitespace-normal"
                   variant="link"
@@ -263,31 +330,8 @@ export function BulkTestimonialInbox({
                   Select {countLabel}
                 </Button>
               )}
-              {selected.size > 0 &&
-                primaryActions[view.category].includes("publish") &&
-                ready.length < items.length && (
-                  <p className="type-small text-ink-2 mt-2">
-                    {ready.length} ready to publish ·{" "}
-                    {items.length - ready.length}{" "}
-                    {items.length - ready.length === 1 ? "video" : "videos"} not
-                    ready will stay selected.
-                  </p>
-                )}
             </>
           )}
-          {phase === "idle" &&
-            items.length > ready.length &&
-            primaryActions[view.category].includes("publish") && (
-              <Button
-                variant="link"
-                size="sm"
-                className="px-0"
-                disabled={blocked}
-                onClick={() => void selectAll(true)}
-              >
-                Refresh selected testimonials
-              </Button>
-            )}
           {outcome && (
             <p role="status" className="type-small mt-2">
               {outcome}
@@ -307,16 +351,29 @@ export function BulkTestimonialInbox({
           )}
         </div>
       )}
-      <TestimonialInboxView
-        {...view}
-        actionsDisabled={blocked || selected.size > 0}
-        onMove={selected.size > 0 ? undefined : view.onMove}
-        selection={{
-          ids: new Set(selected.keys()),
-          disabled: blocked,
-          onToggle: toggle,
-        }}
-      />
+      {filters.length > 0 && visibleTestimonials.length === 0 ? null : (
+        <TestimonialInboxView
+          {...view}
+          testimonials={visibleTestimonials}
+          actionsDisabled={blocked || selected.size > 0}
+          onMove={
+            selected.size > 0 || filters.length > 0 ? undefined : view.onMove
+          }
+          selection={{
+            ids: new Set(selected.keys()),
+            disabled: blocked,
+            onToggle: toggle,
+          }}
+        />
+      )}
+      {filters.length > 0 && visibleTestimonials.length === 0 ? (
+        <div className="space-y-3">
+          <p className="type-body text-ink-2">
+            No testimonials match these filters.
+          </p>
+          {view.footer}
+        </div>
+      ) : null}
       <Dialog
         open={confirmation !== null}
         onOpenChange={(open) => {

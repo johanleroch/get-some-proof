@@ -14,6 +14,7 @@ export type PublicWallValue = {
   accentColor: string;
   attributionRequired: boolean;
   brandName: string;
+  logoUrl?: string | null;
   publicSlug: string;
   theme: "light" | "dark" | "system";
   testimonials: PublicTestimonial[];
@@ -64,11 +65,21 @@ export function HostedWall({
       style={{ "--wall-accent": wall.accentColor } as CSSProperties}
     >
       <div className="mx-auto w-full max-w-7xl">
-        <header className="mb-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-12">
+        <header className="mb-10 flex flex-col items-center gap-4 text-center sm:mb-12">
+          {wall.logoUrl ? (
+            // Storage URLs serve the original customer logo without cropping.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={wall.logoUrl}
+              alt={`${wall.brandName} logo`}
+              width={96}
+              height={96}
+              className="h-20 max-w-full object-contain sm:h-24"
+            />
+          ) : null}
           <div className="max-w-2xl space-y-3">
-            <h1 className="type-display-xl flex items-start gap-3 text-balance">
+            <h1 className="type-display-xl flex items-start justify-center gap-3 text-balance">
               <span>{wall.brandName}</span>
-              <Sparkle className="mt-1 size-9 shrink-0 text-(--wall-accent) sm:size-10" />
             </h1>
           </div>
           {wall.testimonials.length > 0 ? (

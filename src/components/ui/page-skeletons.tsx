@@ -134,27 +134,29 @@ function OverviewContentSkeleton() {
 
         <section
           aria-label="Public Wall"
-          className="border-line bg-surface grid gap-6 rounded-lg border p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-8"
+          className="border-line bg-surface @container rounded-lg border p-6"
         >
-          <WallFrames
-            aria-hidden="true"
-            className="text-ink mx-auto h-28 lg:h-32"
-          />
-          <div className="min-w-0">
-            <p className="type-micro text-ink-2">Your Public Wall</p>
-            <h2 className="type-heading mt-1">
-              Only what you publish reaches it
-            </h2>
-            <Skeleton className="mt-2 h-6 w-[min(30rem,80%)]" />
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button disabled type="button" variant="outline">
-                Open Wall
-                <IconExternalLink aria-hidden="true" />
-              </Button>
-              <Button disabled type="button" variant="ghost">
-                Embed on your site
-                <IconCode aria-hidden="true" />
-              </Button>
+          <div className="grid items-center gap-6 @min-[36rem]:grid-cols-[auto_minmax(0,1fr)]">
+            <WallFrames
+              aria-hidden="true"
+              className="text-ink mx-auto h-28 max-w-full shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="type-micro text-ink-2">Your Public Wall</p>
+              <h2 className="type-heading mt-1">
+                Only what you publish reaches it
+              </h2>
+              <Skeleton className="mt-2 h-6 w-[min(30rem,80%)]" />
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button disabled type="button" variant="outline">
+                  Open Wall
+                  <IconExternalLink aria-hidden="true" />
+                </Button>
+                <Button disabled type="button" variant="ghost">
+                  Embed on your site
+                  <IconCode aria-hidden="true" />
+                </Button>
+              </div>
             </div>
           </div>
         </section>

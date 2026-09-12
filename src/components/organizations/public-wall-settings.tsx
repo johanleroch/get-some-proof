@@ -22,6 +22,7 @@ export type PublicWallSettingsValue = {
   accentColor: string;
   canHideAttribution: boolean;
   hideAttribution: boolean;
+  testimonialLinksEnabled?: boolean;
   showSourceIcons?: boolean;
   theme: "light" | "dark" | "system";
   transparentEmbed: boolean;
@@ -49,6 +50,9 @@ export function PublicWallSettings({
   ) => Promise<void>;
   settings: PublicWallSettingsValue;
 }) {
+  const [testimonialLinksEnabled, setTestimonialLinksEnabled] = useState(
+    settings.testimonialLinksEnabled ?? true,
+  );
   const [showSourceIcons, setShowSourceIcons] = useState(
     settings.showSourceIcons ?? true,
   );
@@ -73,6 +77,7 @@ export function PublicWallSettings({
       await onSave({
         accentColor,
         showSourceIcons,
+        testimonialLinksEnabled,
         hideAttribution: settings.canHideAttribution,
         theme,
         transparentEmbed,
@@ -129,6 +134,17 @@ export function PublicWallSettings({
           />
         </Field>
       </div>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+        <Switch
+          checked={testimonialLinksEnabled}
+          onCheckedChange={setTestimonialLinksEnabled}
+        />
+        <span>Allow links in testimonials</span>
+      </label>
+      <FieldDescription>
+        Make mentions and links clickable on this public Wall. When disabled,
+        the words stay visible.
+      </FieldDescription>
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium tracking-[-0.008em]">
           Show by default

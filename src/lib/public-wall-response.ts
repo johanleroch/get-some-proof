@@ -6,6 +6,7 @@ export type PublicWallResponse = {
     accentInk: string;
     attributionRequired: boolean;
     name: string;
+    logoUrl?: string | null;
     publicSlug: string;
     theme: "light" | "dark" | "system";
     transparentEmbed: boolean;

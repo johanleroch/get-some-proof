@@ -572,6 +572,7 @@ export function TestimonialDeleteScreenFixture() {
 }
 
 const wallFixture = {
+  logoUrl: bumprLogo,
   accentColor: collectionFormFixtureBrand.primaryColor,
   attributionRequired: true,
   brandName: collectionFormFixtureBrand.name,

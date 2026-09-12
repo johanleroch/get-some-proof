@@ -341,7 +341,7 @@ function InboxRow({
     <li
       aria-busy={busy || undefined}
       className={cn(
-        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
+        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 p-4 transition-colors duration-150 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
         selection?.checked ? "bg-brand-soft" : "hover:bg-surface-2",
       )}
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
@@ -359,10 +359,10 @@ function InboxRow({
       */}
       <div
         className={cn(
-          "row-start-1 flex items-center gap-2 self-center md:gap-3",
+          "row-start-1 flex items-center gap-2 self-center xl:gap-3",
           testimonial.submissionType === "text"
-            ? "md:row-span-3"
-            : "md:row-span-2",
+            ? "xl:row-span-3"
+            : "xl:row-span-2",
         )}
       >
         {selection && (
@@ -378,7 +378,7 @@ function InboxRow({
         {ordering ? (
           <IconGripVertical
             aria-hidden="true"
-            className="text-ink-3 hidden size-5 shrink-0 cursor-grab md:block"
+            className="text-ink-3 hidden size-5 shrink-0 cursor-grab xl:block"
           />
         ) : null}
         <InboxFace
@@ -395,7 +395,7 @@ function InboxRow({
       </div>
 
       {testimonial.submissionType === "text" ? (
-        <div className="col-span-2 row-start-2 min-w-0 md:col-span-1 md:col-start-2">
+        <div className="col-span-2 row-start-2 mt-3 min-w-0 xl:col-span-1 xl:col-start-2 xl:mt-0">
           <TestimonialListWords
             accentColor={accentColor}
             testimonial={testimonial.card}
@@ -405,7 +405,7 @@ function InboxRow({
 
       <div
         className={cn(
-          "col-start-2 min-w-0",
+          "col-span-2 min-w-0 xl:col-span-1 xl:col-start-2",
           testimonial.submissionType === "text"
             ? "row-start-3"
             : "row-start-2",
@@ -470,10 +470,10 @@ function InboxRow({
 
       <div
         className={cn(
-          "col-start-2 mt-3 flex flex-wrap items-center gap-2 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:self-center",
+          "col-span-2 mt-3 flex min-w-0 flex-wrap items-center gap-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:mt-0 xl:justify-end xl:self-center",
           testimonial.submissionType === "text"
-            ? "row-start-4 md:row-span-3"
-            : "row-start-3 md:row-span-2",
+            ? "row-start-4 xl:row-span-3"
+            : "row-start-3 xl:row-span-2",
           hideActions && "hidden",
         )}
       >
@@ -661,7 +661,7 @@ export function TestimonialInboxView({
 
   if (testimonials.length === 0) {
     return (
-      <section className="bg-surface border-line grid min-h-96 place-items-center rounded-lg border">
+      <section className="bg-surface border-line grid place-items-center rounded-lg border">
         <EmptyState
           action={emptyAction}
           description={
@@ -689,7 +689,7 @@ export function TestimonialInboxView({
         </p>
       ) : null}
       <section
-        className="bg-surface border-line min-h-96 overflow-hidden rounded-lg border"
+        className="bg-surface border-line overflow-hidden rounded-lg border"
         style={{ "--wall-accent": accentColor } as CSSProperties}
       >
         <ol className="divide-line divide-y">
