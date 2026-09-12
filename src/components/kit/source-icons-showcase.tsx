@@ -72,8 +72,8 @@ const origin: Record<SourcePlatform, string> = {
   google: "Google brand assets",
   x: "Simple Icons 16.30.0, stroked",
   linkedin: "Simple Icons 13.21.0",
-  facebook: "Simple Icons 16.30.0",
-  instagram: "Simple Icons 16.30.0",
+  facebook: "Facebook brand artwork, uncased",
+  instagram: "Simple Icons 16.30.0 + brand gradient",
   youtube: "Simple Icons 16.30.0",
   reddit: "Simple Icons 16.30.0, uncased",
   producthunt: "Simple Icons 16.30.0, uncased",
@@ -87,9 +87,9 @@ const note: Record<SourcePlatform, string> = {
   linkedin:
     "The official in bug. LinkedIn had it pulled from the public set, so this is the last published file: swap it for the download from brand.linkedin.com.",
   facebook:
-    "The official f knocked out of Meta\u2019s blue disc, and their current blue: #0866ff replaces the #1877f2 we carried.",
+    "The f on its own, lifted from the artwork of Meta\u2019s 2019 mark where it is already a contour of its own, in their current blue #0866ff.",
   instagram:
-    "The official camera glyph, kept simple and monochrome in Instagram\u2019s current pink: #ff0069 replaces the #e4405f we carried.",
+    "The camera glyph carrying Instagram\u2019s own gradient: their two radial gradients, remapped onto this grid rather than flattened to one pink.",
   youtube:
     "The official play badge: a wider rounded rectangle, triangle on the optical centre.",
   reddit: "The official Snoo, lifted out of the speech bubble it is drawn in.",
