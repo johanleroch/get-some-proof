@@ -8,6 +8,7 @@
 # Convex and local environment
 /.env
 /.env.local
+/.env.convex
 /.env.*.local
 
 # tests and tooling

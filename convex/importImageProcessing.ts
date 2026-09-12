@@ -38,7 +38,7 @@ export async function copyPortraitForImport(
     internal.testimonialImportAvatar.source,
     args,
   );
-  if (!source) return null;
+  if (!source || source.provider === "backup") return null;
   let storageId: Id<"_storage"> | undefined;
   try {
     const input =

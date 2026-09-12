@@ -16,6 +16,13 @@ const mocks = vi.hoisted(() => ({
 vi.mock("convex/react", () => ({
   useQuery: () => ({
     effectivePlan: mocks.effectivePlan,
+    usage: {
+      readyVideos: 8,
+      reservedVideos: 1,
+      videoLimit: 25,
+      textTestimonials: 42,
+      organizations: 2,
+    },
     pending: mocks.pending,
     can: {
       manageOwnership: mocks.manageOwnership,
@@ -71,7 +78,7 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "/account/billing");
   });
 
-  it("shows no plan card at all on a Pro Account", () => {
+  it("shows shared Pro usage above the user menu without a billing link", () => {
     mocks.effectivePlan = "premium";
     const { container } = render(
       <AppShell
@@ -87,7 +94,13 @@ describe("AppShell", () => {
       container.querySelector('[data-slot="sidebar-plan-card"]'),
     ).toBeNull();
     expect(screen.queryByText("Collect without limits")).toBeNull();
-    expect(screen.queryByText("Pro plan")).toBeNull();
+    expect(screen.getByText("You're Pro!")).toBeInTheDocument();
+    expect(screen.getByText("16 video slots left")).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Manage subscription" }),
+    ).toBeNull();
     expect(screen.queryByRole("link", { name: "Upgrade to Pro" })).toBeNull();
     expect(screen.getAllByText("User menu")).not.toHaveLength(0);
   });

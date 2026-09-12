@@ -1,4 +1,5 @@
 "use client";
+import { BackupImport } from "./backup-import";
 import { ImportPhotoProgress } from "./import-photo-progress";
 import { useRef, useState } from "react";
 import type { FunctionReturnType } from "convex/server";
@@ -171,6 +172,7 @@ export function TestimonialImport({
   if (!organization) return <p role="alert">Project unavailable.</p>;
   return (
     <TestimonialImportView
+      backupImport={<BackupImport organizationId={organization.id} />}
       resultDetails={
         <ImportPhotoProgress
           photos={photos ?? []}

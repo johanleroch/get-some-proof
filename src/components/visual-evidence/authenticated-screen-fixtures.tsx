@@ -762,6 +762,9 @@ export function DashboardBackgroundScreenFixture({
       freeVideoUsed: 1,
       readyVideos: 8,
       reservedVideos: 1,
+      videoLimit: 25,
+      textTestimonials: 42,
+      organizations: 2,
     },
   };
   return (

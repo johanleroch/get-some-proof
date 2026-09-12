@@ -1,4 +1,12 @@
 "use client";
+import { EmbeddedWallSnippet } from "./embedded-wall-snippet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
@@ -244,6 +252,7 @@ export function BrandDashboardView({
   publicSlug,
   slug,
 }: BrandDashboardViewProps) {
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const collectionPath = `/c/${publicSlug}` as Route;
@@ -260,7 +269,6 @@ export function BrandDashboardView({
   }, [justCreated]);
   const inboxPath = `/org/${slug}/inbox` as Route;
   const wallPath = `/w/${publicSlug}` as Route;
-  const embedPath = `/org/${slug}/settings#embed` as Route;
   const wallUrl = collectionUrl
     ? wallUrlFrom(collectionUrl, publicSlug)
     : undefined;
@@ -391,12 +399,38 @@ export function BrandDashboardView({
                       <IconExternalLink aria-hidden="true" />
                     </Link>
                   </Button>
-                  <Button asChild variant="ghost">
-                    <Link href={embedPath}>
+                  <Dialog open={embedOpen} onOpenChange={setEmbedOpen}>
+                    <Button
+                      variant="ghost"
+                      aria-haspopup="dialog"
+                      onClick={() => setEmbedOpen(true)}
+                    >
                       Embed on your site
                       <IconCode aria-hidden="true" />
-                    </Link>
-                  </Button>
+                    </Button>
+                    <DialogContent className="max-h-[90svh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Embed on your site</DialogTitle>
+                        <DialogDescription>
+                          Add your Public Wall to your website. Only published
+                          testimonials appear.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <EmbeddedWallSnippet
+                        compact
+                        embedOrigin={
+                          collectionUrl
+                            ? new URL(
+                                collectionUrl.includes("://")
+                                  ? collectionUrl
+                                  : `https://${collectionUrl}`,
+                              ).origin
+                            : ""
+                        }
+                        publicSlug={publicSlug}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </div>

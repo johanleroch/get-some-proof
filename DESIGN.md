@@ -390,9 +390,13 @@ pages still start at the top and scroll normally.
   size, and the blob peeking over the bottom right corner, big (128px,
   starstruck, tilted 8 degrees left, cropped by the panel as on
   `/templates`, its eyes well inside the card). It never says "Free plan":
-  the sale says it. A Pro Account shows nothing there, only the user row: a
-  paying customer is not sold to from the sidebar, and the subscription
-  lives on the billing page. Two things move on it, the founder's call: the
+  the sale says it. A Pro Account shows a matching amber poster, "You're Pro!",
+  with the animated blob at 104px in the upper-right corner and account-wide
+  usage: stored videos, reserved slots, remaining video capacity, text
+  testimonials, and Projects. It has no billing link (founder request,
+  2026-09-12). Bounded totals carry a visible plus sign; missing usage never
+  appears as zero. Two things move
+  on the Free card, the founder's call: the
   blob's eyes change every few seconds (starstruck to happy and back, the
   `Blob` transition, so the corner of the eye catches it), and a soft light
   sweeps the button (`.cta-shine`, the one moving gradient in the interface,

@@ -753,6 +753,10 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_submission_type", [
+      "organizationId",
+      "submissionType",
+    ])
     .index("by_organization_client_submission", [
       "organizationId",
       "clientSubmissionId",

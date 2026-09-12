@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -236,8 +236,10 @@ export function TestimonialImportView({
   inboxAction,
   resultDetails,
   selectionReview,
+  backupImport,
   checkingSelection = false,
 }: {
+  backupImport?: ReactNode;
   slug: string;
   jobId: Id<"testimonialImportJobs"> | null;
   provider: "testimonial-to" | "senja";
@@ -278,6 +280,7 @@ export function TestimonialImportView({
   selectionReview?: FunctionReturnType<typeof api.importEligibility.selection>;
   checkingSelection?: boolean;
 }) {
+  const [backupMode, setBackupMode] = useState(false);
   const [editingItem, setEditingItem] =
     useState<Doc<"testimonialImportItems"> | null>(null);
   const videoEnabled =
@@ -327,7 +330,7 @@ export function TestimonialImportView({
                 ? publicPreview
                   ? "Choose the testimonials you want to bring into Get Some Proof."
                   : "Choose the testimonials you want to bring into this Project."
-                : "Bring your existing Senja or Testimonial.to wall into Get Some Proof."
+                : "Import a Senja or Testimonial.to wall, or restore a Get Some Proof backup."
         }
         actions={
           navigation ??
@@ -396,24 +399,25 @@ export function TestimonialImportView({
           >
             <Button
               variant="outline"
-              aria-pressed={provider === "testimonial-to"}
+              aria-pressed={!backupMode && provider === "testimonial-to"}
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
-              onClick={() => setProvider("testimonial-to")}
+              onClick={() => { setBackupMode(false); setProvider("testimonial-to"); }}
             >
               Testimonial.to
             </Button>
             <Button
               variant="outline"
-              aria-pressed={provider === "senja"}
+              aria-pressed={!backupMode && provider === "senja"}
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
-              onClick={() => setProvider("senja")}
+              onClick={() => { setBackupMode(false); setProvider("senja"); }}
             >
               Senja
             </Button>
+            {backupImport ? <Button variant="outline" aria-pressed={backupMode} className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold" onClick={() => setBackupMode(true)}>Get Some Proof backup</Button> : null}
           </div>
-          <form
+          {backupMode ? backupImport : <form
             className="grid gap-6"
             onSubmit={(event) => {
               event.preventDefault();
@@ -458,7 +462,7 @@ export function TestimonialImportView({
                 className="text-ink-2"
               />
             )}
-          </form>
+          </form>}
           {!publicPreview && (
             <div className="border-line grid gap-4 border-t pt-6 xl:grid-cols-[1fr_auto] xl:items-center">
               <div className="grid gap-1">

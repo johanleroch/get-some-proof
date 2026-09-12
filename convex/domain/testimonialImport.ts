@@ -22,7 +22,7 @@ export const wallProvider = v.union(
   v.literal("testimonial-to"),
   v.literal("senja"),
 );
-export const importProvider = v.union(wallProvider, v.literal("assistant"));
+export const importProvider = v.union(wallProvider, v.literal("assistant"), v.literal("backup"));
 export const assistantOutcome = v.object({
   sourceId: v.string(),
   itemId: v.id("testimonialImportItems"),

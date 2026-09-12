@@ -1,3 +1,5 @@
+import type { ExportMedia } from "./domain/exportMedia";
+import { prepareVideoDownload } from "./videoProvider";
 import { mediaDeletionProgress } from "./domain/mediaDeletionProgress";
 import { assertMediaDeleted, confirmVideoCleanup } from "./deletionMedia";
 import { deleteNextMedia } from "./deletionMediaActions";
@@ -178,28 +180,131 @@ export const readExportData = internalQuery({
         .withIndex("by_organization", (index) =>
           index.eq("organizationId", access.organization._id),
         )
-        .collect(),
+        .take(10001),
       ctx.db
         .query("testimonials")
         .withIndex("by_organization", (index) =>
           index.eq("organizationId", access.organization._id),
         )
-        .collect(),
+        .take(10001),
       ctx.db
         .query("publicationConsents")
         .withIndex("by_organization", (index) =>
           index.eq("organizationId", access.organization._id),
         )
-        .collect(),
+        .take(10001),
       ctx.db
         .query("memberships")
         .withIndex("by_organization", (index) =>
           index.eq("organizationId", access.organization._id),
         )
-        .collect(),
+        .take(10001),
     ]);
+    if (
+      [projects, testimonials, consents, memberships].some(
+        (rows) => rows.length > 10000,
+      )
+    ) {
+      throw new ConvexError(
+        "This project is too large for a single export. Contact support before deleting it.",
+      );
+    }
+    const media: ExportMedia[] = [];
+    async function storedImage(
+      storageId: Id<"_storage"> | undefined,
+      ownerId: string,
+      name: string,
+    ) {
+      if (!storageId) return;
+      const metadata = await ctx.db.system.get(storageId);
+      const extension =
+        (
+          {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/webp": "webp",
+            "image/avif": "avif",
+            "image/svg+xml": "svg",
+          } as Record<string, string>
+        )[metadata?.contentType ?? ""] ?? "bin";
+      const url = await ctx.storage.getUrl(storageId);
+      media.push({
+        path: `images/${ownerId}/${name}.${extension}`,
+        ownerId,
+        kind: "image",
+        ...(url ? { url } : { error: "Stored image is unavailable." }),
+      });
+    }
+    await storedImage(
+      access.organization.logoStorageId,
+      String(access.organization._id),
+      "logo",
+    );
+    for (const testimonial of testimonials) {
+      const ownerId = String(testimonial._id);
+      await storedImage(testimonial.avatarStorageId, ownerId, "avatar");
+      await storedImage(testimonial.posterStorageId, ownerId, "thumbnail");
+      if (
+        !testimonial.avatarStorageId &&
+        testimonial.importOrigin?.originalAvatarUrl
+      ) {
+        media.push({
+          path: `images/${ownerId}/avatar`,
+          ownerId,
+          kind: "image",
+          error:
+            "Imported avatar has no hosted copy. Original URL is preserved in importOrigin.",
+        });
+      }
+      for (const id of testimonial.imageIds ?? []) {
+        const image = await ctx.db.get(id);
+        if (
+          image?.organizationId === access.organization._id &&
+          image.storageId
+        )
+          await storedImage(image.storageId, ownerId, String(id));
+        else
+          media.push({
+            path: `images/${ownerId}/${id}`,
+            ownerId,
+            kind: "image",
+            error: "Attached image is unavailable.",
+          });
+      }
+      if (testimonial.submissionType === "video") {
+        const assets = await ctx.db
+          .query("videoAssets")
+          .withIndex("by_testimonial", (q) =>
+            q.eq("testimonialId", testimonial._id),
+          )
+          .take(100);
+        const asset = assets.find(
+          (asset) =>
+            asset.organizationId === access.organization._id &&
+            asset.status === "ready" &&
+            asset.providerAssetId,
+        );
+        media.push({
+          path: `videos/${ownerId}.mp4`,
+          ownerId,
+          kind: "video",
+          ...(asset?.provider === "mux"
+            ? { providerAssetId: asset.providerAssetId }
+            : { error: "Hosted video is not ready or unavailable." }),
+        });
+        if (!testimonial.posterStorageId && asset?.playbackId)
+          media.push({
+            path: `images/${ownerId}/thumbnail.webp`,
+            ownerId,
+            kind: "image",
+            url: `https://image.mux.com/${encodeURIComponent(asset.playbackId)}/thumbnail.webp?width=960&time=${testimonial.posterTimeSeconds ?? (asset.durationSeconds ?? 0) / 2}`,
+          });
+      }
+    }
     return JSON.stringify(
       {
+        media,
+        schemaVersion: 2,
         exportedAt: new Date().toISOString(),
         organization: access.organization,
         projects,
@@ -219,10 +324,69 @@ export const readExportData = internalQuery({
 });
 
 export const exportData = action({
-  args: { organizationId: v.id("organizations") },
+  args: {
+    organizationId: v.id("organizations"),
+    deferVideos: v.optional(v.boolean()),
+  },
   returns: v.string(),
-  handler: (ctx, args): Promise<string> =>
-    ctx.runQuery(internal.workspaceDeletion.readExportData, args),
+  handler: async (ctx, args): Promise<string> => {
+    const data = JSON.parse(
+      await ctx.runQuery(internal.workspaceDeletion.readExportData, {
+        organizationId: args.organizationId,
+      }),
+    );
+    if (args.deferVideos) return JSON.stringify(data);
+    // Resolve master downloads only after the ownership check above.
+    const media = data.media as ExportMedia[];
+    for (let i = 0; i < media.length; i += 3) {
+      await Promise.all(
+        media.slice(i, i + 3).map(async (item) => {
+          if (!item.providerAssetId) return;
+          try {
+            item.url = await prepareVideoDownload(item.providerAssetId);
+          } catch {
+            item.error =
+              "Video download could not be prepared. Retry the export before deleting this project.";
+          }
+          delete item.providerAssetId;
+        }),
+      );
+    }
+    return JSON.stringify(data);
+  },
+});
+
+export const authorizeExportVideo = internalQuery({
+  args: { organizationId: v.id("organizations"), assetId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireOrganizationPermission(
+      ctx,
+      { organizationId: args.organizationId },
+      "ownership:manage",
+    );
+    const asset = await ctx.db
+      .query("videoAssets")
+      .withIndex("by_provider_asset_id", (q) =>
+        q.eq("providerAssetId", args.assetId),
+      )
+      .unique();
+    if (
+      !asset ||
+      asset.organizationId !== args.organizationId ||
+      asset.provider !== "mux"
+    )
+      throw new ConvexError("Video unavailable.");
+    return null;
+  },
+});
+export const prepareExportVideo = action({
+  args: { organizationId: v.id("organizations"), assetId: v.string() },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    await ctx.runQuery(internal.workspaceDeletion.authorizeExportVideo, args);
+    return prepareVideoDownload(args.assetId);
+  },
 });
 
 export const prepare = internalMutation({

@@ -26,10 +26,14 @@ describe("WorkspaceDeletionSection", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Download data first" }),
+      screen.getByRole("button", { name: "Download ZIP backup" }),
     );
     await waitFor(() => expect(onExport).toHaveBeenCalledOnce());
     expect(onDelete).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Done" })).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
     const review = screen.getByRole("button", {
       name: "Review irreversible deletion",

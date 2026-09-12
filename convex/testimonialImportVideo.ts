@@ -110,7 +110,7 @@ export async function queueImportedVideo(
     job.organizationId,
   );
   if (
-    job.provider === "assistant" &&
+    (job.provider === "assistant" || job.provider === "backup") &&
     (entitlement.effectivePlan !== "premium" ||
       entitlement.state === "past_due")
   )
@@ -146,7 +146,7 @@ export async function queueImportedVideo(
     testimonialId,
     importItemId: item._id,
     provider: env.MUX_PROVIDER,
-    assistantImport: job.provider === "assistant" ? true : undefined,
+    assistantImport: (job.provider === "assistant" || job.provider === "backup") ? true : undefined,
     status: "processing",
     mimeType: "video/mp4",
     captionsStatus: "requested",

@@ -24,7 +24,11 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { NavUser } from "@/components/account/nav-user";
-import { SidebarPlanCard } from "@/components/account/sidebar-plan-card";
+import {
+  SidebarPlanCard,
+  SidebarProPlanCard,
+  type SidebarPlanUsage,
+} from "@/components/account/sidebar-plan-card";
 import { BrandMark } from "@/components/brand-mark";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { ProjectShellProvider } from "@/components/organizations/project-shell-context";
@@ -395,6 +399,7 @@ export function AppShellView({
   account?: {
     effectivePlan: "free" | "premium";
     freeProjectId: Id<"organizations"> | null;
+    usage?: SidebarPlanUsage;
   } | null;
   connected: boolean;
   userMenu: ReactNode;
@@ -483,6 +488,9 @@ export function AppShellView({
           </SidebarContent>
           <SidebarFooter className="gap-3">
             {account?.effectivePlan === "free" ? <SidebarPlanCard /> : null}
+            {account?.effectivePlan === "premium" ? (
+              <SidebarProPlanCard usage={account.usage} />
+            ) : null}
             {userMenu}
           </SidebarFooter>
         </Sidebar>

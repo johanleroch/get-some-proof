@@ -168,8 +168,8 @@ describe("BrandDashboardView", () => {
       "/w/acme-studio",
     );
     expect(
-      screen.getByRole("link", { name: "Embed on your site" }),
-    ).toHaveAttribute("href", "/org/acme-studio-ab12/settings#embed");
+      screen.getByRole("button", { name: "Embed on your site" }),
+    ).toHaveAttribute("aria-haspopup", "dialog");
     expect(
       screen.getByRole("status", { name: "Loading Account plan and usage" }),
     ).toBeVisible();
@@ -193,8 +193,15 @@ describe("BrandDashboardView", () => {
       "/w/acme-studio",
     );
     expect(
-      screen.getByRole("link", { name: "Embed on your site" }),
-    ).toHaveAttribute("href", "/org/acme-studio-ab12/settings#embed");
+      screen.getByRole("button", { name: "Embed on your site" }),
+    ).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Embed on your site" }));
+    expect(
+      screen.getByRole("dialog", { name: "Embed on your site" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Embed snippet")).toHaveValue(
+      '<div data-gsp-wall data-public-slug="acme-studio" data-theme="system"></div>\n<script async src="https://getsomeproof.com/embed/v1.js" data-api-origin="https://getsomeproof.com"></script>',
+    );
   });
 
   it("puts waiting Submissions first and links them to the Inbox", () => {
