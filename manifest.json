@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 156
+  },
+  "headSha": "7a05c22026e0d1c352610b816700be2cd69190bc",
+  "runId": "34698798961",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/mcp-setup.png",
+      "title": "Assistant import setup",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/mcp-setup.png",
+      "title": "Assistant import setup",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
