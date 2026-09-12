@@ -1002,13 +1002,11 @@ describe("TestimonialInbox (live wiring)", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
     );
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Actions", exact: true }),
-      { button: 0, ctrlKey: false },
-    );
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Archive", exact: true }),
-    );
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Actions" }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Archive" }));
     await waitFor(() =>
       expect(
         mocks.functions["testimonialModeration:setStatus"],
