@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { convexAdapter } from "@convex-dev/better-auth";
 import { format, resolveConfig } from "prettier";
 import { createImportOAuthOptions } from "../convex/importOAuthOptions.ts";
+import { addBetterAuthCompatibilityFields } from "./better-auth-schema-compatibility.mjs";
 
 const require = createRequire(import.meta.url);
 const componentDir = resolve("convex/betterAuth");
@@ -34,7 +35,7 @@ const legacy = await readFile(
   resolve(packageDir, "src/component/schema.ts"),
   "utf8",
 );
-await writeSchema("legacySchema.ts", legacy);
+await writeSchema("legacySchema.ts", addBetterAuthCompatibilityFields(legacy));
 
 // The adapter's own generator handles dates, nullability, arrays and indexes.
 // Neither database placeholder is accessed during schema generation.

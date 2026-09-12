@@ -328,7 +328,6 @@ export function AccountSecurity() {
     <div className="space-y-6">
       <PageHeader
         description="These controls protect your Owner account and private Workspace."
-        eyebrow="Account"
         title="Security"
       />
 

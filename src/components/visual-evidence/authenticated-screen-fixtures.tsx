@@ -354,6 +354,19 @@ const testimonialFixture = {
   testimonialId: "fixture-testimonial" as Id<"testimonials">,
 };
 
+const importedTestimonialFixture = {
+  ...testimonialFixture,
+  consentAcceptedAt: undefined,
+  importDetails: {
+    importedAt: Date.UTC(2026, 8, 8),
+    jobId: "fixture-wall-import" as Id<"testimonialImportJobs">,
+    provider: "assistant" as const,
+    sourceUrl: "https://stories.bellwether.example/customers/alice",
+  },
+  requiresImportAttestation: true,
+  submitterEmail: undefined,
+};
+
 const videoTestimonialFixture = {
   // Portrait, as a phone records it for the Collection Form.
   aspectRatio: "9:16",
@@ -429,7 +442,7 @@ export function TestimonialInboxScreenFixture({
   const [published, setPublished] = useState<InboxTestimonial[]>([
     { ...videoTestimonialFixture, moderationStatus: "published" as const },
     {
-      ...testimonialFixture,
+      ...importedTestimonialFixture,
       moderationStatus: "published" as const,
       publicVisibilityOverrides: { company: false },
     },
@@ -438,7 +451,7 @@ export function TestimonialInboxScreenFixture({
     archived: [],
     pending: [
       processingVideoTestimonialFixture,
-      testimonialFixture,
+      importedTestimonialFixture,
       videoTestimonialFixture,
     ],
     published,
@@ -476,7 +489,6 @@ export function TestimonialInboxScreenFixture({
           />
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
       <InboxFeedback error={null} message={null} />

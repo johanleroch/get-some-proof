@@ -37,6 +37,14 @@ const video: InboxTestimonial = {
   videoStatus: "processing",
   captionsStatus: "requested",
 };
+const failedVideo = (name: string): InboxTestimonial => ({
+  ...text(name),
+  submissionType: "video",
+  card: null,
+  videoStatus: "failed",
+  captionsStatus: "failed",
+  videoSourceUrl: `https://video.example.test/${encodeURIComponent(name)}.mp4`,
+});
 const page = (
   items: InboxTestimonial[],
   isDone = true,
@@ -66,6 +74,41 @@ function setup(
 afterEach(cleanup);
 
 describe("Bulk Inbox selection and operations", () => {
+  it("offers one retry action only when every selected item is a failed imported video", async () => {
+    const lucien = failedVideo("Lucien Arbieu");
+    const virgile = failedVideo("Virgile Rietsch");
+    const performVideoRetry = vi.fn().mockResolvedValue(undefined);
+    setup({
+      performVideoRetry,
+      testimonials: [lucien, virgile, alice],
+      totalCount: 3,
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Select Lucien Arbieu's testimonial",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Select Virgile Rietsch's testimonial",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry video copies" }));
+    await screen.findByText("2 video copies restarted.");
+    expect(
+      performVideoRetry.mock.calls.map(([item]) => item.testimonialId),
+    ).toEqual([lucien.testimonialId, virgile.testimonialId]);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Select Alice Martin's testimonial",
+      }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Retry video copies" }),
+    ).toBeNull();
+  });
+
   it("selects displayed rows, exposes mixed state, and clears selection", () => {
     setup();
     fireEvent.click(

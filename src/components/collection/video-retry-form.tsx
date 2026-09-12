@@ -168,7 +168,6 @@ export function VideoRetryFormView({
           <IconRefresh aria-hidden="true" className="size-5" />
         </div>
         <div className="space-y-1.5">
-          <p className="type-micro text-ink-2">{activeContext.brandName}</p>
           <h1 className="type-heading">Replace your video</h1>
           <p className="type-body text-ink-2">
             Upload one new MP4, MOV or WebM video, up to 2 minutes. This private

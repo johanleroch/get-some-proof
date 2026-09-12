@@ -3,7 +3,6 @@ import { useState } from "react";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   AssistantImportRecoveryView,
-  RecentAssistantImportsView,
   type AssistantImportProgress,
 } from "@/components/testimonials/assistant-import-recovery";
 import { Button } from "@/components/ui/button";
@@ -79,20 +78,8 @@ export function AssistantImportRecoveryFixture() {
   return (
     <main className="bg-paper text-ink min-h-svh space-y-6 p-5 md:p-8">
       <PageHeader
-        eyebrow="Workspace"
         title="Inbox"
         description="Review private Submissions and choose what becomes public."
-      />
-      <RecentAssistantImportsView
-        slug="willow-ceramics"
-        jobs={[
-          {
-            jobId: value.jobId,
-            sourceUrl: value.sourceUrl,
-            createdAt: value.createdAt,
-            result: value.result,
-          },
-        ]}
       />
       <AssistantImportRecoveryView
         value={value}

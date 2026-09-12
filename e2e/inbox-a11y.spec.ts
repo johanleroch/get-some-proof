@@ -280,6 +280,7 @@ test.describe("keyboard", () => {
       "button: More actions for Nora Lewis's Testimonial",
       // Alice Martin: text.
       "checkbox: Select Alice Martin's testimonial",
+      "button: Import details for Alice Martin",
       "button: Publish",
       "button: Archive",
       "button: More actions for Alice Martin's Testimonial",
@@ -326,6 +327,7 @@ test.describe("keyboard", () => {
       "button: Unpublish",
       "button: More actions for Remy Jupille's Testimonial",
       "checkbox: Select Alice Martin's testimonial",
+      "button: Import details for Alice Martin",
       "button: Move Alice Martin up",
       "button: Unpublish",
       "button: More actions for Alice Martin's Testimonial",

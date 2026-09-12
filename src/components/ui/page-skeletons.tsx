@@ -200,7 +200,6 @@ function OverviewPageSkeleton({ name }: { name?: string }) {
     <div className="space-y-8">
       <PageHeader
         description="Share your Collection Form, read what comes in, publish what you choose."
-        eyebrow="Overview"
         title={
           name ?? (
             <span
@@ -259,7 +258,6 @@ function InboxPageSkeleton() {
           </>
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
       <Tabs defaultValue="pending">
@@ -308,11 +306,7 @@ function StudioWidgetListSkeleton({ rows = 3 }: { rows?: number }) {
 
 function StudioEditorSkeleton({ onBack }: { onBack?: () => void }) {
   return (
-    <div
-      aria-label="Opening widget"
-      className="mx-auto w-full max-w-7xl p-5 sm:p-8"
-      role="status"
-    >
+    <div aria-label="Opening widget" className="w-full min-w-0" role="status">
       <header className="border-line mb-6 space-y-4 border-b pb-5">
         <div className="flex items-center gap-3">
           <Button

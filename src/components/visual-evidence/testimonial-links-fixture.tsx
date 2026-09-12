@@ -10,7 +10,6 @@ export function TestimonialLinksFixture() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Account"
         title="Testimonial links"
         description="One setting for all your Projects."
       />

@@ -90,8 +90,18 @@ import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
 } from "@/components/testimonials/inbox-testimonial-menu";
+import { TestimonialImportDetails } from "./testimonial-import-details";
+import { VideoCopyDetails } from "./video-copy-details";
+
+export type TestimonialImportDetailsValue = {
+  importedAt: number;
+  jobId?: Id<"testimonialImportJobs">;
+  provider: "assistant" | "senja" | "testimonial-to";
+  sourceUrl: string;
+};
 
 type InboxTestimonialIdentity = {
+  importDetails?: TestimonialImportDetailsValue;
   requiresImportAttestation?: boolean;
   card: TestimonialCardValue | null;
   consentAcceptedAt?: number;
@@ -115,6 +125,8 @@ export type InboxTestimonial =
       captionsStatus: "requested" | "ready" | "failed";
       submissionType: "video";
       videoDurationSeconds?: number;
+      videoCopyFailureReason?: string;
+      videoSourceUrl?: string;
       videoStatus: "awaiting_upload" | "processing" | "ready" | "failed";
     });
 
@@ -285,10 +297,12 @@ function InboxRow({
   drag,
   onAction,
   onMove,
+  onRetryVideoCopy,
   position,
   registerControl,
   hideActions,
   selection,
+  slug,
   testimonial,
 }: {
   accentColor: string;
@@ -303,6 +317,7 @@ function InboxRow({
   onAction: (action: InboxTestimonialAction) => void;
   /** Arrow reordering, on Published rows only. */
   onMove?: (direction: -1 | 1) => void;
+  onRetryVideoCopy?: () => Promise<unknown>;
   position?: { index: number; count: number };
   /** Lets the list refocus a control once a move has re-rendered the row. */
   registerControl?: (
@@ -311,6 +326,7 @@ function InboxRow({
   ) => void;
   hideActions?: boolean;
   selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
+  slug?: string;
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -325,7 +341,7 @@ function InboxRow({
     <li
       aria-busy={busy || undefined}
       className={cn(
-        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
+        "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 p-4 transition-colors duration-150 md:grid-cols-[auto_minmax(0,1fr)_auto]",
         selection?.checked ? "bg-brand-soft" : "hover:bg-surface-2",
       )}
       data-testid={`inbox-testimonial-${testimonial.testimonialId}`}
@@ -341,7 +357,14 @@ function InboxRow({
         below it. A photo, the quote mark and a portrait still are all 48px
         wide, so the words start on the same line from one row to the next.
       */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div
+        className={cn(
+          "row-start-1 flex items-center gap-2 self-center md:gap-3",
+          testimonial.submissionType === "text"
+            ? "md:row-span-3"
+            : "md:row-span-2",
+        )}
+      >
         {selection && (
           <label className="flex min-h-11 min-w-6 cursor-pointer items-center justify-center">
             <Checkbox
@@ -364,27 +387,65 @@ function InboxRow({
         />
       </div>
 
-      <div className="min-w-0 self-center">
+      <div className="col-start-2 row-start-1 min-w-0 self-center">
         <TestimonialListIdentity
           name={testimonial.submitterName}
           testimonial={testimonial.card}
         />
+      </div>
 
-        {testimonial.submissionType === "text" ? (
+      {testimonial.submissionType === "text" ? (
+        <div className="col-span-2 row-start-2 min-w-0 md:col-span-1 md:col-start-2">
           <TestimonialListWords
             accentColor={accentColor}
             testimonial={testimonial.card}
           />
-        ) : null}
+        </div>
+      ) : null}
 
+      <div
+        className={cn(
+          "col-start-2 min-w-0",
+          testimonial.submissionType === "text"
+            ? "row-start-3"
+            : "row-start-2",
+        )}
+      >
         {video ? (
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Badge variant={video.badge}>{video.label}</Badge>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {testimonial.submissionType === "video" &&
+            testimonial.videoSourceUrl &&
+            (testimonial.videoStatus === "failed" ||
+              testimonial.videoStatus === "processing") &&
+            onRetryVideoCopy ? (
+              <VideoCopyDetails
+                busy={busy}
+                disabled={disabled}
+                failureReason={testimonial.videoCopyFailureReason}
+                onRetry={onRetryVideoCopy}
+                sourceUrl={testimonial.videoSourceUrl}
+                status={testimonial.videoStatus}
+                testimonialName={testimonial.submitterName}
+              />
+            ) : (
+              <Badge variant={video.badge}>{video.label}</Badge>
+            )}
             <span className="type-small text-ink-2">{video.note}</span>
-          </p>
+          </div>
         ) : null}
 
         <p className="type-small text-ink-2 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {testimonial.importDetails ? (
+            <TestimonialImportDetails
+              details={testimonial.importDetails}
+              recoveryNeeded={
+                testimonial.submissionType === "video" &&
+                testimonial.videoStatus !== "ready"
+              }
+              slug={slug}
+              testimonialName={testimonial.submitterName}
+            />
+          ) : null}
           <span>Received {formatShortDate(testimonial.createdAt)}</span>
           {testimonial.submitterEmail && (
             <>
@@ -409,7 +470,10 @@ function InboxRow({
 
       <div
         className={cn(
-          "col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:justify-end md:self-center",
+          "col-start-2 mt-3 flex flex-wrap items-center gap-2 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:self-center",
+          testimonial.submissionType === "text"
+            ? "row-start-4 md:row-span-3"
+            : "row-start-3 md:row-span-2",
           hideActions && "hidden",
         )}
       >
@@ -523,8 +587,10 @@ export function TestimonialInboxView({
   footer,
   onAction,
   onMove,
+  onRetryVideoCopy,
   pendingId,
   selection,
+  slug,
   testimonials,
 }: {
   accentColor?: string;
@@ -540,12 +606,14 @@ export function TestimonialInboxView({
   ) => void;
   /** Present in Published, where the list is the Public Wall's order. */
   onMove?: InboxMove;
+  onRetryVideoCopy?: (testimonial: VideoInboxTestimonial) => Promise<unknown>;
   pendingId: Id<"testimonials"> | null;
   selection?: {
     ids: ReadonlySet<string>;
     disabled: boolean;
     onToggle: (item: InboxTestimonial) => void;
   };
+  slug?: string;
   testimonials: InboxTestimonial[];
 }) {
   const draggedId = useRef<string | undefined>(undefined);
@@ -660,11 +728,17 @@ export function TestimonialInboxView({
                     }
                   : undefined
               }
+              slug={slug}
               key={testimonial.testimonialId}
               onAction={(action) => onAction(testimonial, action)}
               onMove={
                 ordering
                   ? (direction) => move(index, index + direction, direction)
+                  : undefined
+              }
+              onRetryVideoCopy={
+                testimonial.submissionType === "video"
+                  ? () => onRetryVideoCopy?.(testimonial) ?? Promise.resolve()
                   : undefined
               }
               position={
@@ -921,6 +995,9 @@ export function TestimonialInbox({
     category: moderationStatus,
   });
   const setModerationStatus = useMutation(api.testimonialModeration.setStatus);
+  const retryVideoCopy = useMutation(
+    api.testimonialImportVideo.retryForTestimonial,
+  );
   const [importPublicationTarget, setImportPublicationTarget] =
     useState<InboxTestimonial | null>(null);
   const saveHighlights = useMutation(api.testimonialModeration.setHighlights);
@@ -1105,6 +1182,16 @@ export function TestimonialInbox({
     });
   }
 
+  async function retryImportedVideo(testimonial: VideoInboxTestimonial) {
+    await runInboxAction({
+      onError: setError,
+      onFinish: () => setPendingId(null),
+      onStart: () => startAction(testimonial.testimonialId),
+      onSuccess: () => setMessage("The video copy has restarted."),
+      run: () => retryVideoCopy({ testimonialId: testimonial.testimonialId }),
+    });
+  }
+
   function handleInboxAction(
     testimonial: InboxTestimonial,
     action: InboxTestimonialAction,
@@ -1166,7 +1253,6 @@ export function TestimonialInbox({
           />
         }
         description="Review private Submissions and choose what becomes public."
-        eyebrow="Workspace"
         title="Inbox"
       />
 
@@ -1202,6 +1288,10 @@ export function TestimonialInbox({
             accentColor={wallSettings?.accentColor}
             actionsDisabled={pendingId !== null}
             category={moderationStatus}
+            onRetryVideoCopy={retryImportedVideo}
+            performVideoRetry={(testimonial) =>
+              retryVideoCopy({ testimonialId: testimonial.testimonialId })
+            }
             importFiltered={importJobId !== undefined}
             emptyAction={
               importJobId !== undefined ? (
@@ -1233,6 +1323,7 @@ export function TestimonialInbox({
                 : undefined
             }
             pendingId={pendingId}
+            slug={slug}
             testimonials={testimonials}
           />
         )}

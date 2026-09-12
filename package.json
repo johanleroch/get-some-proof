@@ -36,7 +36,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "certify:mvp": "pnpm check && pnpm test:e2e",
     "build:import-widget": "node scripts/build-import-widget.mjs",
-    "generate:import-auth-schema": "node scripts/generate-import-auth-schema.mjs",
+    "generate:import-auth-schema": "jiti scripts/generate-import-auth-schema.mjs",
     "media:audit": "node scripts/media-audit.mjs"
   },
   "dependencies": {
@@ -97,6 +97,7 @@
     "esbuild": "^0.28.2",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.3",
+    "jiti": "2.7.0",
     "jsdom": "30.0.1",
     "postcss": "^8.5.28",
     "prettier": "3.9.6",

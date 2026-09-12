@@ -217,6 +217,64 @@ export function useInboxSelection({
     locked.current = false;
     toolbar.current?.focus();
   }
+  async function runCustom(
+    batch: InboxTestimonial[],
+    resultLabel: string,
+    performCustom: (item: InboxTestimonial) => Promise<unknown>,
+  ) {
+    if (locked.current || blocked || batch.length === 0) return;
+    locked.current = true;
+    const token = ++operation.current;
+    update({
+      phase: "running",
+      outcome: "",
+      failures: [],
+      progress: { done: 0, total: batch.length },
+    });
+    let done = 0;
+    const results = await Promise.all(
+      batch.map(async (item) => {
+        try {
+          await performCustom(item);
+          return { item, error: null };
+        } catch (error) {
+          return { item, error };
+        } finally {
+          done++;
+          if (operation.current === token)
+            setProgress({ done, total: batch.length });
+        }
+      }),
+    );
+    if (operation.current !== token) return;
+    const errors: Failure[] = [];
+    const successfulIds = new Set<string>();
+    for (const { item, error } of results) {
+      if (!error) {
+        successfulIds.add(String(item.testimonialId));
+        continue;
+      }
+      errors.push({
+        item,
+        message: convexErrorMessage(
+          error,
+          "Could not retry this video copy. Please try again.",
+        ),
+      });
+    }
+    const successes = successfulIds.size;
+    setSelected(
+      (previous) =>
+        new Map([...previous].filter(([id]) => !successfulIds.has(id))),
+    );
+    setOutcome(
+      `${successes} ${resultLabel}${errors.length ? ` · ${errors.length} failed` : ""}.`,
+    );
+    setFailures(errors);
+    setPhase("idle");
+    locked.current = false;
+    toolbar.current?.focus();
+  }
   function request(action: BulkInboxAction) {
     setAttested(false);
     if (action === "delete" || (action === "publish" && imports > 0))
@@ -246,6 +304,7 @@ export function useInboxSelection({
     clear,
     selectAll,
     run,
+    runCustom,
     request,
     toggle,
   };

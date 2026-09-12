@@ -171,7 +171,7 @@ export function WidgetEditor(
   const url = `${props.origin}/widgets/${widget.publicId}`;
   const snippet = `<div data-gsp-widget="${widget.publicId}"></div>\n<script src="${props.origin}/embed/v2.js" async></script>`;
   return (
-    <div className="mx-auto w-full max-w-7xl p-5 sm:p-8">
+    <div className="w-full min-w-0">
       <header className="border-line mb-6 space-y-4 border-b pb-5">
         <div className="flex items-start gap-3">
           <Button

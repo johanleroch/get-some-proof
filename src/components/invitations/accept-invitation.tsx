@@ -46,10 +46,7 @@ export function AcceptInvitation({ token }: { token: string }) {
   return (
     <main className="bg-muted/30 grid min-h-svh place-items-center px-6">
       <div className="bg-card w-full max-w-md rounded-xl border p-7 text-center shadow-xs">
-        <p className="text-muted-foreground text-sm font-medium">
-          Organization Invitation
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">Join the Organization</h1>
+        <h1 className="text-2xl font-semibold">Join the Organization</h1>
         <p className="text-muted-foreground mt-3 text-sm leading-6">
           Your verified account email must match the address that received this
           link.

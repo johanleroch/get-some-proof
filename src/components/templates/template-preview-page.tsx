@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { sampleBrandName, sampleTestimonials } from "@/lib/template-samples";
 import {
   type TemplateDefinition,
-  templateCategoryLabel,
   type WallTheme,
 } from "@/lib/templates-catalog";
 
@@ -45,10 +44,6 @@ export function TemplatePreviewPage({
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div className="max-w-prose space-y-1.5">
-            <p className="type-micro text-ink-2">
-              {templateCategoryLabel(template.category)}
-              {template.status === "draft" ? " · Draft" : ""}
-            </p>
             <h1 className="type-display text-balance">{template.name}</h1>
             <p className="type-body text-ink-2">{template.description}</p>
           </div>

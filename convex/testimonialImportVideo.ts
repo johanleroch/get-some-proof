@@ -276,6 +276,29 @@ export const retry = mutation({
     ),
 });
 
+export const retryForTestimonial = mutation({
+  args: { testimonialId: v.id("testimonials") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const item = await ctx.db
+      .query("testimonialImportItems")
+      .withIndex("by_testimonialId", (q) =>
+        q.eq("testimonialId", args.testimonialId),
+      )
+      .unique();
+    if (!item)
+      throw new ConvexError({
+        code: "IMPORT_UNAVAILABLE",
+        message: "Import unavailable.",
+      });
+    return retryOwnedImportVideo(
+      ctx,
+      item._id,
+      await requireVerifiedPrincipal(ctx),
+    );
+  },
+});
+
 /** Reconcile a terminal media state with the import, once, in the same transaction. */
 export async function settleImportedVideo(
   ctx: MutationCtx,

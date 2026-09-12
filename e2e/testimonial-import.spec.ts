@@ -163,7 +163,7 @@ test("selects testimonials with the keyboard and keeps the import action reachab
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Open Inbox", exact: true }),
-  ).toHaveAttribute("href", /\/inbox\?import=fixture-wall-import$/);
+  ).toHaveAttribute("href", /\/inbox$/);
   await expect(
     page.getByText(
       "Imported testimonials are Pending. Nothing has been published.",

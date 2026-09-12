@@ -19,7 +19,6 @@ export function OrganizationOnboardingScreen({
         <BrandLogo />
         <PageHeader
           description="This is the identity your customers see when you ask them for a Testimonial. Only the name is needed; we write the rest for you."
-          eyebrow="First step"
           title="Create your Brand"
         />
         {children}

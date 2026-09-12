@@ -689,7 +689,6 @@ export function BillingCockpit({
     >
       <PageHeader
         description="Review this Account's plan and manage where billing notices are sent."
-        eyebrow="Account"
         title={<span id="billing-heading">Billing</span>}
         actions={<StripeLogo />}
       />
