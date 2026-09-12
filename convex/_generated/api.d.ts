@@ -8,8 +8,6 @@
  * @module
  */
 
-import type * as googleBusiness from "../googleBusiness.js";
-import type * as googleBusinessActions from "../googleBusinessActions.js";
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as accountModelMigrations from "../accountModelMigrations.js";
 import type * as accounts from "../accounts.js";
@@ -61,6 +59,8 @@ import type * as domain_widgetFont from "../domain/widgetFont.js";
 import type * as domain_widgets from "../domain/widgets.js";
 import type * as email_provider from "../email/provider.js";
 import type * as email_templates from "../email/templates.js";
+import type * as googleBusiness from "../googleBusiness.js";
+import type * as googleBusinessActions from "../googleBusinessActions.js";
 import type * as http from "../http.js";
 import type * as imageAssetMigration from "../imageAssetMigration.js";
 import type * as imageAssetMigrationState from "../imageAssetMigrationState.js";
@@ -132,8 +132,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  googleBusiness: typeof googleBusiness;
-  googleBusinessActions: typeof googleBusinessActions;
   accountDeletion: typeof accountDeletion;
   accountModelMigrations: typeof accountModelMigrations;
   accounts: typeof accounts;
@@ -185,6 +183,8 @@ declare const fullApi: ApiFromModules<{
   "domain/widgets": typeof domain_widgets;
   "email/provider": typeof email_provider;
   "email/templates": typeof email_templates;
+  googleBusiness: typeof googleBusiness;
+  googleBusinessActions: typeof googleBusinessActions;
   http: typeof http;
   imageAssetMigration: typeof imageAssetMigration;
   imageAssetMigrationState: typeof imageAssetMigrationState;

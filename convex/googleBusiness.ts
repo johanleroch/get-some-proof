@@ -1,7 +1,13 @@
 import { ConvexError, v } from "convex/values";
-import { internalMutation, internalQuery, query } from "./_generated/server";
+import {
+  env,
+  internalMutation,
+  internalQuery,
+  query,
+} from "./_generated/server";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import schema from "./schema";
+import { internal } from "./_generated/api";
 
 const target = { organizationId: v.id("organizations") };
 function stale(): never {
@@ -15,6 +21,7 @@ export const status = query({
   args: target,
   returns: v.object({
     connected: v.boolean(),
+    disconnecting: v.boolean(),
     configured: v.boolean(),
     generation: v.union(v.string(), v.null()),
   }),
@@ -31,14 +38,15 @@ export const status = query({
       )
       .unique();
     return {
+      disconnecting: row?.disconnectingUntil !== undefined,
       connected:
         !!row?.encryptedRefreshToken &&
         row.ownerId === access.principal.actorId,
       configured: !!(
-        process.env.GOOGLE_BUSINESS_CLIENT_ID &&
-        process.env.GOOGLE_BUSINESS_CLIENT_SECRET &&
-        process.env.GOOGLE_BUSINESS_ENCRYPTION_KEY &&
-        process.env.GOOGLE_BUSINESS_REDIRECT_URI
+        env.GOOGLE_BUSINESS_CLIENT_ID &&
+        env.GOOGLE_BUSINESS_CLIENT_SECRET &&
+        env.GOOGLE_BUSINESS_ENCRYPTION_KEY &&
+        env.GOOGLE_BUSINESS_REDIRECT_URI
       ),
       generation: row?.generation ?? null,
     };
@@ -65,6 +73,11 @@ export const begin = internalMutation({
         q.eq("organizationId", args.organizationId),
       )
       .unique();
+    if (row && (row.disconnectingUntil ?? 0) > Date.now())
+      throw new ConvexError({
+        code: "GOOGLE_DISCONNECTING",
+        message: "Google is disconnecting. Try again in a moment.",
+      });
     if (row && Date.now() - row.updatedAt < 3000)
       throw new ConvexError({
         code: "GOOGLE_BUSY",
@@ -72,6 +85,7 @@ export const begin = internalMutation({
       });
     const fields = {
       ...args,
+      disconnectingUntil: undefined,
       encryptedRefreshToken:
         row?.ownerId === principal.actorId
           ? row.encryptedRefreshToken
@@ -136,7 +150,12 @@ export const credentials = internalQuery({
         q.eq("organizationId", args.organizationId),
       )
       .unique();
-    if (!row || access.principal.actorId !== row.ownerId) stale();
+    if (
+      !row ||
+      row.disconnectingUntil ||
+      access.principal.actorId !== row.ownerId
+    )
+      stale();
     return row;
   },
 });
@@ -163,6 +182,7 @@ export const save = internalMutation({
     if (
       !row ||
       row.generation !== args.generation ||
+      row.disconnectingUntil !== undefined ||
       row.ownerId !== access.principal.actorId
     )
       stale();
@@ -187,6 +207,56 @@ export const remove = internalMutation({
       .unique();
     if (row && row.generation !== args.generation) stale();
     if (row) await ctx.db.delete(row._id);
+    return null;
+  },
+});
+
+export const startDisconnect = internalMutation({
+  args: { ...target, generation: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireOrganizationPermission(ctx, args, "ownership:manage");
+    const row = await ctx.db
+      .query("googleBusinessConnections")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .unique();
+    if (!row || row.generation !== args.generation || row.disconnectingUntil)
+      stale();
+    await ctx.db.patch(row._id, {
+      encryptedRefreshToken: undefined,
+      stateHash: undefined,
+      verifier: undefined,
+      expiresAt: undefined,
+      disconnectingUntil: Date.now() + 30_000,
+    });
+    await ctx.scheduler.runAfter(
+      30_000,
+      internal.googleBusiness.finishAbandonedDisconnect,
+      args,
+    );
+    return null;
+  },
+});
+
+export const finishAbandonedDisconnect = internalMutation({
+  args: { ...target, generation: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query("googleBusinessConnections")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .unique();
+    if (
+      row &&
+      row.generation === args.generation &&
+      row.disconnectingUntil !== undefined &&
+      row.disconnectingUntil <= Date.now()
+    )
+      await ctx.db.delete(row._id);
     return null;
   },
 });

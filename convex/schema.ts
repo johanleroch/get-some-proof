@@ -17,6 +17,7 @@ import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
   googleBusinessConnections: defineTable({
+    disconnectingUntil: v.optional(v.number()),
     organizationId: v.id("organizations"),
     ownerId: v.string(),
     generation: v.string(),

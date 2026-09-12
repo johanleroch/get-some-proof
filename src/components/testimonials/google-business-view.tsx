@@ -41,10 +41,7 @@ export function GoogleBusinessView({
     <section aria-labelledby="google-reviews-heading" className="grid gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl space-y-2">
-          <h2
-            id="google-reviews-heading"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h2 id="google-reviews-heading" className="type-heading">
             Google reviews
           </h2>
           <p className="text-muted-foreground text-sm">
@@ -81,7 +78,10 @@ export function GoogleBusinessView({
               onClick={() => onRead(account, location)}
             >
               {" "}
-              {page ? "Refresh" : "Choose a Google account"}{" "}
+              {page || account ? "Refresh" : "Choose a Google account"}{" "}
+            </Button>
+            <Button variant="ghost" disabled={busy} onClick={onConnect}>
+              Reconnect Google
             </Button>
             {account && (
               <Button variant="ghost" disabled={busy} onClick={() => onRead()}>

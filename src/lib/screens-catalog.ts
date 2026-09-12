@@ -343,6 +343,15 @@ export const screenSections: ScreenSection[] = [
         fixturePath: "/visual-evidence/testimonial-import-public",
       },
       {
+        slug: "google-business",
+        title: "Google reviews",
+        description:
+          "Owner-authorized private reviews from Google Business Profile.",
+        livePath: "/org/:organizationSlug/import?source=google",
+        requiresAuth: true,
+        fixturePath: "/visual-evidence/google-business",
+      },
+      {
         slug: "testimonial-import",
         title: "Import testimonials",
         description:

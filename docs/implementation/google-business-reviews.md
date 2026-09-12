@@ -54,3 +54,21 @@ Google authorization/verification and API approval are separate gates.
 After deployment, test real consent, an owned verified location, review pagination,
 revocation/reconnection and disconnect. Ask Google support about selected review
 redistribution before implementing the public-wall follow-up.
+
+## Implementation review
+
+Standards: optional typed Convex environment declarations and the shared heading
+utility were corrected. Spec: explicit reconnect and truthful retry labels,
+server-side disconnect lock, scheduled abandoned-lock cleanup, and rejection of
+in-flight authorization completion after disconnect. Tests cover the OAuth and
+revocation races. Google account list pages use its documented maximum of 20;
+locations and reviews use 50. Authenticated reads are limited per Owner.
+
+Project deletion discards local credentials and schedules best-effort Google
+revocation. Failed provider revocation is not claimed as successful; the Owner
+can always remove permission in Google Account Connections. Revocation of a
+Google grant may require reconnecting other Projects using the same Google account.
+
+First full test run hit an unrelated five-second timeout in Account pagination
+while other tools were running. That file passed in isolation, then the full
+suite passed (1,134 tests) on the next run. No Account code was changed.

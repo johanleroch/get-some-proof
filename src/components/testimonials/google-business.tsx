@@ -37,10 +37,12 @@ function Connection({
   organizationId,
   connected,
   configured,
+  disconnecting,
 }: {
   organizationId: Id<"organizations">;
   connected: boolean;
   configured: boolean;
+  disconnecting: boolean;
 }) {
   const connect = useAction(api.googleBusinessActions.connect);
   const disconnect = useAction(api.googleBusinessActions.disconnect);
@@ -63,7 +65,13 @@ function Connection({
   }
   return (
     <GoogleBusinessView
-      {...{ connected, configured, busy, page, ...selection }}
+      {...{
+        connected,
+        configured,
+        busy: busy || disconnecting,
+        page,
+        ...selection,
+      }}
       onConnect={() =>
         void run(async () => {
           window.location.assign(await connect({ organizationId }));

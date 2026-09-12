@@ -8,8 +8,13 @@ import {
 } from "node:crypto";
 import { ConvexError, v, type Infer } from "convex/values";
 import { z } from "zod";
-import { action } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { action, env, internalAction } from "./_generated/server";
+import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
+import { components, internal } from "./_generated/api";
+
+const readLimiter = new RateLimiter(components.rateLimiter, {
+  googleReviewReads: { kind: "fixed window", rate: 30, period: MINUTE },
+});
 
 const scope = "https://www.googleapis.com/auth/business.manage";
 const target = { organizationId: v.id("organizations") };
@@ -17,13 +22,10 @@ function failure(message: string): never {
   throw new ConvexError({ code: "GOOGLE_BUSINESS_UNAVAILABLE", message });
 }
 function config() {
-  const clientId = process.env.GOOGLE_BUSINESS_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_BUSINESS_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_BUSINESS_REDIRECT_URI;
-  const key = Buffer.from(
-    process.env.GOOGLE_BUSINESS_ENCRYPTION_KEY ?? "",
-    "base64",
-  );
+  const clientId = env.GOOGLE_BUSINESS_CLIENT_ID;
+  const clientSecret = env.GOOGLE_BUSINESS_CLIENT_SECRET;
+  const redirectUri = env.GOOGLE_BUSINESS_REDIRECT_URI;
+  const key = Buffer.from(env.GOOGLE_BUSINESS_ENCRYPTION_KEY ?? "", "base64");
   if (!clientId || !clientSecret || !redirectUri || key.length !== 32)
     failure("Google Business Profile is not configured yet.");
   const redirect = new URL(redirectUri);
@@ -266,6 +268,10 @@ export const read = action({
       organizationId: args.organizationId,
     });
     if (!connection.encryptedRefreshToken) failure("Connect Google first.");
+    const limit = await readLimiter.limit(ctx, "googleReviewReads", {
+      key: connection.ownerId,
+    });
+    if (!limit.ok) failure("Too many Google requests. Try again in a minute.");
     const credentials = await token({
       grant_type: "refresh_token",
       refresh_token: decrypt(
@@ -280,7 +286,7 @@ export const read = action({
           ? `https://mybusinessbusinessinformation.googleapis.com/v1/${args.account}/locations`
           : "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
     );
-    url.searchParams.set("pageSize", "50");
+    url.searchParams.set("pageSize", args.account ? "50" : "20");
     if (args.account && !args.location)
       url.searchParams.set("readMask", "name,title");
     if (args.pageToken) url.searchParams.set("pageToken", args.pageToken);
@@ -345,12 +351,13 @@ export const disconnect = action({
       internal.googleBusiness.credentials,
       args,
     );
-    await ctx.runMutation(internal.googleBusiness.remove, {
+    await ctx.runMutation(internal.googleBusiness.startDisconnect, {
       ...args,
       generation: connection.generation,
     });
-    if (!connection.encryptedRefreshToken) return { revoked: true };
+    let revoked = !connection.encryptedRefreshToken;
     try {
+      if (!connection.encryptedRefreshToken) return { revoked };
       const response = await fetch("https://oauth2.googleapis.com/revoke", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -360,9 +367,34 @@ export const disconnect = action({
         signal: AbortSignal.timeout(10_000),
         redirect: "error",
       });
-      return { revoked: response.ok };
+      revoked = response.ok;
+      return { revoked };
     } catch {
       return { revoked: false };
+    } finally {
+      await ctx.runMutation(internal.googleBusiness.remove, {
+        ...args,
+        generation: connection.generation,
+      });
     }
+  },
+});
+
+export const revokeDeletedConnection = internalAction({
+  args: { organizationId: v.string(), encryptedRefreshToken: v.string() },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    const response = await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        token: decrypt(args.encryptedRefreshToken, args.organizationId),
+      }).toString(),
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
+    });
+    if (!response.ok && response.status !== 400)
+      failure("Google permission revocation needs a retry.");
+    return null;
   },
 });

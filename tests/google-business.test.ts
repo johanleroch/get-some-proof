@@ -177,3 +177,103 @@ it("rejects expired OAuth state before calling Google", async () => {
   }
   expect(fetcher).not.toHaveBeenCalled();
 });
+
+it("blocks a new authorization until the old Google revocation settles", async () => {
+  const t = createConvexTest();
+  const owner = await authenticatedUser(t);
+  const project = await owner.client.mutation(api.organizations.create, {
+    name: "Willow Ceramics",
+  });
+  const args = { organizationId: project.id };
+  const state = new URL(
+    await owner.client.action(api.googleBusinessActions.connect, args),
+  ).searchParams.get("state")!;
+  let finishRevoke!: (value: Response) => void;
+  let startedRevoke!: () => void;
+  const started = new Promise<void>((resolve) => {
+    startedRevoke = resolve;
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url.endsWith("/revoke")) {
+        startedRevoke();
+        return new Promise<Response>((resolve) => {
+          finishRevoke = resolve;
+        });
+      }
+      return Response.json({
+        access_token: "access",
+        refresh_token: "refresh",
+        scope: "https://www.googleapis.com/auth/business.manage",
+      });
+    }),
+  );
+  await owner.client.action(api.googleBusinessActions.complete, {
+    state,
+    code: "code",
+  });
+  const disconnecting = owner.client.action(
+    api.googleBusinessActions.disconnect,
+    args,
+  );
+  await started;
+  expect(
+    await owner.client.query(api.googleBusiness.status, args),
+  ).toMatchObject({ connected: false, disconnecting: true });
+  await expect(
+    owner.client.action(api.googleBusinessActions.connect, args),
+  ).rejects.toThrow(/disconnecting/);
+  await expect(
+    owner.client.action(api.googleBusinessActions.read, args),
+  ).rejects.toThrow();
+  finishRevoke(new Response(null, { status: 200 }));
+  await disconnecting;
+  await expect(
+    owner.client.action(api.googleBusinessActions.connect, args),
+  ).resolves.toContain("accounts.google.com");
+});
+
+it("does not report a successful connection when disconnect invalidated its in-flight OAuth exchange", async () => {
+  const t = createConvexTest();
+  const owner = await authenticatedUser(t);
+  const project = await owner.client.mutation(api.organizations.create, {
+    name: "Willow Ceramics",
+  });
+  const args = { organizationId: project.id };
+  const state = new URL(
+    await owner.client.action(api.googleBusinessActions.connect, args),
+  ).searchParams.get("state")!;
+  let releaseExchange!: (value: Response) => void;
+  let exchangeStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    exchangeStarted = resolve;
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      exchangeStarted();
+      return new Promise<Response>((resolve) => {
+        releaseExchange = resolve;
+      });
+    }),
+  );
+  const completing = owner.client.action(api.googleBusinessActions.complete, {
+    state,
+    code: "code",
+  });
+  const rejected = expect(completing).rejects.toThrow();
+  await started;
+  await owner.client.action(api.googleBusinessActions.disconnect, args);
+  releaseExchange(
+    Response.json({
+      access_token: "access",
+      refresh_token: "late-refresh",
+      scope: "https://www.googleapis.com/auth/business.manage",
+    }),
+  );
+  await rejected;
+  expect(
+    await owner.client.query(api.googleBusiness.status, args),
+  ).toMatchObject({ connected: false });
+});
