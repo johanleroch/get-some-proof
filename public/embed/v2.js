@@ -801,7 +801,7 @@
       opacity:0; transform:translateY(12px) scale(0.98);
       transition:opacity 240ms ease, transform 240ms cubic-bezier(0.22,1,0.36,1);
     }
-    .widget[data-layout="bubble"][data-inline="true"] .bubble { position:absolute; }
+    .widget[data-layout="bubble"][data-inline="true"] .bubble { position:absolute; z-index:1; }
     .widget[data-layout="bubble"] .bubble[data-shown="true"] { opacity:1; transform:none; }
     .widget[data-layout="bubble"] .card { margin:0; box-shadow:0 1px 2px rgb(46 42 37 / 0.06), 0 12px 32px rgb(46 42 37 / 0.12); }
     .widget[data-layout="bubble"] .content { padding:20px; }
