@@ -668,7 +668,10 @@
     .widget[data-layout="wall"] .card { margin:0; height:100%; }
     .widget[data-layout="individual"] .grid { max-width:520px; margin:auto; }
     .widget[data-layout="carousel"] .grid { display:flex; overflow-x:auto; gap:20px; scroll-snap-type:x mandatory; overscroll-behavior-inline:contain; padding-bottom:8px; }
-    .widget[data-layout="carousel"] .grid > .card { flex:0 0 min(100%,340px); scroll-snap-align:start; margin:0; align-self:flex-start; }
+    .widget[data-layout="carousel"] .grid > .card { flex:0 0 min(100%,340px); scroll-snap-align:start; margin:0; }
+    .widget[data-layout="carousel"] .content { display:flex; height:100%; flex-direction:column; }
+    .widget[data-layout="carousel"] .identity { margin-top:auto; }
+    .widget[data-layout="carousel"] .card.video-card { align-self:center; }
     .widget[data-layout="highlights"] .grid { display:grid; gap:20px; }
     .widget[data-layout="highlights"] .card { border:0; margin:0; }
     .widget[data-layout="highlights"] .quote { font-size:24px; }
@@ -1101,14 +1104,8 @@
       card.style.marginInline = "auto";
     });
   }
-  /** The band has one height, so a video takes the width that height implies. */
-  function bandVideoCards(cards, bandHeight) {
-    cards.forEach((card) => {
-      const aspect = cardAspect(card);
-      if (!aspect) return;
-      card.style.flexBasis = `${Math.round((bandHeight * aspect[0]) / aspect[1])}px`;
-    });
-  }
+  /** The kind of Testimonial a family can honestly show, when it is not all. */
+  const familySelection = { marquee: "text", videos: "video" };
   const reducedMotion = () =>
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**
@@ -1212,6 +1209,7 @@
     /* The height caps, per family. None of them change a video's shape. */
     const caps = {
       band: 360,
+      carousel: 420,
       bubble: 360,
       editorial: 520,
       faces: 440,
@@ -1220,7 +1218,6 @@
       spotlight: 440,
     };
     if (caps[config.layout]) boundVideoCards(cards, caps[config.layout]);
-    if (config.layout === "marquee") bandVideoCards(cards, 200);
     if (config.layout === "chips" && cards.length) {
       const rows = element("div", "rows");
       grid.replaceWith(rows);
@@ -1290,7 +1287,12 @@
       const play = () => {
         clearInterval(timer);
         if (cards.length > 1 && !reducedMotion())
-          timer = setInterval(() => show(index + 1), 6000);
+          timer = setInterval(() => {
+            /* Someone watching a Testimonial is not interrupted by the turn;
+               the queue waits until the video is done or paused. */
+            if (wall.querySelector("[data-video-playing]")) return;
+            show(index + 1);
+          }, 6000);
       };
       if (dots) {
         cards.forEach((_, position) => {
@@ -1475,19 +1477,32 @@
     } else if (config.layout === "metric") {
       grid.append(metricBlock(payload, drawn));
     } else {
-      /* The video gallery is the one family that narrows the selection: it
-         shows the videos in the widget and says so when there are none. */
-      const chosen =
-        config.layout === "videos"
-          ? payload.testimonials.filter(
-              (testimonial) => testimonial.type === "video",
-            )
-          : payload.testimonials;
+      /* Two families cannot show every kind of Testimonial. A band that
+         never stops moving has nothing to press, and a poster there would
+         promise a play already sliding out of reach, so it takes text only.
+         The gallery is the mirror case. Both say so when they come up empty
+         rather than rendering a convincing nothing. */
+      const only = familySelection[config.layout];
+      const chosen = only
+        ? payload.testimonials.filter(
+            (testimonial) => testimonial.type === only,
+          )
+        : payload.testimonials;
       cards = chosen.map((testimonial) =>
         renderCard(testimonial, payload.brand),
       );
       if (!cards.length)
-        grid.append(element("p", "", "No video testimonials to display yet."));
+        grid.append(
+          element(
+            "p",
+            "",
+            only === "video"
+              ? "No video testimonials to display yet."
+              : only === "text"
+                ? "No written testimonials to display yet."
+                : "No testimonials to display yet.",
+          ),
+        );
       if (config.layout === "mosaic")
         cards.forEach((card, index) => {
           if (index % 4 === 0 && !card.classList.contains("video-card"))

@@ -169,7 +169,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
         key: "marquee",
         layout: "marquee",
         title: "Scrolling band",
-        note: "One continuous row, seamless, pauses on hover.",
+        note: "One continuous row, seamless, pauses on hover. Written testimonials only: a band that never stops has nothing to press.",
       },
       {
         key: "chips",
@@ -182,7 +182,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
         key: "spotlight",
         layout: "spotlight",
         title: "Living wall",
-        note: "One card, the testimonials take turns in a cross-fade.",
+        note: "One card, the testimonials take turns in a cross-fade. The turn waits while a video is playing.",
         frame: "narrow",
       },
       {
