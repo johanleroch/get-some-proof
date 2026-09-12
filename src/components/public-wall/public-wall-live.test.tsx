@@ -16,6 +16,7 @@ import { PublicWallLive } from "./public-wall-live";
 const page: PublicWallResponse = {
   brand: {
     name: "Mira Studio",
+    logoUrl: "/fixtures/bumpr-logo.svg",
     publicSlug: "mira-studio",
     accentColor: "#123abc",
     accentInk: "#ffffff",
@@ -48,6 +49,10 @@ const respond = (value: PublicWallResponse) =>
   Promise.resolve(Response.json(value));
 
 describe("Public Wall mediated refresh", () => {
+  it("renders the company logo from the public response", () => {
+    render(element());
+    expect(screen.getByRole("img", { name: "Mira Studio logo" })).toHaveAttribute("src", page.brand.logoUrl);
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     signal.revision = 0;

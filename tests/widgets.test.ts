@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { api, internal } from "@convex/_generated/api";
-import { authenticatedUser, createConvexTest } from "./convex-test-helpers";
+import {
+  authenticatedUser,
+  createConvexTest,
+  addStripeSubscription,
+} from "./convex-test-helpers";
 
 const config = {
   layout: "wall" as const,
@@ -11,6 +15,8 @@ const config = {
 };
 const secret = "widget-service-test-credential-32-characters";
 beforeEach(() => {
+  process.env.STRIPE_SECRET_KEY = "sk_test_widgets";
+  process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_widgets";
   process.env.PUBLIC_READ_RATE_LIMIT_SECRET = secret;
 });
 async function setup() {
@@ -54,6 +60,34 @@ async function setup() {
   return { t, owner, brand, testimonialId, widgetId, args };
 }
 describe("Studio widgets", () => {
+  it("allows the free Wall of Fame and rejects Pro templates on create and save", async () => {
+    const s = await setup();
+    for (const layout of [
+      "individual",
+      "carousel",
+      "masonry",
+      "highlights",
+      "avatars",
+    ] as const) {
+      await expect(
+        s.owner.client.mutation(api.widgets.create, {
+          organizationId: s.brand.id,
+          name: "Pro template",
+          config: { ...config, layout },
+        }),
+      ).rejects.toThrow("requires Pro");
+      await expect(
+        s.owner.client.mutation(api.widgets.save, {
+          ...s.args,
+          expectedRevision: 0,
+          name: "Pro template",
+          config: { ...config, layout },
+          testimonialIds: [s.testimonialId],
+          publish: true,
+        }),
+      ).rejects.toThrow("requires Pro");
+    }
+  });
   it("applies source visibility and account link policy to published widget cards and revisions", async () => {
     const s = await setup();
     await s.t.run(async (ctx) => {
@@ -315,6 +349,7 @@ describe("Studio widgets", () => {
   });
   it("keeps each widgets order independent and requires real highlights", async () => {
     const s = await setup();
+    await addStripeSubscription(s.t, s.brand.id, "active");
     const second = await s.t.run(async (ctx) => {
       const original = await ctx.db.get(s.testimonialId);
       const { _id, _creationTime, ...data } = original!;

@@ -20,6 +20,7 @@ export const getBrand = query({
       accentInk: v.string(),
       attributionRequired: v.boolean(),
       brandName: v.string(),
+      logoUrl: v.union(v.string(), v.null()),
       hasPublishedTestimonials: v.boolean(),
       publicSlug: v.string(),
       privacyRevision: v.number(),
@@ -60,6 +61,9 @@ export const getBrand = query({
       accentInk: accentInk(accentColor),
       attributionRequired: entitlement.effectivePlan === "free",
       brandName: brand.name,
+      logoUrl: brand.logoStorageId
+        ? await ctx.storage.getUrl(brand.logoStorageId)
+        : null,
       hasPublishedTestimonials: firstProjection !== null,
       publicSlug: brand.publicSlug,
       privacyRevision:
@@ -123,7 +127,9 @@ export const list = query({
             ctx,
             brand,
             projection,
-            account?.testimonialLinksEnabled !== false,
+            brand.publicWallTestimonialLinksEnabled ??
+              account?.testimonialLinksEnabled ??
+              true,
           ),
         ),
     );

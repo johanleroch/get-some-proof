@@ -13,8 +13,6 @@ import {
 
 import { AnimatedBlob } from "@/components/brand/animated-blob";
 
-import { BlobLoader } from "@/components/brand/blob-loader";
-
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
@@ -200,11 +198,7 @@ export function OrganizationSettings({
     deletionBySlug === undefined ||
     (organization && (access === undefined || wallSettings === undefined))
   ) {
-    return (
-      <div className="grid min-h-[50vh] place-items-center">
-        <BlobLoader label="Loading settings…" showLabel />
-      </div>
-    );
+    return <OrganizationSettingsSkeleton />;
   }
 
   if (organization === null) {
@@ -293,7 +287,43 @@ export function OrganizationSettings({
   );
 }
 
+const settingsLoadingAction = async () => {};
+
+export function OrganizationSettingsSkeleton() {
+  return (
+    <OrganizationSettingsView
+      loading
+      canChangePublicSlug
+      canManageWall
+      canUpdate
+      embedOrigin=""
+      logoUrl={null}
+      name=""
+      publicSlug=""
+      publicSlugCanChange
+      onChangePublicSlug={settingsLoadingAction}
+      onRemoveLogo={settingsLoadingAction}
+      onRename={settingsLoadingAction}
+      onUploadLogo={settingsLoadingAction}
+      onUpdateWallSettings={settingsLoadingAction}
+      wallSettings={{
+        accentColor: "#ffbb16",
+        canHideAttribution: false,
+        hideAttribution: false,
+        theme: "system",
+        transparentEmbed: false,
+        visibility: { avatar: true, company: true, rating: true, role: true },
+      }}
+      workspaceDeletion={{
+        onDelete: settingsLoadingAction,
+        onExport: settingsLoadingAction,
+      }}
+    />
+  );
+}
+
 export function OrganizationSettingsView({
+  loading = false,
   canChangePublicSlug,
   canManageWall,
   canUpdate,
@@ -310,6 +340,7 @@ export function OrganizationSettingsView({
   wallSettings,
   workspaceDeletion,
 }: {
+  loading?: boolean;
   canChangePublicSlug: boolean;
   canManageWall: boolean;
   canUpdate: boolean;
@@ -372,13 +403,25 @@ export function OrganizationSettingsView({
   }
 
   return (
-    <section aria-labelledby="settings-heading" className="space-y-8">
+    <section
+      aria-labelledby="settings-heading"
+      className="space-y-8"
+      aria-busy={loading || undefined}
+    >
       <PageHeader
         description="Update the identity shared across your public proof surfaces."
         title={<span id="settings-heading">Brand settings</span>}
       />
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:items-start">
+      {loading ? (
+        <span className="sr-only" role="status">
+          Loading project settings…
+        </span>
+      ) : null}
+      <div
+        inert={loading || undefined}
+        className={`grid gap-6 ${loading ? "[&_input]:bg-muted [&_textarea]:bg-muted [&_[data-slot=avatar]]:animate-pulse [&_[data-slot=avatar]]:text-transparent [&_button]:pointer-events-none [&_button]:opacity-50 [&_input]:animate-pulse [&_input]:text-transparent [&_textarea]:animate-pulse [&_textarea]:text-transparent" : ""}`}
+      >
         <div className="space-y-6">
           <div className="bg-card scroll-mt-24 rounded-lg border p-5" id="logo">
             <ProfileImageControl
@@ -502,33 +545,6 @@ export function OrganizationSettingsView({
             />
           ) : null}
         </div>
-        <nav
-          aria-label="Settings sections"
-          className="hidden lg:sticky lg:top-24 lg:block"
-        >
-          <p className="type-micro text-ink-2 mb-2 px-2">On this page</p>
-          <ul className="space-y-0.5">
-            {[
-              ["logo", "Brand logo"],
-              ...(canUpdate ? [["identity", "Identity"]] : []),
-              ...(canChangePublicSlug ? [["address", "Public address"]] : []),
-              ...(canManageWall && wallSettings
-                ? [["wall", "Public Wall"]]
-                : []),
-              ...(canUpdate ? [["embed", "Embedded Wall"]] : []),
-              ...(workspaceDeletion ? [["danger", "Delete Project"]] : []),
-            ].map(([id, label]) => (
-              <li key={id}>
-                <a
-                  className="text-ink-2 hover:text-ink hover:bg-accent block rounded-md px-2 py-1.5 text-sm transition-colors"
-                  href={`#${id}`}
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
     </section>
   );

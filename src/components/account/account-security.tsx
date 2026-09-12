@@ -3,7 +3,7 @@
 import { blobToast } from "@/components/brand/blob-toast";
 import { securityErrorMessage } from "@/lib/security-error-message";
 
-import { BlobLoadingText } from "@/components/brand/blob-loader";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -341,7 +341,14 @@ export function AccountSecurity() {
           <div>
             <h2 className="type-subheading">Authenticator app</h2>
             <p className="text-ink-2 mt-1 text-sm">
-              Status: {twoFactorEnabled ? "enabled" : "not enabled"}
+              Status:{" "}
+              {providers === null ? (
+                <Skeleton className="inline-block h-4 w-20 align-middle" />
+              ) : twoFactorEnabled ? (
+                "enabled"
+              ) : (
+                "not enabled"
+              )}
             </p>
           </div>
         </div>
@@ -351,7 +358,14 @@ export function AccountSecurity() {
             Unable to load sign-in methods. Reload this page to try again.
           </p>
         ) : providers === null ? (
-          <BlobLoadingText label="Loading sign-in methods…" />
+          <div
+            className="mt-6 space-y-3"
+            role="status"
+            aria-label="Loading sign-in methods"
+          >
+            <Skeleton className="h-10 w-full max-w-md" />
+            <Skeleton className="h-10 w-44" />
+          </div>
         ) : !hasPassword ? (
           <div className="mt-6 space-y-3 text-sm">
             <p>
@@ -522,7 +536,17 @@ export function AccountSecurity() {
               )}
             </div>
           ) : sessions === null ? (
-            <BlobLoadingText label="Loading Sessions…" />
+            <div
+              className="flex items-center justify-between gap-4 p-4"
+              role="status"
+              aria-label="Loading Sessions"
+            >
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+              <Skeleton className="h-10 w-24" />
+            </div>
           ) : sessions.length === 0 ? (
             <p className="text-muted-foreground p-4 text-sm">
               No active Sessions found.

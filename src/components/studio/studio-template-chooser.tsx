@@ -1,6 +1,7 @@
 import type { WidgetConfig } from "@convex/domain/widgets";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { widgetTemplates } from "./catalog";
 
 export type StudioTemplate = (typeof widgetTemplates)[number];
@@ -68,9 +69,11 @@ function TemplateSketch({ layout }: { layout: WidgetConfig["layout"] }) {
 
 export function StudioTemplateChooser({
   disabled,
+  freePlan = false,
   onSelect,
 }: {
   disabled: boolean;
+  freePlan?: boolean;
   onSelect: (template: StudioTemplate) => void;
 }) {
   return (
@@ -78,13 +81,16 @@ export function StudioTemplateChooser({
       {widgetTemplates.map((template) => (
         <button
           key={template.layout}
-          disabled={disabled}
+          disabled={disabled || (freePlan && template.layout !== "wall")}
           className="border-line bg-surface hover:border-line-2 focus-visible:ring-brand-ring overflow-hidden rounded-lg border text-left transition-colors focus-visible:ring-3 disabled:opacity-50"
           onClick={() => onSelect(template)}
         >
           <TemplateSketch layout={template.layout} />
           <div className="space-y-1 p-5">
             <h2 className="type-subheading">{template.title}</h2>
+            <Badge variant="neutral">
+              {template.layout === "wall" ? "Free" : "Pro"}
+            </Badge>
             <p className="type-small text-ink-2">{template.description}</p>
           </div>
         </button>

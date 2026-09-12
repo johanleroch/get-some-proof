@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { api } from "@convex/_generated/api";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { BlobLoader } from "@/components/brand/blob-loader";
+import { BillingPageLoading } from "@/components/billing/billing-page-loading";
 
 export function AccountBillingReconciliationView() {
   return (
@@ -99,7 +99,7 @@ export function AccountBilling() {
   const account = useQuery(api.accounts.getMine, {});
   const projects = useQuery(api.organizations.listMine, {});
   if (account === undefined || projects === undefined)
-    return <BlobLoader label="Loading account…" showLabel />;
+    return <BillingPageLoading />;
   if (account?.deletionStartedAt !== undefined)
     return (
       <main className="mx-auto w-full max-w-3xl space-y-6 p-6">

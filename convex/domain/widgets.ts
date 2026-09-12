@@ -10,6 +10,7 @@ export const widgetLayoutValidator = v.union(
 );
 export const widgetConfigValidator = v.object({
   layout: widgetLayoutValidator,
+  testimonialLinksEnabled: v.optional(v.boolean()),
   font: v.union(
     v.literal("inherit"),
     v.literal("sans"),

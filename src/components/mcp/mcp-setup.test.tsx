@@ -19,6 +19,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it("keeps the page structure and back link while account data loads", () => {
+  render(<McpSetupView {...props} loading backHref="/org/studio/import" />);
+  expect(
+    screen.getByRole("heading", { name: "Import with your assistant" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "Back to import testimonials" }),
+  ).toHaveAttribute("href", "/org/studio/import");
+  expect(
+    screen.getByRole("status", { name: "Loading import access" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("status", { name: "Loading connected apps" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/No apps connected yet/)).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Copy connection commands" }),
+  ).toBeDisabled();
+});
+
 it("copies credential-free commands and faithful migration instructions only after activation", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });

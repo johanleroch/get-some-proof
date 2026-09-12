@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -171,7 +172,7 @@ export function WidgetEditor(
   const url = `${props.origin}/widgets/${widget.publicId}`;
   const snippet = `<div data-gsp-widget="${widget.publicId}"></div>\n<script src="${props.origin}/embed/v2.js" async></script>`;
   return (
-    <div className="mx-auto w-full max-w-7xl p-5 sm:p-8">
+    <div className="w-full min-w-0">
       <header className="border-line mb-6 space-y-4 border-b pb-5">
         <div className="flex items-start gap-3">
           <Button
@@ -286,8 +287,15 @@ export function WidgetEditor(
               </SelectTrigger>
               <SelectContent>
                 {widgetTemplates.map((item) => (
-                  <SelectItem key={item.layout} value={item.layout}>
+                  <SelectItem
+                    key={item.layout}
+                    value={item.layout}
+                    disabled={
+                      props.attributionRequired && item.layout !== "wall"
+                    }
+                  >
                     {item.title}
+                    {item.layout !== "wall" ? " · Pro" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -295,6 +303,23 @@ export function WidgetEditor(
           </section>
           <section className="border-line space-y-4 border-t pt-5">
             <h2 className="type-subheading">Appearance</h2>
+            {draft.config.layout !== "avatars" ? (
+              <div className="space-y-2">
+                <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
+                  <span>Allow links in testimonials</span>
+                  <Switch
+                    checked={draft.config.testimonialLinksEnabled ?? true}
+                    onCheckedChange={(enabled) =>
+                      setConfig({ testimonialLinksEnabled: enabled })
+                    }
+                  />
+                </label>
+                <p className="text-ink-2 type-small">
+                  Make mentions and links clickable in this widget. When
+                  disabled, the words stay visible.
+                </p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="widget-font">Font</Label>
               <Select

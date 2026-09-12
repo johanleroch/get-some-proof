@@ -54,6 +54,16 @@ const selectDisplayed = () =>
   fireEvent.click(
     screen.getByRole("checkbox", { name: "Select displayed testimonials" }),
   );
+function openActions() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: "Actions" }), {
+    button: 0,
+    ctrlKey: false,
+  });
+}
+function clickAction(name: string) {
+  if (!screen.queryByRole("menuitem", { name })) openActions();
+  fireEvent.click(screen.getByRole("menuitem", { name }));
+}
 function setup(
   overrides: Partial<React.ComponentProps<typeof BulkTestimonialInbox>> = {},
 ) {
@@ -93,7 +103,7 @@ describe("Bulk Inbox selection and operations", () => {
         name: "Select Virgile Rietsch's testimonial",
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Retry video copies" }));
+    clickAction("Retry video copies");
     await screen.findByText("2 video copies restarted.");
     expect(
       performVideoRetry.mock.calls.map(([item]) => item.testimonialId),
@@ -149,7 +159,7 @@ describe("Bulk Inbox selection and operations", () => {
         name: "Select Remy Jupille's testimonial",
       }),
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Archive" })[0]!);
+    clickAction("Archive");
     await screen.findByText("2 archived.");
     expect(perform.mock.calls.map(([item]) => item.testimonialId)).toEqual([
       alice.testimonialId,
@@ -164,12 +174,13 @@ describe("Bulk Inbox selection and operations", () => {
       .mockRejectedValueOnce(new Error("Publication quota reached."));
     setup({ testimonials: [alice, remy, video], totalCount: 3, perform });
     selectDisplayed();
+    openActions();
     expect(
       screen.getByText(
-        "2 ready to publish · 1 video not ready will stay selected.",
+        "2 ready to publish · 1 videos not ready will stay selected.",
       ),
     ).toBeVisible();
-    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
+    clickAction("Publish");
     await screen.findByText("1 published · 1 failed · 1 videos not ready.");
     expect(perform).toHaveBeenCalledTimes(2);
     expect(
@@ -196,7 +207,7 @@ describe("Bulk Inbox selection and operations", () => {
     const imported = { ...alice, requiresImportAttestation: true };
     const { perform } = setup({ testimonials: [imported, remy] });
     selectDisplayed();
-    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
+    clickAction("Publish");
     const dialog = screen.getByRole("dialog");
     const publish = within(dialog).getByRole("button", {
       name: "Publish 2 testimonials",
@@ -212,10 +223,10 @@ describe("Bulk Inbox selection and operations", () => {
   it("requires a count-specific confirmation before deleting", async () => {
     const { perform } = setup();
     selectDisplayed();
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "More bulk actions" }),
-      { button: 0, ctrlKey: false },
-    );
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Actions" }), {
+      button: 0,
+      ctrlKey: false,
+    });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Delete permanently" }),
     );
@@ -264,11 +275,9 @@ describe("Bulk Inbox selection and operations", () => {
         name: "Select Remy Jupille's testimonial",
       }),
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Refresh selected testimonials" }),
-    );
+    clickAction("Refresh selected testimonials");
     await screen.findByText("Selection refreshed.");
-    fireEvent.click(screen.getAllByRole("button", { name: "Publish" })[0]!);
+    clickAction("Publish");
     await screen.findByText("2 published.");
     expect(perform.mock.calls.map(([item]) => item.testimonialId)).toEqual([
       alice.testimonialId,
@@ -301,9 +310,8 @@ describe("Bulk Inbox selection and operations", () => {
     );
     const { unmount } = setup({ perform });
     selectDisplayed();
-    const archive = screen.getAllByRole("button", {
-      name: "Archive",
-    })[0]!;
+    openActions();
+    const archive = screen.getByRole("menuitem", { name: "Archive" });
     fireEvent.click(archive);
     fireEvent.click(archive);
     expect(perform).toHaveBeenCalledTimes(1);
@@ -346,9 +354,8 @@ describe("Bulk Inbox selection and operations", () => {
       testimonials: [{ ...alice, moderationStatus: "spam" }],
     });
     selectDisplayed();
-    expect(
-      screen.getAllByRole("button", { name: "Not Spam" })[0],
-    ).toBeEnabled();
+    openActions();
+    expect(screen.getByRole("menuitem", { name: "Not Spam" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
     unmount();
     setup({
@@ -356,9 +363,8 @@ describe("Bulk Inbox selection and operations", () => {
       testimonials: [{ ...alice, moderationStatus: "published" }],
     });
     selectDisplayed();
-    expect(
-      screen.getAllByRole("button", { name: "Unpublish" })[0],
-    ).toBeEnabled();
+    openActions();
+    expect(screen.getByRole("menuitem", { name: "Unpublish" })).toBeEnabled();
   });
 });
 

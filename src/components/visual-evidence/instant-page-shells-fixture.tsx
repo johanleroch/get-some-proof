@@ -6,7 +6,7 @@ import { OverviewRouteLoading } from "@/components/organizations/overview-route-
 import { StudioRouteLoading } from "@/components/studio/studio-route-loading";
 import { InboxRouteLoading } from "@/components/testimonials/inbox-route-loading";
 
-function LoadingPageShell({
+export function WorkspacePageShell({
   children,
   inboxCount,
   pathname,
@@ -42,24 +42,24 @@ function LoadingPageShell({
 
 export function OverviewLoadingFixture() {
   return (
-    <LoadingPageShell inboxCount={3} pathname="/org/atrakt/dashboard">
+    <WorkspacePageShell inboxCount={3} pathname="/org/atrakt/dashboard">
       <OverviewRouteLoading />
-    </LoadingPageShell>
+    </WorkspacePageShell>
   );
 }
 
 export function InboxLoadingFixture() {
   return (
-    <LoadingPageShell pathname="/org/atrakt/inbox">
+    <WorkspacePageShell pathname="/org/atrakt/inbox">
       <InboxRouteLoading />
-    </LoadingPageShell>
+    </WorkspacePageShell>
   );
 }
 
 export function StudioLoadingFixture() {
   return (
-    <LoadingPageShell pathname="/org/atrakt/studio">
+    <WorkspacePageShell pathname="/org/atrakt/studio">
       <StudioRouteLoading />
-    </LoadingPageShell>
+    </WorkspacePageShell>
   );
 }

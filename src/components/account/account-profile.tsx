@@ -1,9 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { AccountTestimonialLinks } from "./account-testimonial-links";
-import { BlobLoader } from "@/components/brand/blob-loader";
-
 import { type FormEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 
@@ -40,7 +36,7 @@ export function AccountProfile() {
   const user = session.data?.user;
 
   if (!user || currentUser === undefined) {
-    return <BlobLoader label="Loading profile…" showLabel />;
+    return <AccountProfileSkeleton />;
   }
 
   return (
@@ -51,6 +47,26 @@ export function AccountProfile() {
       key={user.id ?? user.email}
       refetchSession={session.refetch}
     />
+  );
+}
+
+export function AccountProfileSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      inert
+      className="[&_input]:bg-muted [&_[data-slot=avatar]]:text-transparent [&_button]:opacity-50 [&_input]:text-transparent"
+    >
+      <AccountProfileView
+        currentImage={null}
+        email=""
+        initialName=""
+        onRemoveImage={async () => {}}
+        onSaveName={async () => {}}
+        onUploadImage={async () => {}}
+      />
+      <span className="sr-only">Loading profile…</span>
+    </div>
   );
 }
 
@@ -110,7 +126,6 @@ function AccountProfileContent({
         onSaveName={saveName}
         onUploadImage={uploadAvatar}
       />
-      <AccountTestimonialLinks />
     </>
   );
 }
@@ -160,9 +175,6 @@ export function AccountProfileView({
         description="Update the identity used for your Owner account."
         title="Profile"
       />
-      <Link className="text-sm underline" href="/account/billing">
-        Account billing and deletion
-      </Link>
 
       <Card>
         <CardHeader>

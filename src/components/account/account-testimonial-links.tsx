@@ -10,10 +10,11 @@ import { ErrorToast, SuccessToast } from "@/components/ui/error-toast";
 export function AccountTestimonialLinks() {
   const account = useQuery(api.accounts.getMine, {});
   const update = useMutation(api.accounts.setTestimonialLinksEnabled);
-  if (!account) return null;
+  if (account === null) return null;
   return (
     <AccountTestimonialLinksView
-      enabled={account.testimonialLinksEnabled}
+      loading={account === undefined}
+      enabled={account?.testimonialLinksEnabled ?? false}
       onChange={(enabled) => update({ enabled })}
     />
   );
@@ -22,8 +23,10 @@ export function AccountTestimonialLinks() {
 export function AccountTestimonialLinksView({
   enabled,
   onChange,
+  loading = false,
 }: {
   enabled: boolean;
+  loading?: boolean;
   onChange: (enabled: boolean) => Promise<unknown>;
 }) {
   const [pending, setPending] = useState(false);
@@ -64,7 +67,8 @@ export function AccountTestimonialLinksView({
           id="testimonial-links"
           aria-describedby="testimonial-links-description"
           checked={enabled}
-          disabled={pending}
+          disabled={pending || loading}
+          className={loading ? "invisible" : undefined}
           onCheckedChange={change}
         />
       </div>

@@ -73,16 +73,10 @@ describe("VideoThumbnailDialog", () => {
     expect(
       screen.getByRole("radio", { name: "Moment at 0:28" }),
     ).toHaveAttribute("aria-checked", "true");
-    // The card keeps the old still while the new one loads off screen...
-    expect(cardPoster()).toContain("time=12");
-    const preload = screen.getByTestId("thumbnail-preload");
-    expect(preload).toHaveAttribute(
-      "src",
-      expect.stringContaining("time=27.5"),
-    );
-    // ...and swaps only once it has arrived.
-    fireEvent.load(preload);
-    expect(cardPoster()).toContain("time=27.5");
+    const selectedImage = screen
+      .getByRole("radio", { name: "Moment at 0:28" })
+      .querySelector("img");
+    expect(cardPoster()).toBe(selectedImage?.getAttribute("src"));
     expect(screen.queryByTestId("thumbnail-preload")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

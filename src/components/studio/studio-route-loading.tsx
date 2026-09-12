@@ -25,7 +25,7 @@ export function StudioRouteLoading() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 p-5 sm:p-8">
+    <div className="space-y-8">
       <PageHeader
         actions={
           choosing ? (

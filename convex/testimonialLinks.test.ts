@@ -87,6 +87,25 @@ it("applies the Owner switch to all Projects, invalidates public pages, preserve
   await owner.client.mutation(api.accounts.setTestimonialLinksEnabled, {
     enabled: false,
   });
+  const settings = await owner.client.query(api.wallCustomization.getSettings, {
+    organizationId: first.id,
+  });
+  const { canHideAttribution, ...editable } = settings;
+  expect(canHideAttribution).toBe(true);
+  await owner.client.mutation(api.wallCustomization.updateSettings, {
+    ...editable,
+    organizationId: first.id,
+    testimonialLinksEnabled: true,
+  });
+  expect(JSON.stringify(await list("atelier-rose"))).toContain(
+    "https://example.com/",
+  );
+  expect(JSON.stringify(await list("atelier-bleu"))).not.toContain("href");
+  await owner.client.mutation(api.wallCustomization.updateSettings, {
+    ...editable,
+    organizationId: first.id,
+    testimonialLinksEnabled: false,
+  });
   for (const publicSlug of ["atelier-rose", "atelier-bleu"]) {
     const page = await list(publicSlug);
     expect(page.page).toHaveLength(1);
@@ -102,7 +121,7 @@ it("applies the Owner switch to all Projects, invalidates public pages, preserve
     await t.query(api.publicWall.privacyRevision, {
       publicSlug: "atelier-rose",
     }),
-  ).toBe(before! + 1);
+  ).toBe(before! + 3);
   expect(
     (
       await t.query(api.publicWall.getBrand, {
@@ -110,7 +129,7 @@ it("applies the Owner switch to all Projects, invalidates public pages, preserve
         publicSlug: "atelier-rose",
       })
     )?.privacyRevision,
-  ).toBe(before! + 1);
+  ).toBe(before! + 3);
   expect(JSON.stringify(await list("lina-studio"))).toContain(
     "https://example.com/",
   );
@@ -120,7 +139,5 @@ it("applies the Owner switch to all Projects, invalidates public pages, preserve
   await owner.client.mutation(api.accounts.setTestimonialLinksEnabled, {
     enabled: true,
   });
-  expect(JSON.stringify(await list("atelier-rose"))).toContain(
-    "https://example.com/",
-  );
+  expect(JSON.stringify(await list("atelier-rose"))).not.toContain("href");
 });
