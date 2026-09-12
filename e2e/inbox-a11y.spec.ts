@@ -274,6 +274,7 @@ test.describe("keyboard", () => {
       "tab: Pending 3",
       "tabpanel: Pending 3",
       "checkbox: Select displayed testimonials",
+      "button: Filter",
       "checkbox: Select Nora Lewis's testimonial",
       // Nora Lewis: video processing, so Publish is disabled and skipped.
       "button: Archive",
@@ -321,6 +322,7 @@ test.describe("keyboard", () => {
       "tab: Published 2",
       "tabpanel: Published 2",
       "checkbox: Select displayed testimonials",
+      "button: Filter",
       "checkbox: Select Remy Jupille's testimonial",
       "button: Preview Remy Jupille's video",
       "button: Move Remy Jupille down",
@@ -352,6 +354,7 @@ test.describe("keyboard", () => {
       "tab: Spam 1",
       "tabpanel: Spam 1",
       "checkbox: Select displayed testimonials",
+      "button: Filter",
       "checkbox: Select Suspicious Submission's testimonial",
       "button: Not Spam",
       "button: More actions for Suspicious Submission's Testimonial",
