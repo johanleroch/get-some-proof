@@ -90,8 +90,17 @@ import {
   InboxTestimonialMenu,
   type InboxTestimonialAction,
 } from "@/components/testimonials/inbox-testimonial-menu";
+import { TestimonialImportDetails } from "./testimonial-import-details";
+
+export type TestimonialImportDetailsValue = {
+  importedAt: number;
+  jobId?: Id<"testimonialImportJobs">;
+  provider: "assistant" | "senja" | "testimonial-to";
+  sourceUrl: string;
+};
 
 type InboxTestimonialIdentity = {
+  importDetails?: TestimonialImportDetailsValue;
   requiresImportAttestation?: boolean;
   card: TestimonialCardValue | null;
   consentAcceptedAt?: number;
@@ -289,6 +298,7 @@ function InboxRow({
   registerControl,
   hideActions,
   selection,
+  slug,
   testimonial,
 }: {
   accentColor: string;
@@ -311,6 +321,7 @@ function InboxRow({
   ) => void;
   hideActions?: boolean;
   selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
+  slug?: string;
   testimonial: InboxTestimonial;
 }) {
   const isSpam = testimonial.moderationStatus === "spam";
@@ -385,6 +396,17 @@ function InboxRow({
         ) : null}
 
         <p className="type-small text-ink-2 mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {testimonial.importDetails ? (
+            <TestimonialImportDetails
+              details={testimonial.importDetails}
+              recoveryNeeded={
+                testimonial.submissionType === "video" &&
+                testimonial.videoStatus !== "ready"
+              }
+              slug={slug}
+              testimonialName={testimonial.submitterName}
+            />
+          ) : null}
           <span>Received {formatShortDate(testimonial.createdAt)}</span>
           {testimonial.submitterEmail && (
             <>
@@ -525,6 +547,7 @@ export function TestimonialInboxView({
   onMove,
   pendingId,
   selection,
+  slug,
   testimonials,
 }: {
   accentColor?: string;
@@ -546,6 +569,7 @@ export function TestimonialInboxView({
     disabled: boolean;
     onToggle: (item: InboxTestimonial) => void;
   };
+  slug?: string;
   testimonials: InboxTestimonial[];
 }) {
   const draggedId = useRef<string | undefined>(undefined);
@@ -660,6 +684,7 @@ export function TestimonialInboxView({
                     }
                   : undefined
               }
+              slug={slug}
               key={testimonial.testimonialId}
               onAction={(action) => onAction(testimonial, action)}
               onMove={
@@ -1233,6 +1258,7 @@ export function TestimonialInbox({
                 : undefined
             }
             pendingId={pendingId}
+            slug={slug}
             testimonials={testimonials}
           />
         )}

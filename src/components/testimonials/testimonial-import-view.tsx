@@ -350,13 +350,7 @@ export function TestimonialImportView({
           <div className="flex flex-wrap gap-3">
             {inboxAction ?? (
               <Button asChild>
-                <Link
-                  href={
-                    `/org/${slug}/inbox${jobId ? `?import=${encodeURIComponent(jobId)}` : ""}` as Route
-                  }
-                >
-                  Open Inbox
-                </Link>
+                <Link href={`/org/${slug}/inbox` as Route}>Open Inbox</Link>
               </Button>
             )}
             <Button variant="outline" onClick={backToUrl}>

@@ -94,6 +94,40 @@ describe("TestimonialInboxView", () => {
     ).toBeNull();
   });
 
+  it("keeps imported testimonials in the normal list and explains their source", async () => {
+    const imported = {
+      ...testimonial,
+      consentAcceptedAt: undefined,
+      importDetails: {
+        importedAt: Date.UTC(2026, 8, 8),
+        jobId: "import-job" as Id<"testimonialImportJobs">,
+        provider: "assistant" as const,
+        sourceUrl: "https://stories.example.test/customer/camille",
+      },
+      requiresImportAttestation: true,
+      submitterEmail: undefined,
+    };
+    render(
+      <TestimonialInboxView
+        category="pending"
+        onAction={vi.fn()}
+        pendingId={null}
+        slug="fernhill"
+        testimonials={[imported]}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Import details for Camille Test" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Import details" });
+    expect(within(dialog).getByText("your assistant")).toBeVisible();
+    expect(within(dialog).getByText("stories.example.test")).toBeVisible();
+    expect(
+      within(dialog).queryByRole("link", { name: "Review import progress" }),
+    ).toBeNull();
+  });
+
   it("gives each category its own empty state", () => {
     const { rerender } = render(
       <TestimonialInboxView

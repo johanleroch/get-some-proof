@@ -150,8 +150,8 @@ it("verifies a signed OAuth bearer across MCP and Convex HTTP for import, destin
     text: "I made my first bowl!",
   });
   expect(imported.isError).not.toBe(true);
-  expect(imported.structuredContent.inboxUrl).toContain(
-    `/org/${project.slug}/inbox?import=`,
+  expect(imported.structuredContent.inboxUrl).toBe(
+    `http://localhost:3000/org/${project.slug}/inbox`,
   );
   const status = await call("read_assistant_import", {
     jobId: imported.structuredContent.jobId,

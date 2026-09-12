@@ -77,19 +77,11 @@ test("a failed photo can resume without replacing copied portraits", async ({
   ).toContainText("Photo copied.");
 });
 
-test("recent import menu links back to its private Inbox progress", async ({
+test("recovery view does not create a second recent-import Inbox navigation", async ({
   page,
 }) => {
   await page.goto("/visual-evidence/assistant-import-recovery");
-  await page.getByRole("button", { name: "Recent assistant imports" }).click();
-  const item = page.getByRole("menuitem");
-  await expect(item).toHaveAttribute(
-    "href",
-    "/org/willow-ceramics/inbox?import=fixture-job",
-  );
-  await expect(item).toContainText("willow-ceramics.example");
-  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("button", { name: "Recent assistant imports" }),
-  ).toBeFocused();
+  ).toHaveCount(0);
 });

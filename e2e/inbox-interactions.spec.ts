@@ -190,7 +190,9 @@ test.describe("Pending rows", () => {
 
     const alice = row(page, ids.alice);
     await expect(alice.getByText("Founder · Bellwether Coffee")).toBeVisible();
-    await expect(alice.getByText("alice@example.invalid")).toBeVisible();
+    await expect(
+      alice.getByRole("button", { name: "Import details for Alice Martin" }),
+    ).toBeVisible();
     await expect(
       alice.getByRole("button", { name: "Publish", exact: true }),
     ).toBeEnabled();
@@ -215,6 +217,38 @@ test.describe("Pending rows", () => {
     await expect(
       page.getByRole("button", { name: "Not Spam", exact: true }),
     ).toHaveCount(0);
+  });
+
+  test("an imported testimonial explains its provenance without leaving the category", async ({
+    page,
+  }) => {
+    await gotoInbox(page);
+    const imported = row(page, ids.alice);
+    await imported
+      .getByRole("button", { name: "Import details for Alice Martin" })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: "Import details" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("your assistant");
+    await expect(
+      dialog.getByRole("link", { name: /stories\.bellwether\.example/ }),
+    ).toHaveAttribute(
+      "href",
+      "https://stories.bellwether.example/customers/alice",
+    );
+    await expect(
+      dialog.getByRole("link", { name: "Review import progress" }),
+    ).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Done" }).click();
+    await expect(dialog).toBeHidden();
+
+    await tab(page, "Published 2").click();
+    await expect(
+      row(page, ids.alice).getByRole("button", {
+        name: "Import details for Alice Martin",
+      }),
+    ).toBeVisible();
   });
 
   test("the row keeps DESIGN.md's measures: 48px portrait still, 16px from the edge, 40px buttons at most", async ({

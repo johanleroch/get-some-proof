@@ -55,6 +55,18 @@ const inboxStatusValidator = v.union(
 type InboxStatus = "pending" | "published" | "archived" | "spam";
 
 const inboxIdentityValidator = {
+  importDetails: v.optional(
+    v.object({
+      importedAt: v.number(),
+      jobId: v.optional(v.id("testimonialImportJobs")),
+      provider: v.union(
+        v.literal("assistant"),
+        v.literal("senja"),
+        v.literal("testimonial-to"),
+      ),
+      sourceUrl: v.string(),
+    }),
+  ),
   requiresImportAttestation: v.optional(v.boolean()),
   consentAcceptedAt: v.optional(v.number()),
   createdAt: v.number(),
@@ -163,6 +175,12 @@ async function inboxItem(ctx: QueryCtx, testimonial: Doc<"testimonials">) {
   const identity = {
     ...(testimonial.importOrigin
       ? {
+          importDetails: {
+            importedAt: testimonial.importOrigin.importedAt,
+            jobId: testimonial.importJobId,
+            provider: testimonial.importOrigin.provider,
+            sourceUrl: testimonial.importOrigin.sourceUrl,
+          },
           requiresImportAttestation:
             !testimonial.importOrigin.publicationAttestation,
         }

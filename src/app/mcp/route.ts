@@ -138,7 +138,7 @@ export async function POST(request: Request) {
     return {
       ...saved,
       inboxUrl: new URL(
-        `/org/${encodeURIComponent(saved.organizationSlug)}/inbox?import=${encodeURIComponent(saved.jobId)}`,
+        `/org/${encodeURIComponent(saved.organizationSlug)}/inbox`,
         origin,
       ).href,
     };
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
     return {
       ...status,
       inboxUrl: new URL(
-        `/org/${encodeURIComponent(status.organizationSlug)}/inbox?import=${encodeURIComponent(status.jobId)}`,
+        `/org/${encodeURIComponent(status.organizationSlug)}/inbox`,
         origin,
       ).href,
     };
@@ -285,7 +285,7 @@ export async function POST(request: Request) {
         return {
           ...saved,
           inboxUrl: new URL(
-            `/org/${encodeURIComponent(saved.organizationSlug)}/inbox?import=${encodeURIComponent(saved.jobId)}`,
+            `/org/${encodeURIComponent(saved.organizationSlug)}/inbox`,
             origin,
           ).href,
         };

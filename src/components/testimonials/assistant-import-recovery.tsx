@@ -1,10 +1,4 @@
 "use client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
@@ -295,10 +289,7 @@ export function AssistantImportNotice({
   jobId?: string;
   slug: string;
 }) {
-  if (jobId === undefined)
-    return (
-      <RecentAssistantImports organizationId={organizationId} slug={slug} />
-    );
+  if (jobId === undefined) return null;
   return (
     <>
       <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b pb-4">
@@ -313,55 +304,5 @@ export function AssistantImportNotice({
       </div>
       <AssistantImportRecovery organizationId={organizationId} jobId={jobId} />
     </>
-  );
-}
-
-function RecentAssistantImports({
-  organizationId,
-  slug,
-}: {
-  organizationId: Id<"organizations">;
-  slug: string;
-}) {
-  const jobs = useQuery(api.assistantImports.recent, { organizationId });
-  if (!jobs?.length) return null;
-  return <RecentAssistantImportsView jobs={jobs} slug={slug} />;
-}
-
-export function RecentAssistantImportsView({
-  jobs,
-  slug,
-}: {
-  jobs: FunctionReturnType<typeof api.assistantImports.recent>;
-  slug: string;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">Recent assistant imports</Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-80 max-w-[calc(100vw-2.5rem)]"
-      >
-        {jobs.map((job) => (
-          <DropdownMenuItem key={job.jobId} asChild>
-            <Link
-              className="flex-col items-start gap-1"
-              href={`/org/${slug}/inbox?import=${job.jobId}` as Route}
-            >
-              <span className="break-all">
-                {new URL(job.sourceUrl).hostname} ·{" "}
-                {formatShortDate(job.createdAt)}
-              </span>
-              <span className="type-small text-ink-2">
-                Processing: {job.result?.processing ?? 0} · Blocked:{" "}
-                {job.result?.blocked ?? 0} · Failed: {job.result?.failed ?? 0}
-              </span>
-            </Link>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
