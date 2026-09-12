@@ -43,7 +43,7 @@ export const sourceIcons = {
   },
   x: {
     color: "#000000",
-    fit: "translate(3.393 3.332) scale(0.7223)",
+    fit: "translate(3.352 3.332) scale(0.7223)",
     label: "X",
     markup:
       '<path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z" stroke="currentColor" stroke-width="0.7" stroke-linejoin="miter" stroke-linecap="butt"/>',

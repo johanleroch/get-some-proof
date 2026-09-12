@@ -37,7 +37,8 @@
     "certify:mvp": "pnpm check && pnpm test:e2e",
     "build:import-widget": "node scripts/build-import-widget.mjs",
     "generate:import-auth-schema": "jiti scripts/generate-import-auth-schema.mjs",
-    "media:audit": "node scripts/media-audit.mjs"
+    "media:audit": "node scripts/media-audit.mjs",
+    "icon:fit": "node scripts/source-icons/fit.mjs"
   },
   "dependencies": {
     "@better-auth/oauth-provider": "1.6.30",

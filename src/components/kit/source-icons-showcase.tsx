@@ -169,7 +169,9 @@ export function SourceIconsShowcase() {
           replaces it, then both at the size the wall serves. The brands crop
           their files differently, so each mark is placed from its measured
           bounds onto one keyline grid: 20 of live area in a 24 box, squares at
-          18, bare letters at 18.5, centred on the shape itself.
+          18, bare letters at 18.5, centred on the shape itself. A new platform
+          joins the same way: <code>pnpm icon:fit their-logo.svg</code> prints
+          the entry, already placed.
         </p>
       </div>
 

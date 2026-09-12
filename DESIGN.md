@@ -771,6 +771,20 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
   and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
   once the last usages are migrated.
+- Source marks (the badge that says where a testimonial came from): never an
+  icon set's version of a logo. Tabler, Lucide and the rest redraw brands in
+  their own hand, and it shows the moment two of them sit side by side. Take
+  the brand's own artwork, and if the mark you want only exists inside a
+  container, lift it out of that artwork rather than redrawing it
+  (`src/components/testimonials/source-icons.ts` documents how each one was
+  obtained). Brands crop and centre their files however they like, so no mark
+  is ever pasted in as published: run `pnpm icon:fit <file.svg>` and paste what
+  it prints. It measures the ink as a reader sees it and places the mark on one
+  keyline grid - a 24 box with 20 of live area, squares at 18 because a square
+  reads larger at the same measure, bare letterforms at 18.5 (`--shape letter`,
+  the one call left to the eye), circles and rectangles at 20, the centre of the
+  shape on the centre of the box. `scripts/source-icons/grid.test.mjs` holds the
+  family to it.
 - Transactional emails (`convex/email/templates.ts`, one layout for all of
   them): simple and minimal, the light theme in hex because mail clients
   know no tokens. `--paper` behind a 480px column; the lockup at 28px at the
