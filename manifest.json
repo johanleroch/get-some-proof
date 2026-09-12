@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 161
+  },
+  "headSha": "30b975de092e5cf9269bb93e6b8d690e75093fb1",
+  "runId": "34723661644",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
