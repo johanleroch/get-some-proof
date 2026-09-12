@@ -1,5 +1,13 @@
 import "@testing-library/jest-dom/vitest";
-import { vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
+
+// Testing Library only unmounts on its own when Vitest runs with globals, and
+// this project does not. Without this, the last tree of every file stays
+// mounted: React can still be scheduling work when the jsdom environment
+// closes, which surfaces as an unhandled "window is not defined" and fails the
+// run even though every test passed.
+afterEach(cleanup);
 
 vi.mock("next/navigation", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next/navigation")>();
