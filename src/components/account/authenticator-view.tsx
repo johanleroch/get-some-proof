@@ -173,8 +173,12 @@ function RecoveryCodes({
     const link = document.createElement("a");
     link.href = url;
     link.download = "get-some-proof-recovery-codes.txt";
+    // Attached and revoked late: some browsers read the blob after the click
+    // returns, and a detached anchor or an immediate revoke drops the file.
+    document.body.append(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 
   return (
@@ -207,6 +211,21 @@ function RecoveryCodes({
           I saved them
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** The account typed in by hand, for whoever cannot scan or tap a link. */
+function ManualKey({ label, secret }: { label: string; secret: string }) {
+  return (
+    <div className="grid w-full justify-items-center gap-2 md:justify-items-start">
+      <p className="type-small text-ink-2">{label}</p>
+      <p className="bg-surface-2 w-full rounded-md px-3 py-2 text-center font-mono text-sm break-all md:text-left">
+        {groupedSecret(secret)}
+      </p>
+      <CopyButton value={secret} variant="outline">
+        Copy key
+      </CopyButton>
     </div>
   );
 }
@@ -363,7 +382,7 @@ export function AuthenticatorView({
     return (
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         {header}
-        <div className="grid max-w-prose justify-items-start gap-4">
+        <div className="grid max-w-prose justify-items-center gap-4 text-center md:justify-items-start md:text-left">
           <p className="type-body" role="alert">
             We couldn’t load your sign-in methods. Reload this page to try
             again.
@@ -547,15 +566,10 @@ export function AuthenticatorView({
                               opens with the account already filled in. */}
                           <a href={totpURI}>Open your authenticator app</a>
                         </Button>
-                        <p className="type-small text-ink-2">
-                          or add it by hand with this key
-                        </p>
-                        <p className="bg-surface-2 w-full rounded-md px-3 py-2 text-center font-mono text-sm break-all">
-                          {groupedSecret(secret)}
-                        </p>
-                        <CopyButton value={secret} variant="outline">
-                          Copy key
-                        </CopyButton>
+                        <ManualKey
+                          label="or add it by hand with this key"
+                          secret={secret}
+                        />
                       </div>
                     ) : (
                       <div className="grid justify-items-start gap-2">
@@ -601,11 +615,9 @@ export function AuthenticatorView({
                           invalid={Boolean(error)}
                           labelledBy="authenticator-code-label"
                           name="code"
-                          onComplete={(filled) => {
-                            // The last digit is the gesture. No button in the
-                            // way; one appears only if the code is refused.
-                            if (!pending) onVerify(filled);
-                          }}
+                          // The last digit is the gesture. No button in the
+                          // way; one appears only if the code is refused.
+                          onComplete={onVerify}
                         />
                         <FieldDescription id="authenticator-code-hint">
                           It changes every 30 seconds.
@@ -659,19 +671,10 @@ export function AuthenticatorView({
                         <div className="border-line grid max-w-md gap-4 rounded-lg border p-4 text-center md:text-left">
                           {/* The key is already on screen on a phone. */}
                           {isMobile ? null : (
-                            <div className="grid gap-2">
-                              <p className="type-small text-ink-2">
-                                Add the account by hand with this key:
-                              </p>
-                              <p className="bg-surface-2 rounded-md px-3 py-2 font-mono text-sm break-all">
-                                {groupedSecret(secret)}
-                              </p>
-                              <div className="justify-self-start">
-                                <CopyButton value={secret} variant="outline">
-                                  Copy key
-                                </CopyButton>
-                              </div>
-                            </div>
+                            <ManualKey
+                              label="Add the account by hand with this key:"
+                              secret={secret}
+                            />
                           )}
                           <p className="type-small text-ink-2">
                             Google Authenticator, 1Password and Bitwarden all

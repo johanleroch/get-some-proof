@@ -17,6 +17,7 @@ import {
 } from "@/components/visual-evidence/import-consent-fixture";
 import { AssistantImportRecoveryFixture } from "@/components/visual-evidence/assistant-import-recovery-fixture";
 import { AccountSecurity } from "@/components/account/account-security";
+import { AccountAuthenticator } from "@/components/account/account-authenticator";
 import {
   AuthenticatorCodesScreenFixture,
   AuthenticatorErrorScreenFixture,
@@ -102,6 +103,8 @@ const screens = {
   "testimonial-import-video-processing":
     TestimonialImportVideoProcessingFixture,
   "account-security": AccountSecurity,
+  // The real component, for the end-to-end tests that stub the auth network.
+  "live-authenticator": AccountAuthenticator,
   authenticator: AuthenticatorScreenFixture,
   "authenticator-setup": AuthenticatorSetupScreenFixture,
   "authenticator-codes": AuthenticatorCodesScreenFixture,

@@ -120,6 +120,26 @@ describe("AccountAuthenticator", () => {
     }
   });
 
+  it("still runs the setup for a password linked with Google", async () => {
+    mocks.listAccounts.mockResolvedValue({
+      data: [{ providerId: "google" }, { providerId: "credential" }],
+      error: null,
+    });
+    render(<AccountAuthenticator />);
+    await startSetup("account-password");
+
+    // A linked Google account must not send the Owner to the dead end.
+    expect(
+      screen.queryByRole("link", { name: "Manage Google security" }),
+    ).toBeNull();
+    expect(await screen.findByLabelText("Digit 1 of 6")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Digit 1 of 6"), {
+      target: { value: "123456" },
+    });
+    expect(await screen.findByText("code-one")).toBeInTheDocument();
+  });
+
   it("holds the recovery codes back until the app is verified", async () => {
     render(<AccountAuthenticator />);
     await startSetup();
@@ -224,6 +244,40 @@ describe("AccountAuthenticator", () => {
     } else {
       expect(screen.queryByRole("link", { name: "Sign in again" })).toBeNull();
     }
+  });
+
+  it("answers an empty setup response instead of going quiet", async () => {
+    mocks.enable.mockResolvedValue({ data: null, error: null });
+    render(<AccountAuthenticator />);
+    await startSetup("account-password");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn’t start the setup. Please try again in a moment.",
+    );
+    expect(screen.queryByLabelText("Digit 1 of 6")).toBeNull();
+  });
+
+  it("never retires recovery codes without handing over new ones", async () => {
+    mocks.twoFactorEnabled = true;
+    mocks.generateBackupCodes.mockResolvedValue({
+      data: { backupCodes: [] },
+      error: null,
+    });
+    render(<AccountAuthenticator />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Generate new codes" }),
+    );
+    fireEvent.change(screen.getByLabelText("Current password"), {
+      target: { value: "account-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate new codes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn’t generate new recovery codes. Please try again.",
+    );
+    expect(screen.queryByText(/no longer work/)).toBeNull();
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
   });
 
   it("restores the password step after a network failure", async () => {

@@ -64,6 +64,40 @@ describe("CodeInput", () => {
     expect(form().get("code")).toBe("48");
   });
 
+  it("changes only the box being edited, not the one after it", () => {
+    const { boxes, form } = renderCode();
+    fireEvent.paste(boxes[0], { clipboardData: { getData: () => "123456" } });
+    // A caret placed after the existing digit, so the box reports both.
+    fireEvent.change(boxes[2], { target: { value: "39" } });
+    expect(boxes[2]).toHaveValue("9");
+    expect(boxes[3]).toHaveValue("4");
+    expect(form().get("code")).toBe("129456");
+  });
+
+  it("leaves a digitless paste alone instead of clearing the box", () => {
+    const { boxes, form } = renderCode();
+    fireEvent.paste(boxes[0], { clipboardData: { getData: () => "123456" } });
+    fireEvent.paste(boxes[2], {
+      clipboardData: { getData: () => "Get Some Proof" },
+    });
+    expect(boxes[2]).toHaveValue("3");
+    expect(form().get("code")).toBe("123456");
+  });
+
+  it("offers a completion again once the boxes come back from disabled", () => {
+    const onComplete = vi.fn();
+    const { rerender } = render(
+      <CodeInput disabled id="code" name="code" onComplete={onComplete} />,
+    );
+    fireEvent.paste(screen.getByLabelText("Digit 1 of 6"), {
+      clipboardData: { getData: () => "123456" },
+    });
+    expect(onComplete).not.toHaveBeenCalled();
+
+    rerender(<CodeInput id="code" name="code" onComplete={onComplete} />);
+    expect(onComplete).toHaveBeenCalledExactlyOnceWith("123456");
+  });
+
   it("ignores anything that is not a digit", () => {
     const { boxes, form } = renderCode();
     fireEvent.change(boxes[0], { target: { value: "a" } });

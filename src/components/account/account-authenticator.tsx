@@ -80,7 +80,15 @@ export function AccountAuthenticator() {
         );
         return;
       }
-      if (!result.data) return;
+      if (!result.data?.totpURI) {
+        // An answer with neither an error nor an account would otherwise
+        // leave the Owner pressing Continue against a page that never moves.
+        report(
+          null,
+          "We couldn’t start the setup. Please try again in a moment.",
+        );
+        return;
+      }
       setTotpURI(result.data.totpURI);
       setHeldCodes(result.data.backupCodes);
     });
@@ -115,8 +123,17 @@ export function AccountAuthenticator() {
         );
         return;
       }
+      const fresh = result.data?.backupCodes;
+      if (!fresh?.length) {
+        // Never announce retired codes without the ones that replace them.
+        report(
+          null,
+          "We couldn’t generate new recovery codes. Please try again.",
+        );
+        return;
+      }
       setCodesReason("regenerated");
-      setCodes(result.data?.backupCodes ?? []);
+      setCodes(fresh);
       blobToast.success("Your previous recovery codes were retired.", {
         id: "authenticator",
       });

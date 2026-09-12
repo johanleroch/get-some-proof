@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
  * form reads it exactly like a single field.
  */
 export function CodeInput({
-  autoFocus,
   describedBy,
   disabled,
   id,
@@ -29,7 +28,6 @@ export function CodeInput({
   name,
   onComplete,
 }: {
-  autoFocus?: boolean;
   describedBy?: string;
   disabled?: boolean;
   /** Goes on the first box, so the field's label focuses it. */
@@ -47,9 +45,21 @@ export function CodeInput({
   );
   const boxes = useRef<(HTMLInputElement | null)[]>([]);
   const lastSent = useRef<string | null>(null);
-  const code = digits.join("");
+
+  /* A changed `length` reshapes the row during the render that changes it,
+     keeping whatever was already typed. Derived rather than synchronised in
+     an effect, which would cost a second render for every resize. */
+  function sized(list: string[]) {
+    return list.length === length
+      ? list
+      : Array.from({ length }, (_, index) => list[index] ?? "");
+  }
+
+  const shown = sized(digits);
+  const code = shown.join("");
 
   useEffect(() => {
+    if (disabled) return;
     if (code.length < length) {
       lastSent.current = null;
       return;
@@ -57,7 +67,7 @@ export function CodeInput({
     if (code === lastSent.current) return;
     lastSent.current = code;
     onComplete?.(code);
-  }, [code, length, onComplete]);
+  }, [code, disabled, length, onComplete]);
 
   function focusBox(index: number) {
     const box = boxes.current[Math.min(Math.max(index, 0), length - 1)];
@@ -67,9 +77,22 @@ export function CodeInput({
 
   /** Accepts one digit, or a whole code when a paste or autofill lands here. */
   function fillFrom(index: number, raw: string) {
-    const typed = raw.replace(/\D/g, "");
+    const incoming = raw.replace(/\D/g, "");
+    /* Two characters in a box that already held one means the caret added a
+       digit beside it: keep the new one and leave the boxes after it alone.
+       An empty box receiving two characters is a fast typist instead, and
+       those do spill onward. */
+    const previous = shown[index];
+    const typed =
+      previous && incoming.length === 2
+        ? incoming[0] === previous
+          ? incoming[1]
+          : incoming[1] === previous
+            ? incoming[0]
+            : incoming[1]
+        : incoming;
     setDigits((current) => {
-      const next = [...current];
+      const next = [...sized(current)];
       if (typed.length === 0) {
         next[index] = "";
         return next;
@@ -84,11 +107,11 @@ export function CodeInput({
   }
 
   function onKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Backspace" && !digits[index] && index > 0) {
+    if (event.key === "Backspace" && !shown[index] && index > 0) {
       // An empty box sends the backspace to the digit before it.
       event.preventDefault();
       setDigits((current) => {
-        const next = [...current];
+        const next = [...sized(current)];
         next[index - 1] = "";
         return next;
       });
@@ -117,10 +140,11 @@ export function CodeInput({
   }
 
   function onPaste(index: number, event: ClipboardEvent<HTMLInputElement>) {
+    // Always ours to handle: letting a digitless paste through would reach
+    // `onChange` as an empty value and quietly blank the box.
+    event.preventDefault();
     const pasted = event.clipboardData.getData("text");
     if (!/\d/.test(pasted)) return;
-    // A box holds one character, so the browser would keep only the first.
-    event.preventDefault();
     fillFrom(index, pasted);
   }
 
@@ -131,12 +155,11 @@ export function CodeInput({
       className="flex w-full min-w-0 items-center gap-1.5 md:gap-2"
       role="group"
     >
-      {digits.map((digit, index) => (
+      {shown.map((digit, index) => (
         <input
           aria-invalid={invalid || undefined}
           aria-label={`Digit ${index + 1} of ${length}`}
           autoComplete={index === 0 ? "one-time-code" : "off"}
-          autoFocus={autoFocus && index === 0}
           className={cn(
             /* The boxes share the row rather than claiming a fixed width:
                on a narrow phone the last one would otherwise fall off the

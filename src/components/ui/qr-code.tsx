@@ -40,7 +40,21 @@ export function QrCode({
     }
   }, [value]);
 
-  if (!qr) return null;
+  /* An address the encoder refuses would otherwise leave a silent hole where
+     the whole instruction should be. */
+  if (!qr) {
+    return (
+      <div
+        className={cn(
+          "border-line text-ink-2 type-small grid place-items-center rounded-lg border p-5 text-center",
+          className,
+        )}
+        role="alert"
+      >
+        This code could not be drawn. Add the account with the key instead.
+      </div>
+    );
+  }
 
   const { data, size, types } = qr;
   const finders = [

@@ -52,9 +52,12 @@ const canonicalScreens = [
   "/visual-evidence/billing",
   "/visual-evidence/testimonial-delete",
   "/visual-evidence/workspace-delete",
+  "/visual-evidence/authenticator",
   "/visual-evidence/authenticator-setup",
   "/visual-evidence/authenticator-codes",
   "/visual-evidence/authenticator-on",
+  "/visual-evidence/authenticator-error",
+  "/visual-evidence/authenticator-external",
   "/templates",
   "/templates/masonry-wall",
 ];
