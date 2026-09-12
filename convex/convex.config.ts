@@ -26,6 +26,7 @@ const app = defineApp({
     MUX_WEBHOOK_SECRET: v.optional(v.string()),
     VIDEO_WEBHOOK_INGEST_SECRET: v.optional(v.string()),
     MANAGEMENT_LINK_TOKEN_SECRET: v.optional(v.string()),
+    STRIPE_MODE: v.optional(v.union(v.literal("test"), v.literal("live"))),
     STRIPE_SECRET_KEY: v.optional(v.string()),
     STRIPE_WEBHOOK_SECRET: v.optional(v.string()),
   },

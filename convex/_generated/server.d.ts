@@ -40,6 +40,7 @@ type Env = {
   readonly MUX_WEBHOOK_SECRET: string | undefined;
   readonly RESEND_API_KEY: string | undefined;
   readonly SITE_URL: string;
+  readonly STRIPE_MODE: "test" | "live" | undefined;
   readonly STRIPE_SECRET_KEY: string | undefined;
   readonly STRIPE_WEBHOOK_SECRET: string | undefined;
   readonly VIDEO_WEBHOOK_INGEST_SECRET: string | undefined;
