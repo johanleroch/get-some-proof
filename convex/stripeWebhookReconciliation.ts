@@ -5,7 +5,7 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { env, internalAction } from "./_generated/server";
-import { isStripeSandboxConfigured } from "./stripeConfiguration";
+import { isStripeConfigured } from "./stripeConfiguration";
 
 export function resolvePaymentGraceStart(input: {
   latestInvoiceId?: string;
@@ -42,12 +42,13 @@ export const reconcileSubscription = internalAction({
         return { outcome: "superseded" as const };
       }
       if (
-        !isStripeSandboxConfigured({
+        !isStripeConfigured({
+          mode: env.STRIPE_MODE,
           secretKey: env.STRIPE_SECRET_KEY,
           webhookSecret: env.STRIPE_WEBHOOK_SECRET,
         })
       ) {
-        throw new Error("Stripe sandbox Billing is not configured.");
+        throw new Error("Stripe Billing is not configured.");
       }
       const stripe = new Stripe(env.STRIPE_SECRET_KEY!);
       const subscription = await stripe.subscriptions.retrieve(

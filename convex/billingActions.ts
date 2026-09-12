@@ -16,7 +16,7 @@ import {
   proLookupKeyValidator,
 } from "./billingService";
 import { createStripeBillingProvider } from "./stripeBillingProvider";
-import { isStripeSandboxConfigured } from "./stripeConfiguration";
+import { isStripeConfigured } from "./stripeConfiguration";
 
 const publicOfferValidator = v.object({
   amount: v.number(),
@@ -30,7 +30,8 @@ const publicOfferValidator = v.object({
 
 function requireStripeConfiguration() {
   if (
-    !isStripeSandboxConfigured({
+    !isStripeConfigured({
+      mode: env.STRIPE_MODE,
       secretKey: env.STRIPE_SECRET_KEY,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     })

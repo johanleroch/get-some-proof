@@ -1,3 +1,33 @@
+> Production setup (September 2026): the approved Pro offer is EUR 15/month
+> (`pro_monthly`) or EUR 150/year (`pro_annual`). The historical sandbox MVP
+> notes below describe the previous offer and are not the production price list.
+>
+> Billing defaults to test mode. Set `STRIPE_MODE=live` on the production Convex
+> deployment only, with that Stripe account's `sk_live_...` secret and the signing
+> secret of its live webhook endpoint. A test key in live mode, or a live key
+> without explicit live mode, leaves billing unavailable. Development retains
+> `STRIPE_MODE=test` (or unset) and separate test secrets.
+>
+> Production target: `brazen-shark-68`; frontend: `https://www.getsomeproof.com`;
+> webhook: `https://brazen-shark-68.convex.site/stripe/webhook`.
+> Never use the development webhook secret in production. Hosted Checkout does
+> not require a public Stripe key in the frontend. Create one Pro product and
+> two recurring EUR prices, with the lookup keys above. Both approved
+> amounts exclude tax (`tax_behavior=exclusive`). Managed Payments adds and
+> manages applicable taxes. Checkout explicitly uses `managed_payments.enabled`
+> and must not also send `automatic_tax` or `tax_id_collection`. Verify the live customer portal and webhook
+> deliveries before considering activation complete.
+>
+> Verified September 12, 2026: live account `acct_1UCDAG9VxH5L76In` (Get Some
+> Proof / JOHANCODE LLP), Managed Payments status "Ready to use", enabled by
+> default. Product `prod_VFKYMRS1QbUoV7`, SaaS business use (`txcd_10103001`).
+> Monthly price `price_1UEptc9VxH5L76InMDKVFACT`: EUR 15 excluding tax,
+> lookup key `pro_monthly`. Annual price created at EUR 150 excluding tax,
+> lookup key `pro_annual`. Managed Payments has a 3.5% add-on transaction fee.
+> Live mode and both server secrets were installed and read back successfully on
+> production on September 12. Secret values are not recorded here. Deployed
+> application behavior and an end-to-end checkout remain to be verified.
+
 # Stripe Billing adoption and sandbox rehearsal
 
 This guide enables the complete Workspace Billing flow without reading implementation code or touching production. It uses one Platform Stripe Account owned by the company operating the SaaS. Every underlying Organization is a Customer buying the Get Some Proof Pro Plan. This is not Stripe Connect, merchant onboarding, or one Stripe account per Workspace.

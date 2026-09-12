@@ -4,7 +4,7 @@ import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
 import { internal } from "./_generated/api";
 import { action, env, type ActionCtx } from "./_generated/server";
-import { isStripeSandboxConfigured } from "./stripeConfiguration";
+import { isStripeConfigured } from "./stripeConfiguration";
 
 const invoiceValidator = v.object({
   id: v.string(),
@@ -53,7 +53,8 @@ function stripeInvoiceUrl(value: string | null | undefined): string | null {
 
 const readStripeInvoices: InvoiceReader = async (params) => {
   if (
-    !isStripeSandboxConfigured({
+    !isStripeConfigured({
+      mode: env.STRIPE_MODE,
       secretKey: env.STRIPE_SECRET_KEY,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     })

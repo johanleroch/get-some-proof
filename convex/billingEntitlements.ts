@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { env, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { isStripeSandboxConfigured } from "./stripeConfiguration";
+import { isStripeConfigured } from "./stripeConfiguration";
 
 export const billingStateValidator = v.union(
   v.literal("unavailable"),
@@ -202,7 +202,8 @@ export async function getOrganizationBillingEntitlement(
   ]);
   return deriveBillingEntitlement(
     subscriptions,
-    isStripeSandboxConfigured({
+    isStripeConfigured({
+      mode: env.STRIPE_MODE,
       secretKey: env.STRIPE_SECRET_KEY,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     }),
@@ -268,7 +269,8 @@ export async function getAccountBillingEntitlement(
   const subscriptions = candidates.filter((candidate) => candidate !== null);
   return deriveBillingEntitlement(
     subscriptions,
-    isStripeSandboxConfigured({
+    isStripeConfigured({
+      mode: env.STRIPE_MODE,
       secretKey: env.STRIPE_SECRET_KEY,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     }),

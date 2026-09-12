@@ -7,7 +7,7 @@ import Stripe from "stripe";
 import { components } from "./_generated/api";
 import { env, type ActionCtx } from "./_generated/server";
 import { type BillingProvider, type ProLookupKey } from "./billingService";
-import { isStripeSandboxConfigured } from "./stripeConfiguration";
+import { isStripeConfigured } from "./stripeConfiguration";
 
 export const proMonthlyCurrency = "eur";
 
@@ -145,7 +145,14 @@ export async function cancelStripeSubscription(
   idempotencyKey: string,
 ) {
   const secretKey = env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
+  if (
+    !secretKey ||
+    !isStripeConfigured({
+      mode: env.STRIPE_MODE,
+      secretKey,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    })
+  ) {
     throw new ConvexError({
       code: "BILLING_UNAVAILABLE",
       message: "Stripe Billing is not configured.",
@@ -169,7 +176,8 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
   const secretKey = env.STRIPE_SECRET_KEY;
   if (
     !secretKey ||
-    !isStripeSandboxConfigured({
+    !isStripeConfigured({
+      mode: env.STRIPE_MODE,
       secretKey,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     })
@@ -239,6 +247,9 @@ export function createStripeBillingProvider(ctx: ActionCtx): BillingProvider {
           client_reference_id: input.metadata.orgId,
           customer: input.customerId,
           line_items: [{ price: input.priceId, quantity: 1 }],
+          // Managed Payments owns tax calculation and collection. Do not combine
+          // this with automatic_tax or tax_id_collection.
+          managed_payments: { enabled: true },
           metadata: input.metadata,
           mode: "subscription",
           subscription_data: { metadata: input.metadata },
