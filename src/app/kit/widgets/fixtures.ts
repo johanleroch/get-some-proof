@@ -10,10 +10,15 @@ import type { TestimonialCardValue } from "@convex/testimonialCardValue";
  * Voices are the visual-evidence Brands, same as the other review pages.
  */
 
-/** Public Mux demo asset, shared with the visual-evidence fixtures. */
+/** Public Mux demo asset, shared with the visual-evidence fixtures. It was
+ *  filmed portrait, so an entry that claims another shape has to carry a
+ *  poster already framed that way: a layout must never be reviewed against a
+ *  video whose declared ratio and picture disagree. */
 const playbackId = "L2fsVjRn3fpD7OcP34HAZ7BIB99RlIUjgt4zaw3UW3Y";
 const face = (time: number) =>
   `https://image.mux.com/${playbackId}/thumbnail.webp?width=160&height=160&fit_mode=smartcrop&time=${time}`;
+/** A landscape Testimonial, the one shape the demo asset cannot give on its own. */
+const landscapePoster = `https://image.mux.com/${playbackId}/thumbnail.webp?width=960&height=540&fit_mode=smartcrop&time=30`;
 
 export const galleryTestimonials: TestimonialCardValue[] = [
   {
@@ -127,6 +132,7 @@ export const galleryTestimonials: TestimonialCardValue[] = [
     name: "Remy Jupille",
     playbackId,
     posterTimeSeconds: 30,
+    posterUrl: landscapePoster,
     publishedAt: Date.UTC(2026, 7, 24),
     rating: 5,
     role: "Founder",

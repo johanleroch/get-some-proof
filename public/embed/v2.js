@@ -702,7 +702,7 @@
     .widget[data-layout="editorial"] .content { padding:0; }
     .widget[data-layout="editorial"] .quote { font-size:20px; line-height:32px; }
     .widget[data-layout="editorial"] .identity { margin-top:24px; }
-    .widget[data-layout="editorial"] .video-shell { aspect-ratio:16 / 9 !important; border-radius:12px; }
+    .widget[data-layout="editorial"] .video-shell { border-radius:12px; }
 
     /* Mosaic: a dense grid where a marked card takes two columns and video
        takes two rows, so the block never falls into three equal tiles. */
@@ -710,9 +710,8 @@
     .widget[data-layout="mosaic"] .card { margin:0; height:100%; }
 
     /* Video gallery: posters first, every tile the same shape. */
-    .widget[data-layout="videos"] .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:16px; }
-    .widget[data-layout="videos"] .card { margin:0; }
-    .widget[data-layout="videos"] .video-shell { aspect-ratio:3 / 4 !important; }
+    .widget[data-layout="videos"] .grid { column-count:1; column-gap:16px; }
+    .widget[data-layout="videos"] .card { margin:0 0 16px; }
 
     /* --- B. Supporting proof ---------------------------------------- */
 
@@ -747,7 +746,7 @@
     .widget[data-layout="marquee"] .quote { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:4; font-size:15px; line-height:23px; }
     .widget[data-layout="marquee"] .identity { margin-top:auto; padding-top:12px; }
     .widget[data-layout="marquee"] .testimonial-images { display:none; }
-    .widget[data-layout="marquee"] .video-shell { height:100%; aspect-ratio:auto !important; }
+
     .widget[data-layout="marquee"] .track:hover .grid, .widget[data-layout="marquee"] .track:focus-within .grid { animation-play-state:paused; }
     .widget[data-layout="marquee"] .grid > [aria-hidden="true"] { pointer-events:none; }
     @keyframes gsp-marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
@@ -759,7 +758,6 @@
     .grid.stack > .card { grid-area:1 / 1; margin:0; opacity:0; visibility:hidden; transition:opacity 400ms ease; }
     .grid.stack > .card[data-active="true"] { opacity:1; visibility:visible; }
     .widget[data-layout="spotlight"] .grid { max-width:560px; margin-inline:auto; }
-    .widget[data-layout="spotlight"] .video-shell { aspect-ratio:16 / 9 !important; }
     .widget[data-layout="spotlight"] .dots { display:flex; justify-content:center; gap:8px; margin-top:16px; }
     .widget[data-layout="spotlight"] .dot { width:8px; height:8px; min-width:0; min-height:0; padding:0; border:0; border-radius:999px; background:var(--gsp-border); cursor:pointer; transition:background-color 200ms ease; }
     .widget[data-layout="spotlight"] .dot[aria-current="true"] { background:var(--gsp-accent); }
@@ -781,7 +779,6 @@
     .widget[data-layout="bubble"] .content > .stars { margin-bottom:12px; }
     .widget[data-layout="bubble"] .identity { margin-top:16px; }
     .widget[data-layout="bubble"] .testimonial-images { display:none; }
-    .widget[data-layout="bubble"] .video-shell { aspect-ratio:16 / 9 !important; }
     .widget[data-layout="bubble"] .video-overlay { padding:16px; }
     .widget[data-layout="bubble"] .bubble-close {
       position:absolute; top:-10px; right:-10px; z-index:2;
@@ -816,6 +813,8 @@
     @container (min-width:850px) {
       .widget[data-layout="mosaic"] .grid { grid-template-columns:repeat(3,1fr); }
     }
+    @container (min-width:576px) { .widget[data-layout="videos"] .grid { column-count:2; } }
+    @container (min-width:850px) { .widget[data-layout="videos"] .grid { column-count:3; } }
 
     @media (prefers-reduced-motion: reduce) {
       .widget[data-layout="marquee"] .grid { animation:none; }
@@ -956,6 +955,39 @@
     );
     return metric;
   }
+  /** The shape the Customer filmed, carried on the shell by the card markup. */
+  function cardAspect(card) {
+    const shell = card.querySelector("[data-video-aspect-ratio]");
+    const match = /^(\d{1,5}):(\d{1,5})$/.exec(
+      shell?.dataset.videoAspectRatio ?? "",
+    );
+    if (!match || Number(match[1]) <= 0 || Number(match[2]) <= 0)
+      return undefined;
+    return [Number(match[1]), Number(match[2])];
+  }
+  /**
+   * Keeps a tall video from running away with a wide column WITHOUT touching
+   * its shape. A video is shown as it was filmed, never re-cropped to suit a
+   * layout, so the card narrows until the height its own ratio gives fits the
+   * cap. A landscape video asks for a max-width wider than the column, which
+   * simply never binds.
+   */
+  function boundVideoCards(cards, maxHeight) {
+    cards.forEach((card) => {
+      const aspect = cardAspect(card);
+      if (!aspect) return;
+      card.style.maxWidth = `${Math.round((maxHeight * aspect[0]) / aspect[1])}px`;
+      card.style.marginInline = "auto";
+    });
+  }
+  /** The band has one height, so a video takes the width that height implies. */
+  function bandVideoCards(cards, bandHeight) {
+    cards.forEach((card) => {
+      const aspect = cardAspect(card);
+      if (!aspect) return;
+      card.style.flexBasis = `${Math.round((bandHeight * aspect[0]) / aspect[1])}px`;
+    });
+  }
   const reducedMotion = () =>
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**
@@ -967,6 +999,15 @@
       shadow
         .querySelectorAll("mux-player")
         .forEach((player) => player.pause?.());
+    /* The height caps, per family. None of them change a video's shape. */
+    const caps = {
+      bubble: 360,
+      editorial: 520,
+      individual: 520,
+      spotlight: 440,
+    };
+    if (caps[config.layout]) boundVideoCards(cards, caps[config.layout]);
+    if (config.layout === "marquee") bandVideoCards(cards, 200);
     if (config.layout === "marquee" && cards.length) {
       const track = element("div", "track");
       grid.replaceWith(track);

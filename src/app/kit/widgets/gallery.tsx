@@ -61,7 +61,7 @@ const groups: { title: string; blurb: string; families: Family[] }[] = [
       {
         layout: "videos",
         title: "Video gallery",
-        note: "Posters first, every video the same shape, plays in place.",
+        note: "Posters first, each video at the shape it was filmed, plays in place.",
       },
     ],
   },
