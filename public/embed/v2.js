@@ -212,7 +212,7 @@
     .video-overlay > span { min-width: 0; }
     /* The white chip behind a brand mark earns its place over a video poster
        and nowhere else; on paper it reads as a sticker. */
-    .card:not(.video-card) [data-gsp-source] svg { background: none; padding: 0; }
+    .card:not(.video-card) [data-gsp-source] svg { background: none !important; padding: 0 !important; }
     @media (hover: hover) and (pointer: fine) {
       .video-shell[data-video-playing] .video-shade,
       .video-shell[data-video-playing] .video-overlay { opacity: 0; }
@@ -991,9 +991,10 @@
     .widget[data-layout="hero"][data-align="center"] .content > .stars,
     .widget[data-layout="hero"][data-align="center"] .identity { justify-content:center; }
     .widget[data-layout="hero"][data-align="right"] .card { text-align:right; }
-    .widget[data-layout="hero"][data-align="right"] .content > .stars,
-    .widget[data-layout="hero"][data-align="right"] .identity { justify-content:flex-end; }
-    .widget[data-layout="hero"][data-align="right"] .identity { flex-direction:row-reverse; }
+    .widget[data-layout="hero"][data-align="right"] .content > .stars { justify-content:flex-end; }
+    /* The signature mirrors, so the face hugs the strong edge. Reversing the
+       row reverses the axis too: start is now the right. */
+    .widget[data-layout="hero"][data-align="right"] .identity { flex-direction:row-reverse; justify-content:flex-start; }
 
     /* The entrance, orthogonal like the hand: proof that arrives as the
        visitor reaches it reads as accumulation rather than decoration. */
