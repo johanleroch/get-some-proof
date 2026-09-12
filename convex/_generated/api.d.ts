@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as googleBusiness from "../googleBusiness.js";
+import type * as googleBusinessActions from "../googleBusinessActions.js";
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as accountModelMigrations from "../accountModelMigrations.js";
 import type * as accounts from "../accounts.js";
@@ -130,6 +132,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  googleBusiness: typeof googleBusiness;
+  googleBusinessActions: typeof googleBusinessActions;
   accountDeletion: typeof accountDeletion;
   accountModelMigrations: typeof accountModelMigrations;
   accounts: typeof accounts;

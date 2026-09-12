@@ -1,4 +1,5 @@
 "use client";
+import { GoogleBusiness } from "./google-business";
 import { BackupImport } from "./backup-import";
 import { ImportPhotoProgress } from "./import-photo-progress";
 import { useRef, useState } from "react";
@@ -29,9 +30,11 @@ function importError(error: unknown) {
 export function TestimonialImport({
   slug,
   initialJobId,
+  initialSource,
 }: {
   slug: string;
   initialJobId?: string;
+  initialSource?: string;
 }) {
   const router = useRouter();
   const organization = useQuery(api.organizations.getBySlug, { slug });
@@ -172,6 +175,8 @@ export function TestimonialImport({
   if (!organization) return <p role="alert">Project unavailable.</p>;
   return (
     <TestimonialImportView
+      googleConnection={<GoogleBusiness organizationId={organization.id} />}
+      initialGoogle={initialSource === "google"}
       backupImport={<BackupImport organizationId={organization.id} />}
       resultDetails={
         <ImportPhotoProgress

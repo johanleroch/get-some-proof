@@ -1,0 +1,17 @@
+import { expect, test } from "@playwright/test";
+
+test("Google reviews remain private and the connection can be removed", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/google-business");
+  await expect(
+    page.getByRole("heading", { name: "Google reviews" }),
+  ).toBeVisible();
+  await expect(page.getByText(/Reviews stay private here/)).toBeVisible();
+  await expect(page.getByText("Camille Roche")).toBeVisible();
+  await page.getByRole("button", { name: "Disconnect Google" }).click();
+  await expect(page.getByText("Camille Roche")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Connect Google Business Profile" }),
+  ).toBeVisible();
+});

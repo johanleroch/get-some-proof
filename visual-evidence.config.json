@@ -766,6 +766,12 @@
       "title": "Testimonial sources hidden",
       "path": "/visual-evidence/testimonial-sources",
       "heading": "Public Wall appearance"
+    },
+    {
+      "slug": "google-business",
+      "title": "Google Business Profile private reviews",
+      "path": "/visual-evidence/google-business",
+      "heading": "Google reviews"
     }
   ]
 }

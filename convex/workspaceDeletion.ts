@@ -70,6 +70,7 @@ const purgePhases = [
   "billingProfiles",
   "auditEvents",
   "memberships",
+  "googleBusinessConnections",
   "organization",
 ] as const;
 
@@ -734,6 +735,14 @@ async function deletePhaseBatch(
         .query("collectionCredits")
         .withIndex("by_organization", (i) =>
           i.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      break;
+    case "googleBusinessConnections":
+      records = await ctx.db
+        .query("googleBusinessConnections")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
       break;

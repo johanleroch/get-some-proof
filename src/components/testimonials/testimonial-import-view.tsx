@@ -242,9 +242,13 @@ export function TestimonialImportView({
   resultDetails,
   selectionReview,
   backupImport,
+  googleConnection,
+  initialGoogle = false,
   checkingSelection = false,
 }: {
   backupImport?: ReactNode;
+  googleConnection?: ReactNode;
+  initialGoogle?: boolean;
   slug: string;
   jobId: Id<"testimonialImportJobs"> | null;
   provider: "testimonial-to" | "senja";
@@ -285,6 +289,7 @@ export function TestimonialImportView({
   selectionReview?: FunctionReturnType<typeof api.importEligibility.selection>;
   checkingSelection?: boolean;
 }) {
+  const [googleMode, setGoogleMode] = useState(initialGoogle);
   const [backupMode, setBackupMode] = useState(false);
   const [editingItem, setEditingItem] =
     useState<Doc<"testimonialImportItems"> | null>(null);
@@ -404,10 +409,13 @@ export function TestimonialImportView({
           >
             <Button
               variant="outline"
-              aria-pressed={!backupMode && provider === "testimonial-to"}
+              aria-pressed={
+                !googleMode && !backupMode && provider === "testimonial-to"
+              }
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
+                setGoogleMode(false);
                 setBackupMode(false);
                 setProvider("testimonial-to");
               }}
@@ -416,28 +424,43 @@ export function TestimonialImportView({
             </Button>
             <Button
               variant="outline"
-              aria-pressed={!backupMode && provider === "senja"}
+              aria-pressed={!googleMode && !backupMode && provider === "senja"}
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
+                setGoogleMode(false);
                 setBackupMode(false);
                 setProvider("senja");
               }}
             >
               Senja
             </Button>
+            {googleConnection ? (
+              <Button
+                variant="outline"
+                aria-pressed={googleMode}
+                onClick={() => setGoogleMode(true)}
+              >
+                Google Business Profile
+              </Button>
+            ) : null}
             {backupImport ? (
               <Button
                 variant="outline"
-                aria-pressed={backupMode}
+                aria-pressed={!googleMode && backupMode}
                 className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
-                onClick={() => setBackupMode(true)}
+                onClick={() => {
+                  setGoogleMode(false);
+                  setBackupMode(true);
+                }}
               >
                 Get Some Proof backup
               </Button>
             ) : null}
           </div>
-          {backupMode ? (
+          {googleMode ? (
+            googleConnection
+          ) : backupMode ? (
             backupImport
           ) : (
             <form
