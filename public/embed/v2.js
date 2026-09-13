@@ -958,7 +958,7 @@
     .widget[data-layout="chips"] .identity { display:contents; }
     .widget[data-layout="chips"] .content > .stars, .widget[data-layout="chips"] .person, .widget[data-layout="chips"] .quote-mark, .widget[data-layout="chips"] [data-gsp-source] { display:none !important; }
     .widget[data-layout="chips"] .avatar { order:-1; width:32px; height:32px; flex-basis:32px; }
-    .widget[data-layout="chips"] .quote { font-size:15px; line-height:22px; white-space:nowrap; }
+    .widget[data-layout="chips"] .quote { overflow:hidden; font-size:15px; line-height:22px; text-overflow:ellipsis; white-space:nowrap; }
     .widget[data-layout="chips"] .row > [aria-hidden="true"] { pointer-events:none; }
 
     /* Blocks: edge to edge, no gutter, no radius, and the tone alternates -
@@ -982,7 +982,13 @@
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote, .widget[data-layout="blocks"] .card:nth-child(6n+4) .name, .widget[data-layout="blocks"] .card:nth-child(6n+4) .meta { color:var(--gsp-accent-ink); }
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .stars, .widget[data-layout="blocks"] .card:nth-child(6n+4) .quote-mark { color:var(--gsp-accent-ink); }
     .widget[data-layout="blocks"] .card:nth-child(6n+4) .avatar { background:color-mix(in srgb, var(--gsp-accent-ink) 14%, transparent); }
-    .widget[data-layout="blocks"] .card:nth-child(6n+4) mark { background:none !important; color:inherit; }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) mark,
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) mark {
+      background:none !important; color:inherit;
+      text-decoration:underline; text-decoration-thickness:0.11em; text-underline-offset:0.2em;
+    }
+    .widget[data-layout="blocks"] .card:nth-child(3n+2) mark { text-decoration-color:color-mix(in srgb, var(--gsp-promo-text) 55%, transparent); }
+    .widget[data-layout="blocks"] .card:nth-child(6n+4) mark { text-decoration-color:color-mix(in srgb, var(--gsp-accent-ink) 45%, transparent); }
 
     /* Faces: the grid of customers is the navigation, not an ornament. */
     .widget[data-layout="faces"] .face-grid { display:flex; flex-wrap:wrap; gap:8px; }
@@ -1316,14 +1322,12 @@
       const last = cards[cards.length - 1];
       last.style.gridColumn = "";
       if (columns < 2 || last.classList.contains("video-card")) return;
-      /* A video block spans two rows, so it eats two cells of the flow. */
-      const cells = cards.reduce(
-        (total, card) =>
-          total + (card.classList.contains("video-card") ? 2 : 1),
-        0,
-      );
-      const remainder = cells % columns;
-      if (remainder) last.style.gridColumn = `span ${columns - remainder + 1}`;
+      const width = grid.getBoundingClientRect().width / columns;
+      if (width < 1) return;
+      const missing =
+        grid.getBoundingClientRect().right - last.getBoundingClientRect().right;
+      const span = Math.round(missing / width) + 1;
+      if (span > 1) last.style.gridColumn = `span ${Math.min(span, columns)}`;
     };
     apply();
     if (typeof ResizeObserver === "undefined") return undefined;
@@ -1546,16 +1550,20 @@
       track.append(grid);
       const control = motionToggle(wall);
       if (control) track.after(control);
-      grid.append(
-        ...cards.map((card) => {
-          const clone = card.cloneNode(true);
-          clone.setAttribute("aria-hidden", "true");
-          clone
-            .querySelectorAll("a, button")
-            .forEach((node) => node.setAttribute("tabindex", "-1"));
-          return clone;
-        }),
-      );
+      const copy = (card) => {
+        const clone = card.cloneNode(true);
+        clone.setAttribute("aria-hidden", "true");
+        clone
+          .querySelectorAll("a, button")
+          .forEach((node) => node.setAttribute("tabindex", "-1"));
+        return clone;
+      };
+      /* The loop translates by half the row, so the row needs two identical
+         halves - and each half has to be wider than the track or the seam
+         shows as a gap. */
+      for (let extra = Math.ceil(6 / cards.length); extra > 1; extra -= 1)
+        grid.append(...cards.map(copy));
+      grid.append(...[...grid.children].map(copy));
       return undefined;
     }
     if (
