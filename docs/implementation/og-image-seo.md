@@ -4,7 +4,7 @@ Source: owner request on 2026-09-12 to use the mascot and brand typography in th
 
 ## Acceptance and evidence
 
-- A public 1200 × 630 PNG uses the official happy mascot, Gelica Black and the paper/amber palette. Source: `scripts/brand/build-social-card.mjs`; regenerate with `node scripts/brand/build-social-card.mjs` after installing Playwright Chromium. The generator uses only local assets. The image contains only the wordmark, mascot and amber underline, with no tagline. Serving the committed PNG needs no font fetch or backend.
+- A public 1200 × 630 PNG uses the official happy mascot, Gelica Black and the paper/amber palette. Source: `scripts/brand/build-social-card.mjs`; regenerate with `node scripts/brand/build-social-card.mjs` after installing Playwright Chromium. The generator uses only local assets. The image leads with “Récupérez vos avis clients.” in large Gelica type, with the mascot alongside and a smaller Get Some Proof wordmark. Serving the committed PNG needs no font fetch or backend.
 - Open Graph and X large-image cards include image dimensions and alt text. `e2e/seo.spec.ts` checks crawler HTML and the actual PNG response.
 - Public templates and Walls have self-canonical URLs and page-specific sharing titles/descriptions. `src/lib/public-wall-metadata.test.ts` covers Wall metadata and empty-Wall noindex behavior.
 - Default noindex keeps authentication, account, invitation, import, developer and token routes out of search. The template gallery and nonempty Walls opt into indexing. Robots permits fetching noindex pages and share assets; the sitemap contains only the indexable template gallery. The root still redirects to authentication and is intentionally absent from the sitemap.

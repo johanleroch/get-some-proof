@@ -17,7 +17,7 @@ export const socialImage = {
   width: 1200,
   height: 630,
   type: "image/png",
-  alt: "Get Some Proof — customer testimonials, with our amber mascot and Gelica wordmark.",
+  alt: "Récupérez vos avis clients. Get Some Proof, avec sa mascotte ambre.",
 };
 
 export function publicPageMetadata({
