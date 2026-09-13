@@ -558,7 +558,94 @@ body {
       color-mix(in oklch, var(--line) 55%, transparent) 1px,
       transparent 1px
     );
-  background-size: 24px 24px;
+  background-size: 56px 56px;
+}
+
+/*
+ * In the full-screen Studio the page's own actions sit in the top right —
+ * exactly where a toast lands. A toast covered the actions menu beside Publish
+ * and swallowed the click on it, which the development preview hid for as long
+ * as it drew the editor inside the dashboard shell. Push the stack below the
+ * editor's top bar instead; sonner writes the offset inline, so the override
+ * has to win on weight.
+ */
+body:has([data-slot="studio-workspace"])
+  [data-sonner-toaster][data-y-position="top"] {
+  --offset-top: 76px !important;
+  --mobile-offset-top: 128px !important;
+}
+
+/*
+ * The Studio canvas as real cells (DESIGN.md section 6), after Aceternity's
+ * background ripple effect and rebuilt on our tokens: a filled square on a
+ * hairline rather than a ruled line, so the surface reads as a material and
+ * not as graph paper. The cell lightens under the cursor; a click sends a
+ * circular wave of amber out from it, each ring later and slower than the one
+ * inside it. Only opacity animates and the wave plays once.
+ *
+ * The radial mask is what keeps it a surface rather than a pattern: the grid is
+ * present where the work is and dissolves toward the edges.
+ */
+.canvas-grid {
+  /* A vignette, not Aceternity's top fade: this is a surface to work on, so
+     the grid stays whole where the widget sits and only softens at the far
+     corners. Fading the lower half turned the canvas into two materials. */
+  mask-image: radial-gradient(
+    145% 130% at 50% 45%,
+    black 55%,
+    color-mix(in oklch, black 60%, transparent) 85%,
+    transparent 100%
+  );
+}
+
+.canvas-grid-cell {
+  /* The tile keeps the canvas tone so the white widget still separates from
+     it; the hairline is what draws the grid, and hover lifts one tile to
+     paper. */
+  background: var(--surface-2);
+  border-right: 1px solid color-mix(in oklch, var(--line-2) 65%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--line-2) 65%, transparent);
+  position: relative;
+}
+
+/* Two layers, because hover and the wave say different things: the cursor
+   settles the cell into the page, the wave carries the brand across it. */
+.canvas-grid-cell::before,
+.canvas-grid-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.canvas-grid-cell::before {
+  background: var(--paper);
+  transition: opacity var(--motion-fast) var(--ease-out-soft);
+}
+
+.canvas-grid-cell:hover::before {
+  opacity: 1;
+}
+
+.canvas-grid-cell::after {
+  background: var(--brand-soft-2);
+}
+
+.canvas-grid-wave::after {
+  animation: canvas-grid-ripple var(--cell-duration, 200ms) var(--ease-out-soft)
+    var(--cell-delay, 0ms) 1 none;
+}
+
+@keyframes canvas-grid-ripple {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .studio-selection-hint {
@@ -578,6 +665,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .studio-selection-hint {
     animation: none;
+  }
+  .canvas-grid-wave::after {
+    animation: none;
+  }
+  .canvas-grid-cell::before {
+    transition: none;
   }
 }
 
@@ -1022,5 +1115,29 @@ mark {
 @media (prefers-reduced-motion: reduce) {
   .cta-shine::after {
     display: none;
+  }
+}
+
+/* Lists and grids mount with a 30ms stagger, 12px up, opacity from 0
+   (DESIGN.md section 8.3). Past twelve items the rest appear at once. */
+.list-enter {
+  animation: list-enter var(--motion-settle) var(--ease-out-soft)
+    calc(var(--list-index, 0) * 30ms) both;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-enter {
+    animation: none;
   }
 }

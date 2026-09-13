@@ -702,18 +702,25 @@
     .widget button:disabled { opacity:.4; cursor:default; }
     .widget button:focus-visible,.widget a:focus-visible { outline:3px solid var(--gsp-accent); outline-offset:3px; }
     .faces { display:flex; flex-wrap:wrap; padding-left:10px; align-items:center; }
-    .face { position:relative; margin-left:-10px; border:3px solid var(--gsp-surface); width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:var(--gsp-border); color:var(--gsp-text); overflow:hidden; transition:transform 200ms cubic-bezier(0.22,1,0.36,1), margin-left 200ms cubic-bezier(0.22,1,0.36,1); }
+    .face { position:relative; margin-left:-10px; border:3px solid var(--gsp-surface); width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:var(--gsp-border); color:var(--gsp-text); overflow:hidden; transition:transform 200ms cubic-bezier(0.22,1,0.36,1); }
     .face img { width:100%; height:100%; object-fit:cover; }
     /* The row opens as the cursor arrives, and the face under it steps out
        in front of its neighbours. */
-    .faces:hover .face { margin-left:-4px; }
-    .face:hover { z-index:1; transform:translateY(-4px) scale(1.06); }
+    .face:nth-child(2) { --face-spread:6px; }
+    .face:nth-child(3) { --face-spread:12px; }
+    .face:nth-child(4) { --face-spread:18px; }
+    .face:nth-child(5) { --face-spread:24px; }
+    .face:nth-child(6) { --face-spread:30px; }
+    .faces:hover .face { transform:translateX(var(--face-spread,0)); }
+    .faces:hover .face:hover { z-index:1; transform:translateX(var(--face-spread,0)) translateY(-4px) scale(1.06); }
     .face.more { background:color-mix(in srgb, var(--gsp-text) 8%, var(--gsp-surface)); color:var(--gsp-muted); font-size:13px; font-weight:600; }
     .widget .avatar-copy { margin:16px 0 0; color:var(--gsp-muted); font-size:15px; }
     .avatar-names { color:var(--gsp-text); font-weight:600; }
     .widget > .promo-card { display:block; max-width:340px; margin:24px 0 0; }
-    @container (min-width:576px) { .widget[data-layout="masonry"] .grid {column-count:2;} .widget[data-layout="highlights"] .grid {grid-template-columns:repeat(2,1fr);} }
-    @container (min-width:850px) { .widget[data-layout="masonry"] .grid {column-count:3;} }
+    .widget[data-layout="masonry"] .grid { display:flex; align-items:flex-start; gap:20px; column-count:auto; }
+    .widget[data-layout="masonry"] .grid > .column { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
+    .widget[data-layout="masonry"] .card { margin:0; }
+    @container (min-width:576px) { .widget[data-layout="highlights"] .grid {grid-template-columns:repeat(2,1fr);} }
   `;
 
   /**
@@ -795,7 +802,7 @@
     /* Spotlight: the cards are stacked in one grid cell and cross-fade, so
        the block keeps the height of the tallest and never jumps. */
     /* Shared by spotlight and bubble: every card in one cell, one visible. */
-    .grid.stack { display:grid; column-count:1; transition:height 320ms cubic-bezier(0.22,1,0.36,1); }
+    .grid.stack { display:grid; column-count:1; }
     .grid.stack > .card { grid-area:1 / 1; align-self:start; margin:0; opacity:0; visibility:hidden; transition:opacity 400ms ease; }
     .grid.stack > .card[data-active="true"] { opacity:1; visibility:visible; }
     .widget[data-layout="spotlight"] .grid { max-width:560px; margin-inline:auto; }
@@ -968,7 +975,7 @@
     .widget[data-layout="blocks"] .grid { display:grid; grid-auto-flow:dense; grid-template-columns:1fr; gap:0; column-count:1; }
     .widget[data-layout="blocks"] .card, .widget[data-hand="drawn"][data-layout="blocks"] .grid > .card { height:100%; margin:0; border:0; border-radius:0; }
     .widget[data-layout="blocks"] .content { padding:32px; }
-    .widget[data-layout="blocks"] .card.video-card { display:flex; align-items:center; background:#000; }
+    .widget[data-layout="blocks"] .card.video-card { display:flex; align-items:center; background:var(--gsp-text); }
     .widget[data-layout="blocks"] .video-shell { flex:1; }
     /* An attached screenshot brings its own colours into a wall built on
        three tones, so this family shows the words alone. */
@@ -1637,6 +1644,30 @@
     return undefined;
   }
 
+  /**
+   * Masonry that answers the content: every card goes to whichever column is
+   * shortest when it is placed. CSS `column-count` instead pours each column
+   * full in document order and leaves visible holes under tall cards.
+   */
+  function balanceMasonry(grid, cards) {
+    const width = grid.clientWidth;
+    const count = width >= 850 ? 3 : width >= 576 ? 2 : 1;
+    const columns = [];
+    for (let index = 0; index < count; index += 1)
+      columns.push(element("div", "column"));
+    grid.replaceChildren(...columns);
+    columns[0].append(...cards);
+    const heights = cards.map((card) => card.getBoundingClientRect().height);
+    const filled = new Array(count).fill(0);
+    cards.forEach((card, index) => {
+      let target = 0;
+      for (let column = 1; column < count; column += 1)
+        if (filled[column] < filled[target] - 0.5) target = column;
+      columns[target].append(card);
+      filled[target] += heights[index] + 20;
+    });
+  }
+
   const widgetCleanups = new WeakMap();
   const widgetFontRequests = new WeakMap();
   const widgetFontLoads = new Map();
@@ -1752,6 +1783,7 @@
       wall.append(element("h2", "", payload.brand.name));
     const grid = element("div", "grid");
     let cards = [];
+    let masonryCards = null;
     if (!payload.testimonials.length) {
       grid.append(element("p", "", "No testimonials to display yet."));
     } else if (config.layout === "avatars") {
@@ -1805,6 +1837,7 @@
           if (index % 4 === 0 && !card.classList.contains("video-card"))
             card.dataset.span = "wide";
         });
+      if (config.layout === "masonry") masonryCards = cards;
       grid.append(...cards);
     }
     wall.append(grid);
@@ -1873,7 +1906,11 @@
       );
       const resize = new ResizeObserver(sync);
       resize.observe(grid);
-      widgetCleanups.set(host, () => resize.disconnect());
+      const previousCleanup = widgetCleanups.get(host);
+      widgetCleanups.set(host, () => {
+        previousCleanup?.();
+        resize.disconnect();
+      });
       controls.append(previous, next);
       wall.append(controls);
       requestAnimationFrame(sync);
@@ -1884,6 +1921,37 @@
       element("style", "", styles + widgetStyles + widgetFamilyStyles),
       wall,
     );
+    if (masonryCards) {
+      const masonryItems = masonryCards;
+      // Balancing changes the grid's height, so only width changes trigger the
+      // observer. Media loads still force one coalesced rebalance per frame.
+      let lastWidth = -1;
+      const rebalance = (force) => {
+        const width = grid.clientWidth;
+        if (!force && width === lastWidth) return;
+        lastWidth = width;
+        balanceMasonry(grid, masonryItems);
+      };
+      rebalance(true);
+      const resize = new ResizeObserver(() => rebalance(false));
+      resize.observe(grid);
+      let pending = 0;
+      const onLoad = () => {
+        if (pending) return;
+        pending = requestAnimationFrame(() => {
+          pending = 0;
+          rebalance(true);
+        });
+      };
+      grid.addEventListener("load", onLoad, { capture: true });
+      const previousCleanup = widgetCleanups.get(host);
+      widgetCleanups.set(host, () => {
+        previousCleanup?.();
+        resize.disconnect();
+        if (pending) cancelAnimationFrame(pending);
+        grid.removeEventListener("load", onLoad, { capture: true });
+      });
+    }
     setState(host, "ready");
   }
 

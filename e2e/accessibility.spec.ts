@@ -264,7 +264,7 @@ test("Studio selection dialog is accessible for choosing and ordering proof", as
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/visual-evidence/studio-editor");
   await page
-    .getByRole("button", { name: "Manage selection", exact: true })
+    .getByRole("button", { name: "Edit selection", exact: true })
     .click();
   await expect(
     page.getByRole("dialog", { name: "Manage testimonials" }),

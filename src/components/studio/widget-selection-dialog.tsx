@@ -231,9 +231,13 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                             disabled && "cursor-default opacity-60",
                           )}
                         >
+                          {/* A click surface over the whole card, nothing more:
+                              the checkbox carries the name, and an aria-label
+                              on a label is prohibited (axe
+                              aria-prohibited-attr). */}
                           <label
+                            aria-hidden="true"
                             htmlFor={`studio-select-${testimonialId}`}
-                            aria-label={`Select ${card.name}`}
                             className={cn(
                               "absolute inset-0 z-10",
                               disabled ? "cursor-default" : "cursor-pointer",

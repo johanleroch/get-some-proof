@@ -281,24 +281,27 @@ function InboxPageSkeleton() {
   );
 }
 
+/** The same cards the Studio grid lands on, so nothing moves when they arrive. */
 function StudioWidgetListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <section
       aria-label="Loading widgets"
-      className="border-line bg-surface divide-line divide-y rounded-lg border"
+      className="grid gap-4 sm:grid-cols-2"
       role="status"
     >
       {Array.from({ length: rows }).map((_, index) => (
         <div
-          className="flex min-h-20 items-center gap-3 p-4 sm:p-5"
+          className="border-line bg-surface flex flex-col overflow-hidden rounded-lg border"
           key={index}
         >
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-4 w-44 max-w-full" />
-            <Skeleton className="h-3 w-32" />
+          <div className="studio-preview-canvas bg-surface-2 border-line h-56 border-b" />
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-40 max-w-full" />
+              <Skeleton className="h-3 w-32 max-w-full" />
+            </div>
+            <Skeleton className="size-9" />
           </div>
-          <Skeleton className="h-6 w-20 rounded-md" />
-          <Skeleton className="size-9" />
         </div>
       ))}
       <span className="sr-only">Loading widgets</span>
