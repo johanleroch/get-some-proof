@@ -2,7 +2,10 @@
   "use strict";
 
   const runtimeKey = "__getSomeProofEmbedV2";
-  const selector = "[data-gsp-wall][data-public-slug], [data-gsp-widget]";
+  const cloudflareDelivery = globalThis.__GSP_CLOUDFLARE_DELIVERY__ === true;
+  const selector = cloudflareDelivery
+    ? "[data-gsp-widget]"
+    : "[data-gsp-wall][data-public-slug], [data-gsp-widget]";
   const currentScript = document.currentScript;
   const apiOrigin = new URL(
     currentScript?.dataset.apiOrigin || currentScript?.src || location.href,
@@ -1990,15 +1993,16 @@
       renderWidget(host, await fetchWidget(host.dataset.gspWidget));
       // Fail closed when an open page exceeds the existing privacy freshness bound.
       // A visitor may explicitly reload; no polling loop or stale-on-error fallback.
-      setTimeout(() => {
-        shadow
-          .querySelectorAll("mux-player")
-          .forEach((player) => player.pause?.());
-        const reload = element("button", "", "Reload testimonials");
-        reload.onclick = () => void mountWidget(host);
-        shadow.replaceChildren(reload);
-        host.dataset.gspState = "expired";
-      }, 60000);
+      if (!cloudflareDelivery)
+        setTimeout(() => {
+          shadow
+            .querySelectorAll("mux-player")
+            .forEach((player) => player.pause?.());
+          const reload = element("button", "", "Reload testimonials");
+          reload.onclick = () => void mountWidget(host);
+          shadow.replaceChildren(reload);
+          host.dataset.gspState = "expired";
+        }, 60000);
     } catch {
       shadow.replaceChildren(
         element("p", "", "Testimonials are currently unavailable."),

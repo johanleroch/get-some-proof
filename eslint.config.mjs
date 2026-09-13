@@ -7,6 +7,9 @@ export default defineConfig([
   ...nextTypeScript,
   globalIgnores([
     ".next/**",
+    "workers/delivery/dist/**",
+    "workers/delivery/.wrangler/**",
+    "workers/delivery/env.d.ts",
     "convex/_generated/**",
     "convex/betterAuth/_generated/**",
     "coverage/**",

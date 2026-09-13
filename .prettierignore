@@ -7,3 +7,7 @@ test-results
 output
 convex/_generated
 .convex
+
+workers/delivery/dist
+workers/delivery/.wrangler
+workers/delivery/env.d.ts

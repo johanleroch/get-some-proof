@@ -426,37 +426,7 @@ export const getPublished = query({
   ),
   handler: async (ctx, args) => {
     requirePublicWallServer(args.secret);
-    const value = await publicWidget(ctx, args.publicId);
-    if (!value) return null;
-    const { widget, brand } = value;
-    const snapshot = widget.published!;
-    const entitlement = await getOrganizationBillingEntitlement(ctx, brand._id);
-    return {
-      publicId: widget.publicId,
-      brandName: brand.name,
-      publicSlug: brand.publicSlug,
-      googleFont:
-        entitlement.effectivePlan === "premium"
-          ? (snapshot.config.googleFont ?? null)
-          : null,
-      customFont: await (async () => {
-        if (
-          !snapshot.config.customFontId ||
-          entitlement.effectivePlan !== "premium"
-        )
-          return null;
-        const font = await ctx.db.get(snapshot.config.customFontId);
-        if (!font || font.organizationId !== brand._id) return null;
-        const url = await ctx.storage.getUrl(font.storageId);
-        return url ? { id: font._id, url } : null;
-      })(),
-      config: snapshot.config,
-      testimonials: (
-        await selected(ctx, brand, snapshot.testimonialIds, snapshot.config)
-      ).map((item) => item.card),
-      attributionRequired: entitlement.effectivePlan === "free",
-      privacyRevision: await revision(ctx, brand, widget),
-    };
+    return publishedWidgetPresentation(ctx, args.publicId);
   },
 });
 export const privacyRevision = query({
@@ -467,3 +437,41 @@ export const privacyRevision = query({
     return value ? revision(ctx, value.brand, value.widget) : null;
   },
 });
+
+/** Shared authoritative published projection for server and delivery publication. */
+export async function publishedWidgetPresentation(
+  ctx: QueryCtx,
+  publicId: string,
+) {
+  const value = await publicWidget(ctx, publicId);
+  if (!value) return null;
+  const { widget, brand } = value;
+  const snapshot = widget.published!;
+  const entitlement = await getOrganizationBillingEntitlement(ctx, brand._id);
+  return {
+    publicId: widget.publicId,
+    brandName: brand.name,
+    publicSlug: brand.publicSlug,
+    googleFont:
+      entitlement.effectivePlan === "premium"
+        ? (snapshot.config.googleFont ?? null)
+        : null,
+    customFont: await (async () => {
+      if (
+        !snapshot.config.customFontId ||
+        entitlement.effectivePlan !== "premium"
+      )
+        return null;
+      const font = await ctx.db.get(snapshot.config.customFontId);
+      if (!font || font.organizationId !== brand._id) return null;
+      const url = await ctx.storage.getUrl(font.storageId);
+      return url ? { id: font._id, url } : null;
+    })(),
+    config: snapshot.config,
+    testimonials: (
+      await selected(ctx, brand, snapshot.testimonialIds, snapshot.config)
+    ).map((item) => item.card),
+    attributionRequired: entitlement.effectivePlan === "free",
+    privacyRevision: await revision(ctx, brand, widget),
+  };
+}

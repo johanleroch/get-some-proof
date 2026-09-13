@@ -779,6 +779,24 @@
       "path": "/visual-evidence/social-card",
       "heading": "Link preview",
       "theme": "light"
+    },
+    {
+      "slug": "cloudflare-widget-content",
+      "title": "Cloudflare Widget content",
+      "path": "http://127.0.0.1:8790/",
+      "heading": "Cedar Workshop"
+    },
+    {
+      "slug": "cloudflare-widget-empty",
+      "title": "Cloudflare Widget empty",
+      "path": "http://127.0.0.1:8790/",
+      "heading": "Cedar Workshop"
+    },
+    {
+      "slug": "cloudflare-widget-unavailable",
+      "title": "Cloudflare Widget unavailable",
+      "path": "http://127.0.0.1:8790/",
+      "heading": "Cedar Workshop"
     }
   ]
 }

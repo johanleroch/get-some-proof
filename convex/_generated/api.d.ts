@@ -29,6 +29,7 @@ import type * as billingInvoices from "../billingInvoices.js";
 import type * as billingMigrationQueries from "../billingMigrationQueries.js";
 import type * as billingMigrations from "../billingMigrations.js";
 import type * as billingService from "../billingService.js";
+import type * as cloudflarePublication from "../cloudflarePublication.js";
 import type * as collectionAdmission from "../collectionAdmission.js";
 import type * as collectionQuotas from "../collectionQuotas.js";
 import type * as collectionRateLimit from "../collectionRateLimit.js";
@@ -151,6 +152,7 @@ declare const fullApi: ApiFromModules<{
   billingMigrationQueries: typeof billingMigrationQueries;
   billingMigrations: typeof billingMigrations;
   billingService: typeof billingService;
+  cloudflarePublication: typeof cloudflarePublication;
   collectionAdmission: typeof collectionAdmission;
   collectionQuotas: typeof collectionQuotas;
   collectionRateLimit: typeof collectionRateLimit;
