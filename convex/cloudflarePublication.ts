@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalMutation } from "./_generated/server";
+import { action, env, internalMutation } from "./_generated/server";
 import { requireOrganizationPermission } from "./security/organizationAccess";
 import { publishedWidgetPresentation } from "./widgets";
 import { prepareDeliveryPublication } from "../src/lib/cloudflare-delivery";
@@ -11,13 +11,13 @@ const scope = {
 };
 
 function stagingConfiguration() {
-  const source = process.env.CLOUDFLARE_CANARY_SOURCE_URL;
-  const target = process.env.CLOUDFLARE_CANARY_DELIVERY_URL;
-  const secret = process.env.CLOUDFLARE_CANARY_PUBLISH_SECRET;
+  const source = env.CLOUDFLARE_CANARY_SOURCE_URL;
+  const target = env.CLOUDFLARE_CANARY_DELIVERY_URL;
+  const secret = env.CLOUDFLARE_CANARY_PUBLISH_SECRET;
   if (
-    process.env.CLOUDFLARE_CANARY_ENABLED !== "true" ||
+    env.CLOUDFLARE_CANARY_ENABLED !== "true" ||
     !source ||
-    source !== process.env.CONVEX_CLOUD_URL ||
+    source !== env.CONVEX_CLOUD_URL ||
     !target ||
     !secret ||
     secret.length < 32
@@ -39,7 +39,7 @@ function stagingConfiguration() {
     throw new ConvexError(
       "Cloudflare canary requires an isolated staging workers.dev origin.",
     );
-  const origins = (process.env.CLOUDFLARE_CANARY_ORIGINS ?? "")
+  const origins = (env.CLOUDFLARE_CANARY_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);

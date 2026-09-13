@@ -31,6 +31,11 @@ type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
   readonly CHATGPT_IMPORT_ENABLED: "true" | "false" | undefined;
+  readonly CLOUDFLARE_CANARY_DELIVERY_URL: string | undefined;
+  readonly CLOUDFLARE_CANARY_ENABLED: string | undefined;
+  readonly CLOUDFLARE_CANARY_ORIGINS: string | undefined;
+  readonly CLOUDFLARE_CANARY_PUBLISH_SECRET: string | undefined;
+  readonly CLOUDFLARE_CANARY_SOURCE_URL: string | undefined;
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
   readonly MANAGEMENT_LINK_TOKEN_SECRET: string | undefined;

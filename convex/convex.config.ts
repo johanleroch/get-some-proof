@@ -12,6 +12,11 @@ const app = defineApp({
     CHATGPT_IMPORT_ENABLED: v.optional(
       v.union(v.literal("true"), v.literal("false")),
     ),
+    CLOUDFLARE_CANARY_DELIVERY_URL: v.optional(v.string()),
+    CLOUDFLARE_CANARY_ENABLED: v.optional(v.string()),
+    CLOUDFLARE_CANARY_ORIGINS: v.optional(v.string()),
+    CLOUDFLARE_CANARY_PUBLISH_SECRET: v.optional(v.string()),
+    CLOUDFLARE_CANARY_SOURCE_URL: v.optional(v.string()),
     EMAIL_FROM: v.optional(v.string()),
     EMAIL_PROVIDER: v.union(
       v.literal("console"),

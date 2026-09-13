@@ -10,11 +10,9 @@ export async function deliveryResponse(
     /^\/api\/widgets\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.exec(
       url.pathname,
     );
-  if (!match || url.search || request.method !== "GET")
-    return unavailable(400);
+  if (!match || url.search || request.method !== "GET") return unavailable(400);
   const origin = request.headers.get("Origin");
-  if (!origin || origin === "null")
-    return unavailable(403);
+  if (!origin || origin === "null") return unavailable(403);
   const id = match[1];
   try {
     const raw = await publications.get(`widget:${id}`);
