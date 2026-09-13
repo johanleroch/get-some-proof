@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { loopDialogOptionTab } from "@/lib/dialog-option-tab";
+import { dialogOpener } from "@/lib/dialog-opener";
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -70,10 +71,7 @@ function DialogContent({
           }
         }}
         onOpenAutoFocus={(event) => {
-          opener.current =
-            document.activeElement instanceof HTMLElement
-              ? document.activeElement
-              : null;
+          opener.current = dialogOpener();
           onOpenAutoFocus?.(event);
         }}
         className={cn(
