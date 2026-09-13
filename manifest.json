@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 183
+  },
+  "headSha": "f4d78f31c296886edd59c60295aa46bcb114e6ac",
+  "runId": "34747333706",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-source-marks.png",
+      "title": "Testimonial source marks",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-sources-visible.png",
+      "title": "Testimonial sources visible",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-pro-projects.png",
+      "title": "Pro Account with shared project quotas",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall-pro.png",
+      "title": "Published Public Wall - Pro",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/public-wall.png",
+      "title": "Published Public Wall",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-templates.png",
+      "title": "Studio templates",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-failed.png",
+      "title": "Wall import video failed",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing-dark.png",
+      "title": "Wall import video processing dark",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-video-processing.png",
+      "title": "Wall import video processing",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox-published.png",
+      "title": "Testimonial Inbox - Published in Wall order",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-inbox.png",
+      "title": "Testimonial Inbox",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-source-marks.png",
+      "title": "Testimonial source marks",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-sources-visible.png",
+      "title": "Testimonial sources visible",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
