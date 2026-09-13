@@ -921,17 +921,36 @@
     shadow.replaceChildren(element("style", "", styles + widgetStyles), wall);
     if (masonryCards) {
       const cards = masonryCards;
-      const rebalance = () => balanceMasonry(grid, cards);
-      rebalance();
-      // A card grows when its image or video finishes loading, and the column
-      // count changes with the room the widget is given: both make the balance
-      // stale, so it is redone rather than computed once.
-      const resize = new ResizeObserver(rebalance);
+      // Balancing moves cards between columns, which changes the grid's own
+      // height, which wakes the observer watching it: only a change of WIDTH
+      // may trigger a rebalance, or the two feed each other forever. Chromium
+      // breaks that loop after a pass; Firefox keeps running it and starves
+      // the frames the page needs to paint.
+      let lastWidth = -1;
+      const rebalance = (force) => {
+        const width = grid.clientWidth;
+        if (!force && width === lastWidth) return;
+        lastWidth = width;
+        balanceMasonry(grid, cards);
+      };
+      rebalance(true);
+      const resize = new ResizeObserver(() => rebalance(false));
       resize.observe(grid);
-      grid.addEventListener("load", rebalance, { capture: true });
+      // A card grows when its image or video finishes loading, and those
+      // arrive in bursts: one rebalance per frame is enough.
+      let pending = 0;
+      const onLoad = () => {
+        if (pending) return;
+        pending = requestAnimationFrame(() => {
+          pending = 0;
+          rebalance(true);
+        });
+      };
+      grid.addEventListener("load", onLoad, { capture: true });
       widgetCleanups.set(host, () => {
         resize.disconnect();
-        grid.removeEventListener("load", rebalance, { capture: true });
+        if (pending) cancelAnimationFrame(pending);
+        grid.removeEventListener("load", onLoad, { capture: true });
       });
     }
     setState(host, "ready");
