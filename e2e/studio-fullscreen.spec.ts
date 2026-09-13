@@ -13,25 +13,35 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
       },
     });
   });
-  await page.goto("/kit/studio");
+  // The shell only switches to the Studio workspace for a widget being
+  // edited, exactly as the real route does with `?widget=<id>`.
+  await page.goto("/kit/studio?widget=homepage-proof");
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   const dialog = page.getByRole("dialog");
   for (const label of ["Copy embed code", "Copy link"]) {
     const button = dialog.getByRole("button", { name: label, exact: true });
     await button.click();
     await expect(button).toHaveAttribute("data-copy-state", "copied");
-    await expect(page.locator("[data-sonner-toast]")).toContainText(
-      "Copied to clipboard.",
-    );
+    // Publishing leaves its own toast on screen, so match the copy one.
+    await expect(
+      page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: "Copied to clipboard." }),
+    ).toBeVisible();
     const value = await page.locator("html").getAttribute("data-copied-value");
     expect(value).toContain(
       label === "Copy link" ? "/widgets/" : "data-gsp-widget=",
     );
     await expect(button).toHaveAttribute("data-copy-state", "idle");
   }
+  // The toast is the only confirmation: the editor keeps no inline status of
+  // its own. `not.toContainText` cannot express that, since it fails on a
+  // missing element rather than passing.
   await expect(
-    page.locator('[data-slot="studio-editor"] > [role="status"]'),
-  ).not.toContainText("Copied");
+    page
+      .locator('[data-slot="studio-editor"] > [role="status"]')
+      .filter({ hasText: "Copied" }),
+  ).toHaveCount(0);
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -54,7 +64,9 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
 test("Studio fills the viewport and keeps editing and preview accessible", async ({
   page,
 }, testInfo) => {
-  await page.goto("/kit/studio");
+  // The shell only switches to the Studio workspace for a widget being
+  // edited, exactly as the real route does with `?widget=<id>`.
+  await page.goto("/kit/studio?widget=homepage-proof");
   await expect(
     page.getByRole("heading", { name: "Homepage proof" }),
   ).toBeVisible();
@@ -123,7 +135,10 @@ test("Studio fills the viewport and keeps editing and preview accessible", async
   await page
     .getByRole("button", { name: "Back to Studio", exact: true })
     .click();
+  // Leaving the editor lands back on the widget list. (The shell only drops
+  // the workspace layout when the real route clears `?widget=`, which the
+  // fixture keeps, so the sidebar is not what proves we left.)
   await expect(
-    page.getByRole("link", { name: "Back to project", exact: true }),
+    page.getByRole("button", { name: "Create widget", exact: true }),
   ).toBeVisible();
 });

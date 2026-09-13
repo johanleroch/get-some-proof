@@ -123,6 +123,27 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
     .locator("button:visible, input:visible")
     .evaluateAll((elements) =>
       elements
+        // The Next dev overlay ships its own 32px button inside the shadow
+        // root of `<nextjs-portal>`, and only exists because e2e runs against
+        // `next dev`. `closest` stops at the shadow boundary, so walk the
+        // hosts to leave the whole overlay out: it is not our interface.
+        .filter((element) => {
+          for (
+            let node: Node | null = element;
+            node;
+            node =
+              node.getRootNode() instanceof ShadowRoot
+                ? (node.getRootNode() as ShadowRoot).host
+                : (node as Element).parentElement
+          ) {
+            if (
+              node instanceof Element &&
+              node.tagName.toLowerCase().startsWith("nextjs-")
+            )
+              return false;
+          }
+          return true;
+        })
         .map((element) => {
           // Native and ARIA toggles (Radix checkbox, radio, switch) count
           // their wrapping label as the touch target, like WCAG 2.5.8 allows.

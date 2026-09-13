@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 import type { TestimonialCardVideoValue } from "@convex/testimonialCardValue";
@@ -41,6 +41,13 @@ type SelectionProps = {
   loadingCandidates?: boolean;
   onLoadMore: () => void;
   inboxHref: string;
+  /**
+   * Where focus goes when the dialog closes. Radix restores focus to whatever
+   * held it when the dialog opened, and WebKit hands it to the scrolling
+   * region instead of the button that opened this, so the owner names the
+   * button it wants back.
+   */
+  returnFocusTo?: RefObject<HTMLButtonElement | null>;
 };
 
 function BulkSelectionControl({
@@ -158,6 +165,12 @@ export function WidgetSelectionDialog(props: SelectionProps) {
         <DialogContent
           zoom={false}
           className="flex h-[min(44rem,90dvh)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
+          onCloseAutoFocus={(event) => {
+            const trigger = props.returnFocusTo?.current;
+            if (!trigger) return;
+            event.preventDefault();
+            trigger.focus();
+          }}
           style={{ "--wall-accent": props.accentColor } as CSSProperties}
         >
           <DialogHeader className="shrink-0 px-5 pt-6 pr-12 pb-4 sm:px-6">
@@ -231,9 +244,14 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                             disabled && "cursor-default opacity-60",
                           )}
                         >
+                          {/*
+                            The overlay makes the whole row a click target for
+                            the checkbox. It stays empty and unnamed: ARIA
+                            prohibits `aria-label` on a label, and the name
+                            belongs to the checkbox below.
+                          */}
                           <label
                             htmlFor={`studio-select-${testimonialId}`}
-                            aria-label={`Select ${card.name}`}
                             className={cn(
                               "absolute inset-0 z-10",
                               disabled ? "cursor-default" : "cursor-pointer",
