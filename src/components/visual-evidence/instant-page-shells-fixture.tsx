@@ -1,10 +1,15 @@
 import type { ReactNode } from "react";
 
 import type { Id } from "@convex/_generated/dataModel";
+import { NavUserView } from "@/components/account/nav-user";
 import { AppShellView } from "@/components/app-shell";
+import { OrganizationSwitcherView } from "@/components/organizations/organization-switcher";
 import { OverviewRouteLoading } from "@/components/organizations/overview-route-loading";
 import { StudioRouteLoading } from "@/components/studio/studio-route-loading";
 import { InboxRouteLoading } from "@/components/testimonials/inbox-route-loading";
+
+/** The shell fixtures show the real project switcher, logo and all. */
+const atraktLogo = "/fixtures/bumpr-logo.svg";
 
 export function WorkspacePageShell({
   children,
@@ -29,11 +34,33 @@ export function WorkspacePageShell({
       organizationSlug="atrakt"
       pathname={pathname}
       projectSwitcher={
-        <button className="type-heading px-3 py-2" type="button">
-          Atrakt
-        </button>
+        <OrganizationSwitcherView
+          canCreateProject={false}
+          canReadAudit={false}
+          canReadBilling={false}
+          canUpdateOrganization
+          currentLogoUrl={atraktLogo}
+          currentName="Atrakt"
+          currentSlug="atrakt"
+          loadMore={() => undefined}
+          organizations={[
+            {
+              id: "fixture-atrakt",
+              logoUrl: atraktLogo,
+              name: "Atrakt",
+              slug: "atrakt",
+            },
+          ]}
+          status="Exhausted"
+          switchProject={() => undefined}
+        />
       }
-      userMenu={<p className="type-small px-3 py-2">Alex Morgan</p>}
+      userMenu={
+        <NavUserView
+          signOut={async () => undefined}
+          user={{ email: "alex@example.test", name: "Alex Morgan" }}
+        />
+      }
     >
       {children}
     </AppShellView>
