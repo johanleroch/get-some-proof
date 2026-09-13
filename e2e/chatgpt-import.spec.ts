@@ -335,6 +335,23 @@ test("MCP Apps component keeps server selection across filters and follows the h
   await expect(
     app.getByRole("heading", { name: "Select testimonials" }),
   ).toBeVisible();
+  if (
+    process.env.VISUAL_EVIDENCE_SLUGS?.split(",").includes(
+      "mcp-import-selection",
+    )
+  ) {
+    const directory = path.join(
+      process.env.VISUAL_EVIDENCE_DIR!,
+      testInfo.project.name,
+    );
+    await mkdir(directory, { recursive: true });
+    await app.locator("body").evaluate(() => document.fonts.ready);
+    await page.screenshot({
+      path: path.join(directory, "mcp-import-selection.png"),
+      animations: "disabled",
+      scale: "css",
+    });
+  }
   const choice = app.getByRole("checkbox", {
     name: "Select Daniel Reed",
     exact: true,

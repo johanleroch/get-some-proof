@@ -7,6 +7,10 @@ import tailwind from "@tailwindcss/postcss";
 const result = await build({
   entryPoints: ["src/components/chatgpt/widget-entry.tsx"],
   bundle: true,
+  alias: {
+    "next/link": "./src/components/chatgpt/browser-link.tsx",
+    "next/image": "./src/components/chatgpt/browser-image.tsx",
+  },
   platform: "browser",
   format: "iife",
   target: "es2022",

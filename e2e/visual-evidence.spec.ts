@@ -30,8 +30,11 @@ const requestedSlugs = process.env.VISUAL_EVIDENCE_SLUGS;
 const selectedSlugs = new Set(
   requestedSlugs ? resolveVisualEvidenceSlugs(requestedSlugs, config) : [],
 );
-const selectedScreens = config.screens.filter((screen) =>
-  selectedSlugs.has(screen.slug),
+const selectedScreens = config.screens.filter(
+  (screen) =>
+    selectedSlugs.has(screen.slug) &&
+    !screen.slug.startsWith("cloudflare-widget-") &&
+    !screen.slug.startsWith("mcp-import-"),
 );
 
 for (const screen of selectedScreens) {

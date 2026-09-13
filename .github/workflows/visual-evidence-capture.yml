@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
+      - "workers/delivery/**"
+      - "playwright.cloudflare.config.ts"
+      - "scripts/build-cloudflare-delivery.mjs"
+      - "scripts/cloudflare-fixture.mjs"
       - "public/**"
       - "src/**"
       - "convex/**"

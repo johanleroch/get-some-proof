@@ -2,7 +2,10 @@
   "use strict";
 
   const runtimeKey = "__getSomeProofEmbedV2";
-  const selector = "[data-gsp-wall][data-public-slug], [data-gsp-widget]";
+  const cloudflareDelivery = globalThis.__GSP_CLOUDFLARE_DELIVERY__ === true;
+  const selector = cloudflareDelivery
+    ? "[data-gsp-widget]"
+    : "[data-gsp-wall][data-public-slug], [data-gsp-widget]";
   const currentScript = document.currentScript;
   const apiOrigin = new URL(
     currentScript?.dataset.apiOrigin || currentScript?.src || location.href,
@@ -561,7 +564,10 @@
       "Collect text and video testimonials. Share them everywhere! Free, forever.",
     );
     const link = element("a", "promo-cta", "Sign up for free");
-    const href = new URL("/sign-up", apiOrigin);
+    const href = new URL(
+      "/sign-up",
+      cloudflareDelivery ? "https://www.getsomeproof.com" : apiOrigin,
+    );
     href.searchParams.set("utm_source", "embedded_wall");
     href.searchParams.set("utm_medium", "referral");
     href.searchParams.set("utm_campaign", "powered_by");
@@ -1990,15 +1996,16 @@
       renderWidget(host, await fetchWidget(host.dataset.gspWidget));
       // Fail closed when an open page exceeds the existing privacy freshness bound.
       // A visitor may explicitly reload; no polling loop or stale-on-error fallback.
-      setTimeout(() => {
-        shadow
-          .querySelectorAll("mux-player")
-          .forEach((player) => player.pause?.());
-        const reload = element("button", "", "Reload testimonials");
-        reload.onclick = () => void mountWidget(host);
-        shadow.replaceChildren(reload);
-        host.dataset.gspState = "expired";
-      }, 60000);
+      if (!cloudflareDelivery)
+        setTimeout(() => {
+          shadow
+            .querySelectorAll("mux-player")
+            .forEach((player) => player.pause?.());
+          const reload = element("button", "", "Reload testimonials");
+          reload.onclick = () => void mountWidget(host);
+          shadow.replaceChildren(reload);
+          host.dataset.gspState = "expired";
+        }, 60000);
     } catch {
       shadow.replaceChildren(
         element("p", "", "Testimonials are currently unavailable."),

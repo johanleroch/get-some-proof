@@ -1,32 +1,30 @@
 import { test, expect } from "@playwright/test";
 
-/**
- * The settings shell scrolls its page-content region, not the window, so the
- * sidebar and the page header stay put. The section navigation this test used
- * to drive was removed with the responsive settings pass; the scrolling
- * contract it proved is still the thing that matters.
- */
-test("keeps the shell fixed while the page content scrolls", async ({
+test("scrolling between settings sections keeps the shell fixed", async ({
   page,
   isMobile,
 }) => {
-  test.skip(isMobile, "The page itself scrolls on mobile");
+  test.skip(isMobile, "Desktop shell scrolling regression");
   await page.goto("/visual-evidence/project-settings-shell");
   const content = page.getByRole("region", { name: "Page content" });
   await expect(content).toHaveCSS("scroll-behavior", "smooth");
   const before = await content.boundingBox();
-  await content.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-  });
+  await page
+    .getByRole("heading", { name: "Embedded Wall", exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect
+    .poll(async () => (await content.boundingBox())!.y)
+    .toBe(before!.y);
   await expect
     .poll(() =>
-      content.evaluate((element) =>
-        Math.abs(
-          element.scrollHeight - element.clientHeight - element.scrollTop,
-        ),
+      content.evaluate((el) =>
+        Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop),
       ),
     )
     .toBeLessThan(2);
+  await page
+    .getByRole("button", { name: "Upload brand logo", exact: true })
+    .scrollIntoViewIfNeeded();
   await expect
     .poll(async () => (await content.boundingBox())!.y)
     .toBe(before!.y);

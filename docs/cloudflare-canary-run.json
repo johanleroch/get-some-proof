@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-09-13T07:05:58.704Z",
+  "publicId": "29200be1-a78e-4049-a2ca-82a3e67a816f",
+  "delivery": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev",
+  "fixture": "http://127.0.0.1:8790",
+  "runs": [
+    {
+      "name": "desktop",
+      "requests": [
+        "/embed/loader.js",
+        "/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+        "/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+        "/embed/loader.js",
+        "/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+        "/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f"
+      ],
+      "responses": [
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/embed/loader.js",
+          "status": 200,
+          "ray": "a3a54e84cbe4ae33-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+          "status": 200,
+          "ray": "a3a54e864dcdae33-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+          "status": 200,
+          "ray": "a3a54e88cbe7e1a0-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/embed/loader.js",
+          "status": 200,
+          "ray": "a3a54e8cd959e177-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+          "status": 200,
+          "ray": "a3a54e8de978e177-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+          "status": 200,
+          "ray": "a3a54e8f0cc5e1a0-MRS"
+        }
+      ],
+      "denied": [],
+      "readableAfter61Seconds": true
+    },
+    {
+      "name": "mobile",
+      "requests": [
+        "/embed/loader.js",
+        "/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+        "/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+        "/embed/loader.js",
+        "/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+        "/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f"
+      ],
+      "responses": [
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/embed/loader.js",
+          "status": 200,
+          "ray": "a3a54e92f85eace6-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+          "status": 200,
+          "ray": "a3a54e941a7cace6-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+          "status": 200,
+          "ray": "a3a54e965877e1ac-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/embed/loader.js",
+          "status": 200,
+          "ray": "a3a54e9a5b8e5fd0-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/releases/canary-v1/widget.ef3324ef7af67909d897.js",
+          "status": 200,
+          "ray": "a3a54e9b6bcd5fd0-MRS"
+        },
+        {
+          "url": "https://gsp-widget-canary-staging.johanleroch-pro.workers.dev/api/widgets/29200be1-a78e-4049-a2ca-82a3e67a816f",
+          "status": 200,
+          "ray": "a3a54e9c899fe1ac-MRS"
+        }
+      ],
+      "denied": [],
+      "readableAfter61Seconds": true
+    }
+  ]
+}

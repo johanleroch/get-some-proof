@@ -1,0 +1,43 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gsp-widget-canary-local",
+  "main": "index.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/__publish/*"],
+  },
+  "kv_namespaces": [
+    {
+      "binding": "PUBLICATIONS",
+      "id": "canary-local-only",
+    },
+  ],
+  "vars": {
+    "ENVIRONMENT": "local",
+    "ALLOWED_ORIGINS": "http://127.0.0.1:8790",
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "env": {
+    "staging": {
+      "name": "gsp-widget-canary-staging",
+      "workers_dev": true,
+      "kv_namespaces": [
+        {
+          "binding": "PUBLICATIONS",
+          "id": "dc6e51788692498dad78ddbf0f34ca55",
+        },
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "ALLOWED_ORIGINS": "http://127.0.0.1:8790",
+      },
+    },
+  },
+}

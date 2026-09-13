@@ -128,6 +128,15 @@ export default defineSchema({
     .index("by_organization_id", ["organizationId"])
     .index("by_owner_user_id", ["ownerUserId"])
     .index("by_storage_id", ["storageId"]),
+  cloudflareCanaryPublications: defineTable({
+    publicId: v.string(),
+    organizationId: v.id("organizations"),
+    widgetId: v.id("widgets"),
+    revision: v.number(),
+    generatedAt: v.number(),
+    validUntil: v.number(),
+    status: v.union(v.literal("reserved"), v.literal("published")),
+  }).index("by_publicId", ["publicId"]),
   widgetFonts: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),

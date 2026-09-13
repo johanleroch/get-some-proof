@@ -9,7 +9,12 @@
     "noEmit": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "lib": ["ES2021", "dom"]
+    "lib": ["ES2021", "dom"],
+    "paths": {
+      "@/*": ["../src/*"],
+      "@convex/*": ["./*"]
+    },
+    "allowImportingTsExtensions": true
   },
   "include": ["./**/*"],
   "exclude": ["./_generated"]

@@ -27,8 +27,10 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm typecheck:cloudflare
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm build:cloudflare
 
   browser:
     runs-on: ubuntu-latest
@@ -47,6 +49,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps
       # Canonical screenshots run in Visual evidence capture; keep this job
       # focused on functional coverage and print failing test names immediately.
+      - run: pnpm test:cloudflare --grep-invert 'captures ' --reporter=list
       - run: pnpm test:e2e --grep-invert 'captures ' --reporter=list,html
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
