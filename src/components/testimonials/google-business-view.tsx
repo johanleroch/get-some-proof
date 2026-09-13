@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  IconArrowRight,
+  IconBuildingStore,
+  IconLock,
+  IconRefresh,
+  IconUnlink,
+  IconUserCircle,
+} from "@tabler/icons-react";
+import { Sparkle } from "@/components/doodles";
+import { Stars } from "@/components/templates/template-primitives";
+import { sourceIcons } from "./source-icons";
 import { Button } from "@/components/ui/button";
 
 export type GooglePage = {
@@ -39,18 +50,33 @@ export function GoogleBusinessView({
 }: GoogleViewProps) {
   return (
     <section aria-labelledby="google-reviews-heading" className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-xl space-y-2">
-          <h2 id="google-reviews-heading" className="type-heading">
-            Google reviews
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Connect a business you manage on Google and read its customer
-            reviews here.
-          </p>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
+          <span className="border-line bg-surface flex size-12 shrink-0 items-center justify-center rounded-lg border">
+            <GoogleMark className="size-7" />
+          </span>
+          <div className="max-w-xl space-y-2">
+            <h2 id="google-reviews-heading" className="type-heading">
+              Google reviews
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Connect a business you manage on Google and read its customer
+              reviews here.
+            </p>
+            {connected && (
+              <p className="type-small text-success flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="bg-success size-1.5 rounded-full"
+                />
+                Google connected
+              </p>
+            )}
+          </div>
         </div>
         {connected ? (
-          <Button variant="outline" disabled={busy} onClick={onDisconnect}>
+          <Button variant="ghost" disabled={busy} onClick={onDisconnect}>
+            <IconUnlink aria-hidden="true" size={20} stroke={1.75} />
             Disconnect Google
           </Button>
         ) : (
@@ -65,26 +91,31 @@ export function GoogleBusinessView({
           still available.
         </p>
       )}
-      <p className="text-muted-foreground text-sm">
-        Reviews stay private here. Publishing Google reviews on your Wall is not
-        available yet.
-      </p>
+      <div className="bg-surface-2 text-ink-2 flex items-start gap-3 rounded-lg p-4">
+        <IconLock
+          aria-hidden="true"
+          size={16}
+          stroke={1.75}
+          className="mt-0.5 shrink-0"
+        />
+        <p className="type-small max-w-prose">
+          Reviews stay private here. Publishing Google reviews on your Wall is
+          not available yet.
+        </p>
+      </div>
       {connected && (
         <>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              loading={busy}
-              onClick={() => onRead(account, location)}
-            >
-              {" "}
-              {page || account ? "Refresh" : "Choose a Google account"}{" "}
+            <Button loading={busy} onClick={() => onRead(account, location)}>
+              <IconRefresh aria-hidden="true" size={20} stroke={1.75} />
+              {page || account ? "Refresh" : "Choose a Google account"}
             </Button>
             <Button variant="ghost" disabled={busy} onClick={onConnect}>
               Reconnect Google
             </Button>
             {account && (
               <Button variant="ghost" disabled={busy} onClick={() => onRead()}>
+                <IconUserCircle aria-hidden="true" size={20} stroke={1.75} />
                 Change account
               </Button>
             )}
@@ -94,6 +125,7 @@ export function GoogleBusinessView({
                 disabled={busy}
                 onClick={() => onRead(account)}
               >
+                <IconBuildingStore aria-hidden="true" size={20} stroke={1.75} />
                 Change location
               </Button>
             )}
@@ -118,7 +150,7 @@ function GoogleResults({
 }) {
   return (
     <div aria-live="polite" className="grid gap-4">
-      <h3 className="font-semibold">
+      <h3 className="type-subheading">
         {location
           ? "Customer reviews"
           : account
@@ -126,12 +158,34 @@ function GoogleResults({
             : "Choose an account"}
       </h3>
       {location && page.totalReviewCount !== undefined && (
-        <p className="text-muted-foreground text-sm">
-          {page.totalReviewCount} reviews on Google
-          {page.averageRating !== undefined
-            ? ` · ${page.averageRating.toFixed(1)} out of 5`
-            : ""}
-        </p>
+        <div className="border-line relative flex flex-wrap items-center gap-4 border-b pr-10 pb-6">
+          {page.averageRating !== undefined && (
+            <>
+              <p className="type-kpi tabular-nums">
+                {page.averageRating.toFixed(1)}
+                <span className="type-small text-ink-2 ml-1">/ 5</span>
+              </p>
+              <div className="space-y-1">
+                <span aria-hidden="true">
+                  <Stars
+                    rating={page.averageRating}
+                    className="text-brand"
+                    size={20}
+                  />
+                </span>
+                <p className="type-small text-ink-2">
+                  {page.totalReviewCount} reviews on Google
+                </p>
+              </div>
+            </>
+          )}
+          {page.averageRating === undefined && (
+            <p className="type-small text-ink-2">
+              {page.totalReviewCount} reviews on Google
+            </p>
+          )}
+          <Sparkle className="text-brand absolute top-1 right-0 size-8" />
+        </div>
       )}
       {page.items.length === 0 && (
         <p className="text-muted-foreground text-sm">
@@ -167,6 +221,7 @@ function GoogleResults({
           onClick={() => onRead(account, location, page.nextPageToken!)}
         >
           Next page
+          <IconArrowRight aria-hidden="true" size={20} stroke={1.75} />
         </Button>
       )}
     </div>
@@ -186,13 +241,29 @@ function GoogleReview({ entry }: { entry: GooglePage["items"][number] }) {
     <article className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold">{entry.title}</p>
-        <p className="text-muted-foreground text-sm">
-          {rating ? `${rating} / 5 · Google` : "Google review"}
-        </p>
+        <div className="flex items-center gap-3">
+          {rating && <Stars rating={Number(rating)} className="text-brand" />}
+          <span className="type-small text-ink-2 inline-flex items-center gap-1.5">
+            <GoogleMark className="size-4" />
+            Google
+          </span>
+        </div>
       </div>
-      <p className="text-sm whitespace-pre-wrap">
+      <p className="type-body max-w-prose whitespace-pre-wrap">
         {entry.comment || "Rating only"}
       </p>
     </article>
+  );
+}
+
+function GoogleMark({ className }: { className: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sourceIcons.google.markup }}
+    />
   );
 }

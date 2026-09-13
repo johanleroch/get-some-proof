@@ -31,6 +31,7 @@ async function expectNoWcagViolations(page: Page) {
 }
 
 const canonicalScreens = [
+  "/visual-evidence/google-business",
   "/visual-evidence/studio",
   "/visual-evidence/studio-templates",
   "/visual-evidence/studio-editor",
@@ -66,6 +67,7 @@ for (const path of canonicalScreens) {
 }
 
 for (const path of [
+  "/visual-evidence/google-business",
   "/visual-evidence/testimonial-import",
   "/visual-evidence/testimonial-import-public",
   "/visual-evidence/testimonial-import-publication",
