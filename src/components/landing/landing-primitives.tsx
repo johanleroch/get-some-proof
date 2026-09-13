@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 /**
- * The pieces every landing section is built from: the band, the heading
- * block, and the frame a product demonstration sits in. Section rhythm is
- * `clamp(3rem, 8vw, 6rem)` (DESIGN.md section 5) and every heading block is
- * left-aligned with its eyebrow, never a centred column on a void.
+ * The grammar every landing section is written in. Three bands (paper, the
+ * quiet `--surface-2`, the amber poster), one left-aligned heading block,
+ * and a caption that says when what is shown is invented. Section rhythm is
+ * `clamp(3rem, 8vw, 6rem)` and the column is 1280px wide (DESIGN.md
+ * sections 5 and 6).
  */
 
 export function LandingSection({
@@ -22,8 +23,8 @@ export function LandingSection({
   className?: string;
   id?: string;
   labelledBy?: string;
-  /** `quiet` puts the section on `--surface-2`, full bleed. */
-  tone?: "paper" | "quiet";
+  /** `quiet` is `--surface-2`; `poster` is the amber tint, once per page. */
+  tone?: "paper" | "poster" | "quiet";
 }) {
   return (
     <section
@@ -31,6 +32,7 @@ export function LandingSection({
       className={cn(
         "scroll-mt-16 py-[clamp(3rem,8vw,6rem)]",
         tone === "quiet" && "bg-surface-2",
+        tone === "poster" && "bg-brand-soft",
         className,
       )}
       id={id}
@@ -42,29 +44,68 @@ export function LandingSection({
   );
 }
 
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="type-micro text-ink-2 uppercase">{children}</p>;
+export function Eyebrow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={cn("type-micro text-ink-2 uppercase", className)}>
+      {children}
+    </p>
+  );
+}
+
+/** The page's one `h1`, the only title allowed to fill its column. */
+export function PageTitle({
+  children,
+  className,
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  id?: string;
+}) {
+  return (
+    <h1
+      className={cn(
+        "font-display text-ink text-[clamp(2.5rem,5vw,4.25rem)] leading-[1.02] font-bold tracking-[-0.02em] text-balance",
+        className,
+      )}
+      id={id}
+    >
+      {children}
+    </h1>
+  );
 }
 
 /**
- * A section title in Gelica. `level` keeps the document outline honest while
- * the size stays the same: the hero is the page's only `h1`.
+ * A section title in Gelica. `statement` is the larger cut, for the one or
+ * two moments the page raises its voice; everything else stays on the
+ * regular step so the hierarchy keeps meaning.
  */
 export function SectionTitle({
   as: Tag = "h2",
   children,
   className,
   id,
+  size = "default",
 }: {
-  as?: "h1" | "h2" | "h3";
+  as?: "h2" | "h3";
   children: ReactNode;
   className?: string;
   id?: string;
+  size?: "default" | "statement";
 }) {
   return (
     <Tag
       className={cn(
-        "font-display text-ink text-[clamp(1.75rem,3.2vw,2.5rem)] leading-[1.12] font-bold tracking-[-0.015em] text-balance",
+        "font-display text-ink font-bold text-balance",
+        size === "statement"
+          ? "text-[clamp(2rem,3.8vw,3rem)] leading-[1.06] tracking-[-0.02em]"
+          : "text-[clamp(1.625rem,2.6vw,2.25rem)] leading-[1.12] tracking-[-0.015em]",
         className,
       )}
       id={id}
@@ -74,7 +115,7 @@ export function SectionTitle({
   );
 }
 
-/** The lead paragraph under a section title: one measure, never wider. */
+/** The paragraph under a title: one measure, never wider than 60 characters. */
 export function SectionLead({
   children,
   className,
@@ -85,7 +126,7 @@ export function SectionLead({
   return (
     <p
       className={cn(
-        "type-body text-ink-2 max-w-[60ch] sm:text-[17px] sm:leading-7",
+        "type-body text-ink-2 max-w-[58ch] sm:text-[17px] sm:leading-7",
         className,
       )}
     >
@@ -94,7 +135,7 @@ export function SectionLead({
   );
 }
 
-/** One word or phrase carrying the marker swash, inline in a title. */
+/** One key word carrying the marker swash, inline in a title. */
 export function Highlighted({ children }: { children: ReactNode }) {
   return (
     <span className="relative inline-block whitespace-nowrap">
@@ -105,43 +146,26 @@ export function Highlighted({ children }: { children: ReactNode }) {
 }
 
 /**
- * The frame every product demonstration sits in: a `--surface` panel with a
- * hairline, its own label, and the word Demo beside it. Nothing on this page
- * shows customer proof, so the label is part of the component, not a prop a
- * section can forget (issue #181: demonstration content must be
- * unmistakable).
+ * What every block of proof on this page carries: nothing here belongs to a
+ * customer of ours, and the page says so where the proof is, not only in the
+ * small print (issue #181).
  */
-export function DemoFrame({
-  caption,
+export function DemoLine({
   children,
   className,
-  contentClassName,
-  label,
 }: {
-  /** One `small` line under the frame: what the Owner chose here. */
-  caption?: ReactNode;
   children: ReactNode;
   className?: string;
-  contentClassName?: string;
-  /** Where this Widget lives, in the demonstration's story. */
-  label: ReactNode;
 }) {
   return (
-    <figure className={cn("min-w-0", className)}>
-      <div className="border-line bg-surface overflow-hidden rounded-xl border">
-        <div className="border-line flex items-center justify-between gap-3 border-b px-4 py-3">
-          <span className="type-micro text-ink-2 truncate uppercase">
-            {label}
-          </span>
-          <Badge variant="neutral">Demo</Badge>
-        </div>
-        <div className={cn("p-4 sm:p-5", contentClassName)}>{children}</div>
-      </div>
-      {caption ? (
-        <figcaption className="type-small text-ink-2 mt-3">
-          {caption}
-        </figcaption>
-      ) : null}
-    </figure>
+    <p
+      className={cn(
+        "type-small text-ink-2 flex flex-wrap items-center gap-x-2 gap-y-1",
+        className,
+      )}
+    >
+      <Badge variant="neutral">Demo</Badge>
+      <span>{children}</span>
+    </p>
   );
 }

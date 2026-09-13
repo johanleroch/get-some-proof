@@ -30,14 +30,17 @@ test("every demonstration on the homepage is labeled as one", async ({
 }) => {
   await page.goto("/");
 
-  const frames = page.getByRole("figure");
-  const count = await frames.count();
-  expect(count).toBeGreaterThanOrEqual(4);
-  for (let index = 0; index < count; index++) {
-    await expect(frames.nth(index).locator("[data-slot=badge]")).toHaveText(
-      "Demo",
-    );
-  }
+  await expect(page.getByText("demo wall, nobody real yet")).toBeVisible();
+  await expect(
+    page.getByText(
+      "Fernhill Studio and every testimonial on this page are invented.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "The embed a website loads, rendering invented testimonials.",
+    ),
+  ).toBeVisible();
   await expect(
     page.getByText(/demonstration content from a fictional studio/i),
   ).toBeVisible();

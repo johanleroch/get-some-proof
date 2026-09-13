@@ -1,3 +1,4 @@
+import { ArrowNote } from "@/components/doodles";
 import {
   demoHomepageSelection,
   demoPricingSelection,
@@ -6,21 +7,22 @@ import { defaultAccent } from "@/lib/templates-catalog";
 
 import { DemoCardColumn, DemoCardMasonry } from "./demo-cards";
 import {
-  DemoFrame,
+  DemoLine,
+  Eyebrow,
   LandingSection,
   SectionLead,
   SectionTitle,
 } from "./landing-primitives";
 
 /**
- * Two Widgets, two selections: the same workspace answering two different
- * questions. The panels are 7:5 rather than a pair of equal cards, and each
- * one says in a caption what its Owner chose — a selection and an order,
- * never automatic targeting.
+ * Two Widgets, two selections, on two pages of the same site. The panels are
+ * 7:5 and the second one starts lower, so they read as two places rather
+ * than a pair of matching cards; each one says what its Owner chose, and
+ * neither implies the product picks for them.
  */
 export function LandingSelection() {
   return (
-    <LandingSection id="selection" labelledBy="selection-title">
+    <LandingSection id="selection" labelledBy="selection-title" tone="quiet">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
         <div className="min-w-0 lg:col-span-5">
           <SectionTitle id="selection-title">
@@ -41,29 +43,36 @@ export function LandingSelection() {
         </div>
       </div>
 
-      <div className="mt-12 grid items-start gap-6 lg:mt-14 lg:grid-cols-12 lg:gap-8">
-        <DemoFrame
-          caption="Three testimonials, in the order this Owner set."
-          className="lg:col-span-7"
-          label="Widget on the homepage"
-        >
+      <div className="mt-14 grid items-start gap-10 lg:grid-cols-12 lg:gap-14">
+        <div className="min-w-0 lg:col-span-7">
+          <Eyebrow className="mb-4">On the homepage</Eyebrow>
           <DemoCardMasonry
             accentColor={defaultAccent}
             testimonials={demoHomepageSelection}
           />
-        </DemoFrame>
+          <p className="type-small text-ink-2 mt-1">
+            Three testimonials, in the order this Owner set.
+          </p>
+        </div>
 
-        <DemoFrame
-          caption="A different selection on the pricing page, from the same workspace."
-          className="lg:col-span-5"
-          label="Widget on the pricing page"
-        >
+        <div className="min-w-0 lg:col-span-5 lg:mt-16">
+          <Eyebrow className="mb-4">On the pricing page</Eyebrow>
           <DemoCardColumn
             accentColor={defaultAccent}
             testimonials={demoPricingSelection}
           />
-        </DemoFrame>
+          <p className="type-small text-ink-2 mt-4">
+            Two others, chosen from the same workspace.
+          </p>
+          <ArrowNote arrow="rise" className="mt-4" size="sm">
+            a different pick here
+          </ArrowNote>
+        </div>
       </div>
+
+      <DemoLine className="mt-10">
+        Fernhill Studio and every testimonial on this page are invented.
+      </DemoLine>
     </LandingSection>
   );
 }

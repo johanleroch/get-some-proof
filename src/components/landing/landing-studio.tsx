@@ -2,10 +2,10 @@
 
 import { useId, useState } from "react";
 
+import { ArrowNote } from "@/components/doodles";
 import { widgetTemplates } from "@/components/studio/catalog";
 import type { WidgetPresentation } from "@/components/studio/widget-payload";
 import { WidgetPreview } from "@/components/studio/widget-preview";
-import { ArrowNote } from "@/components/doodles";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { EmbedCode } from "@/components/ui/embed-code";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ import {
 import { accentPresets } from "@/lib/templates-catalog";
 
 import {
-  DemoFrame,
+  DemoLine,
   LandingSection,
   SectionLead,
   SectionTitle,
@@ -35,7 +35,7 @@ import {
 /**
  * The three templates this demonstration can offer honestly: Testimonial
  * highlights needs marked phrases and Avatar stack needs customer photos,
- * and the sample set has neither. The Studio offers all five, and names the
+ * and the sample set has neither. The Studio offers all five and names its
  * Pro ones exactly as they are named here.
  */
 const demoLayouts: WidgetConfig["layout"][] = [
@@ -53,11 +53,11 @@ const templateOptions = demoLayouts.map((layout) => {
 });
 
 /**
- * Presentation and installation, played on the real thing: the controls are
- * the Studio's own primitives, with its own template names, and the preview
- * is the embed runtime a customer site loads, rendering in its own shadow
- * root. Changing a template or an accent here does what it does in the
- * Studio; nothing is published from this page.
+ * Presentation and installation, played on the real thing: the Studio's own
+ * controls on the left, and on the right its preview canvas — the same
+ * 24px grid the editor draws — with the embed runtime a customer site loads
+ * rendering inside it. Changing a template or an accent does here what it
+ * does in the Studio; nothing is published from this page.
  */
 export function LandingStudio() {
   const [layout, setLayout] = useState<WidgetConfig["layout"]>("masonry");
@@ -82,13 +82,13 @@ export function LandingStudio() {
 
   return (
     <LandingSection id="publish" labelledBy="studio-title">
-      <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+      <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="min-w-0 lg:col-span-4">
           <div className="lg:sticky lg:top-24">
             <SectionTitle id="studio-title">
               Give customer proof a place on your website.
             </SectionTitle>
-            <div className="mt-5 space-y-4">
+            <div className="mt-6 space-y-4">
               <SectionLead>
                 Choose a template, match its appearance to your brand and add
                 the embed code to your page.
@@ -99,7 +99,7 @@ export function LandingStudio() {
               </SectionLead>
             </div>
 
-            <div className="border-line mt-8 space-y-5 border-t pt-6">
+            <div className="border-line mt-9 space-y-5 border-t pt-7">
               <div className="space-y-2">
                 <Label htmlFor={templateId}>Template</Label>
                 <Select
@@ -149,13 +149,12 @@ export function LandingStudio() {
         </div>
 
         <div className="min-w-0 lg:col-span-8">
-          <DemoFrame
-            caption="The embed runtime a website loads, rendering this Widget in its own frame."
-            contentClassName="min-h-[420px] sm:min-h-[460px]"
-            label="Your website"
-          >
+          <div className="studio-preview-canvas border-line bg-surface-2 min-h-[420px] overflow-hidden rounded-xl border p-4 sm:min-h-[480px] sm:p-10">
             <WidgetPreview value={presentation} />
-          </DemoFrame>
+          </div>
+          <DemoLine className="mt-4">
+            The embed a website loads, rendering invented testimonials.
+          </DemoLine>
         </div>
       </div>
     </LandingSection>

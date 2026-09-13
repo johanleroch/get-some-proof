@@ -33,30 +33,27 @@ const questions = [
 ] as const;
 
 /**
- * Six answers, all of them readable at once. A disclosure list would hide
- * the words a visitor came to check and would keep them out of the page for
- * a crawler; the questions are short enough to read as a list.
+ * Six answers, readable at once: a disclosure list would hide the words a
+ * visitor came to check and keep them out of the page for a crawler. The
+ * title runs the full width here and the questions sit in two columns under
+ * it, so the section does not repeat the split every other one uses.
  */
 export function LandingFaq() {
   return (
-    <LandingSection id="faq" labelledBy="faq-title" tone="quiet">
-      <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-        <div className="min-w-0 lg:col-span-4">
-          <SectionTitle className="lg:sticky lg:top-24" id="faq-title">
-            Frequently asked questions
-          </SectionTitle>
-        </div>
-        <dl className="grid min-w-0 gap-x-10 gap-y-8 sm:grid-cols-2 lg:col-span-7 lg:col-start-6">
-          {questions.map((item) => (
-            <div className="border-line border-t pt-5" key={item.question}>
-              <dt className="type-subheading text-ink">{item.question}</dt>
-              <dd className="type-body text-ink-2 mt-2 max-w-[46ch]">
-                {item.answer}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+    <LandingSection id="faq" labelledBy="faq-title">
+      <SectionTitle className="max-w-[16ch]" id="faq-title">
+        Frequently asked questions
+      </SectionTitle>
+      <dl className="mt-12 grid gap-x-14 gap-y-8 sm:grid-cols-2">
+        {questions.map((item) => (
+          <div className="border-line border-t pt-5" key={item.question}>
+            <dt className="type-subheading text-ink">{item.question}</dt>
+            <dd className="type-body text-ink-2 mt-2 max-w-[46ch]">
+              {item.answer}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </LandingSection>
   );
 }

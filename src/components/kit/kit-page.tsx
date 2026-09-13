@@ -10,6 +10,7 @@ import {
   IconRoute,
   IconStar,
   IconTemplate,
+  IconWorld,
 } from "@tabler/icons-react";
 
 import { MediaDeletionProgress } from "@/components/ui/media-deletion-progress";
@@ -327,6 +328,12 @@ export function KitPage() {
             <Link href="/kit/templates">
               <IconTemplate aria-hidden="true" />
               Templates
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/kit/landing">
+              <IconWorld aria-hidden="true" />
+              Landing
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">

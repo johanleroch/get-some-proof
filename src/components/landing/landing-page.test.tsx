@@ -77,14 +77,20 @@ describe("LandingPage", () => {
     ).toBeVisible();
   });
 
-  it("marks every demonstration as demonstration content", () => {
+  it("says where the proof comes from, beside it and in the small print", () => {
     render(<LandingPage />);
 
-    const demoFrames = screen.getAllByRole("figure");
-    expect(demoFrames.length).toBeGreaterThanOrEqual(4);
-    for (const frame of demoFrames) {
-      expect(within(frame).getByText("Demo")).toBeVisible();
-    }
+    expect(
+      screen.getByText(
+        "Fernhill Studio and every testimonial on this page are invented.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "The embed a website loads, rendering invented testimonials.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("demo wall, nobody real yet")).toBeVisible();
     expect(
       screen.getByText(/demonstration content from a fictional studio/i),
     ).toBeVisible();

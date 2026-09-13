@@ -254,6 +254,9 @@ function QuickAccessMenu({
             <Link href="/kit/templates">Templates</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <Link href="/kit/landing">Landing page</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href="/kit/onboarding">Onboarding playground</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>

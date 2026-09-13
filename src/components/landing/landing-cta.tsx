@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 
 /**
  * The closing panel: the same ink poster the templates page ends on, so our
- * two public pages close the same way. The mascot is oversized and cropped
- * by the panel, the founder's exception to the 96–200px range (DESIGN.md
- * section 4).
+ * two public pages close the same way, with the starstruck face the other
+ * posters wear (the sidebar plan card, the Pro offer). The mascot is
+ * oversized and cropped by the panel, the founder's exception to the
+ * 96–200px range (DESIGN.md section 4).
  */
 export function LandingCta() {
   return (
@@ -35,11 +36,11 @@ export function LandingCta() {
         </div>
         <Blob
           className="absolute -top-6 -right-14 hidden -rotate-8 xl:block"
-          expression="happy"
+          expression="starstruck"
           size={420}
         />
         <div className="mt-2 -mr-16 -mb-16 flex justify-end xl:hidden">
-          <Blob className="-rotate-8" expression="happy" size={280} />
+          <Blob className="-rotate-8" expression="starstruck" size={280} />
         </div>
       </div>
     </section>
