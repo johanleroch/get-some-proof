@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "./seo";
+
 export function buildPublicWallMetadata(
   wall: {
     brandName: string;
@@ -10,14 +12,14 @@ export function buildPublicWallMetadata(
 ): Metadata {
   const indexable = wall.testimonialCount > 0;
   return {
-    alternates: {
-      canonical: new URL(
+    ...publicPageMetadata({
+      title: `${wall.brandName} testimonials`,
+      description: `Customer testimonials published by ${wall.brandName}.`,
+      path: new URL(
         `/w/${encodeURIComponent(wall.publicSlug)}`,
         siteUrl,
       ).toString(),
-    },
-    description: `Customer testimonials published by ${wall.brandName}.`,
+    }),
     robots: { follow: indexable, index: indexable },
-    title: `${wall.brandName} testimonials`,
   };
 }
