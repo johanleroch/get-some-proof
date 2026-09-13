@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 167
+  },
+  "headSha": "556bc28c1f37c174aaad02c040375f32f848b8e7",
+  "runId": "34728472541",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/account-security-error.png",
+      "title": "Account security error toast",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator-codes.png",
+      "title": "Authenticator - recovery codes",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator-error.png",
+      "title": "Authenticator - password refused",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator-external.png",
+      "title": "Authenticator - Google sign-in",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator-on.png",
+      "title": "Authenticator - already on",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator-setup.png",
+      "title": "Authenticator - scan the QR code",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/authenticator.png",
+      "title": "Authenticator - confirm your password",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/account-security-error.png",
+      "title": "Account security error toast",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator-codes.png",
+      "title": "Authenticator - recovery codes",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator-error.png",
+      "title": "Authenticator - password refused",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator-external.png",
+      "title": "Authenticator - Google sign-in",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator-on.png",
+      "title": "Authenticator - already on",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator-setup.png",
+      "title": "Authenticator - scan the QR code",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/authenticator.png",
+      "title": "Authenticator - confirm your password",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
