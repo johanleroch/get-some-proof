@@ -12,8 +12,7 @@ import { StudioWorkspaceShell } from "@/components/app-shell";
 
 import { WorkspacePageShell } from "./instant-page-shells-fixture";
 
-/** Exported so a development page can render the real widget on real cards. */
-export const primaryStudioCandidates: StudioCandidate[] = [
+const primaryStudioCandidates: StudioCandidate[] = [
   {
     testimonialId: "maya",
     card: {
