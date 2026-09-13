@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 179
+  },
+  "headSha": "9db55a52faff561a2bbb56bc83fc5f17164507dd",
+  "runId": "34744731891",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/testimonial-import-url.png",
+      "title": "Wall import URL",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/testimonial-import-url.png",
+      "title": "Wall import URL",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
