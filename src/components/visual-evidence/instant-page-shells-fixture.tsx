@@ -1,3 +1,7 @@
+"use client";
+
+// The shell fixtures mount the real project switcher and user row, which take
+// callbacks: a server component cannot hand a function to a client one.
 import type { ReactNode } from "react";
 
 import type { Id } from "@convex/_generated/dataModel";
