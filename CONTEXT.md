@@ -80,6 +80,12 @@ _Avoid_: Archived, Trash
 A text or video customer statement collected through a Submission or migrated through a Testimonial Import, held by the Brand as private proof or selected for public display.
 _Avoid_: Review, Quote, Proof when referring to one record
 
+**Google Connection**:
+The Owner-authorized link between a Project and Google Business Profile, used to
+read the reviews of businesses they manage. Google reviews remain a private
+external source and do not become Testimonials.
+_Avoid_: Testimonial Import, Submission
+
 **Testimonial Import**:
 A migration of existing customer statements from a supplied source page into a Project. Imported Testimonials enter Pending; importing does not publish them.
 _Avoid_: Submission, Collection when referring to migrated proof

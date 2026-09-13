@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { ImportIdentityDialog } from "./import-identity-dialog";
+import type { ConnectorPanel } from "../review-connectors/types";
 import { DesignQuote } from "./designs/design-parts";
 
 function canSelect(item: Doc<"testimonialImportItems">, videoEnabled = false) {
@@ -242,9 +243,13 @@ export function TestimonialImportView({
   resultDetails,
   selectionReview,
   backupImport,
+  connectors = [],
+  initialConnector,
   checkingSelection = false,
 }: {
   backupImport?: ReactNode;
+  connectors?: ConnectorPanel[];
+  initialConnector?: string | null;
   slug: string;
   jobId: Id<"testimonialImportJobs"> | null;
   provider: "testimonial-to" | "senja";
@@ -285,6 +290,10 @@ export function TestimonialImportView({
   selectionReview?: FunctionReturnType<typeof api.importEligibility.selection>;
   checkingSelection?: boolean;
 }) {
+  const [connectorId, setConnectorId] = useState(initialConnector);
+  const activeConnector = connectors.find(
+    (connector) => connector.id === connectorId,
+  );
   const [backupMode, setBackupMode] = useState(false);
   const [editingItem, setEditingItem] =
     useState<Doc<"testimonialImportItems"> | null>(null);
@@ -404,10 +413,13 @@ export function TestimonialImportView({
           >
             <Button
               variant="outline"
-              aria-pressed={!backupMode && provider === "testimonial-to"}
+              aria-pressed={
+                !activeConnector && !backupMode && provider === "testimonial-to"
+              }
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
+                setConnectorId(null);
                 setBackupMode(false);
                 setProvider("testimonial-to");
               }}
@@ -416,28 +428,46 @@ export function TestimonialImportView({
             </Button>
             <Button
               variant="outline"
-              aria-pressed={!backupMode && provider === "senja"}
+              aria-pressed={
+                !activeConnector && !backupMode && provider === "senja"
+              }
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
+                setConnectorId(null);
                 setBackupMode(false);
                 setProvider("senja");
               }}
             >
               Senja
             </Button>
+            {connectors.map((connector) => (
+              <Button
+                key={connector.id}
+                variant="outline"
+                aria-pressed={connector.id === activeConnector?.id}
+                onClick={() => setConnectorId(connector.id)}
+              >
+                {connector.label}
+              </Button>
+            ))}
             {backupImport ? (
               <Button
                 variant="outline"
-                aria-pressed={backupMode}
+                aria-pressed={!activeConnector && backupMode}
                 className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
-                onClick={() => setBackupMode(true)}
+                onClick={() => {
+                  setConnectorId(null);
+                  setBackupMode(true);
+                }}
               >
                 Get Some Proof backup
               </Button>
             ) : null}
           </div>
-          {backupMode ? (
+          {activeConnector ? (
+            activeConnector.content
+          ) : backupMode ? (
             backupImport
           ) : (
             <form

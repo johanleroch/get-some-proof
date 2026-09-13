@@ -7,10 +7,13 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
   await page
     .getByRole("button", { name: "Create widget", exact: true })
     .click();
+  const narrow = (page.viewportSize()?.width ?? 1440) < 1024;
   await page
     .getByRole("button", { name: /Individual testimonial.*One voice/s })
     .click();
-  if ((page.viewportSize()?.width ?? 1440) < 1024)
+  // Narrow viewports open the editor on its preview side, with the settings
+  // column behind the Edit / Preview toggle.
+  if (narrow)
     await page
       .getByRole("button", { name: "Edit widget", exact: true })
       .click();
@@ -18,7 +21,7 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
   await page.getByRole("button", { name: "Edit selection" }).click();
   await page.getByRole("checkbox", { name: "Select Maya Laurent" }).check();
   await page.getByRole("button", { name: "Done", exact: true }).click();
-  if ((page.viewportSize()?.width ?? 1440) < 1024)
+  if (narrow)
     await page
       .getByRole("button", { name: "Preview widget", exact: true })
       .click();
@@ -32,7 +35,7 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   const code = await page
-    .getByLabel("Embed code", { exact: true })
+    .getByRole("region", { name: "Embed code", exact: true })
     .textContent();
   expect(code).toContain("data-gsp-widget=");
   await page.keyboard.press("Escape");

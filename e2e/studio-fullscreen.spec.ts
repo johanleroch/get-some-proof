@@ -13,6 +13,8 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
       },
     });
   });
+  // This fixture owns its editor/list shell. A production widget query would
+  // keep the outer shell in editor mode after the fixture returns to its list.
   await page.goto("/kit/studio");
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -20,15 +22,21 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
     const button = dialog.getByRole("button", { name: label, exact: true });
     await button.click();
     await expect(button).toHaveAttribute("data-copy-state", "copied");
-    await expect(page.locator("[data-sonner-toast]").first()).toContainText(
-      "Copied to clipboard.",
-    );
+    // Publishing leaves its own toast on screen, so match the copy one.
+    await expect(
+      page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: "Copied to clipboard." }),
+    ).toBeVisible();
     const value = await page.locator("html").getAttribute("data-copied-value");
     expect(value).toContain(
       label === "Copy link" ? "/widgets/" : "data-gsp-widget=",
     );
     await expect(button).toHaveAttribute("data-copy-state", "idle");
   }
+  // The toast is the only confirmation: the editor keeps no inline status of
+  // its own. `not.toContainText` cannot express that, since it fails on a
+  // missing element rather than passing.
   await expect(
     page
       .locator('[data-slot="studio-editor"] > [role="status"]')
@@ -56,6 +64,7 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
 test("Studio fills the viewport and keeps editing and preview accessible", async ({
   page,
 }, testInfo) => {
+  // The fixture owns the editor/list shell and starts with its editor open.
   await page.goto("/kit/studio");
   await expect(
     page.getByRole("heading", { name: "Homepage proof" }),
@@ -122,6 +131,9 @@ test("Studio fills the viewport and keeps editing and preview accessible", async
   await page
     .getByRole("button", { name: "Back to Studio", exact: true })
     .click();
+  // Leaving the editor lands back on the widget list. (The shell only drops
+  // the workspace layout when the real route clears `?widget=`, which the
+  // fixture keeps, so the sidebar is not what proves we left.)
   await expect(
     page.getByRole("heading", { name: "Studio", exact: true }),
   ).toBeVisible();

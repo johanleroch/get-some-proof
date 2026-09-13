@@ -81,7 +81,7 @@ for (const screen of selectedScreens) {
     if (fixtureMode && screen.slug === "account-security-error") {
       await page.route("**/api/auth/**", async (route) => {
         const pathname = new URL(route.request().url()).pathname;
-        if (pathname.endsWith("/two-factor/enable")) {
+        if (pathname.endsWith("/revoke-other-sessions")) {
           await route.fulfill({
             status: 403,
             json: { code: "SESSION_NOT_FRESH" },
@@ -92,7 +92,17 @@ for (const screen of selectedScreens) {
           json: pathname.endsWith("/list-accounts")
             ? [{ providerId: "credential" }]
             : pathname.endsWith("/list-sessions")
-              ? []
+              ? [
+                  {
+                    id: "session-1",
+                    token: "other-session-token",
+                    createdAt: "2026-08-30T10:00:00.000Z",
+                    updatedAt: "2026-08-30T11:00:00.000Z",
+                    expiresAt: "2026-09-06T10:00:00.000Z",
+                    ipAddress: "127.0.0.1",
+                    userAgent: "Mozilla/5.0 (Macintosh)",
+                  },
+                ]
               : null,
         });
       });
@@ -127,8 +137,9 @@ for (const screen of selectedScreens) {
       );
     }
     if (fixtureMode && screen.slug === "account-security-error") {
-      await page.getByLabel("Current password").fill("synthetic-password");
-      await page.getByRole("button", { name: "Enable 2FA" }).click();
+      await page
+        .getByRole("button", { name: "Revoke every other Session" })
+        .click();
       await expect(page.locator("[data-sonner-toast]")).toContainText(
         "This security action needs a recent sign-in.",
       );
