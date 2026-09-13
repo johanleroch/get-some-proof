@@ -406,11 +406,24 @@ pages still start at the top and scroll normally.
   size, and the blob peeking over the bottom right corner, big (128px,
   starstruck, tilted 8 degrees left, cropped by the panel as on
   `/templates`, its eyes well inside the card). It never says "Free plan":
-  the sale says it. A Pro Account shows a matching amber poster, "You're Pro!",
-  with the animated blob at 104px in the upper-right corner and account-wide
-  usage: stored videos, reserved slots, remaining video capacity, text
-  testimonials, and Projects. It has no billing link (founder request,
-  2026-09-12). Bounded totals carry a visible plus sign; missing usage never
+  the sale says it. A Pro Account sells nothing, so its usage is not a card at
+  all: it sits on the sidebar's own paper as the last line before the user
+  row, at the navigation's inset (12px inside the footer's 8px). It opens on
+  no title at all — a caption over labelled rows only announces that a block
+  exists, and the plan is named on the dashboard's own plan panel (chosen by
+  the founder on 2026-09-13 over a Pro tag, a scope sentence and a signature
+  line). Three labelled rows share one right-hand
+  column of mono tabular figures — "Videos", capped, carrying the amber quota
+  bar on `--surface-2` that measures it, then Text Testimonials and Projects,
+  uncapped and simply counted. The row label is what gives the limit its unit
+  (25 videos, not 25 of something), and one `small` line in `--ink-3` under
+  the bar carries what a figure cannot: the slots left, the ones held while a
+  video processes, and "Storage full — delete a video to free a slot" when
+  there are none. The stored count includes the held slots, exactly as the
+  bar does. No title, no blob, no sale, no billing link (founder request,
+  2026-09-12); chosen by the founder on 2026-09-13 from four drafts (rows,
+  one number, tinted strip, footnote), then four ways of grouping the rows.
+  Bounded totals carry a visible plus sign; missing usage never
   appears as zero. Two things move
   on the Free card, the founder's call: the
   blob's eyes change every few seconds (starstruck to happy and back, the
@@ -871,9 +884,10 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
-  (`AnimatedBlob`), one per screen. The sidebar's plan card is the founder's
-  exception (section 6): its blob changes face every few seconds and a light
-  sweeps its button, both still under reduced motion. The preview-only
+  (`AnimatedBlob`), one per screen. The sidebar's Free plan card is the
+  founder's exception (section 6): its blob changes face every few seconds
+  and a light sweeps its button, both still under reduced motion. The Pro
+  Account's usage lines hold still: nothing there is being sold. The preview-only
   marquee is a narrow
   exception: it may scroll continuously, with a visible Pause animation /
   Resume animation control whose pause persists after focus and hover leave.

@@ -919,7 +919,7 @@ export function KitPage() {
               <Badge variant="neutral">Draft</Badge>
               <Badge variant="outline">12 proofs</Badge>
             </div>
-            <div className="bg-sidebar mt-6 max-w-[17rem] rounded-lg">
+            <div className="bg-sidebar border-line mt-6 max-w-[17rem] rounded-lg border p-2">
               <SidebarProPlanCard
                 usage={{
                   readyVideos: 8,
