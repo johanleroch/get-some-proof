@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useCallback, useState } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { GoogleBusinessView, type GooglePage } from "./google-business-view";
+import { GoogleBusinessView } from "./google-business-view";
+import { useReviewBrowser } from "../review-connectors/use-review-browser";
+import type { ReviewRead } from "../review-connectors/types";
 import { BlobLoader } from "@/components/brand/blob-loader";
 
 function message(error: unknown) {
@@ -38,42 +40,79 @@ function Connection({
   connected,
   configured,
   disconnecting,
+  notifications,
+  notificationsConfigured,
 }: {
   organizationId: Id<"organizations">;
   connected: boolean;
   configured: boolean;
   disconnecting: boolean;
+  notificationsConfigured: boolean;
+  notifications: {
+    account: string;
+    location: string;
+    revision: number;
+    lastEventAt: number | null;
+  } | null;
 }) {
   const connect = useAction(api.googleBusinessActions.connect);
   const disconnect = useAction(api.googleBusinessActions.disconnect);
   const read = useAction(api.googleBusinessActions.read);
   const [busy, setBusy] = useState(false);
-  const [selection, setSelection] = useState<{
-    account?: string;
-    location?: string;
-  }>({});
-  const [page, setPage] = useState<GooglePage | null>(null);
+  const enableUpdates = useAction(
+    api.googleBusinessNotificationsActions.enable,
+  );
+  const disableUpdates = useMutation(api.googleBusinessNotifications.disable);
+  const readPage = useCallback(
+    ({ selection, cursor }: ReviewRead) =>
+      read({
+        organizationId,
+        account: selection[0],
+        location: selection[1],
+        pageToken: cursor,
+      }),
+    [organizationId, read],
+  );
+  const browser = useReviewBrowser({
+    connected,
+    read: readPage,
+    update: notifications
+      ? {
+          selection: [notifications.account, notifications.location],
+          revision: notifications.revision,
+        }
+      : null,
+    onError: (error) => toast.error(message(error)),
+  });
+  const account = browser.selection?.[0];
+  const location = browser.selection?.[1];
   async function perform(
-    operation: "connect" | "disconnect" | "read",
-    request: { account?: string; location?: string; pageToken?: string } = {},
+    operation: "connect" | "disconnect" | "enable" | "disable",
   ) {
     setBusy(true);
     try {
       if (operation === "connect") {
         window.location.assign(await connect({ organizationId }));
       } else if (operation === "disconnect") {
-        setPage(null);
+        browser.clear();
         const result = await disconnect({ organizationId });
         if (result.revoked) toast.success("Google disconnected.");
         else
           toast.error(
             "Disconnected here. Remove access in your Google Account's Connections page to finish revoking permission.",
           );
-      } else {
-        setPage(null);
-        const result = await read({ organizationId, ...request });
-        setSelection({ account: request.account, location: request.location });
-        setPage(result);
+      } else if (operation === "enable" && account && location) {
+        await enableUpdates({
+          organizationId,
+          account,
+          location,
+          replaceExisting: true,
+        });
+        browser.select({ selection: [account, location] });
+        toast.success("Automatic Google updates enabled.");
+      } else if (operation === "disable") {
+        await disableUpdates({ organizationId });
+        toast.success("Automatic updates turned off for this project.");
       }
     } catch (error) {
       toast.error(message(error));
@@ -86,14 +125,26 @@ function Connection({
       {...{
         connected,
         configured,
-        busy: busy || disconnecting,
-        page,
-        ...selection,
+        busy: busy || browser.reading || disconnecting,
+        notifications,
+        notificationsConfigured,
+        page: browser.page,
+        account,
+        location,
       }}
       onConnect={() => void perform("connect")}
       onDisconnect={() => void perform("disconnect")}
-      onRead={(account, location, pageToken) =>
-        void perform("read", { account, location, pageToken })
+      onEnableNotifications={() => void perform("enable")}
+      onDisableNotifications={() => void perform("disable")}
+      onRead={(account, location, cursor) =>
+        browser.select({
+          selection: account
+            ? location
+              ? [account, location]
+              : [account]
+            : [],
+          cursor,
+        })
       }
     />
   );

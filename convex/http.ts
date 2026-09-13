@@ -1,3 +1,4 @@
+import { receive as receiveGooglePush } from "./googleBusinessPubsub";
 import { receivePart } from "./assistantUploads";
 import { httpRouter } from "convex/server";
 import { registerRoutes } from "@convex-dev/stripe";
@@ -26,6 +27,11 @@ import {
 } from "./importOAuth";
 
 const http = httpRouter();
+http.route({
+  method: "POST",
+  path: "/google-business/pubsub",
+  handler: receiveGooglePush,
+});
 http.route({
   method: "POST",
   path: "/api/import-mcp/assistant-batch",

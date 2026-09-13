@@ -1,5 +1,5 @@
 "use client";
-import { GoogleBusiness } from "./google-business";
+import { reviewConnectorPanels } from "../review-connectors/registry";
 import { BackupImport } from "./backup-import";
 import { ImportPhotoProgress } from "./import-photo-progress";
 import { useRef, useState } from "react";
@@ -175,8 +175,8 @@ export function TestimonialImport({
   if (!organization) return <p role="alert">Project unavailable.</p>;
   return (
     <TestimonialImportView
-      googleConnection={<GoogleBusiness organizationId={organization.id} />}
-      initialGoogle={initialSource === "google"}
+      connectors={reviewConnectorPanels(organization.id)}
+      initialConnector={initialSource}
       backupImport={<BackupImport organizationId={organization.id} />}
       resultDetails={
         <ImportPhotoProgress

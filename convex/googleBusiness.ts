@@ -23,6 +23,16 @@ export const status = query({
     connected: v.boolean(),
     disconnecting: v.boolean(),
     configured: v.boolean(),
+    notificationsConfigured: v.boolean(),
+    notifications: v.union(
+      v.null(),
+      v.object({
+        account: v.string(),
+        location: v.string(),
+        revision: v.number(),
+        lastEventAt: v.union(v.number(), v.null()),
+      }),
+    ),
     generation: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
@@ -38,6 +48,25 @@ export const status = query({
       )
       .unique();
     return {
+      notificationsConfigured: !!(
+        env.GOOGLE_BUSINESS_PUBSUB_TOPIC &&
+        env.GOOGLE_BUSINESS_PUBSUB_SUBSCRIPTION &&
+        env.GOOGLE_BUSINESS_PUBSUB_AUDIENCE &&
+        env.GOOGLE_BUSINESS_PUBSUB_SERVICE_ACCOUNT_EMAIL
+      ),
+      notifications:
+        row?.notificationAccount &&
+        row.notificationLocation &&
+        row.encryptedRefreshToken &&
+        row.ownerId === access.principal.actorId &&
+        !row.disconnectingUntil
+          ? {
+              account: row.notificationAccount,
+              location: row.notificationLocation,
+              revision: row.notificationRevision ?? 0,
+              lastEventAt: row.notificationLastEventAt ?? null,
+            }
+          : null,
       disconnecting: row?.disconnectingUntil !== undefined,
       connected:
         !!row?.encryptedRefreshToken &&
@@ -90,6 +119,12 @@ export const begin = internalMutation({
         row?.ownerId === principal.actorId
           ? row.encryptedRefreshToken
           : undefined,
+      notificationOperation: undefined,
+      notificationAccount: undefined,
+      notificationLocation: undefined,
+      notificationRevision: undefined,
+      notificationLastEventAt: undefined,
+      notificationEnabledAt: undefined,
       ownerId: principal.actorId,
       expiresAt: Date.now() + 10 * 60_000,
       updatedAt: Date.now(),
@@ -188,6 +223,12 @@ export const save = internalMutation({
       stale();
     await ctx.db.patch(row._id, {
       encryptedRefreshToken: args.encryptedRefreshToken,
+      notificationOperation: undefined,
+      notificationAccount: undefined,
+      notificationLocation: undefined,
+      notificationRevision: undefined,
+      notificationLastEventAt: undefined,
+      notificationEnabledAt: undefined,
       updatedAt: Date.now(),
     });
     return null;
@@ -226,6 +267,12 @@ export const startDisconnect = internalMutation({
       stale();
     await ctx.db.patch(row._id, {
       encryptedRefreshToken: undefined,
+      notificationOperation: undefined,
+      notificationAccount: undefined,
+      notificationLocation: undefined,
+      notificationRevision: undefined,
+      notificationLastEventAt: undefined,
+      notificationEnabledAt: undefined,
       stateHash: undefined,
       verifier: undefined,
       expiresAt: undefined,

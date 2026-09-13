@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { ImportIdentityDialog } from "./import-identity-dialog";
+import type { ConnectorPanel } from "../review-connectors/types";
 import { DesignQuote } from "./designs/design-parts";
 
 function canSelect(item: Doc<"testimonialImportItems">, videoEnabled = false) {
@@ -242,13 +243,13 @@ export function TestimonialImportView({
   resultDetails,
   selectionReview,
   backupImport,
-  googleConnection,
-  initialGoogle = false,
+  connectors = [],
+  initialConnector,
   checkingSelection = false,
 }: {
   backupImport?: ReactNode;
-  googleConnection?: ReactNode;
-  initialGoogle?: boolean;
+  connectors?: ConnectorPanel[];
+  initialConnector?: string | null;
   slug: string;
   jobId: Id<"testimonialImportJobs"> | null;
   provider: "testimonial-to" | "senja";
@@ -289,7 +290,10 @@ export function TestimonialImportView({
   selectionReview?: FunctionReturnType<typeof api.importEligibility.selection>;
   checkingSelection?: boolean;
 }) {
-  const [googleMode, setGoogleMode] = useState(initialGoogle);
+  const [connectorId, setConnectorId] = useState(initialConnector);
+  const activeConnector = connectors.find(
+    (connector) => connector.id === connectorId,
+  );
   const [backupMode, setBackupMode] = useState(false);
   const [editingItem, setEditingItem] =
     useState<Doc<"testimonialImportItems"> | null>(null);
@@ -410,12 +414,12 @@ export function TestimonialImportView({
             <Button
               variant="outline"
               aria-pressed={
-                !googleMode && !backupMode && provider === "testimonial-to"
+                !activeConnector && !backupMode && provider === "testimonial-to"
               }
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
-                setGoogleMode(false);
+                setConnectorId(null);
                 setBackupMode(false);
                 setProvider("testimonial-to");
               }}
@@ -424,33 +428,36 @@ export function TestimonialImportView({
             </Button>
             <Button
               variant="outline"
-              aria-pressed={!googleMode && !backupMode && provider === "senja"}
+              aria-pressed={
+                !activeConnector && !backupMode && provider === "senja"
+              }
               className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
               disabled={loading}
               onClick={() => {
-                setGoogleMode(false);
+                setConnectorId(null);
                 setBackupMode(false);
                 setProvider("senja");
               }}
             >
               Senja
             </Button>
-            {googleConnection ? (
+            {connectors.map((connector) => (
               <Button
+                key={connector.id}
                 variant="outline"
-                aria-pressed={googleMode}
-                onClick={() => setGoogleMode(true)}
+                aria-pressed={connector.id === activeConnector?.id}
+                onClick={() => setConnectorId(connector.id)}
               >
-                Google Business Profile
+                {connector.label}
               </Button>
-            ) : null}
+            ))}
             {backupImport ? (
               <Button
                 variant="outline"
-                aria-pressed={!googleMode && backupMode}
+                aria-pressed={!activeConnector && backupMode}
                 className="aria-pressed:bg-brand-soft aria-pressed:border-brand-soft-2 aria-pressed:font-semibold"
                 onClick={() => {
-                  setGoogleMode(false);
+                  setConnectorId(null);
                   setBackupMode(true);
                 }}
               >
@@ -458,8 +465,8 @@ export function TestimonialImportView({
               </Button>
             ) : null}
           </div>
-          {googleMode ? (
-            googleConnection
+          {activeConnector ? (
+            activeConnector.content
           ) : backupMode ? (
             backupImport
           ) : (

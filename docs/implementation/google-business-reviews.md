@@ -1,5 +1,8 @@
 # Google Business Profile connection
 
+Connector architecture and the next-provider procedure are described in
+[Connected review providers](review-connectors.md).
+
 ## Problem and decisions
 
 A client wants to connect their Google My Business reviews. The Owner can connect
@@ -29,7 +32,7 @@ the visible connection view. Existing unrelated Stripe changes are excluded.
 The last two criteria require external evidence and remain open; mock tests do
 not certify them. No live connection or public redistribution is promised by this
 implementation. Replies, profile edits, scraping, Places fallback, scheduled
-sync and native testimonial conversion are out of scope.
+polling and native testimonial conversion are out of scope.
 
 ## Source evidence (checked 2026-09-12)
 
@@ -86,3 +89,53 @@ connection copy, shared embed-code block, and Studio application shell. Layout
 tests retain overflow, scrolling, and available-width checks. Crop export tests
 accept the browser's PNG fallback while still asserting transparent pixel data.
 Standards and Spec review requested stronger layout assertions; both were applied.
+
+## Automatic review notifications (2026-09-13)
+
+The Owner explicitly requested Pub/Sub updates and accepted replacement of another
+tool's Google notification destination when the user is warned first. The
+activation dialog explains the account-wide effect and changes no Google reviews.
+The backend requires the replacement acknowledgement before its PATCH. Automatic
+updates are enabled for one selected location per Project. Enabling another
+location changes that Project's selection. Reconnecting Google requires enabling
+updates again, so a different Google identity never inherits the subscription.
+
+Google publishes NEW_REVIEW and UPDATED_REVIEW to the application's Cloud Pub/Sub
+topic. An authenticated push subscription calls the Convex HTTP endpoint
+`/google-business/pubsub`. Verify the Google signature, expiry, issuer, exact
+audience, verified service-account email and expected subscription before accepting
+routing metadata. Duplicates are ignored for seven days; bounded scheduled batches
+notify matching active connections. Failed database writes are not acknowledged,
+so Pub/Sub retries. No review text, stars or reviewer identity is persisted.
+
+An open review list observes a reactive revision, coalesces event bursts and loads
+the current Google reviews again, starting at the first page. Reopening a Project
+with updates enabled loads its saved location. Turning updates off or disconnecting
+stops delivery to this Project. Turning off does not clear the Google account's
+shared topic because other Projects can still use it. Notifications for locations
+without an active listener are acknowledged without persisting metadata. This is
+not an offline archive or public testimonial import.
+
+### Additional deployment configuration
+
+All four values belong to the selected Convex deployment and are non-secret:
+
+- `GOOGLE_BUSINESS_PUBSUB_TOPIC`: full topic resource in the approved Google Cloud project.
+- `GOOGLE_BUSINESS_PUBSUB_SUBSCRIPTION`: full authenticated push subscription resource.
+- `GOOGLE_BUSINESS_PUBSUB_AUDIENCE`: the exact HTTPS Convex push endpoint URL.
+- `GOOGLE_BUSINESS_PUBSUB_SERVICE_ACCOUNT_EMAIL`: dedicated push identity; verify email_verified.
+
+Enable the My Business Notifications API and Cloud Pub/Sub API. Grant
+`mybusiness-api-pubsub@system.gserviceaccount.com` Pub/Sub Publisher on the topic.
+Configure the subscription with the dedicated push identity and exact audience;
+grant the Pub/Sub service agent permission to mint its ID tokens. Configure a
+dead-letter topic and a bounded retry policy for poison messages. Initial Business
+Profile approval/OAuth credentials and a real signed Google notification are still
+external certification requirements; local signing tests are not provider approval.
+
+Sources checked 2026-09-13:
+
+- [Google notification setup](https://developers.google.com/my-business/content/notification-setup)
+- [Account-wide notification setting](https://developers.google.com/my-business/reference/notifications/rest/v1/NotificationSetting)
+- [Pub/Sub push authentication](https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions)
+- [Pub/Sub HTTP delivery and acknowledgements](https://docs.cloud.google.com/pubsub/docs/push)

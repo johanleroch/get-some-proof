@@ -4,10 +4,24 @@ import { GoogleBusinessView } from "@/components/testimonials/google-business-vi
 
 export function GoogleBusinessFixture() {
   const [connected, setConnected] = useState(true);
+  const [updates, setUpdates] = useState(false);
   return (
     <main className="mx-auto w-full max-w-3xl p-6 md:p-10">
       <GoogleBusinessView
         configured
+        notificationsConfigured
+        notifications={
+          updates
+            ? {
+                account: "accounts/123",
+                location: "locations/456",
+                revision: 0,
+                lastEventAt: null,
+              }
+            : null
+        }
+        onEnableNotifications={() => setUpdates(true)}
+        onDisableNotifications={() => setUpdates(false)}
         connected={connected}
         busy={false}
         account="accounts/123"

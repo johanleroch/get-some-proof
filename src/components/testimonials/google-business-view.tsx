@@ -11,6 +11,8 @@ import {
 import { Sparkle } from "@/components/doodles";
 import { Stars } from "@/components/templates/template-primitives";
 import { sourceIcons } from "./source-icons";
+import { GoogleNotificationsView } from "./google-business-notifications-view";
+import { ReviewList } from "../review-connectors/review-list";
 import { Button } from "@/components/ui/button";
 
 export type GooglePage = {
@@ -26,6 +28,15 @@ export type GooglePage = {
   averageRating?: number;
 };
 export type GoogleViewProps = {
+  notificationsConfigured?: boolean;
+  notifications?: {
+    account: string;
+    location: string;
+    revision: number;
+    lastEventAt: number | null;
+  } | null;
+  onEnableNotifications?: () => void;
+  onDisableNotifications?: () => void;
   configured: boolean;
   connected: boolean;
   busy: boolean;
@@ -38,6 +49,10 @@ export type GoogleViewProps = {
 };
 
 export function GoogleBusinessView({
+  notificationsConfigured = false,
+  notifications,
+  onEnableNotifications,
+  onDisableNotifications,
   configured,
   connected,
   busy,
@@ -130,6 +145,21 @@ export function GoogleBusinessView({
               </Button>
             )}
           </div>
+          {account &&
+            location &&
+            onEnableNotifications &&
+            onDisableNotifications && (
+              <GoogleNotificationsView
+                configured={notificationsConfigured}
+                enabled={
+                  notifications?.account === account &&
+                  notifications.location === location
+                }
+                busy={busy}
+                onEnable={onEnableNotifications}
+                onDisable={onDisableNotifications}
+              />
+            )}
           {page && (
             <GoogleResults {...{ page, account, location, busy, onRead }} />
           )}
@@ -194,12 +224,26 @@ function GoogleResults({
             : "No accessible results. Check that this Google account manages a verified business."}
         </p>
       )}
-      <ul className="divide-border divide-y">
-        {page.items.map((entry) => (
-          <li key={entry.name} className="py-4">
-            {location ? (
-              <GoogleReview entry={entry} />
-            ) : (
+      {location ? (
+        <ReviewList
+          reviews={page.items.map((entry) => ({
+            id: entry.name,
+            author: entry.title,
+            body: entry.comment,
+            stars: ratingLabels[entry.rating ?? ""],
+            updatedAt: entry.updatedAt,
+          }))}
+          source={
+            <>
+              <GoogleMark className="size-4" />
+              Google
+            </>
+          }
+        />
+      ) : (
+        <ul className="divide-border divide-y">
+          {page.items.map((entry) => (
+            <li key={entry.name} className="py-4">
               <Button
                 variant="ghost"
                 className="h-auto max-w-full text-left whitespace-normal"
@@ -210,10 +254,10 @@ function GoogleResults({
               >
                 {entry.title}
               </Button>
-            )}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
       {page.nextPageToken && (
         <Button
           variant="outline"
@@ -228,33 +272,13 @@ function GoogleResults({
   );
 }
 
-const ratingLabels: Record<string, string> = {
-  ONE: "1",
-  TWO: "2",
-  THREE: "3",
-  FOUR: "4",
-  FIVE: "5",
+const ratingLabels: Record<string, number> = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+  FOUR: 4,
+  FIVE: 5,
 };
-function GoogleReview({ entry }: { entry: GooglePage["items"][number] }) {
-  const rating = ratingLabels[entry.rating ?? ""];
-  return (
-    <article className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold">{entry.title}</p>
-        <div className="flex items-center gap-3">
-          {rating && <Stars rating={Number(rating)} className="text-brand" />}
-          <span className="type-small text-ink-2 inline-flex items-center gap-1.5">
-            <GoogleMark className="size-4" />
-            Google
-          </span>
-        </div>
-      </div>
-      <p className="type-body max-w-prose whitespace-pre-wrap">
-        {entry.comment || "Rating only"}
-      </p>
-    </article>
-  );
-}
 
 function GoogleMark({ className }: { className: string }) {
   return (
