@@ -13,12 +13,8 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastDismiss: vi.fn(),
   push: vi.fn(),
-  enable: vi.fn(),
-  disable: vi.fn(),
-  generateBackupCodes: vi.fn(),
   listSessions: vi.fn(),
   listAccounts: vi.fn(),
-  verifyTotp: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
   revokeOtherSessions: vi.fn(),
@@ -55,12 +51,6 @@ vi.mock("@/lib/auth-client", () => ({
     listAccounts: mocks.listAccounts,
     revokeSession: mocks.revokeSession,
     revokeOtherSessions: mocks.revokeOtherSessions,
-    twoFactor: {
-      enable: mocks.enable,
-      verifyTotp: mocks.verifyTotp,
-      disable: mocks.disable,
-      generateBackupCodes: mocks.generateBackupCodes,
-    },
   },
 }));
 
@@ -75,10 +65,6 @@ describe("AccountSecurity", () => {
       data: [{ providerId: "credential" }],
       error: null,
     });
-    mocks.verifyTotp.mockResolvedValue({ data: { status: true }, error: null });
-    mocks.enable.mockReset();
-    mocks.disable.mockReset();
-    mocks.generateBackupCodes.mockReset();
     mocks.revokeSession.mockReset();
     mocks.revokeOtherSessions.mockReset();
     mocks.replace.mockReset();
@@ -106,92 +92,36 @@ describe("AccountSecurity", () => {
     mocks.revokeOtherSessions.mockResolvedValue({ data: null, error: null });
   });
 
-  it.each([
-    [
-      { code: "INVALID_PASSWORD" },
-      "That password is incorrect. Enter your current account password and try again.",
-    ],
-    [
-      { code: "SESSION_NOT_FRESH" },
-      "Sign in again to continue. This security action needs a recent sign-in.",
-    ],
-    [
-      { status: 401 },
-      "Sign in again to continue. This security action needs a recent sign-in.",
-    ],
-    [
-      { status: 429 },
-      "Too many attempts. Wait a few minutes before trying again.",
-    ],
-    [
-      { status: 500, message: "Internal database failure" },
-      "We couldn’t start two-factor setup. Please try again in a moment.",
-    ],
-    [{}, "We couldn’t start two-factor setup. Please try again in a moment."],
-  ])(
-    "shows a helpful setup error in the branded toast (%j)",
-    async (error, message) => {
-      mocks.enable.mockResolvedValue({ data: null, error });
-      render(<AccountSecurity />);
-      fireEvent.change(await screen.findByLabelText("Current password"), {
-        target: { value: "account-password" },
-      });
-      fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-      await waitFor(() =>
-        expect(mocks.toastError).toHaveBeenCalledWith(
-          message,
-          expect.any(Object),
-        ),
-      );
-      expect(screen.queryByRole("alert")).toBeNull();
-      expect(mocks.toastDismiss).not.toHaveBeenCalled();
-      expect(screen.queryByLabelText("Authenticator code")).toBeNull();
-      if (
-        ("status" in error && error.status === 401) ||
-        ("code" in error && error.code === "SESSION_NOT_FRESH")
-      ) {
-        const options = mocks.toastError.mock.calls.at(-1)![1];
-        expect(options.action.label).toBe("Sign in again");
-        options.action.onClick();
-        expect(mocks.push).toHaveBeenCalledWith(
-          "/sign-in?callbackURL=%2Faccount%2Fsecurity",
-        );
-      }
-      // Identical failures on a second attempt must notify again.
-      fireEvent.change(screen.getByLabelText("Current password"), {
-        target: { value: "account-password" },
-      });
-      fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-      await waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(2));
-    },
-  );
+  it("invites an Owner without a second step to set one up", async () => {
+    render(<AccountSecurity />);
+    const link = await screen.findByRole("link", { name: "Set up" });
+    expect(link).toHaveAttribute("href", "/account/security/authenticator");
+    expect(screen.getByText(/Off\./)).toBeInTheDocument();
+    // The setup itself never happens here.
+    expect(screen.queryByLabelText("Current password")).toBeNull();
+  });
 
-  it("shows recovery codes once after password-reauthenticated 2FA setup", async () => {
-    mocks.enable.mockResolvedValue({
-      data: {
-        totpURI: "otpauth://totp/Convex%20Admin",
-        backupCodes: ["code-one", "code-two"],
-      },
+  it("sends an Owner who already has a second step to manage it", async () => {
+    mocks.twoFactorEnabled = true;
+    render(<AccountSecurity />);
+    expect(
+      await screen.findByRole("link", { name: "Manage authenticator" }),
+    ).toHaveAttribute("href", "/account/security/authenticator");
+    expect(screen.getByText(/^On\./)).toBeInTheDocument();
+  });
+
+  it("says an external provider carries the second step", async () => {
+    mocks.listAccounts.mockResolvedValue({
+      data: [{ providerId: "google" }],
       error: null,
     });
     render(<AccountSecurity />);
-
-    fireEvent.change(await screen.findByLabelText("Current password"), {
-      target: { value: "correct horse battery staple" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-
-    expect(await screen.findByText("code-one")).toBeInTheDocument();
-    expect(mocks.toastDismiss).toHaveBeenCalledWith("account-security-error");
-    expect(screen.getByText("code-two")).toBeInTheDocument();
-    expect(mocks.enable).toHaveBeenCalledWith({
-      password: "correct horse battery staple",
-      issuer: "Get Some Proof",
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "I saved these codes" }),
-    );
-    expect(screen.queryByText("code-one")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/external sign-in provider carries/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Manage authenticator" }),
+    ).toBeInTheDocument();
   });
 
   it("clears a previous security error before leaving a revoked current session", async () => {
@@ -216,74 +146,6 @@ describe("AccountSecurity", () => {
     });
   });
 
-  it("explains Google security instead of asking a Google-only user for a password", async () => {
-    mocks.listAccounts.mockResolvedValue({
-      data: [{ providerId: "google" }],
-      error: null,
-    });
-    render(<AccountSecurity />);
-    expect(
-      await screen.findByRole("link", { name: "Manage Google security" }),
-    ).toHaveAttribute("href", "https://myaccount.google.com/security");
-    expect(screen.queryByLabelText("Current password")).toBeNull();
-  });
-
-  it("requires TOTP confirmation for a linked password and Google account", async () => {
-    mocks.listAccounts.mockResolvedValue({
-      data: [{ providerId: "google" }, { providerId: "credential" }],
-      error: null,
-    });
-    mocks.enable.mockResolvedValue({
-      data: {
-        totpURI: "otpauth://totp/Test?secret=TESTKEY",
-        backupCodes: ["code-one"],
-      },
-      error: null,
-    });
-    render(<AccountSecurity />);
-    fireEvent.change(await screen.findByLabelText("Current password"), {
-      target: { value: "account-password" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-    expect(
-      await screen.findByLabelText("Authenticator code"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Two-factor authentication enabled.")).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { name: "I saved these codes" }),
-    );
-    expect(screen.getByLabelText("Authenticator code")).toBeInTheDocument();
-    mocks.verifyTotp.mockResolvedValueOnce({
-      data: null,
-      error: { code: "INVALID_CODE", message: "Invalid code" },
-    });
-    fireEvent.change(screen.getByLabelText("Authenticator code"), {
-      target: { value: "000000" },
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Verify and enable 2FA" }),
-    );
-    await waitFor(() =>
-      expect(mocks.toastError).toHaveBeenCalledWith(
-        "That code is incorrect or has expired. Enter the latest code from your authenticator app.",
-        expect.any(Object),
-      ),
-    );
-    expect(screen.getByLabelText("Authenticator code")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Authenticator code"), {
-      target: { value: "123456" },
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Verify and enable 2FA" }),
-    );
-    await waitFor(() =>
-      expect(mocks.verifyTotp).toHaveBeenCalledWith({ code: "123456" }),
-    );
-    await waitFor(() =>
-      expect(screen.queryByLabelText("Authenticator code")).toBeNull(),
-    );
-  });
-
   it("allows retrying a failed sessions request", async () => {
     mocks.listSessions.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     render(<AccountSecurity />);
@@ -291,24 +153,6 @@ describe("AccountSecurity", () => {
       await screen.findByRole("button", { name: "Retry loading sessions" }),
     );
     expect(await screen.findByText(/Mac \(current\)/)).toBeInTheDocument();
-  });
-
-  it("restores 2FA controls after a network failure", async () => {
-    mocks.enable.mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    render(<AccountSecurity />);
-    fireEvent.change(await screen.findByLabelText("Current password"), {
-      target: { value: "account-password" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Enable 2FA" }));
-    await waitFor(() =>
-      expect(mocks.toastError).toHaveBeenCalledWith(
-        expect.stringContaining("Check your connection"),
-        expect.any(Object),
-      ),
-    );
-    expect(
-      screen.getByRole("button", { name: "Enable 2FA" }),
-    ).not.toHaveAttribute("aria-busy", "true");
   });
 
   it("replaces endless session loading with a reauthentication action", async () => {

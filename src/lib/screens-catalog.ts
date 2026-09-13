@@ -198,9 +198,50 @@ export const screenSections: ScreenSection[] = [
       {
         slug: "security",
         title: "Account security",
-        description: "Password change, two-factor setup, and active sessions.",
+        description:
+          "The way in to the Authenticator, and the list of active sessions.",
         livePath: "/account/security",
         requiresAuth: true,
+      },
+      {
+        slug: "authenticator",
+        title: "Authenticator, step one",
+        description: "Confirm the password before a second step can be added.",
+        fixturePath: "/visual-evidence/authenticator",
+        livePath: "/account/security/authenticator",
+        requiresAuth: true,
+      },
+      {
+        slug: "authenticator-setup",
+        title: "Authenticator, the QR code",
+        description:
+          "The code to scan, the key to type instead, and the six digits back.",
+        fixturePath: "/visual-evidence/authenticator-setup",
+      },
+      {
+        slug: "authenticator-codes",
+        title: "Authenticator recovery codes",
+        description: "The one-time codes, shown once, waiting to be saved.",
+        fixturePath: "/visual-evidence/authenticator-codes",
+      },
+      {
+        slug: "authenticator-on",
+        title: "Authenticator, already on",
+        description: "New recovery codes, or the way back out.",
+        fixturePath: "/visual-evidence/authenticator-on",
+      },
+      {
+        slug: "authenticator-error",
+        title: "Authenticator, password refused",
+        description:
+          "A refused password answered under the field, not in a toast.",
+        fixturePath: "/visual-evidence/authenticator-error",
+      },
+      {
+        slug: "authenticator-external",
+        title: "Authenticator, Google sign-in",
+        description: "No password to guard, so Google carries the second step.",
+        fixturePath: "/visual-evidence/authenticator-external",
       },
     ],
   },
