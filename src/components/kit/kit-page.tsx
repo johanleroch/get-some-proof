@@ -18,6 +18,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { blobToast } from "@/components/brand/blob-toast";
 import { MotionShowcase } from "@/components/kit/motion-showcase";
+import { SourceIconsShowcase } from "@/components/kit/source-icons-showcase";
 import { PageHeader } from "@/components/page-header";
 import {
   ArrowNote,
@@ -119,6 +120,7 @@ const sections = [
   { id: "forms", title: "Forms" },
   { id: "shell", title: "Page header" },
   { id: "cards", title: "Cards and lists" },
+  { id: "source-icons", title: "Source icons" },
   { id: "status", title: "Status and badges" },
   { id: "empty", title: "Empty states" },
   { id: "overlays", title: "Overlays" },
@@ -895,6 +897,14 @@ export function KitPage() {
                 </p>
               </TabsContent>
             </Tabs>
+          </KitSection>
+
+          <KitSection
+            description="Where a testimonial came from, stamped on its card. Ten platforms, one 20px mark on a white chip inside a 44px target. Every mark is now the brand’s own artwork instead of an icon set’s redraw, held here against the glyph it replaces."
+            id="source-icons"
+            title="Source icons"
+          >
+            <SourceIconsShowcase />
           </KitSection>
 
           <KitSection
