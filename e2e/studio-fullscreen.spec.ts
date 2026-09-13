@@ -13,9 +13,9 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
       },
     });
   });
-  // The shell only switches to the Studio workspace for a widget being
-  // edited, exactly as the real route does with `?widget=<id>`.
-  await page.goto("/kit/studio?widget=homepage-proof");
+  // This fixture owns its editor/list shell. A production widget query would
+  // keep the outer shell in editor mode after the fixture returns to its list.
+  await page.goto("/kit/studio");
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   const dialog = page.getByRole("dialog");
   for (const label of ["Copy embed code", "Copy link"]) {
@@ -64,9 +64,8 @@ test("copy buttons show the shared toast and briefly confirm successful copies",
 test("Studio fills the viewport and keeps editing and preview accessible", async ({
   page,
 }, testInfo) => {
-  // The shell only switches to the Studio workspace for a widget being
-  // edited, exactly as the real route does with `?widget=<id>`.
-  await page.goto("/kit/studio?widget=homepage-proof");
+  // The fixture owns the editor/list shell and starts with its editor open.
+  await page.goto("/kit/studio");
   await expect(
     page.getByRole("heading", { name: "Homepage proof" }),
   ).toBeVisible();
