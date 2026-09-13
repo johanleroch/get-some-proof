@@ -153,6 +153,7 @@ export function WidgetEditor(
   const { widget } = props;
   const router = useRouter();
   const leaveHref = useRef<string | null>(null);
+  const manageSelection = useRef<HTMLButtonElement>(null);
   const initialDraft: StudioDraft = {
     name: widget.name,
     ...widget.draft,
@@ -463,6 +464,7 @@ export function WidgetEditor(
             <Button
               className="w-full"
               onClick={() => setSelectionOpen(true)}
+              ref={manageSelection}
               variant="outline"
             >
               <IconPencil className="size-4" />
@@ -671,6 +673,7 @@ export function WidgetEditor(
       </div>
       <WidgetSelectionDialog
         accentColor={draft.config.accentColor}
+        returnFocusTo={manageSelection}
         open={selectionOpen}
         onOpenChange={setSelectionOpen}
         testimonialIds={draft.testimonialIds}
