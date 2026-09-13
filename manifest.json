@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 160
+  },
+  "headSha": "d709088607c45e22ee144f3cfe36209c47c20e14",
+  "runId": "34748998942",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/google-business.png",
+      "title": "Google Business Profile private reviews",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/google-business.png",
+      "title": "Google Business Profile private reviews",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
