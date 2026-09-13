@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 166
+  },
+  "headSha": "cd5cc77d7eb46fd1ac4d6275a5baaaea807415af",
+  "runId": "34744151428",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "desktop-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-editor.png",
+      "title": "Studio editor",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-loading.png",
+      "title": "Studio loading shell",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-selection.png",
+      "title": "Studio selection",
+      "viewport": "mobile-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio.png",
+      "title": "Studio widgets",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
