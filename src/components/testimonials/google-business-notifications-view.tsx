@@ -28,7 +28,7 @@ export function GoogleNotificationsView({
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="border-line flex flex-wrap items-start justify-between gap-4 border-y py-4">
+    <div className="border-line flex flex-col items-start justify-between gap-4 border-y py-4 sm:flex-row">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="type-ui flex items-center gap-2">
           {enabled ? (
