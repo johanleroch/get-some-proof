@@ -59,7 +59,7 @@ The Submitter's affirmative, versioned permission for the named Brand to publish
 _Avoid_: Terms acceptance, Marketing opt-in
 
 **Consent Withdrawal**:
-The Submitter's revocation of Publication Consent. It removes the Testimonial from every public surface immediately and requires its content and media to be permanently deleted within 24 hours.
+The Submitter's revocation of Publication Consent. It removes the Testimonial's eligibility for publication, propagates removal to publicly delivered copies, and requires its content and media to be permanently deleted within 24 hours. Content already displayed in an open page may remain until the visitor reloads it.
 _Avoid_: Archive request, Unpublish request
 
 **Collection Credit**:
@@ -150,9 +150,17 @@ _Avoid_: Gallery, Feed, Landing page
 The version of the Public Wall placed inside another website and fed by the same published selection.
 _Avoid_: Widget when referring to the published destination
 
+**Embedding Domain**:
+A site the Owner authorizes to display a Project's Embedded Wall and Widgets. Local development sites may be authorized before the production site is ready.
+_Avoid_: Public Slug, Brand domain, Domain ownership
+
 **Public Projection**:
 The public-safe representation of Published Testimonials shared by the Public Wall and Embedded Wall. It applies both Wall-wide and per-Testimonial visibility choices and excludes private identity, consent, tenancy, moderation, and audit data.
 _Avoid_: Public database, API response
+
+**Delivery Publication**:
+The complete public version of a Wall or Widget prepared for visitors, containing its presentation and eligible proof. It has a limited period of validity and changes separately from private drafts; an already displayed version remains until the visitor reloads the page.
+_Avoid_: Draft, Source Testimonial, Backup
 
 **Curated Order**:
 The Owner-controlled sequence of Published Testimonials shared by both public walls. Newly Published proof begins first until the Owner changes that sequence.
