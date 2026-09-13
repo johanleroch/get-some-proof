@@ -29,7 +29,7 @@ describe("TemplatesPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Get started free" }),
+      screen.getByRole("link", { name: "Start for free" }),
     ).toHaveAttribute("href", "/sign-up");
     expect(
       screen.getByRole("navigation", { name: "Templates" }),
@@ -63,7 +63,7 @@ describe("TemplatePreviewPage", () => {
       "/templates",
     );
     expect(
-      screen.getByRole("link", { name: "Get started free" }),
+      screen.getByRole("link", { name: "Start for free" }),
     ).toHaveAttribute("href", "/sign-up");
     const stage = document.querySelector<HTMLElement>("[data-template-stage]");
     expect(stage?.dataset.wallTheme).toBe("dark");

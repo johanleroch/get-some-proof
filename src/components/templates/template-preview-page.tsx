@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button";
 import { sampleBrandName, sampleTestimonials } from "@/lib/template-samples";
 import {
   type TemplateDefinition,
@@ -27,13 +26,7 @@ export function TemplatePreviewPage({
 }) {
   return (
     <div className="bg-paper text-ink min-h-svh">
-      <PublicSiteHeader
-        action={
-          <Button asChild size="sm">
-            <Link href="/sign-up">Get started free</Link>
-          </Button>
-        }
-      />
+      <PublicSiteHeader />
       <main className="mx-auto max-w-[1280px] space-y-6 px-5 py-8 sm:px-8 lg:py-10">
         <Link
           className="type-ui text-ink-2 hover:text-ink focus-visible:ring-ring inline-flex min-h-11 items-center gap-1.5 rounded-md outline-none focus-visible:ring-[3px]"

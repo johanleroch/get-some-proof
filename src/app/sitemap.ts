@@ -3,7 +3,12 @@ import type { MetadataRoute } from "next";
 import { getMetadataBase } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // The root redirects to authentication. Template details are noindex, and
-  // customer Walls are discovered from their owners' links, not enumerated here.
-  return [{ url: new URL("/templates", getMetadataBase()).toString() }];
+  // The landing page and the templates gallery are our two public pages.
+  // Template details are noindex, and customer Walls are discovered from
+  // their owners' links, not enumerated here.
+  const base = getMetadataBase();
+  return [
+    { url: new URL("/", base).toString() },
+    { url: new URL("/templates", base).toString() },
+  ];
 }

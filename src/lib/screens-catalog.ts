@@ -572,6 +572,19 @@ export const screenSections: ScreenSection[] = [
     ],
   },
   {
+    id: "marketing",
+    title: "Marketing site (public)",
+    screens: [
+      {
+        slug: "landing",
+        title: "Landing page",
+        description:
+          "The signed-out homepage: a real Widget in the hero, the collection and publication story, and the Start for free journey. Demonstration content is labeled on every frame.",
+        livePath: "/",
+      },
+    ],
+  },
+  {
     id: "templates",
     title: "Templates (public)",
     screens: [

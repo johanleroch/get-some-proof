@@ -2,6 +2,13 @@
   "project": "get-some-proof",
   "screens": [
     {
+      "slug": "landing",
+      "title": "Landing page",
+      "path": "/",
+      "heading": "Your happy customers can help win the next ones.",
+      "theme": "light"
+    },
+    {
       "slug": "full-page-loading",
       "title": "Full-page loading",
       "path": "/visual-evidence/full-page-loading",
