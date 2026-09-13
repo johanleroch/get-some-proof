@@ -43,5 +43,9 @@ export function dialogOpener(): HTMLElement | null {
       : null;
   if (active?.matches(controlSelector)) return active;
   if (pointerControl?.isConnected) return pointerControl;
-  return active && active !== document.body ? active : null;
+  return active &&
+    active !== document.body &&
+    active !== document.documentElement
+    ? active
+    : null;
 }

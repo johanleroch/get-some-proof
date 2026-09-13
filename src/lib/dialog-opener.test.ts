@@ -47,6 +47,13 @@ describe("dialogOpener", () => {
     expect(dialogOpener()).toBe(region);
   });
 
+  it("treats the document element as no opener either", () => {
+    document.body.innerHTML = `<p>Nothing to press</p>`;
+    press(document.querySelector("p")!);
+    document.documentElement.focus();
+    expect(dialogOpener()).toBeNull();
+  });
+
   it("finds nothing worth restoring when the body holds the focus", () => {
     document.body.innerHTML = `<p>Nothing to press</p>`;
     press(document.querySelector("p")!);
