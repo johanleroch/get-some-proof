@@ -6,15 +6,12 @@ test("offers assistant import from the testimonial import page", async ({
   await page.goto("/visual-evidence/testimonial-import-url");
   await expect(
     page.getByRole("heading", {
-      name: "Import with an assistant",
+      name: "Connect your assistant via MCP",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", {
-      name: "Import with an assistant",
-      exact: true,
-    }),
+    page.getByRole("link", { name: "Connect via MCP", exact: true }),
   ).toHaveAttribute("href", "/org/fernhill-studio/mcp");
 });
 
