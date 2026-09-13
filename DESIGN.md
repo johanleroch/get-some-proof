@@ -308,8 +308,16 @@ Rules:
 - No emoji anywhere in the interface, ever. The doodle vocabulary replaces
   them.
 - On public surfaces the signature stays (section 6), but the star is drawn in
-  the customer Brand's accent, not ours. The embed ships no doodles: it must
-  stay small and neutral inside third-party sites.
+  the customer Brand's accent, not ours. The embed may carry the hand, at the
+  Owner's choice: every widget family renders in a clean hand and a drawn one
+  (`[data-hand="drawn"]` in `public/embed/v2.js`), and the drawn hand is what
+  makes a Get Some Proof widget recognisable rather than one more testimonial
+  card. It stays restrained even so - unmachined corners, the star row placed
+  rather than set, a `Circle around` a figure, a stroke under a name - and it
+  never reaches for a spot illustration or the blob, which stay inside the
+  product. A Customer whose site cannot take a drawn line picks the clean
+  hand, which is the default. Decided by the founder on 2026-09-13, replacing
+  the earlier rule that the embed shipped no doodles at all.
 
 ## 5. Shape, depth and rhythm
 
@@ -871,12 +879,14 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
   motion in the product is the blob mascot as a loader or on an idle screen
   (`AnimatedBlob`), one per screen. The sidebar's plan card is the founder's
   exception (section 6): its blob changes face every few seconds and a light
-  sweeps its button, both still under reduced motion. The preview-only
-  marquee is a narrow
+  sweeps its button, both still under reduced motion. A marquee is a narrow
   exception: it may scroll continuously, with a visible Pause animation /
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides
-  the animation control. This does not add a marquee to live customer Walls.
+  the animation control. The scrolling band and the chips are embed families
+  built on that exception and carry the control on a customer's page too
+  (founder, 2026-09-13); nothing puts a marquee on a Wall the Owner did not
+  choose one for.
 - Animate `transform` and `opacity` only, with one exception: the sidebar's
   active rail moves its `top` and `bottom` edges, because two edges on
   independent delays is what makes the line stretch, and a `scaleY` would

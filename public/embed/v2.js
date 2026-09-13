@@ -789,6 +789,8 @@
     .widget[data-layout="marquee"] .track:hover .grid, .widget[data-layout="marquee"] .track:focus-within .grid { animation-play-state:paused; }
     .widget[data-layout="marquee"] .grid > [aria-hidden="true"] { pointer-events:none; }
     @keyframes gsp-marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+    .widget .motion-toggle { margin:12px 20px 0; }
+    .widget[data-paused="true"] .grid, .widget[data-paused="true"] .row { animation-play-state:paused; }
 
     /* Spotlight: the cards are stacked in one grid cell and cross-fade, so
        the block keeps the height of the tallest and never jumps. */
@@ -881,8 +883,9 @@
     .widget[data-hand="drawn"][data-layout="editorial"] .card { border-top:0; position:relative; }
     .widget[data-hand="drawn"][data-layout="editorial"] .card + .card::before {
       content:""; position:absolute; top:0; left:0; width:100%; height:9px;
-      color:var(--gsp-border);
-      background:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      background:var(--gsp-border);
+      -webkit-mask:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      mask:no-repeat center/100% 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 9' preserveAspectRatio='none'%3E%3Cpath d='M2 5.4C74 2.6 146 6.8 218 4.4c72-2.4 144 2.6 216 .6s108-3 164-1.2' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
     }
     .widget[data-hand="drawn"] .dot { border-radius:48% 52% 51% 49%; }
     .widget[data-hand="drawn"] .stars { gap:3px; }
@@ -896,7 +899,9 @@
     .widget[data-hand="drawn"][data-layout="editorial"] .name {
       display:inline-block;
       padding-bottom:5px;
-      background:no-repeat left bottom/100% 6px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'%3E%3Cpath d='M2 4.1C22 2.2 42 4.6 62 3.2c20-1.4 38 1.9 56 .4' fill='none' stroke='%23d8d0c2' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      background:var(--gsp-border);
+      -webkit-mask:no-repeat left bottom/100% 6px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'%3E%3Cpath d='M2 4.1C22 2.2 42 4.6 62 3.2c20-1.4 38 1.9 56 .4' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+      mask:no-repeat left bottom/100% 6px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'%3E%3Cpath d='M2 4.1C22 2.2 42 4.6 62 3.2c20-1.4 38 1.9 56 .4' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
     }
 
     /* --- E. The families the competition made us look at ------------- */
@@ -1336,6 +1341,22 @@
   const reducedMotion = () =>
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**
+   * A continuously scrolling family owes the reader a way to stop it, and the
+   * stop has to outlast the cursor (DESIGN.md 8.3). Hover and focus still
+   * pause as a convenience; this is the one that persists.
+   */
+  function motionToggle(wall) {
+    if (reducedMotion()) return undefined;
+    const button = element("button", "motion-toggle", "Pause animation");
+    button.type = "button";
+    button.onclick = () => {
+      const paused = wall.dataset.paused !== "true";
+      wall.dataset.paused = String(paused);
+      button.textContent = paused ? "Resume animation" : "Pause animation";
+    };
+    return button;
+  }
+  /**
    * Two rows that pass each other. A short set would leave a gap at the seam,
    * so the set repeats until the row is wide enough, then the whole row is
    * doubled because the loop translates by half its width.
@@ -1493,6 +1514,8 @@
       const rows = element("div", "rows");
       grid.replaceWith(rows);
       chipRows(cards, rows);
+      const control = motionToggle(wall);
+      if (control) rows.after(control);
       return undefined;
     }
     if (config.layout === "faces" && cards.length) {
@@ -1521,6 +1544,8 @@
       const track = element("div", "track");
       grid.replaceWith(track);
       track.append(grid);
+      const control = motionToggle(wall);
+      if (control) track.after(control);
       grid.append(
         ...cards.map((card) => {
           const clone = card.cloneNode(true);
