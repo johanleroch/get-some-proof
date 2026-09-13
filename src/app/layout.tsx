@@ -6,8 +6,9 @@ import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { DevQuickAccess } from "@/components/dev/dev-quick-access";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { productDescription, productName } from "@/lib/brand";
+import { productName } from "@/lib/brand";
 import { getPublicEnvironment } from "@/lib/env/public-env";
+import { getMetadataBase, publicPageMetadata } from "@/lib/seo";
 import { themeInitializationScript } from "@/lib/theme";
 
 import { displayFont } from "./fonts/display-font";
@@ -35,11 +36,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  ...publicPageMetadata(),
+  metadataBase: getMetadataBase(),
+  robots: { index: false, follow: true },
   title: {
     default: productName,
     template: `%s · ${productName}`,
   },
-  description: productDescription,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

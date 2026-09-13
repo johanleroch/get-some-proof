@@ -4,7 +4,13 @@ export function assistantConnectionCommands(
   assistant: ImportAssistant,
   origin: string,
 ) {
-  const endpoint = new URL("/mcp", origin).href;
+  const url = new URL("/mcp", origin);
+  // Codex rejects OAuth discovery redirects across origins. Keep copied
+  // production commands on Vercel's canonical host, including older builds
+  // configured with the apex domain. Custom and local hosts stay unchanged.
+  if (url.origin === "https://getsomeproof.com")
+    url.hostname = "www.getsomeproof.com";
+  const endpoint = url.href;
   // Only a configured HTTP(S) origin enters these commands; never credentials.
   if (!/^https?:\/\/[^\s'"`$\\]+$/.test(endpoint))
     throw new Error("Invalid MCP origin.");

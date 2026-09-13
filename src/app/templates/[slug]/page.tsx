@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { TemplatePreviewPage } from "@/components/templates/template-preview-page";
 import {
   defaultAccent,
@@ -32,9 +34,12 @@ export async function generateMetadata({
     return { robots: { follow: false, index: false }, title: "Template" };
   }
   return {
-    description: template.description,
+    ...publicPageMetadata({
+      title: `${template.name} template`,
+      description: template.description,
+      path: `/templates/${template.slug}`,
+    }),
     robots: { follow: true, index: false },
-    title: `${template.name} template`,
   };
 }
 
