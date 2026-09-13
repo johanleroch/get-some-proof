@@ -120,18 +120,32 @@ export function GoogleBusinessView({
       </div>
       {connected && (
         <>
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={`grid gap-2 sm:flex sm:flex-wrap ${account ? "grid-cols-2" : "grid-cols-1"}`}
+          >
             <Button loading={busy} onClick={() => onRead(account, location)}>
               <IconRefresh aria-hidden="true" size={20} stroke={1.75} />
               {page || account ? "Refresh" : "Choose a Google account"}
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={onConnect}>
-              Reconnect Google
+            <Button
+              variant="ghost"
+              disabled={busy}
+              onClick={onConnect}
+              aria-label="Reconnect Google"
+            >
+              <span className="sm:hidden">Reconnect</span>
+              <span className="hidden sm:inline">Reconnect Google</span>
             </Button>
             {account && (
-              <Button variant="ghost" disabled={busy} onClick={() => onRead()}>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => onRead()}
+                aria-label="Change account"
+              >
                 <IconUserCircle aria-hidden="true" size={20} stroke={1.75} />
-                Change account
+                <span className="sm:hidden">Account</span>
+                <span className="hidden sm:inline">Change account</span>
               </Button>
             )}
             {location && (
@@ -139,9 +153,11 @@ export function GoogleBusinessView({
                 variant="ghost"
                 disabled={busy}
                 onClick={() => onRead(account)}
+                aria-label="Change location"
               >
                 <IconBuildingStore aria-hidden="true" size={20} stroke={1.75} />
-                Change location
+                <span className="sm:hidden">Location</span>
+                <span className="hidden sm:inline">Change location</span>
               </Button>
             )}
           </div>

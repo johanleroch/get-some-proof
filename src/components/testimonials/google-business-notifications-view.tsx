@@ -29,7 +29,7 @@ export function GoogleNotificationsView({
   const [confirming, setConfirming] = useState(false);
   return (
     <div className="border-line flex flex-col items-start justify-between gap-4 border-y py-4 sm:flex-row">
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="w-full min-w-0 space-y-2 sm:flex-1">
         <p className="type-ui flex items-center gap-2">
           {enabled ? (
             <IconBellCheck
@@ -54,12 +54,18 @@ export function GoogleNotificationsView({
         </p>
       </div>
       {enabled ? (
-        <Button variant="ghost" disabled={busy} onClick={onDisable}>
+        <Button
+          variant="ghost"
+          className="w-full sm:w-auto"
+          disabled={busy}
+          onClick={onDisable}
+        >
           Turn off here
         </Button>
       ) : (
         <Button
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={!configured || busy}
           onClick={() => setConfirming(true)}
         >
