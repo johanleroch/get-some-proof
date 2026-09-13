@@ -129,8 +129,8 @@ Rules:
 | `--danger`  | `oklch(0.52 0.19 27)`  | `oklch(0.72 0.17 25)`  | Destructive, errors        |
 | `--info`    | `oklch(0.52 0.09 250)` | `oklch(0.75 0.09 250)` | Neutral notices            |
 
-Each status has a `-soft` tint for badges and toasts, derived the same way as
-the brand. Warning is orange, deliberately away from amber so "pending" never
+Each status has a `-soft` tint for toasts and tinted surfaces, derived the
+same way as the brand (status chips no longer use it, section 7). Warning is orange, deliberately away from amber so "pending" never
 looks like "brand".
 
 ### 2.4 Mapping to the existing shadcn tokens
@@ -310,8 +310,16 @@ Rules:
 - No emoji anywhere in the interface, ever. The doodle vocabulary replaces
   them.
 - On public surfaces the signature stays (section 6), but the star is drawn in
-  the customer Brand's accent, not ours. The embed ships no doodles: it must
-  stay small and neutral inside third-party sites.
+  the customer Brand's accent, not ours. The embed may carry the hand, at the
+  Owner's choice: every widget family renders in a clean hand and a drawn one
+  (`[data-hand="drawn"]` in `public/embed/v2.js`), and the drawn hand is what
+  makes a Get Some Proof widget recognisable rather than one more testimonial
+  card. It stays restrained even so - unmachined corners, the star row placed
+  rather than set, a `Circle around` a figure, a stroke under a name - and it
+  never reaches for a spot illustration or the blob, which stay inside the
+  product. A Customer whose site cannot take a drawn line picks the clean
+  hand, which is the default. Decided by the founder on 2026-09-13, replacing
+  the earlier rule that the embed shipped no doodles at all.
 
 ## 5. Shape, depth and rhythm
 
@@ -327,7 +335,8 @@ Depth comes from borders and tone, not shadows. Cards sit on `--paper` with a
 1px `--line` border and no shadow. Only floating layers get a shadow, and it is
 warm-tinted: `--shadow-float: 0 1px 2px oklch(0.25 0.02 60 / 6%), 0 12px 32px
 oklch(0.25 0.02 60 / 12%)` for popovers, dialogs, toasts and the video play
-button. No other shadow token exists.
+button. No other shadow token exists: the status chip (section 7) carries
+neither border nor shadow.
 
 Spacing is a 4px grid. Inside components: 8, 12, 16. Between elements: 16, 24.
 Between sections: 32, 48. Page padding: 32px desktop, 20px mobile. Section gaps
@@ -335,19 +344,99 @@ on public pages scale with `clamp(3rem, 8vw, 6rem)`.
 
 ## 6. Layout
 
-Studio exception (founder request, 2026-09-12): Studio fills the viewport
-without the dashboard sidebar, outer frame, or 1200px content limit. Its editor
-has one compact top bar with back navigation, widget name, publication state,
-and save/publish/share actions. A 320px settings column and a flexible preview
-canvas scroll independently below it. The preview toolbar stays visible.
-The preview canvas has a subtle 24px square grid using the `--line` token at
-55% opacity, in both themes. The grid belongs to the editor background only.
-Masonry grid is the first and default Studio template, available on Free.
+Studio exception (founder request, 2026-09-12, narrowed 2026-09-13): the
+**editor** fills the viewport without the dashboard sidebar, outer frame, or
+1200px content limit. The widget grid and the template chooser keep the shell:
+clicking Studio in the sidebar and watching the sidebar evaporate under the
+cursor reads as a fault, while opening a widget into full screen reads as
+opening a file, and the back arrow is the way out. Chosen by the founder on
+2026-09-13 over taking the whole section full screen.
+The editor has one compact top bar with back navigation, widget name,
+publication state, and **Save draft / Embed / Publish**, in that order — the
+frequent harmless gesture, then the rare committing one, and neither hidden in
+a menu: buried behind the dots, Save draft was the one thing nobody would ever
+find (founder, 2026-09-13). The dots keep only Unpublish. A 320px settings column and a
+flexible preview canvas scroll independently below it, and nothing else on the
+page scrolls: the full-screen shell is `overflow-hidden`, because letting the
+page scroll too carried the top bar off screen under the cursor. The preview
+toolbar stays visible. The button that opens the embed code says **Embed**, not
+Share, and carries the code icon: the dialog it opens holds a snippet and a
+link, and its first field is already called Embed code.
+Masonry grid is the first and default Studio template, available on Free. It
+balances: every card goes to whichever column is shortest when it is placed, so
+a tall card never drags its neighbours down and no column is left with a hole
+under it. CSS `column-count` cannot do that — it pours each column full in
+document order, which put the first and third testimonials in one column under
+a tall card and left the second alone beside them. The embed runtime does the
+placing and redoes it when the widget is resized or a card's image or video
+finishes loading.
 Wall of Fame is no longer offered; existing wall embeds stay compatible and
 open as Masonry in the editor for their next save.
 Below `lg`, Edit and Preview switch between full-width panels; the save actions
-remain visible. The widget list and template chooser have a "Back to project"
-link. The development preview at `/kit/studio` uses the real Studio components.
+remain visible. The development preview at `/kit/studio` uses the real Studio
+components.
+
+- Studio, the widget grid: the one place in the dashboard where data lives in
+  cards rather than in a list, because the data _is_ a picture — a row that
+  names "Masonry grid" tells an Owner nothing, and the product exists to make
+  something they look at. Chosen by the founder on 2026-09-13 from four drafts
+  (rows with a thumbnail, a table, a list beside a preview, this gallery),
+  knowingly against the rule two paragraphs down. One or two columns, never three: at three the
+  preview shrank and the line under it truncated. The card is the widget: its own preview rendered by the real embed runtime
+  at half size on the canvas surface, cropped to 224px so the top of the
+  widget stays readable instead of shrinking into grey noise. A widget with no
+  testimonials yet shows the layout sketch instead, and so does a card that
+  has not come near the viewport — a project may hold a hundred widgets and
+  each preview mounts the runtime. Publication state sits as a `--paper` chip
+  in the card's top right corner, over the preview, never in the footer line
+  where it crowded the name. Three states, not two: Draft, Published, and
+  **Unpublished changes** for a widget that is live while carrying edits
+  nobody has published, which is the state an Owner has to notice and the old
+  binary badge could not say. The footer is the name, then what the widget is
+  made of and when it last changed, then one menu holding the embed code, the
+  widget page and Delete. The whole card opens the editor.
+- Studio, the settings column: four named groups in the order the work
+  happens — **Content** (the chosen testimonials, then the widget's name),
+  **Layout**, **Appearance**, **Behaviour** — each a `micro` eyebrow over its
+  controls, separated by a hairline. Before, three groups ran together with
+  only one of them titled, so the middle one, holding the widget's own name and
+  its template, belonged to nothing. Content **names** the testimonials it
+  holds, up to five with avatars and then "and N more", because "3 selected" in
+  grey said nothing about the one thing the widget is made of. The template is
+  a thumbnail of its own layout beside its name, opening the same chooser grid
+  the widget was created from, rather than a dropdown of words: the picture is
+  how it was picked, so the picture is how it changes. The links switch leaves
+  Appearance for Behaviour, where it belongs, and says "Clickable links".
+  Chosen by the founder on 2026-09-13 from three drafts (these groups, two
+  tabs, an accordion), because tabs and an accordion tidy the column at the
+  cost of the link between a setting and the effect you are watching.
+- Studio, the canvas: the editor's preview surface is a real grid of 56px
+  cells rather than a painted background, after Aceternity's background ripple
+  effect and rebuilt on our tokens (founder request, 2026-09-13). A tile keeps
+  the `--surface-2` canvas tone on a `--line-2` hairline at 65%, so the white
+  widget still separates from it; the tile lifts to `--paper` under the
+  cursor; and a click sends a circular wave of `--brand-soft-2` out from it,
+  each ring 22ms later and 14ms slower than the one inside it, the whole wave
+  landing inside a second. Aceternity's own 55ms and 80ms per cell ran for
+  over three seconds on a canvas this size. A radial mask keeps the grid whole
+  where the widget sits and softens it at the far corners; Aceternity's top
+  fade cut the canvas into two materials. The 24px rule it replaces read as
+  graph paper. Only opacity animates, the wave plays once, the grid never
+  takes a click meant for the widget, and it holds still under reduced motion.
+  The widget cards paint the same 56px module without the interaction.
+  On it, the widget sits on a **page sheet**: a `--paper` card at one of four
+  real page widths — Desktop 1280, Laptop 1024, Tablet 768, Phone 390 — chosen
+  in the toolbar, which also says the width in figures. The editor used to
+  render the widget across the whole panel, some 1415px, which is the width of
+  no site anyone embeds it in, pinned to the top with 385px of void beneath it.
+  The sheet is centred both ways and **snaps to the grid**: a whole number of
+  cells wide and tall less 16px, and the grid shifts its own phase so every edge
+  sits exactly **8px inside** its line rather than across it or drawn on it.
+  Landing the edges on the rules themselves read as glued (founder,
+  2026-09-13); the 8px is what makes the sheet sit in its cells. Founder's call on 2026-09-13, from three drafts (this sheet, a
+  measured artboard, a plain centred widget): the sheet is the only one that
+  answers "what will this look like on my page", and it is the frame the
+  in-place preview on the customer's own site will reuse.
 
 Containers: dashboard content max 1200px, public Wall max 1280px, Collection
 Form max 1040px in its split layout. CSS Grid for page structure, flex for
@@ -380,7 +469,10 @@ pages still start at the top and scroll normally.
   Page header is left-aligned: eyebrow (micro), `display` title, one primary
   action on the right. Data lives in lists and tables with `--surface-2` row
   hover, not in stacks of cards. Three-equal-cards rows are banned; use a
-  2:1 or 1:2 split. The product ships in the light theme with no theme control
+  2:1 or 1:2 split. The Studio widget grid is the one exception, and it is an
+  exception because its rows would carry a picture rather than a figure: see
+  the Studio entry below. Wanting a gallery is not enough — a card grid has to
+  be the only honest way to show the thing. The product ships in the light theme with no theme control
   for now (decided 2026-09-09); the dark tokens stay in `globals.css` and the
   development pages (`/kit`, `/screens`, the quick access) keep the switch so
   both themes stay reviewed.
@@ -406,11 +498,24 @@ pages still start at the top and scroll normally.
   size, and the blob peeking over the bottom right corner, big (128px,
   starstruck, tilted 8 degrees left, cropped by the panel as on
   `/templates`, its eyes well inside the card). It never says "Free plan":
-  the sale says it. A Pro Account shows a matching amber poster, "You're Pro!",
-  with the animated blob at 104px in the upper-right corner and account-wide
-  usage: stored videos, reserved slots, remaining video capacity, text
-  testimonials, and Projects. It has no billing link (founder request,
-  2026-09-12). Bounded totals carry a visible plus sign; missing usage never
+  the sale says it. A Pro Account sells nothing, so its usage is not a card at
+  all: it sits on the sidebar's own paper as the last line before the user
+  row, at the navigation's inset (12px inside the footer's 8px). It opens on
+  no title at all — a caption over labelled rows only announces that a block
+  exists, and the plan is named on the dashboard's own plan panel (chosen by
+  the founder on 2026-09-13 over a Pro tag, a scope sentence and a signature
+  line). Three labelled rows share one right-hand
+  column of mono tabular figures — "Videos", capped, carrying the amber quota
+  bar on `--surface-2` that measures it, then Text Testimonials and Projects,
+  uncapped and simply counted. The row label is what gives the limit its unit
+  (25 videos, not 25 of something), and one `small` line in `--ink-3` under
+  the bar carries what a figure cannot: the slots left, the ones held while a
+  video processes, and "Storage full — delete a video to free a slot" when
+  there are none. The stored count includes the held slots, exactly as the
+  bar does. No title, no blob, no sale, no billing link (founder request,
+  2026-09-12); chosen by the founder on 2026-09-13 from four drafts (rows,
+  one number, tinted strip, footnote), then four ways of grouping the rows.
+  Bounded totals carry a visible plus sign; missing usage never
   appears as zero. Two things move
   on the Free card, the founder's call: the
   blob's eyes change every few seconds (starstruck to happy and back, the
@@ -698,11 +803,13 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   never a coloured box. `mark` carries it site-wide from `globals.css` in
   amber; a Testimonial card overrides it with the customer Brand accent
   through `src/lib/marker-highlight.ts`.
-- Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
-  on `--surface` with a `--line` hairline. A status colors its 6px dot and
-  its label (full-strength status color, AA on `--surface`); the fill stays
-  paper, never a pastel tint (the generic "AI pill"). `brand`
-  is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
+- Badges and status chips: 24px tall, `--radius-full`, `small` at weight 500
+  in `--ink`, on `--chip` (white on light, one step lighter than a card on
+  dark), with neither border nor shadow. Every state wears the
+  same chip: the status lives in its 6px dot alone, never in a pastel tint
+  (the generic "AI pill") and no longer in the label. `brand` is a chip like
+  the others with an amber dot; `outline`, the counter on public walls, is
+  the one chip that ships without a dot.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
   max 480px (560px for content-heavy). One exception, at 672px: the video
   thumbnail picker, because its preview is the real published card beside
@@ -773,6 +880,20 @@ loading` (`src/components/brand/blob-toast.tsx`, same call shape as
 - Icons: **Tabler** only, 18px in the sidebar navigation, 20px in buttons
   and elsewhere in navigation, 16px inline, stroke 1.75. Lucide is removed
   once the last usages are migrated.
+- Source marks (the badge that says where a testimonial came from): never an
+  icon set's version of a logo. Tabler, Lucide and the rest redraw brands in
+  their own hand, and it shows the moment two of them sit side by side. Take
+  the brand's own artwork, and if the mark you want only exists inside a
+  container, lift it out of that artwork rather than redrawing it
+  (`src/components/testimonials/source-icons.ts` documents how each one was
+  obtained). Brands crop and centre their files however they like, so no mark
+  is ever pasted in as published: run `pnpm icon:fit <file.svg>` and paste what
+  it prints. It measures the ink as a reader sees it and places the mark on one
+  keyline grid - a 24 box with 20 of live area, squares at 18 because a square
+  reads larger at the same measure, bare letterforms at 18.5 (`--shape letter`,
+  the one call left to the eye), circles and rectangles at 20, the centre of the
+  shape on the centre of the box. `scripts/source-icons/grid.test.mjs` holds the
+  family to it.
 - Transactional emails (`convex/email/templates.ts`, one layout for all of
   them): simple and minimal, the light theme in hex because mail clients
   know no tokens. `--paper` behind a 480px column; the lockup at 28px at the
@@ -871,14 +992,17 @@ the base for the blob, the tail for a speech bubble, the trigger for a menu.
 - Hand-drawn elements may draw themselves in once (stroke-dashoffset, 600ms)
   on empty states and the success step. They never loop. The only looping
   motion in the product is the blob mascot as a loader or on an idle screen
-  (`AnimatedBlob`), one per screen. The sidebar's plan card is the founder's
-  exception (section 6): its blob changes face every few seconds and a light
-  sweeps its button, both still under reduced motion. The preview-only
-  marquee is a narrow
+  (`AnimatedBlob`), one per screen. The sidebar's Free plan card is the
+  founder's exception (section 6): its blob changes face every few seconds
+  and a light sweeps its button, both still under reduced motion. The Pro
+  Account's usage lines hold still: nothing there is being sold. A marquee is a narrow
   exception: it may scroll continuously, with a visible Pause animation /
   Resume animation control whose pause persists after focus and hover leave.
   Reduced motion makes it a static, horizontally scrollable row and hides
-  the animation control. This does not add a marquee to live customer Walls.
+  the animation control. The scrolling band and the chips are embed families
+  built on that exception and carry the control on a customer's page too
+  (founder, 2026-09-13); nothing puts a marquee on a Wall the Owner did not
+  choose one for.
 - Animate `transform` and `opacity` only, with one exception: the sidebar's
   active rail moves its `top` and `bottom` edges, because two edges on
   independent delays is what makes the line stretch, and a `scaleY` would

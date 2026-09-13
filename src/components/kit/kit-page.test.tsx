@@ -15,6 +15,12 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div>Theme control</div>,
 }));
 
+// Forty brand marks with their full outlines are their own review surface, and
+// their grid is held by scripts/source-icons/grid.test.mjs.
+vi.mock("@/components/kit/source-icons-showcase", () => ({
+  SourceIconsShowcase: () => <div>Source icon review</div>,
+}));
+
 describe("KitPage", () => {
   it("lists every token group, type style and component section", () => {
     render(
@@ -36,6 +42,7 @@ describe("KitPage", () => {
     expect(
       screen.getByText("Testimonial card for Alice Martin"),
     ).toBeInTheDocument();
+    expect(screen.getByText("Source icon review")).toBeInTheDocument();
     expect(screen.getAllByRole("slider").length).toBeGreaterThan(30);
   });
 });

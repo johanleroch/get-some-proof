@@ -248,18 +248,43 @@ export const remove = mutation({
     return null;
   },
 });
+/**
+ * How many testimonials each card in the Studio grid renders. The card crops
+ * the top of the widget, so a handful is all that ever shows.
+ */
+const WIDGET_CARD_TESTIMONIALS = 4;
+
 export const list = query({
   args: { organizationId: v.id("organizations") },
-  returns: v.array(widgetValidator),
+  returns: v.array(
+    widgetValidator.extend({
+      cardTestimonials: v.array(candidateValidator),
+    }),
+  ),
   handler: async (ctx, args) => {
-    await requireOrganizationPermission(ctx, args, "organization:read");
-    return ctx.db
+    const access = await requireOrganizationPermission(
+      ctx,
+      args,
+      "organization:read",
+    );
+    const widgets = await ctx.db
       .query("widgets")
       .withIndex("by_organizationId", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .order("desc")
       .take(MAX_WIDGETS);
+    return Promise.all(
+      widgets.map(async (widget) => ({
+        ...widget,
+        cardTestimonials: await selected(
+          ctx,
+          access.organization,
+          widget.draft.testimonialIds.slice(0, WIDGET_CARD_TESTIMONIALS),
+          widget.draft.config,
+        ),
+      })),
+    );
   },
 });
 export const get = query({

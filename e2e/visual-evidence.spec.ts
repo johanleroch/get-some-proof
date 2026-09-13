@@ -337,7 +337,7 @@ for (const screen of selectedScreens) {
     }
     if (screen.slug.startsWith("studio-selection")) {
       await page
-        .getByRole("button", { name: "Manage selection", exact: true })
+        .getByRole("button", { name: "Edit selection", exact: true })
         .click();
       if (screen.slug === "studio-selection-order") {
         await page

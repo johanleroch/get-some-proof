@@ -1,3 +1,4 @@
+import { TestimonialSourceMarksFixture } from "@/components/visual-evidence/testimonial-source-marks-fixture";
 import { TestimonialSourcesFixture } from "@/components/visual-evidence/testimonial-sources-fixture";
 import { TestimonialLinksFixture } from "@/components/visual-evidence/testimonial-links-fixture";
 import {
@@ -74,6 +75,7 @@ const screens = {
   "inbox-loading": InboxLoadingFixture,
   "studio-loading": StudioLoadingFixture,
   "testimonial-sources": TestimonialSourcesFixture,
+  "testimonial-source-marks": TestimonialSourceMarksFixture,
   "testimonial-links": TestimonialLinksFixture,
   studio: StudioFixture,
   "studio-templates": StudioTemplatesFixture,

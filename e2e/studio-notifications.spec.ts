@@ -15,8 +15,7 @@ test("publishing, saving and unpublishing report only through notifications", as
     .getByRole("dialog")
     .getByRole("button", { name: "Close", exact: true })
     .click();
-  await page.getByRole("button", { name: "Widget actions" }).click();
-  await page.getByRole("menuitem", { name: "Save draft" }).click();
+  await page.getByRole("button", { name: "Save draft" }).click();
   await expect(
     page.locator("[data-sonner-toast]").filter({ hasText: "Draft saved." }),
   ).toBeVisible();

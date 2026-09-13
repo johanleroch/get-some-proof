@@ -421,30 +421,15 @@ export function AppShellView({
           slug: organizationSlug,
         }}
       >
-        <div
-          className="bg-paper flex h-svh min-w-0 flex-col overflow-hidden"
-          data-slot="studio-workspace"
+        <StudioWorkspaceShell
+          inactiveProject={
+            account?.effectivePlan === "free" &&
+            !!account.freeProjectId &&
+            account.freeProjectId !== organizationId
+          }
         >
-          {account?.effectivePlan === "free" &&
-          account.freeProjectId &&
-          account.freeProjectId !== organizationId ? (
-            <section
-              aria-label="Inactive project"
-              className="bg-surface-2 type-small shrink-0 px-5 py-3"
-            >
-              This project is inactive. Collection, the public Wall, and embeds
-              are disabled.
-            </section>
-          ) : null}
-          <div
-            className="min-h-0 flex-1 overflow-y-auto"
-            role="region"
-            aria-label="Page content"
-            tabIndex={0}
-          >
-            {children}
-          </div>
-        </div>
+          {children}
+        </StudioWorkspaceShell>
       </ProjectShellProvider>
     );
   }
@@ -576,5 +561,40 @@ export function AppShellView({
         </SidebarInset>
       </SidebarProvider>
     </ProjectShellProvider>
+  );
+}
+
+export function StudioWorkspaceShell({
+  children,
+  inactiveProject = false,
+}: {
+  children: ReactNode;
+  inactiveProject?: boolean;
+}) {
+  return (
+    <div
+      className="bg-paper flex h-svh min-w-0 flex-col overflow-hidden"
+      data-slot="studio-workspace"
+    >
+      {inactiveProject ? (
+        <section
+          aria-label="Inactive project"
+          className="bg-surface-2 type-small shrink-0 px-5 py-3"
+        >
+          This project is inactive. Collection, the public Wall, and embeds are
+          disabled.
+        </section>
+      ) : null}
+      {/* The editor is the only thing this shell ever holds, and it scrolls
+          its own two panels: letting the page scroll as well moved the top bar
+          off screen under the cursor. */}
+      <div
+        className="min-h-0 flex-1 overflow-hidden"
+        role="region"
+        aria-label="Page content"
+      >
+        {children}
+      </div>
+    </div>
   );
 }

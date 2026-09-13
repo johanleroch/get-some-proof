@@ -7,7 +7,7 @@ test("the full testimonial card toggles selection while video preview stays inde
   const edit = page.getByRole("button", { name: "Edit widget", exact: true });
   if (await edit.isVisible()) await edit.click();
   await page
-    .getByRole("button", { name: "Manage selection", exact: true })
+    .getByRole("button", { name: "Edit selection", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Manage testimonials" });
   const row = dialog
