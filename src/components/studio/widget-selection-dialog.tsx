@@ -231,9 +231,12 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                             disabled && "cursor-default opacity-60",
                           )}
                         >
+                          {/* A bare overlay that widens the checkbox's hit
+                              area to the whole card. It carries no name of
+                              its own: `aria-label` is prohibited on a label,
+                              and the checkbox beside it is already named. */}
                           <label
                             htmlFor={`studio-select-${testimonialId}`}
-                            aria-label={`Select ${card.name}`}
                             className={cn(
                               "absolute inset-0 z-10",
                               disabled ? "cursor-default" : "cursor-pointer",

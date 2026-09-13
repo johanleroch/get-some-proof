@@ -7,6 +7,7 @@ import type { VariantProps } from "class-variance-authority";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loopDialogOptionTab } from "@/lib/dialog-option-tab";
+import { dialogOpener } from "@/lib/dialog-opener";
 
 function AlertDialog(
   props: React.ComponentProps<typeof AlertDialogPrimitive.Root>,
@@ -43,10 +44,7 @@ function AlertDialogContent({
           }
         }}
         onOpenAutoFocus={(event) => {
-          opener.current =
-            document.activeElement instanceof HTMLElement
-              ? document.activeElement
-              : null;
+          opener.current = dialogOpener();
           onOpenAutoFocus?.(event);
         }}
         className={cn(
