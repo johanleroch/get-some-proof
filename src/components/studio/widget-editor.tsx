@@ -178,6 +178,8 @@ export function WidgetEditor(
   const [embed, setEmbed] = useState(false);
   const [leave, setLeave] = useState(false);
   const [selectionOpen, setSelectionOpen] = useState(false);
+  const selectionOpener = useRef<HTMLButtonElement | null>(null);
+  const previewFocusTarget = useRef<HTMLButtonElement | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const sheet = useRef<HTMLDivElement>(null);
   const sheetContent = useRef<HTMLDivElement>(null);
@@ -462,7 +464,10 @@ export function WidgetEditor(
             )}
             <Button
               className="w-full"
-              onClick={() => setSelectionOpen(true)}
+              onClick={(event) => {
+                selectionOpener.current = event.currentTarget;
+                setSelectionOpen(true);
+              }}
               variant="outline"
             >
               <IconPencil className="size-4" />
@@ -576,6 +581,7 @@ export function WidgetEditor(
             <div className="flex gap-1" role="group" aria-label="Preview width">
               {previewWidths.map((item) => (
                 <Button
+                  ref={item.key === "phone" ? previewFocusTarget : undefined}
                   aria-label={`${item.label} preview`}
                   aria-pressed={item.key === device.key}
                   key={item.key}
@@ -626,7 +632,10 @@ export function WidgetEditor(
                     className="cta-shine relative w-full overflow-hidden"
                     size="lg"
                     disabled={busy}
-                    onClick={() => setSelectionOpen(true)}
+                    onClick={(event) => {
+                      selectionOpener.current = event.currentTarget;
+                      setSelectionOpen(true);
+                    }}
                   >
                     Add testimonials
                   </Button>
@@ -673,6 +682,13 @@ export function WidgetEditor(
         accentColor={draft.config.accentColor}
         open={selectionOpen}
         onOpenChange={setSelectionOpen}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const target = selectionOpener.current?.isConnected
+            ? selectionOpener.current
+            : previewFocusTarget.current;
+          target?.focus();
+        }}
         testimonialIds={draft.testimonialIds}
         layout={draft.config.layout}
         candidates={props.candidates}

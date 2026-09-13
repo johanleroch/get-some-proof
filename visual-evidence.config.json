@@ -797,6 +797,12 @@
       "title": "Cloudflare Widget unavailable",
       "path": "http://127.0.0.1:8790/",
       "heading": "Cedar Workshop"
+    },
+    {
+      "slug": "mcp-import-selection",
+      "title": "MCP standalone testimonial selection",
+      "path": "/chatgpt/import-widget.html",
+      "heading": "Select testimonials"
     }
   ]
 }

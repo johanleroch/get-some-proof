@@ -33,7 +33,8 @@ const selectedSlugs = new Set(
 const selectedScreens = config.screens.filter(
   (screen) =>
     selectedSlugs.has(screen.slug) &&
-    !screen.slug.startsWith("cloudflare-widget-"),
+    !screen.slug.startsWith("cloudflare-widget-") &&
+    !screen.slug.startsWith("mcp-import-"),
 );
 
 for (const screen of selectedScreens) {

@@ -32,6 +32,7 @@ type SelectionProps = {
   accentColor: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
   testimonialIds: string[];
   onChange: (ids: string[]) => void;
   layout: WidgetConfig["layout"];
@@ -156,6 +157,7 @@ export function WidgetSelectionDialog(props: SelectionProps) {
         }}
       >
         <DialogContent
+          onCloseAutoFocus={props.onCloseAutoFocus}
           zoom={false}
           className="flex h-[min(44rem,90dvh)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
           style={{ "--wall-accent": props.accentColor } as CSSProperties}
@@ -242,7 +244,9 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                               "absolute inset-0 z-10",
                               disabled ? "cursor-default" : "cursor-pointer",
                             )}
-                          />
+                          >
+                            <span className="sr-only">Select {card.name}</span>
+                          </label>
                           <div className="flex items-center gap-3 [&_button]:z-20 [&_button:not([role=checkbox])]:relative">
                             <Checkbox
                               id={`studio-select-${testimonialId}`}

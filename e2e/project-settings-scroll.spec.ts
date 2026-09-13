@@ -1,18 +1,17 @@
 import { test, expect } from "@playwright/test";
 
-test("section links keep the shell fixed and page content scrollable", async ({
+test("scrolling between settings sections keeps the shell fixed", async ({
   page,
   isMobile,
 }) => {
-  test.skip(isMobile, "Section navigation is desktop only");
+  test.skip(isMobile, "Desktop shell scrolling regression");
   await page.goto("/visual-evidence/project-settings-shell");
   const content = page.getByRole("region", { name: "Page content" });
   await expect(content).toHaveCSS("scroll-behavior", "smooth");
   const before = await content.boundingBox();
   await page
-    .getByRole("navigation", { name: "Settings sections" })
-    .getByRole("link", { name: "Embedded Wall", exact: true })
-    .click();
+    .getByRole("heading", { name: "Embedded Wall", exact: true })
+    .scrollIntoViewIfNeeded();
   await expect
     .poll(async () => (await content.boundingBox())!.y)
     .toBe(before!.y);
@@ -24,9 +23,8 @@ test("section links keep the shell fixed and page content scrollable", async ({
     )
     .toBeLessThan(2);
   await page
-    .getByRole("navigation", { name: "Settings sections" })
-    .getByRole("link", { name: "Brand logo", exact: true })
-    .click();
+    .getByRole("button", { name: "Upload brand logo", exact: true })
+    .scrollIntoViewIfNeeded();
   await expect
     .poll(async () => (await content.boundingBox())!.y)
     .toBe(before!.y);

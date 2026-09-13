@@ -282,3 +282,28 @@ test("shows Inbox presentation and previews video without changing selection", a
     }),
   ).toBeVisible();
 });
+
+test("returns focus to the preview control when adding the first testimonial removes its opener", async ({
+  page,
+}) => {
+  await page.goto("/visual-evidence/studio");
+  await page
+    .getByRole("button", { name: "Create widget", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: /Individual testimonial.*One voice/s })
+    .click();
+  await page
+    .getByRole("button", { name: "Add testimonials", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", { name: "Select Maya Laurent", exact: true })
+    .check();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Manage testimonials" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Phone preview", exact: true }),
+  ).toBeFocused();
+});
