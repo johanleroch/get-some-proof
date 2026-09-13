@@ -822,6 +822,12 @@
       "heading": "Public Wall appearance"
     },
     {
+      "slug": "google-business",
+      "title": "Google Business Profile private reviews",
+      "path": "/visual-evidence/google-business",
+      "heading": "Google reviews"
+    },
+    {
       "slug": "social-card",
       "title": "Branded link preview",
       "path": "/visual-evidence/social-card",

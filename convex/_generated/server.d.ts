@@ -33,6 +33,14 @@ type Env = {
   readonly CHATGPT_IMPORT_ENABLED: "true" | "false" | undefined;
   readonly EMAIL_FROM: string | undefined;
   readonly EMAIL_PROVIDER: "console" | "resend" | "test";
+  readonly GOOGLE_BUSINESS_CLIENT_ID: string | undefined;
+  readonly GOOGLE_BUSINESS_CLIENT_SECRET: string | undefined;
+  readonly GOOGLE_BUSINESS_ENCRYPTION_KEY: string | undefined;
+  readonly GOOGLE_BUSINESS_PUBSUB_AUDIENCE: string | undefined;
+  readonly GOOGLE_BUSINESS_PUBSUB_SERVICE_ACCOUNT_EMAIL: string | undefined;
+  readonly GOOGLE_BUSINESS_PUBSUB_SUBSCRIPTION: string | undefined;
+  readonly GOOGLE_BUSINESS_PUBSUB_TOPIC: string | undefined;
+  readonly GOOGLE_BUSINESS_REDIRECT_URI: string | undefined;
   readonly MANAGEMENT_LINK_TOKEN_SECRET: string | undefined;
   readonly MUX_PROVIDER: "fake" | "mux" | undefined;
   readonly MUX_TOKEN_ID: string | undefined;

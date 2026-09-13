@@ -12,15 +12,8 @@ const result = await build({
   target: "es2022",
   write: false,
   minify: true,
-  define: { "process.env.NODE_ENV": '"production"' },
-  /*
-    The widget reuses app components that import `next/link` and `next/image`,
-    and those Next client modules read `process.env.__NEXT_*` at module scope.
-    This bundle runs in a bare iframe with no Next runtime, so without a
-    `process` to read the whole widget dies on load with "process is not
-    defined" and renders nothing.
-  */
-  banner: { js: "globalThis.process ??= { env: {} };" },
+  // The standalone iframe has no Node environment. Replace reads at build time.
+  define: { "process.env": "{}", "process.env.NODE_ENV": '"production"' },
 });
 const css = await postcss([tailwind()]).process(
   await readFile("src/app/globals.css", "utf8"),

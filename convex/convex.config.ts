@@ -9,6 +9,14 @@ import migrations from "@convex-dev/migrations/convex.config.js";
 
 const app = defineApp({
   env: {
+    GOOGLE_BUSINESS_PUBSUB_TOPIC: v.optional(v.string()),
+    GOOGLE_BUSINESS_PUBSUB_SUBSCRIPTION: v.optional(v.string()),
+    GOOGLE_BUSINESS_PUBSUB_AUDIENCE: v.optional(v.string()),
+    GOOGLE_BUSINESS_PUBSUB_SERVICE_ACCOUNT_EMAIL: v.optional(v.string()),
+    GOOGLE_BUSINESS_CLIENT_ID: v.optional(v.string()),
+    GOOGLE_BUSINESS_CLIENT_SECRET: v.optional(v.string()),
+    GOOGLE_BUSINESS_ENCRYPTION_KEY: v.optional(v.string()),
+    GOOGLE_BUSINESS_REDIRECT_URI: v.optional(v.string()),
     CHATGPT_IMPORT_ENABLED: v.optional(
       v.union(v.literal("true"), v.literal("false")),
     ),

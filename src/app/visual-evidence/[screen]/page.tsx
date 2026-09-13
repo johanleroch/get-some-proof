@@ -1,3 +1,4 @@
+import { GoogleBusinessFixture } from "@/components/visual-evidence/google-business-fixture";
 import { TestimonialSourceMarksFixture } from "@/components/visual-evidence/testimonial-source-marks-fixture";
 import { TestimonialSourcesFixture } from "@/components/visual-evidence/testimonial-sources-fixture";
 import { TestimonialLinksFixture } from "@/components/visual-evidence/testimonial-links-fixture";
@@ -80,6 +81,7 @@ import {
 } from "@/components/visual-evidence/authenticated-screen-fixtures";
 
 const screens = {
+  "google-business": GoogleBusinessFixture,
   "overview-loading": OverviewLoadingFixture,
   "inbox-loading": InboxLoadingFixture,
   "studio-loading": StudioLoadingFixture,

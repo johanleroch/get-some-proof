@@ -70,6 +70,7 @@ const purgePhases = [
   "billingProfiles",
   "auditEvents",
   "memberships",
+  "googleBusinessConnections",
   "organization",
 ] as const;
 
@@ -736,6 +737,28 @@ async function deletePhaseBatch(
           i.eq("organizationId", organizationId),
         )
         .take(purgeBatchSize);
+      break;
+    case "googleBusinessConnections":
+      records = await ctx.db
+        .query("googleBusinessConnections")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(purgeBatchSize);
+      await Promise.all(
+        records.map((record) =>
+          record.encryptedRefreshToken
+            ? ctx.scheduler.runAfter(
+                0,
+                internal.googleBusinessActions.revokeDeletedConnection,
+                {
+                  organizationId,
+                  encryptedRefreshToken: record.encryptedRefreshToken as string,
+                },
+              )
+            : Promise.resolve(),
+        ),
+      );
       break;
     case "publicationConsents":
       records = await ctx.db

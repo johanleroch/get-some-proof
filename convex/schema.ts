@@ -16,6 +16,36 @@ import { v } from "convex/values";
 import { importChannel, importStage } from "./domain/testimonialImport";
 
 export default defineSchema({
+  googleBusinessConnections: defineTable({
+    notificationOperation: v.optional(v.string()),
+    notificationAccount: v.optional(v.string()),
+    notificationLocation: v.optional(v.string()),
+    notificationRevision: v.optional(v.number()),
+    notificationLastEventAt: v.optional(v.number()),
+    notificationEnabledAt: v.optional(v.number()),
+    disconnectingUntil: v.optional(v.number()),
+    organizationId: v.id("organizations"),
+    ownerId: v.string(),
+    generation: v.string(),
+    encryptedRefreshToken: v.optional(v.string()),
+    stateHash: v.optional(v.string()),
+    verifier: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_stateHash", ["stateHash"])
+    .index("by_notification_location", [
+      "notificationAccount",
+      "notificationLocation",
+    ]),
+  googleBusinessNotificationEvents: defineTable({
+    messageId: v.string(),
+    account: v.string(),
+    location: v.string(),
+    publishedAt: v.number(),
+    expiresAt: v.number(),
+  }).index("by_messageId", ["messageId"]),
   imageAssets: defineTable({
     storageId: v.optional(v.id("_storage")),
     organizationId: v.optional(v.id("organizations")),
