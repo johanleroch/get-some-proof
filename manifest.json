@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "johanleroch/get-some-proof",
+  "project": "get-some-proof",
+  "target": {
+    "kind": "pull",
+    "number": 165
+  },
+  "headSha": "1af5dd9281991449e30508e8491bc04f2af06b9e",
+  "runId": "34742713980",
+  "screenshots": [
+    {
+      "path": "desktop-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "desktop-chromium"
+    },
+    {
+      "path": "mobile-chromium/studio-preview.png",
+      "title": "Studio preview",
+      "viewport": "mobile-chromium"
+    }
+  ]
+}
