@@ -498,6 +498,54 @@
       "theme": "light"
     },
     {
+      "slug": "authenticator",
+      "title": "Authenticator - confirm your password",
+      "path": "/visual-evidence/authenticator",
+      "fixturePath": "/visual-evidence/authenticator",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
+      "slug": "authenticator-setup",
+      "title": "Authenticator - scan the QR code",
+      "path": "/visual-evidence/authenticator-setup",
+      "fixturePath": "/visual-evidence/authenticator-setup",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
+      "slug": "authenticator-codes",
+      "title": "Authenticator - recovery codes",
+      "path": "/visual-evidence/authenticator-codes",
+      "fixturePath": "/visual-evidence/authenticator-codes",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
+      "slug": "authenticator-on",
+      "title": "Authenticator - already on",
+      "path": "/visual-evidence/authenticator-on",
+      "fixturePath": "/visual-evidence/authenticator-on",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
+      "slug": "authenticator-error",
+      "title": "Authenticator - password refused",
+      "path": "/visual-evidence/authenticator-error",
+      "fixturePath": "/visual-evidence/authenticator-error",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
+      "slug": "authenticator-external",
+      "title": "Authenticator - Google sign-in",
+      "path": "/visual-evidence/authenticator-external",
+      "fixturePath": "/visual-evidence/authenticator-external",
+      "heading": "Authenticator app",
+      "theme": "light"
+    },
+    {
       "slug": "testimonial-import-identity",
       "title": "Wall import identity correction",
       "path": "/visual-evidence/testimonial-import",
@@ -754,6 +802,12 @@
       "path": "/visual-evidence/testimonial-links",
       "heading": "Testimonial links",
       "theme": "light"
+    },
+    {
+      "slug": "testimonial-source-marks",
+      "title": "Testimonial source marks",
+      "path": "/visual-evidence/testimonial-source-marks",
+      "heading": "Source marks"
     },
     {
       "slug": "testimonial-sources-visible",

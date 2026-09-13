@@ -303,7 +303,11 @@ function GoogleMark({ className }: { className: string }) {
       focusable="false"
       viewBox="0 0 24 24"
       className={className}
-      dangerouslySetInnerHTML={{ __html: sourceIcons.google.markup }}
-    />
+    >
+      <g
+        transform={sourceIcons.google.fit}
+        dangerouslySetInnerHTML={{ __html: sourceIcons.google.markup }}
+      />
+    </svg>
   );
 }

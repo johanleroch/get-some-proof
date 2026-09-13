@@ -25,7 +25,10 @@ vi.mock("@/components/profile-image/profile-image-control", () => ({
 }));
 
 describe("OnboardingStage", () => {
-  afterEach(() => cleanup());
+  /* Unmount after each test, not just before the next one: the last tree
+     would otherwise stay mounted past the end of the file and React's
+     scheduler would reach for `window` after the environment is gone. */
+  afterEach(cleanup);
 
   it("plays the account form into the email notice with the typed account", async () => {
     render(<OnboardingStage initialStep="sign-up" />);

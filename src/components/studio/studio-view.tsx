@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { blobToast } from "@/components/brand/blob-toast";
-import { IconArrowLeft, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
 import type { WidgetConfig } from "@convex/domain/widgets";
 import type { TestimonialCardValue } from "@convex/testimonialCardValue";
 import { PageHeader } from "@/components/page-header";
 import { WallFrames } from "@/components/doodles";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Badge } from "@/components/ui/badge";
 import {
   StudioEditorSkeleton,
   StudioWidgetListSkeleton,
@@ -24,7 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { initialWidgetConfig, widgetTemplates } from "./catalog";
+import { initialWidgetConfig } from "./catalog";
+import { WidgetCard } from "./widget-card";
 import {
   StudioTemplateChooser,
   type StudioTemplate,
@@ -41,6 +41,10 @@ export type StudioWidget = {
   publicId: string;
   revision: number;
   published?: unknown;
+  publishedAt?: number;
+  updatedAt?: number;
+  /** The first testimonials of the draft, so the grid can render the widget. */
+  cardTestimonials?: StudioCandidate[];
   draft: { config: WidgetConfig; testimonialIds: string[] };
 };
 export type StudioDraft = {
@@ -85,12 +89,6 @@ export type StudioViewProps = {
   projectHref?: string;
 };
 
-function templateName(layout: WidgetConfig["layout"]) {
-  if (layout === "wall") return "Masonry grid";
-  return (
-    widgetTemplates.find((item) => item.layout === layout)?.title ?? layout
-  );
-}
 export function StudioView(props: StudioViewProps) {
   const [choosing, setChoosing] = useState(props.initialChoosing ?? false);
   const [busy, setBusy] = useState(false);
@@ -170,38 +168,22 @@ export function StudioView(props: StudioViewProps) {
       ) : props.loading ? (
         <StudioWidgetListSkeleton />
       ) : props.widgets.length ? (
-        <div className="border-line bg-surface divide-line divide-y rounded-lg border">
-          {props.widgets.map((widget) => (
-            <div
-              key={widget._id}
-              className="flex items-center gap-3 p-4 sm:p-5"
-            >
-              <button
-                className="min-w-0 flex-1 text-left"
-                onClick={() => props.onOpen(widget._id)}
-              >
-                <span className="type-ui block truncate font-semibold">
-                  {widget.name}
-                </span>
-                <span className="type-small text-ink-2">
-                  {templateName(widget.draft.config.layout)} ·{" "}
-                  {widget.draft.testimonialIds.length} selected
-                </span>
-              </button>
-              <Badge variant={widget.published ? "success" : "neutral"}>
-                {widget.published ? "Published" : "Draft"}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Delete ${widget.name}`}
-                onClick={() => setDeleting(widget)}
-              >
-                <IconTrash className="size-4" />
-              </Button>
-            </div>
+        <ul className="grid list-none gap-4 sm:grid-cols-2">
+          {props.widgets.map((widget, index) => (
+            <li className="min-w-0" key={widget._id}>
+              <WidgetCard
+                attributionRequired={props.attributionRequired}
+                brandName={props.brandName}
+                fontLibrary={props.fontLibrary}
+                index={index}
+                onDelete={() => setDeleting(widget)}
+                onOpen={() => props.onOpen(widget._id)}
+                origin={props.origin}
+                widget={widget}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <EmptyState
           illustration={<WallFrames />}

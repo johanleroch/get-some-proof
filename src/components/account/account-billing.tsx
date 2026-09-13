@@ -1,5 +1,7 @@
 "use client";
 
+import { videoSlotsShown } from "@/lib/video-usage";
+
 import { AccountInvoices } from "./account-invoices";
 import { AccountClosure } from "./account-closure";
 import { OrganizationBilling } from "@/components/billing/organization-billing";
@@ -69,7 +71,7 @@ function AccountBillingPlanSummary({
         {account ? (
           <p className="text-ink-2 text-sm">
             {pro
-              ? `${account.usage.readyVideos} / 25 videos stored · Unlimited text collection`
+              ? `${videoSlotsShown(account.usage, account.usage.videoLimit)} / ${account.usage.videoLimit} videos stored · Unlimited text collection`
               : `${account.usage.freeTextUsed} / 13 text credits used · ${account.usage.freeVideoUsed} / 2 video credits used`}
           </p>
         ) : null}

@@ -11,10 +11,7 @@ test("offers assistant import from the testimonial import page", async ({
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", {
-      name: "Connect via MCP",
-      exact: true,
-    }),
+    page.getByRole("link", { name: "Connect via MCP", exact: true }),
   ).toHaveAttribute("href", "/org/fernhill-studio/mcp");
 });
 

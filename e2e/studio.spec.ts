@@ -7,18 +7,21 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
   await page
     .getByRole("button", { name: "Create widget", exact: true })
     .click();
+  const narrow = (page.viewportSize()?.width ?? 1440) < 1024;
   await page
     .getByRole("button", { name: /Individual testimonial.*One voice/s })
     .click();
-  if ((page.viewportSize()?.width ?? 1440) < 1024)
+  // Narrow viewports open the editor on its preview side, with the settings
+  // column behind the Edit / Preview toggle.
+  if (narrow)
     await page
       .getByRole("button", { name: "Edit widget", exact: true })
       .click();
   await page.getByLabel("Widget name", { exact: true }).fill("Pricing proof");
-  await page.getByRole("button", { name: "Manage selection" }).click();
+  await page.getByRole("button", { name: "Edit selection" }).click();
   await page.getByRole("checkbox", { name: "Select Maya Laurent" }).check();
   await page.getByRole("button", { name: "Done", exact: true }).click();
-  if ((page.viewportSize()?.width ?? 1440) < 1024)
+  if (narrow)
     await page
       .getByRole("button", { name: "Preview widget", exact: true })
       .click();
@@ -27,15 +30,12 @@ test("creates a widget, selects proof, saves, publishes and keeps its code", asy
       .locator("[data-widget-preview]")
       .getByText("Maya Laurent", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Widget actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Save draft", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   const code = await page
-    .getByLabel("Embed code", { exact: true })
+    .getByRole("region", { name: "Embed code", exact: true })
     .textContent();
   expect(code).toContain("data-gsp-widget=");
   await page.keyboard.press("Escape");
@@ -49,7 +49,7 @@ test("reorders selected proof and switches to real highlights", async ({
   page,
 }) => {
   await page.goto("/visual-evidence/studio-editor");
-  await page.getByRole("button", { name: "Manage selection" }).click();
+  await page.getByRole("button", { name: "Edit selection" }).click();
   await page.getByRole("tab", { name: "Selected (3)", exact: true }).click();
   await page.getByRole("button", { name: "Move James Carter up" }).click();
   await expect(
@@ -59,8 +59,13 @@ test("reorders selected proof and switches to real highlights", async ({
       .first(),
   ).toContainText("James Carter");
   await page.getByRole("button", { name: "Done", exact: true }).click();
-  await page.getByLabel("Template", { exact: true }).click();
-  await page.getByRole("option", { name: /^Testimonial highlights/ }).click();
+  await page
+    .getByRole("button", { name: /Masonry grid Change template/ })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Testimonial highlights/ })
+    .click();
   if ((page.viewportSize()?.width ?? 1440) < 1024)
     await page
       .getByRole("button", { name: "Preview widget", exact: true })
@@ -76,9 +81,9 @@ test("reorders selected proof and switches to real highlights", async ({
   await expect(
     preview.locator('a[href="https://example.com/customer-story"]'),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Mobile preview" }).click();
+  await page.getByRole("button", { name: "Phone preview" }).click();
   await expect(
-    page.getByRole("button", { name: "Mobile preview" }),
+    page.getByRole("button", { name: "Phone preview" }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("body")).toHaveJSProperty(
     "scrollWidth",
@@ -119,7 +124,7 @@ test("keeps selection out of the sidebar and supports search, removal and focus 
 }) => {
   await page.goto("/visual-evidence/studio-editor");
   const manage = page.getByRole("button", {
-    name: "Manage selection",
+    name: "Edit selection",
     exact: true,
   });
   await expect(page.getByRole("checkbox")).toHaveCount(0);
@@ -143,7 +148,10 @@ test("keeps selection out of the sidebar and supports search, removal and focus 
   await dialog.getByRole("button", { name: "Done", exact: true }).click();
   await expect(manage).toBeFocused();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
-  await expect(page.getByText("3 selected", { exact: true })).toBeVisible();
+  // The column names the chosen testimonials now instead of counting them.
+  const chosen = page.locator("#widget-edit-panel").getByRole("listitem");
+  await expect(chosen).toHaveCount(3);
+  await expect(chosen.filter({ hasText: "Alex Thomas" })).toHaveCount(0);
   await manage.click();
   await expect(
     dialog.getByRole("textbox", { name: "Search testimonials" }),
@@ -157,7 +165,7 @@ test("selects and clears all loaded testimonials from the selection dialog", asy
 }) => {
   await page.goto("/visual-evidence/studio-editor");
   await page
-    .getByRole("button", { name: "Manage selection", exact: true })
+    .getByRole("button", { name: "Edit selection", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Manage testimonials" });
   const selectAll = dialog.getByRole("checkbox", {
@@ -237,7 +245,7 @@ test("shows Inbox presentation and previews video without changing selection", a
 }) => {
   await page.goto("/visual-evidence/studio-editor");
   await page
-    .getByRole("button", { name: "Manage selection", exact: true })
+    .getByRole("button", { name: "Edit selection", exact: true })
     .click();
   const selection = page.getByRole("dialog", { name: "Manage testimonials" });
   const maya = selection.locator('[data-studio-testimonial="maya"]');

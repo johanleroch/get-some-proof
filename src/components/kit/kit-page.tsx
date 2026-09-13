@@ -18,6 +18,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { BrandMark } from "@/components/brand-mark";
 import { blobToast } from "@/components/brand/blob-toast";
 import { MotionShowcase } from "@/components/kit/motion-showcase";
+import { SourceIconsShowcase } from "@/components/kit/source-icons-showcase";
 import { PageHeader } from "@/components/page-header";
 import {
   ArrowNote,
@@ -119,6 +120,7 @@ const sections = [
   { id: "forms", title: "Forms" },
   { id: "shell", title: "Page header" },
   { id: "cards", title: "Cards and lists" },
+  { id: "source-icons", title: "Source icons" },
   { id: "status", title: "Status and badges" },
   { id: "empty", title: "Empty states" },
   { id: "overlays", title: "Overlays" },
@@ -898,7 +900,15 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Tags on paper with a hairline. The status colors the dot and the label; the fill stays paper."
+            description="Where a testimonial came from, stamped on its card. Ten platforms, one 20px mark on a white chip inside a 44px target. Every mark is now the brand’s own artwork instead of an icon set’s redraw, held here against the glyph it replaces."
+            id="source-icons"
+            title="Source icons"
+          >
+            <SourceIconsShowcase />
+          </KitSection>
+
+          <KitSection
+            description="One white chip for every state, fully round, with neither border nor shadow. On paper it is a cut-out; on a white card it melts in and the 6px dot carries the state."
             id="status"
             title="Status and badges"
           >
@@ -919,7 +929,7 @@ export function KitPage() {
               <Badge variant="neutral">Draft</Badge>
               <Badge variant="outline">12 proofs</Badge>
             </div>
-            <div className="bg-sidebar mt-6 max-w-[17rem] rounded-lg">
+            <div className="bg-sidebar border-line mt-6 max-w-[17rem] rounded-lg border p-2">
               <SidebarProPlanCard
                 usage={{
                   readyVideos: 8,

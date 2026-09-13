@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 import type { TestimonialCardVideoValue } from "@convex/testimonialCardValue";
@@ -29,7 +29,6 @@ import type { StudioCandidate } from "./studio-view";
 import { hasHighlight, selectAllWithinLimit } from "./selection-rules";
 
 type SelectionProps = {
-  restoreFocus?: () => void;
   accentColor: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,6 +41,13 @@ type SelectionProps = {
   loadingCandidates?: boolean;
   onLoadMore: () => void;
   inboxHref: string;
+  /**
+   * Where focus goes when the dialog closes. Radix restores focus to whatever
+   * held it when the dialog opened, and WebKit hands it to the scrolling
+   * region instead of the button that opened this, so the owner names the
+   * button it wants back.
+   */
+  returnFocusTo?: RefObject<HTMLButtonElement | null>;
 };
 
 function BulkSelectionControl({
@@ -157,16 +163,14 @@ export function WidgetSelectionDialog(props: SelectionProps) {
         }}
       >
         <DialogContent
-          onCloseAutoFocus={
-            props.restoreFocus
-              ? (event) => {
-                  event.preventDefault();
-                  props.restoreFocus?.();
-                }
-              : undefined
-          }
           zoom={false}
           className="flex h-[min(44rem,90dvh)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
+          onCloseAutoFocus={(event) => {
+            const trigger = props.returnFocusTo?.current;
+            if (!trigger) return;
+            event.preventDefault();
+            trigger.focus();
+          }}
           style={{ "--wall-accent": props.accentColor } as CSSProperties}
         >
           <DialogHeader className="shrink-0 px-5 pt-6 pr-12 pb-4 sm:px-6">
@@ -240,7 +244,12 @@ export function WidgetSelectionDialog(props: SelectionProps) {
                             disabled && "cursor-default opacity-60",
                           )}
                         >
+                          {/* A click surface over the whole card, nothing more:
+                              the checkbox carries the name, and an aria-label
+                              on a label is prohibited (axe
+                              aria-prohibited-attr). */}
                           <label
+                            aria-hidden="true"
                             htmlFor={`studio-select-${testimonialId}`}
                             className={cn(
                               "absolute inset-0 z-10",

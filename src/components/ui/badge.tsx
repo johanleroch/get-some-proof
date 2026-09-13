@@ -5,22 +5,25 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 /**
- * Tags on paper (DESIGN.md section 7): a `--line` hairline on `--surface`,
- * 6px radius. A status shows in its 6px dot and its label color, never in a
- * pastel fill. `brand` is the one tinted tag.
+ * Status chips (DESIGN.md section 7): one white chip for every state, fully
+ * round, with neither border nor shadow. The status lives in its 6px dot
+ * alone, never in a pastel fill and no longer in the label. On paper the chip
+ * is a white cut-out; on a white card it melts into the card and the dot
+ * carries the state on its own.
  */
 const badgeVariants = cva(
-  "inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.5 rounded-md border px-2 text-[13px] leading-none font-medium tracking-[-0.004em] whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3.5",
+  "bg-chip text-ink inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.5 rounded-full px-2.5 text-[13px] leading-none font-medium tracking-[-0.004em] whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3.5",
   {
     variants: {
+      /** Each variant only picks the color of the dot. */
       variant: {
-        brand: "bg-brand-soft border-brand-soft-2 text-ink",
-        danger: "bg-surface border-line text-danger",
-        info: "bg-surface border-line text-info",
-        neutral: "bg-surface-2 text-ink-2 border-transparent",
-        outline: "border-line-2 text-ink bg-transparent",
-        success: "bg-surface border-line text-success",
-        warning: "bg-surface border-line text-warning",
+        brand: "[--chip-dot:var(--brand)]",
+        danger: "[--chip-dot:var(--danger)]",
+        info: "[--chip-dot:var(--info)]",
+        neutral: "[--chip-dot:var(--ink-3)]",
+        outline: "[--chip-dot:var(--ink-3)]",
+        success: "[--chip-dot:var(--success)]",
+        warning: "[--chip-dot:var(--warning)]",
       },
     },
     defaultVariants: {
@@ -28,16 +31,6 @@ const badgeVariants = cva(
     },
   },
 );
-
-const dotClass: Partial<Record<NonNullable<BadgeVariant>, string>> = {
-  brand: "bg-brand",
-  danger: "bg-danger",
-  info: "bg-info",
-  neutral: "bg-ink-3",
-  outline: "bg-ink-3",
-  success: "bg-success",
-  warning: "bg-warning",
-};
 
 type BadgeVariant = VariantProps<typeof badgeVariants>["variant"];
 
@@ -52,31 +45,31 @@ function Badge({
   VariantProps<typeof badgeVariants> & {
     asChild?: boolean;
     /**
-     * Leading 6px dot in the status color. On by default for the four
-     * statuses, since the dot is what carries them; off elsewhere.
+     * Leading 6px dot in the status color. On by default everywhere the chip
+     * carries a state; off for `outline`, the counter used on public walls,
+     * where a dot would be decoration.
      */
     dot?: boolean;
   }) {
   const Comp = asChild ? Slot.Root : "span";
-  const resolvedVariant = variant ?? "neutral";
-  const showDot =
-    dot ??
-    (resolvedVariant === "success" ||
-      resolvedVariant === "warning" ||
-      resolvedVariant === "danger" ||
-      resolvedVariant === "info");
+  const resolvedVariant: NonNullable<BadgeVariant> = variant ?? "neutral";
+  const showDot = dot ?? resolvedVariant !== "outline";
 
   return (
     <Comp
       data-slot="badge"
       data-variant={resolvedVariant}
-      className={cn(badgeVariants({ variant: resolvedVariant }), className)}
+      className={cn(
+        badgeVariants({ variant: resolvedVariant }),
+        showDot && !asChild && "pl-2",
+        className,
+      )}
       {...props}
     >
       {showDot && !asChild ? (
         <span
           aria-hidden="true"
-          className={cn("size-1.5 rounded-full", dotClass[resolvedVariant])}
+          className="size-1.5 rounded-full bg-(--chip-dot)"
         />
       ) : null}
       {children}

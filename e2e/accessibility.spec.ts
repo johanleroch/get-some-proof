@@ -53,6 +53,12 @@ const canonicalScreens = [
   "/visual-evidence/billing",
   "/visual-evidence/testimonial-delete",
   "/visual-evidence/workspace-delete",
+  "/visual-evidence/authenticator",
+  "/visual-evidence/authenticator-setup",
+  "/visual-evidence/authenticator-codes",
+  "/visual-evidence/authenticator-on",
+  "/visual-evidence/authenticator-error",
+  "/visual-evidence/authenticator-external",
   "/templates",
   "/templates/masonry-wall",
 ];
@@ -125,6 +131,27 @@ test("Collection Form preserves keyboard focus, validation, and 44px targets", a
     .locator("button:visible, input:visible")
     .evaluateAll((elements) =>
       elements
+        // The Next dev overlay ships its own 32px button inside the shadow
+        // root of `<nextjs-portal>`, and only exists because e2e runs against
+        // `next dev`. `closest` stops at the shadow boundary, so walk the
+        // hosts to leave the whole overlay out: it is not our interface.
+        .filter((element) => {
+          for (
+            let node: Node | null = element;
+            node;
+            node =
+              node.getRootNode() instanceof ShadowRoot
+                ? (node.getRootNode() as ShadowRoot).host
+                : (node as Element).parentElement
+          ) {
+            if (
+              node instanceof Element &&
+              node.tagName.toLowerCase().startsWith("nextjs-")
+            )
+              return false;
+          }
+          return true;
+        })
         .map((element) => {
           // Native and ARIA toggles (Radix checkbox, radio, switch) count
           // their wrapping label as the touch target, like WCAG 2.5.8 allows.
@@ -266,7 +293,7 @@ test("Studio selection dialog is accessible for choosing and ordering proof", as
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/visual-evidence/studio-editor");
   await page
-    .getByRole("button", { name: "Manage selection", exact: true })
+    .getByRole("button", { name: "Edit selection", exact: true })
     .click();
   await expect(
     page.getByRole("dialog", { name: "Manage testimonials" }),

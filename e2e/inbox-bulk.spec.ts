@@ -36,12 +36,7 @@ test("opens a single destructive confirmation and cancels without losing selecti
   await page
     .getByRole("checkbox", { name: "Select displayed testimonials" })
     .check();
-  await page
-    .getByRole("button", {
-      name: "Actions",
-      exact: true,
-    })
-    .click();
+  await page.getByRole("button", { name: "Actions", exact: true }).click();
   await page.getByRole("menuitem", { name: "Delete permanently" }).click();
   const dialog = page.getByRole("dialog", {
     name: "Permanently delete 3 testimonials?",

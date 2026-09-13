@@ -34,6 +34,7 @@ import {
   OverviewPageSkeleton,
 } from "@/components/ui/page-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { proVideoSlotLimit, videoSlotsShown } from "@/lib/video-usage";
 import {
   clearJustCreated,
   type CreatedNoun,
@@ -106,11 +107,12 @@ function wallUrlFrom(collectionUrl: string, publicSlug: string) {
 /** The allowances the plans promise (docs/product-scope.md). */
 const freeTextCredits = 13;
 const freeVideoCredits = 2;
-const proVideosStored = 25;
 
 /**
  * One allowance: the fraction in figures beside its name and, under them,
  * how full the tank is. A meter, not a progress bar: nothing is loading.
+ * A video allowance counts the slots held while an upload processes, the
+ * same way the sidebar's usage lines do: a held slot cannot take a video.
  */
 function UsageMeter({
   label,
@@ -162,6 +164,7 @@ function AccountPlanPanel({
 }) {
   const pro = account.effectivePlan === "premium";
   const reserved = account.usage.reservedVideos;
+  const videoLimit = account.usage.videoLimit ?? proVideoSlotLimit;
   return (
     <section
       aria-label="Account plan and usage"
@@ -178,8 +181,8 @@ function AccountPlanPanel({
         {pro ? (
           <UsageMeter
             label="Videos stored"
-            total={proVideosStored}
-            used={account.usage.readyVideos}
+            total={videoLimit}
+            used={videoSlotsShown(account.usage, videoLimit)}
           />
         ) : (
           <>
@@ -197,7 +200,8 @@ function AccountPlanPanel({
         )}
         {reserved > 0 ? (
           <p className="type-small text-ink-2">
-            {reserved} video {reserved === 1 ? "slot" : "slots"} reserved
+            {reserved} video {reserved === 1 ? "slot" : "slots"} held while
+            processing
           </p>
         ) : null}
       </div>
@@ -227,6 +231,8 @@ export type BrandDashboardViewProps = {
       freeVideoUsed: number;
       readyVideos: number;
       reservedVideos: number;
+      /** The Account's own allowance when the server has sent it. */
+      videoLimit?: number;
     };
   } | null;
   accountLoading?: boolean;

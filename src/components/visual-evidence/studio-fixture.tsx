@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   StudioView,
@@ -7,6 +7,8 @@ import {
   type StudioCandidate,
 } from "@/components/studio/studio-view";
 import { initialWidgetConfig } from "@/components/studio/catalog";
+
+import { StudioWorkspaceShell } from "@/components/app-shell";
 
 import { WorkspacePageShell } from "./instant-page-shells-fixture";
 
@@ -146,16 +148,81 @@ const studioCandidates: StudioCandidate[] = [
     },
   })),
 ];
+function cards(ids: string[]) {
+  return ids.flatMap((id) => {
+    const found = primaryStudioCandidates.find(
+      (candidate) => candidate.testimonialId === id,
+    );
+    return found ? [found] : [];
+  });
+}
+
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+/**
+ * Offsets from the moment the page renders, not a fixed date: the card says
+ * "2 hours ago" at every capture, which is what has to stay stable, while a
+ * frozen calendar date would drift into "3 months ago" and then change again.
+ */
+const NOW = Date.now();
+
 const seed: StudioWidget = {
   _id: "fixture-widget",
   name: "Homepage proof",
   publicId: "12345678-1234-4234-8234-123456789abc",
   revision: 0,
+  updatedAt: NOW - 2 * HOUR,
   draft: {
     config: initialWidgetConfig,
     testimonialIds: ["maya", "james", "sarah"],
   },
+  cardTestimonials: cards(["maya", "james", "sarah"]),
 };
+
+/** The grid needs more than one widget, and every state it can be in. */
+const gallery: StudioWidget[] = [
+  seed,
+  {
+    _id: "fixture-widget-pricing",
+    name: "Pricing page faces",
+    publicId: "12345678-1234-4234-8234-1234567890ab",
+    revision: 3,
+    published: { config: initialWidgetConfig, testimonialIds: ["maya"] },
+    publishedAt: NOW - 21 * DAY,
+    updatedAt: NOW - 21 * DAY,
+    draft: {
+      config: { ...initialWidgetConfig, layout: "avatars" },
+      testimonialIds: ["maya", "james", "sarah", "remy", "alex"],
+    },
+    cardTestimonials: cards(["maya", "james", "sarah", "remy"]),
+  },
+  {
+    _id: "fixture-widget-hero",
+    name: "Landing hero quote",
+    publicId: "12345678-1234-4234-8234-1234567890cd",
+    revision: 1,
+    updatedAt: NOW - 4 * HOUR,
+    draft: {
+      config: { ...initialWidgetConfig, layout: "individual" },
+      testimonialIds: ["remy"],
+    },
+    cardTestimonials: cards(["remy"]),
+  },
+  {
+    _id: "fixture-widget-cases",
+    name: "Case studies band",
+    publicId: "12345678-1234-4234-8234-1234567890ef",
+    revision: 7,
+    published: { config: initialWidgetConfig, testimonialIds: ["maya"] },
+    publishedAt: NOW - 6 * DAY,
+    updatedAt: NOW - 3 * HOUR,
+    draft: {
+      config: { ...initialWidgetConfig, layout: "carousel" },
+      testimonialIds: ["james", "sarah", "alex"],
+    },
+    cardTestimonials: cards(["james", "sarah", "alex"]),
+  },
+];
 export function StudioFixture({
   editor = false,
   choosing = false,
@@ -169,12 +236,21 @@ export function StudioFixture({
     Array<{ id: string; name: string; url: string }>
   >([]);
   const [candidateCount, setCandidateCount] = useState(4);
-  const [widgets, setWidgets] = useState<StudioWidget[]>([seed]);
+  const [widgets, setWidgets] = useState<StudioWidget[]>(gallery);
   const [activeId, setActiveId] = useState<string | null>(
     editor ? seed._id : null,
   );
-  return (
-    <WorkspacePageShell pathname="/org/atrakt/studio">
+  const shell = activeId
+    ? (children: ReactNode) => (
+        <StudioWorkspaceShell>{children}</StudioWorkspaceShell>
+      )
+    : (children: ReactNode) => (
+        <WorkspacePageShell pathname="/org/atrakt/studio">
+          {children}
+        </WorkspacePageShell>
+      );
+  return shell(
+    <>
       <StudioView
         fontLibrary={{ canUpload: true, fonts }}
         onUploadFont={async (file) => {
@@ -257,7 +333,7 @@ export function StudioFixture({
           setWidgets(widgets.filter((item) => item._id !== id));
         }}
       />
-    </WorkspacePageShell>
+    </>,
   );
 }
 export function StudioEditorFixture() {

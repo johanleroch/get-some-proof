@@ -3,7 +3,7 @@
 import { IconExternalLink } from "@tabler/icons-react";
 import { useState } from "react";
 
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -48,25 +48,13 @@ export function VideoCopyDetails({
     <>
       <button
         aria-label={`Video copy details for ${testimonialName}`}
-        className="focus-visible:ring-ring inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+        className="focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
         onClick={() => setOpen(true)}
         type="button"
       >
-        <span
-          className={badgeVariants({
-            variant: processing ? "warning" : "danger",
-          })}
-        >
-          <span
-            aria-hidden="true"
-            className={
-              processing
-                ? "bg-warning size-1.5 rounded-full"
-                : "bg-danger size-1.5 rounded-full"
-            }
-          />
+        <Badge variant={processing ? "warning" : "danger"}>
           {processing ? "Processing" : "Failed"}
-        </span>
+        </Badge>
       </button>
 
       <Dialog onOpenChange={setOpen} open={open}>

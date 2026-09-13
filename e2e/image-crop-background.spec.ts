@@ -22,7 +22,7 @@ const cropCode = ts.transpileModule(
   { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
-test("a transparent portrait crop preserves alpha with the browser-supported export format", async ({
+test("a transparent portrait crop exports as WebP without flattening its alpha", async ({
   page,
 }) => {
   await page.goto("/sign-in");
@@ -54,9 +54,12 @@ test("a transparent portrait crop preserves alpha with the browser-supported exp
       type: blob.type,
       corner: [...outputContext.getImageData(4, 4, 1, 1).data],
       center: [...outputContext.getImageData(256, 256, 1, 1).data],
+      // Safari cannot encode WebP from a canvas; the crop falls back to PNG
+      // there, and what matters either way is that the alpha survives.
+      webp: input.toDataURL("image/webp").startsWith("data:image/webp"),
     };
   });
-  expect(["image/webp", "image/png"]).toContain(pixels.type);
+  expect(pixels.type).toBe(pixels.webp ? "image/webp" : "image/png");
   expect(pixels.corner[3]).toBe(0);
   expect(pixels.center[0]).toBeGreaterThan(245);
   expect(pixels.center[1]).toBeLessThan(10);
