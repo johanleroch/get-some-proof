@@ -18,6 +18,15 @@ import {
 } from "@/components/visual-evidence/import-consent-fixture";
 import { AssistantImportRecoveryFixture } from "@/components/visual-evidence/assistant-import-recovery-fixture";
 import { AccountSecurity } from "@/components/account/account-security";
+import { AccountAuthenticator } from "@/components/account/account-authenticator";
+import {
+  AuthenticatorCodesScreenFixture,
+  AuthenticatorErrorScreenFixture,
+  AuthenticatorExternalScreenFixture,
+  AuthenticatorOnScreenFixture,
+  AuthenticatorScreenFixture,
+  AuthenticatorSetupScreenFixture,
+} from "@/components/visual-evidence/authenticator-fixture";
 import { LoadingStatesFixture } from "@/components/visual-evidence/loading-states-fixture";
 import {
   TestimonialImportFixture,
@@ -96,6 +105,14 @@ const screens = {
   "testimonial-import-video-processing":
     TestimonialImportVideoProcessingFixture,
   "account-security": AccountSecurity,
+  // The real component, for the end-to-end tests that stub the auth network.
+  "live-authenticator": AccountAuthenticator,
+  authenticator: AuthenticatorScreenFixture,
+  "authenticator-setup": AuthenticatorSetupScreenFixture,
+  "authenticator-codes": AuthenticatorCodesScreenFixture,
+  "authenticator-on": AuthenticatorOnScreenFixture,
+  "authenticator-error": AuthenticatorErrorScreenFixture,
+  "authenticator-external": AuthenticatorExternalScreenFixture,
   "project-settings-shell": ProjectSettingsShellFixture,
   "loading-states": LoadingStatesFixture,
   "full-page-loading": BlobLoaderScreen,
@@ -153,6 +170,7 @@ export default async function VisualEvidenceFixturePage({
   if (!Screen) notFound();
 
   return screen.startsWith("studio") ||
+    screen.startsWith("authenticator") ||
     screen === "overview-loading" ||
     screen === "inbox-loading" ||
     screen === "profile" ||

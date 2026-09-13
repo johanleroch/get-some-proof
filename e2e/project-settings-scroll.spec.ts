@@ -1,32 +1,32 @@
 import { test, expect } from "@playwright/test";
 
-test("section links keep the shell fixed and page content scrollable", async ({
+/**
+ * The settings shell scrolls its page-content region, not the window, so the
+ * sidebar and the page header stay put. The section navigation this test used
+ * to drive was removed with the responsive settings pass; the scrolling
+ * contract it proved is still the thing that matters.
+ */
+test("keeps the shell fixed while the page content scrolls", async ({
   page,
   isMobile,
 }) => {
-  test.skip(isMobile, "Section navigation is desktop only");
+  test.skip(isMobile, "The page itself scrolls on mobile");
   await page.goto("/visual-evidence/project-settings-shell");
   const content = page.getByRole("region", { name: "Page content" });
   await expect(content).toHaveCSS("scroll-behavior", "smooth");
   const before = await content.boundingBox();
-  await page
-    .getByRole("navigation", { name: "Settings sections" })
-    .getByRole("link", { name: "Embedded Wall", exact: true })
-    .click();
-  await expect
-    .poll(async () => (await content.boundingBox())!.y)
-    .toBe(before!.y);
+  await content.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
   await expect
     .poll(() =>
-      content.evaluate((el) =>
-        Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop),
+      content.evaluate((element) =>
+        Math.abs(
+          element.scrollHeight - element.clientHeight - element.scrollTop,
+        ),
       ),
     )
     .toBeLessThan(2);
-  await page
-    .getByRole("navigation", { name: "Settings sections" })
-    .getByRole("link", { name: "Brand logo", exact: true })
-    .click();
   await expect
     .poll(async () => (await content.boundingBox())!.y)
     .toBe(before!.y);
