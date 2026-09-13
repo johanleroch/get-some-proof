@@ -564,7 +564,10 @@
       "Collect text and video testimonials. Share them everywhere! Free, forever.",
     );
     const link = element("a", "promo-cta", "Sign up for free");
-    const href = new URL("/sign-up", apiOrigin);
+    const href = new URL(
+      "/sign-up",
+      cloudflareDelivery ? "https://www.getsomeproof.com" : apiOrigin,
+    );
     href.searchParams.set("utm_source", "embedded_wall");
     href.searchParams.set("utm_medium", "referral");
     href.searchParams.set("utm_campaign", "powered_by");

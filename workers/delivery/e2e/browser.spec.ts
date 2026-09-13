@@ -67,6 +67,12 @@ test("Cloudflare Widget stays readable after 60 seconds with bounded cold/warm r
       "ready",
     );
   }
+  await expect(
+    page.getByRole("link", { name: "Sign up for free" }),
+  ).toHaveAttribute(
+    "href",
+    "https://www.getsomeproof.com/sign-up?utm_source=embedded_wall&utm_medium=referral&utm_campaign=powered_by",
+  );
   await page.clock.fastForward(61000);
   await expect(page.getByText("Maya Laurent", { exact: true })).toBeVisible();
   expect(
