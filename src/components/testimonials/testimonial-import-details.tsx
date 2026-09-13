@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { TestimonialImportDetailsValue } from "./testimonial-inbox";
-import { badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -65,14 +65,14 @@ export function TestimonialImportDetails({
           <TooltipTrigger asChild>
             <button
               aria-label={`Import details for ${testimonialName}`}
-              className="focus-visible:ring-ring inline-flex min-h-10 min-w-6 items-center rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:min-h-9"
+              className="focus-visible:ring-ring inline-flex min-h-10 min-w-6 items-center rounded-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:min-h-9"
               onClick={() => setOpen(true)}
               type="button"
             >
-              <span className={badgeVariants({ variant: "outline" })}>
+              <Badge variant="outline">
                 <IconFileImport aria-hidden="true" />
                 Imported
-              </span>
+              </Badge>
             </button>
           </TooltipTrigger>
           <TooltipContent>Imported from {hostname}</TooltipContent>

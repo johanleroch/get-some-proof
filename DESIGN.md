@@ -129,8 +129,8 @@ Rules:
 | `--danger`  | `oklch(0.52 0.19 27)`  | `oklch(0.72 0.17 25)`  | Destructive, errors        |
 | `--info`    | `oklch(0.52 0.09 250)` | `oklch(0.75 0.09 250)` | Neutral notices            |
 
-Each status has a `-soft` tint for badges and toasts, derived the same way as
-the brand. Warning is orange, deliberately away from amber so "pending" never
+Each status has a `-soft` tint for toasts and tinted surfaces, derived the
+same way as the brand (status chips no longer use it, section 7). Warning is orange, deliberately away from amber so "pending" never
 looks like "brand".
 
 ### 2.4 Mapping to the existing shadcn tokens
@@ -327,7 +327,8 @@ Depth comes from borders and tone, not shadows. Cards sit on `--paper` with a
 1px `--line` border and no shadow. Only floating layers get a shadow, and it is
 warm-tinted: `--shadow-float: 0 1px 2px oklch(0.25 0.02 60 / 6%), 0 12px 32px
 oklch(0.25 0.02 60 / 12%)` for popovers, dialogs, toasts and the video play
-button. No other shadow token exists.
+button. No other shadow token exists: the status chip (section 7) carries
+neither border nor shadow.
 
 Spacing is a 4px grid. Inside components: 8, 12, 16. Between elements: 16, 24.
 Between sections: 32, 48. Page padding: 32px desktop, 20px mobile. Section gaps
@@ -711,11 +712,13 @@ below 14px on mobile, the desktop sidebar becomes a sheet with the same items.
   never a coloured box. `mark` carries it site-wide from `globals.css` in
   amber; a Testimonial card overrides it with the customer Brand accent
   through `src/lib/marker-highlight.ts`.
-- Badges and status tags: 24px tall, `--radius-md`, `small` at weight 500,
-  on `--surface` with a `--line` hairline. A status colors its 6px dot and
-  its label (full-strength status color, AA on `--surface`); the fill stays
-  paper, never a pastel tint (the generic "AI pill"). `brand`
-  is the one tinted tag (`--brand-soft`), `neutral` sits on `--surface-2`.
+- Badges and status chips: 24px tall, `--radius-full`, `small` at weight 500
+  in `--ink`, on `--chip` (white on light, one step lighter than a card on
+  dark), with neither border nor shadow. Every state wears the
+  same chip: the status lives in its 6px dot alone, never in a pastel tint
+  (the generic "AI pill") and no longer in the label. `brand` is a chip like
+  the others with an amber dot; `outline`, the counter on public walls, is
+  the one chip that ships without a dot.
 - Dialogs: `--surface`, `--radius-lg`, `--shadow-float`, title at `heading`,
   max 480px (560px for content-heavy). One exception, at 672px: the video
   thumbnail picker, because its preview is the real published card beside

@@ -908,7 +908,7 @@ export function KitPage() {
           </KitSection>
 
           <KitSection
-            description="Tags on paper with a hairline. The status colors the dot and the label; the fill stays paper."
+            description="One white chip for every state, fully round, with neither border nor shadow. On paper it is a cut-out; on a white card it melts in and the 6px dot carries the state."
             id="status"
             title="Status and badges"
           >
